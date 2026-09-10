@@ -1,0 +1,29 @@
+node_modules/
+.pnpm-store/
+.next/
+out/
+dist/
+build/
+coverage/
+.turbo/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+# uploads & local storage
+storage/
+tmp/
+# android
+apps/kiosk-android/.gradle/
+apps/kiosk-android/build/
+apps/kiosk-android/app/build/
+apps/kiosk-android/local.properties
+*.keystore
+*.jks
+# playwright
+playwright-report/
+test-results/
+# large raw media stays out of git (use shared drive)
+assets/videos/raw/
+assets/photos/raw/

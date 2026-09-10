@@ -1,0 +1,63 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "meta": { "name": "Max Fitness Platform tokens", "version": "1.0.0", "note": "Map to Tailwind v4 @theme variables in apps/web/src/styles/tokens.css" },
+  "color": {
+    "brand": {
+      "plateNavy":    { "$value": "#14213D", "$description": "Dark sections, footer, text on light" },
+      "signboardRed": { "$value": "#D62828", "$description": "Primary actions and prices only" },
+      "signboardRedText": { "$value": "#C1121F", "$description": "Use when white text contrast on red is marginal" },
+      "chalk":        { "$value": "#F2F3EF", "$description": "Light sections, form panels" },
+      "medalGold":    { "$value": "#E3A92B", "$description": "Champion section + single best-value marker" },
+      "wallBlue":     { "$value": "#2F5DAA", "$description": "Links, focus, info" },
+      "rubberGrey":   { "$value": "#5C6272", "$description": "Secondary text, borders at 20-24%" },
+      "ink":          { "$value": "#0F1729", "$description": "Body text on light" },
+      "white":        { "$value": "#FFFFFF" }
+    },
+    "semantic": {
+      "feePaid":     { "$value": "#1F8A4C", "$description": "Green: fees paid" },
+      "feeDueSoon":  { "$value": "#B7791F", "$description": "Amber: due within 7 days" },
+      "feeExpired":  { "$value": "#C62828", "$description": "Red: overdue/urgent" },
+      "feeNone":     { "$value": "#8A8F99", "$description": "Grey: left / no plan" },
+      "info":        { "$value": "#2F5DAA" },
+      "birthday":    { "$value": "#C2185B" },
+      "surfaceCrm":  { "$value": "#FFFFFF" },
+      "surfaceCrmAlt": { "$value": "#F5F6F8" },
+      "focusRing":   { "$value": "#2F5DAA" }
+    },
+    "tint": {
+      "feePaidBg":    { "$value": "#E6F4EC" },
+      "feeDueSoonBg": { "$value": "#FDF3E1" },
+      "feeExpiredBg": { "$value": "#FCE8E8" },
+      "feeNoneBg":    { "$value": "#EEF0F2" },
+      "birthdayBg":   { "$value": "#FCE4EF" }
+    }
+  },
+  "font": {
+    "family": {
+      "display": { "$value": "Khand, 'Hind', system-ui, sans-serif", "$description": "Weights 600, 700; subsets latin, devanagari" },
+      "body":    { "$value": "Hind, system-ui, sans-serif", "$description": "Weights 400, 500, 600; subsets latin, devanagari" }
+    },
+    "size": {
+      "displayXl": { "$value": "clamp(2.75rem, 1.6rem + 5vw, 5.5rem)" },
+      "displayL":  { "$value": "clamp(2.25rem, 1.5rem + 3.4vw, 4rem)" },
+      "displayM":  { "$value": "clamp(1.75rem, 1.3rem + 2vw, 2.75rem)" },
+      "title":     { "$value": "clamp(1.25rem, 1.15rem + 0.4vw, 1.5rem)" },
+      "bodyL":     { "$value": "clamp(1.125rem, 1.08rem + 0.2vw, 1.25rem)" },
+      "body":      { "$value": "clamp(1rem, 0.98rem + 0.1vw, 1.0625rem)" },
+      "small":     { "$value": "0.875rem" },
+      "crmNumber": { "$value": "2.75rem", "$description": "Home tile numbers (Khand 700)" },
+      "crmBody":   { "$value": "1.125rem", "$description": "CRM base text size" },
+      "kioskName": { "$value": "4.5rem" }
+    },
+    "lineHeight": { "display": "0.95", "tight": "1.05", "ui": "1.3", "body": "1.6", "devanagariBoost": "1.1" }
+  },
+  "radius": { "button": "6px", "input": "6px", "panel": "12px", "modal": "16px", "photo": "2px", "avatar": "9999px", "crmTile": "16px" },
+  "space": { "0": "0", "1": "4px", "2": "8px", "3": "12px", "4": "16px", "5": "20px", "6": "24px", "8": "32px", "10": "40px", "12": "48px", "16": "64px", "24": "96px" },
+  "size": { "tapWeb": "44px", "tapCrm": "56px", "tapCrmPrimary": "64px", "tapKiosk": "72px", "inputHeight": "48px", "buttonHero": "56px", "contentMax": "1200px" },
+  "shadow": { "overlay": "0 12px 40px rgba(20,33,61,0.28)", "stickyNav": "0 2px 12px rgba(20,33,61,0.20)" },
+  "motion": {
+    "duration": { "fast": "120ms", "base": "180ms", "reveal": "500ms", "slide": "7000ms", "undo": "10000ms" },
+    "easing": { "standard": "cubic-bezier(0.2, 0, 0, 1)", "enter": "cubic-bezier(0, 0, 0, 1)" }
+  },
+  "breakpoint": { "sm": "360px", "md": "768px", "lg": "1024px", "xl": "1280px" }
+}

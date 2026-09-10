@@ -1,0 +1,4 @@
+full_name,mobile,gender,dob,email,plan_months,month_end_date,last_amount,joined_on,notes
+Sanjay Tomar,9876543210,M,14-02-1984,,3,30-09-2026,4000,05-06-2019,Morning batch
+Neha Gupta,9811122233,F,22-11-1990,neha@example.com,1,18-09-2026,1200,01-08-2026,
+Amit Tyagi,9899988877,M,,,12,15-03-2027,13500,15-03-2024,Pays by UPI
