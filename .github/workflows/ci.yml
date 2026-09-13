@@ -1,0 +1,304 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# A new push supersedes an in-flight run on the same branch.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '24'
+
+jobs:
+  # ── Lint, types and unit tests ──────────────────────────────────────────────
+  # These need no database at all (ADR-010), so they run first and fail fast.
+  check:
+    name: Lint, typecheck, unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        # Reads the schema only — no database connection required.
+        run: pnpm db:generate
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests with coverage
+        # The coverage gate for packages/core (≥80% lines) is in vitest.config.ts,
+        # so a drop below it fails here rather than being noticed months later
+        # (TRD §6 Maintainability).
+        run: pnpm test:coverage
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 7
+
+      - name: Check generated design tokens are current
+        # tokens.css is committed; this catches a design-tokens.json change that
+        # was not regenerated (`pnpm tokens`).
+        run: |
+          pnpm tokens
+          git diff --exit-code apps/web/src/styles/tokens.css
+
+  # ── Integration tests against a real Postgres ───────────────────────────────
+  # Docker is unavailable on the development machine (ADR-010), but it is fine on
+  # GitHub's runners, so this is where migrations and DB-backed services get
+  # exercised on every PR.
+  integration:
+    name: Integration tests (Postgres 17)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: check
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: mfp
+          POSTGRES_PASSWORD: mfp
+          POSTGRES_DB: mfp_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mfp"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # A local container, so both URLs point at the same place: there is no
+      # pooler here, and the schema engine can use the connection directly.
+      DATABASE_URL: postgresql://mfp:mfp@localhost:5432/mfp_test
+      DIRECT_URL: postgresql://mfp:mfp@localhost:5432/mfp_test
+      TEST_DATABASE_URL: postgresql://mfp:mfp@localhost:5432/mfp_test
+      NODE_ENV: test
+      DEMO_MODE: 'true'
+      SESSION_SECRET: ci-session-secret-at-least-32-characters
+      LINK_TOKEN_SECRET: ci-link-token-secret-at-least-32-chars
+      KIOSK_TOKEN_PEPPER: ci-kiosk-token-pepper-at-least-32-chars
+      FIELD_ENCRYPTION_KEY: ci-field-encryption-key-placeholder
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply migrations
+        # `migrate deploy` needs no shadow database. The migration also enables RLS
+        # on every table (ADR-011); the Supabase-only REVOKE statements are guarded
+        # on role existence so they are skipped here.
+        run: pnpm db:deploy
+
+      - name: Verify RLS is enabled on every table
+        # A future migration that adds a table without enabling RLS would silently
+        # expose it through Supabase's Data API. Catch that here, not in production.
+        run: |
+          MISSING=$(psql "$DATABASE_URL" -tAc "
+            SELECT string_agg(tablename, ', ')
+            FROM pg_tables
+            WHERE schemaname = 'public'
+              AND NOT rowsecurity;
+          ")
+          if [ -n "$MISSING" ]; then
+            echo "::error::RLS is not enabled on: $MISSING (ADR-011)"
+            exit 1
+          fi
+          echo "RLS enabled on every public table."
+        env:
+          PGPASSWORD: mfp
+
+      - name: Integration tests
+        run: pnpm test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: check
+
+    env:
+      # Build-time only: Next needs the env schema to parse, but never connects.
+      DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+      DIRECT_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+      SESSION_SECRET: ci-session-secret-at-least-32-characters
+      LINK_TOKEN_SECRET: ci-link-token-secret-at-least-32-chars
+      KIOSK_TOKEN_PEPPER: ci-kiosk-token-pepper-at-least-32-chars
+      FIELD_ENCRYPTION_KEY: ci-field-encryption-key-placeholder
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+  # ── Browser journeys, accessibility and the performance budget ─────────────
+  # testing-strategy.md §8: E2E, axe and Lighthouse CI gate `main`, not every PR.
+  web-e2e:
+    name: E2E, axe and Lighthouse (main)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: [check, build]
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: mfp
+          POSTGRES_PASSWORD: mfp
+          POSTGRES_DB: mfp_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mfp"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://mfp:mfp@localhost:5432/mfp_e2e
+      DIRECT_URL: postgresql://mfp:mfp@localhost:5432/mfp_e2e
+      APP_URL: http://localhost:3000
+      # `next start` runs as production; this is a deliberate demo build (ADR-028).
+      DEMO_MODE: 'true'
+      ALLOW_DEMO_IN_PRODUCTION: 'true'
+      SESSION_SECRET: ci-session-secret-at-least-32-characters
+      LINK_TOKEN_SECRET: ci-link-token-secret-at-least-32-chars
+      KIOSK_TOKEN_PEPPER: ci-kiosk-token-pepper-at-least-32-chars
+      FIELD_ENCRYPTION_KEY: ci-field-encryption-key-placeholder
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Migrate and seed
+        run: |
+          pnpm db:deploy
+          pnpm db:seed
+
+      - name: Build web
+        run: pnpm --filter @mfp/web build
+
+      - name: Lighthouse CI gate (mobile, real 4G throttling; LCP ≤ 2.5 s, CLS ≤ 0.1)
+        # lhci starts and stops `next start` itself (apps/web/lighthouserc.json).
+        # Gated on DevTools throttling, not Lighthouse's simulated estimate (ADR-033).
+        working-directory: apps/web
+        run: pnpm test:lighthouse
+
+      - name: Lighthouse simulated estimate (report only)
+        # Tracked as a warning so a regression is visible; it does not fail the build.
+        working-directory: apps/web
+        continue-on-error: true
+        run: pnpm test:lighthouse:simulated
+
+      - name: Install Playwright Chromium
+        working-directory: apps/web
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Start web server
+        working-directory: apps/web
+        run: |
+          pnpm start > ../../web-server.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:3000/ > /dev/null && exit 0
+            sleep 2
+          done
+          echo "::error::web server did not start"; cat ../../web-server.log; exit 1
+
+      - name: E2E journeys and axe
+        working-directory: apps/web
+        env:
+          E2E_BASE_URL: http://localhost:3000
+        run: pnpm test:e2e
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-e2e-reports
+          path: |
+            apps/web/playwright-report/
+            apps/web/.lighthouseci/
+            web-server.log
+          retention-days: 7
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit
+        # security-plan.md §3.1: fail on critical. Lower severities are reported
+        # but do not block, so a transitive low does not stop a hotfix shipping.
+        run: pnpm audit --audit-level critical

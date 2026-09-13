@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "tsBuildInfoFile": "./.turbo/tsconfig.tsbuildinfo"
+  },
+  "include": ["scripts/**/*.ts", "*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,22 @@
+{
+  "ci": {
+    "collect": {
+      "url": ["http://localhost:3000/", "http://localhost:3000/hi"],
+      "numberOfRuns": 3,
+      "startServerCommand": "pnpm start",
+      "startServerReadyPattern": "Ready",
+      "startServerReadyTimeout": 60000
+    },
+    "assert": {
+      "assertions": {
+        "largest-contentful-paint": ["warn", { "maxNumericValue": 2500, "aggregationMethod": "median" }],
+        "cumulative-layout-shift": ["warn", { "maxNumericValue": 0.1, "aggregationMethod": "median" }],
+        "total-blocking-time": ["warn", { "maxNumericValue": 300, "aggregationMethod": "median" }]
+      }
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": ".lighthouseci/simulated"
+    }
+  }
+}

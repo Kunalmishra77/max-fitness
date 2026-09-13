@@ -1,0 +1,848 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Max Fitness Platform — Prisma schema (v1.0 blueprint)
+// Copy to packages/db/prisma/schema.prisma in Phase 1.
+// Conventions: money = Int paise; business dates = @db.Date (IST);
+// timestamps = DateTime @db.Timestamptz (UTC). Every tenant row has gymId.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Prisma 7+: connection URL lives in packages/db/prisma.config.ts and the
+// PrismaClient is constructed with the @prisma/adapter-pg driver adapter.
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────────── Enums ─────────────────────────────
+
+enum StaffRole {
+  OWNER
+  RECEPTION
+  TRAINER
+  SUPER_ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum MemberStatus {
+  PENDING_PAYMENT
+  PENDING_VERIFICATION
+  ACTIVE
+  LEFT
+  BLOCKED
+}
+
+enum MemberSource {
+  WEBSITE
+  QR_NEW
+  QR_EXISTING
+  WALK_IN
+  IMPORT
+  CRM
+}
+
+enum LeftReason {
+  WHATSAPP_UNSUBSCRIBE
+  OWNER_MARKED
+  LAPSED
+  MOVED_AWAY
+  PRICE
+  HEALTH
+  NOT_SATISFIED
+  OTHER
+}
+
+enum Language {
+  hi
+  en
+}
+
+enum MembershipStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  RAZORPAY
+  CASH
+  UPI_DIRECT
+  CARD_POS
+  BANK_TRANSFER
+  SIMULATED
+}
+
+enum PaymentStatus {
+  CREATED
+  PAID
+  FAILED
+  VOIDED
+  REFUNDED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  TRIAL_BOOKED
+  VISITED
+  CONVERTED
+  LOST
+}
+
+enum LeadSource {
+  WEBSITE_HERO
+  WEBSITE_OTHER
+  WHATSAPP
+  WALK_IN
+  PHONE
+  INSTAGRAM
+  GBP
+  REFERRAL
+  ABANDONED_SIGNUP
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ConsentType {
+  TERMS
+  PRIVACY
+  WHATSAPP_UPDATES
+  FACE_ATTENDANCE
+  PARENTAL
+  PHOTO_MARKETING
+}
+
+enum MediaKind {
+  SELFIE
+  ENROLLMENT_FRAME
+  RECEIPT_PDF
+  CHECKIN_SNAPSHOT
+  IMPORT_FILE
+}
+
+enum FaceTemplateStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum EnrollmentJobStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  FAILED
+}
+
+enum AttendanceMethod {
+  FACE
+  FACE_CONFIRMED
+  KEYPAD
+  MANUAL
+}
+
+enum KioskStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum MessageDirection {
+  OUTBOUND
+  INBOUND
+}
+
+enum MessageStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  SKIPPED
+  SIMULATED
+}
+
+enum MessagePurpose {
+  REMINDER
+  RECEIPT
+  WELCOME
+  VERIFICATION
+  OTP
+  OWNER_DIGEST
+  OWNER_ALERT
+  BIRTHDAY
+  UNSUBSCRIBE_CONFIRM
+  RESTART_CONFIRM
+  OTHER
+}
+
+enum CallTaskReason {
+  EXPIRED_BUT_VISITING
+  SIGNUP_NOT_PAID
+  NEW_LEAD
+  VERIFICATION_PENDING
+  EXPIRED_NOT_RENEWED
+  DUE_SOON_NO_RESPONSE
+  ABSENT_7_DAYS
+  UNSUBSCRIBED
+  OTHER
+}
+
+enum TaskStatus {
+  OPEN
+  DONE
+  SKIPPED
+  AUTO_CLOSED
+}
+
+enum CallOutcome {
+  WILL_RENEW
+  CALL_LATER
+  NO_ANSWER
+  LEFT_GYM
+  WRONG_NUMBER
+  DONE
+}
+
+enum AlertType {
+  EXPIRED_MEMBER_VISIT
+  ONLINE_PAYMENT
+  NEW_LEAD
+  VERIFICATION_PENDING
+  MEMBER_UNSUBSCRIBED
+  KIOSK_OFFLINE
+  WHATSAPP_FAILURE
+  WHATSAPP_QUALITY
+  SYSTEM
+}
+
+enum OtpPurpose {
+  SIGNUP
+  QR_EXISTING
+  CRM_LOGIN_RESET
+}
+
+enum OutboxStatus {
+  PENDING
+  DISPATCHED
+  FAILED
+}
+
+// ───────────────────────────── Tenant & settings ─────────────────────────────
+
+model Gym {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  phone       String
+  addressLine String
+  city        String
+  state       String
+  pincode     String
+  latitude    Float?
+  longitude   Float?
+  /// Zod-validated JSON: hours, reminder slots, caps, feature flags, trust numbers, promo, etc.
+  settings    Json
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  staff         StaffUser[]
+  plans         Plan[]
+  members       Member[]
+  memberships   Membership[]
+  payments      Payment[]
+  leads         Lead[]
+  verifications VerificationRequest[]
+  media         MediaFile[]
+  faceTemplates FaceTemplate[]
+  enrollJobs    EnrollmentJob[]
+  attendance    AttendanceEvent[]
+  kiosks        KioskDevice[]
+  reminderRules ReminderRule[]
+  messages      MessageLog[]
+  callTasks     CallTask[]
+  alerts        Alert[]
+  consents      Consent[]
+  auditLogs     AuditLog[]
+  counters      Counter[]
+  outbox        OutboxEvent[]
+  otps          OtpCode[]
+  webhookEvents WebhookEvent[]
+}
+
+model Counter {
+  id    String @id @default(cuid())
+  gymId String
+  /// e.g. "member_code", "receipt:2026-27"
+  key   String
+  value Int    @default(0)
+  gym   Gym    @relation(fields: [gymId], references: [id])
+
+  @@unique([gymId, key])
+}
+
+// ───────────────────────────── Staff & auth ─────────────────────────────
+
+model StaffUser {
+  id             String    @id @default(cuid())
+  gymId          String
+  name           String
+  mobile         String
+  role           StaffRole
+  pinHash        String
+  language       Language  @default(hi)
+  voiceEnabled   Boolean   @default(true)
+  isActive       Boolean   @default(true)
+  failedPinCount Int       @default(0)
+  lockedUntil    DateTime? @db.Timestamptz
+  lastLoginAt    DateTime? @db.Timestamptz
+  createdAt      DateTime  @default(now()) @db.Timestamptz
+  updatedAt      DateTime  @updatedAt @db.Timestamptz
+
+  gym      Gym       @relation(fields: [gymId], references: [id])
+  sessions Session[]
+
+  @@unique([gymId, mobile])
+}
+
+model Session {
+  id          String    @id @default(cuid())
+  staffUserId String
+  /// sha256 of the random session token; raw token only in cookie
+  tokenHash   String    @unique
+  userAgent   String?
+  ipHash      String?
+  trusted     Boolean   @default(false)
+  expiresAt   DateTime  @db.Timestamptz
+  lastSeenAt  DateTime  @default(now()) @db.Timestamptz
+  revokedAt   DateTime? @db.Timestamptz
+  createdAt   DateTime  @default(now()) @db.Timestamptz
+
+  staffUser StaffUser @relation(fields: [staffUserId], references: [id], onDelete: Cascade)
+
+  @@index([staffUserId])
+}
+
+model OtpCode {
+  id         String     @id @default(cuid())
+  gymId      String
+  mobile     String
+  purpose    OtpPurpose
+  codeHash   String
+  attempts   Int        @default(0)
+  expiresAt  DateTime   @db.Timestamptz
+  consumedAt DateTime?  @db.Timestamptz
+  createdAt  DateTime   @default(now()) @db.Timestamptz
+
+  gym Gym @relation(fields: [gymId], references: [id])
+
+  @@index([gymId, mobile, purpose])
+}
+
+// ───────────────────────────── Plans ─────────────────────────────
+
+model Plan {
+  id             String   @id @default(cuid())
+  gymId          String
+  code           String // e.g. "M1_MALE", "M12_FEMALE"
+  durationMonths Int
+  gender         Gender
+  pricePaise     Int
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now()) @db.Timestamptz
+  updatedAt      DateTime @updatedAt @db.Timestamptz
+
+  gym         Gym          @relation(fields: [gymId], references: [id])
+  memberships Membership[]
+
+  @@unique([gymId, code])
+  @@index([gymId, gender, isActive])
+}
+
+// ───────────────────────────── Members ─────────────────────────────
+
+model Member {
+  id                      String       @id @default(cuid())
+  gymId                   String
+  memberCode              String? // "MF-0231", assigned on first confirmation
+  fullName                String
+  /// E.164, NOT unique: families share numbers
+  mobile                  String
+  email                   String? // stored lowercased + trimmed
+  dob                     DateTime?    @db.Date
+  gender                  Gender
+  language                Language     @default(hi)
+  status                  MemberStatus
+  source                  MemberSource
+  isMinor                 Boolean      @default(false)
+  photoMediaId            String?      @unique
+  whatsappOptIn           Boolean      @default(false)
+  faceConsent             Boolean      @default(false)
+  remindersUnsubscribedAt DateTime?    @db.Timestamptz
+  remindersPausedUntil    DateTime?    @db.Date
+  leftAt                  DateTime?    @db.Date
+  leftReason              LeftReason?
+  leftNote                String?
+  notes                   String?
+  lastAttendanceAt        DateTime?    @db.Timestamptz
+  createdById             String? // staff user id when created at desk
+  createdAt               DateTime     @default(now()) @db.Timestamptz
+  updatedAt               DateTime     @updatedAt @db.Timestamptz
+  deletedAt               DateTime?    @db.Timestamptz
+
+  gym           Gym                   @relation(fields: [gymId], references: [id])
+  photo         MediaFile?            @relation("MemberPhoto", fields: [photoMediaId], references: [id])
+  memberships   Membership[]
+  payments      Payment[]
+  media         MediaFile[]           @relation("MemberMedia")
+  faceTemplates FaceTemplate[]
+  enrollJobs    EnrollmentJob[]
+  attendance    AttendanceEvent[]
+  messages      MessageLog[]
+  callTasks     CallTask[]
+  consents      Consent[]
+  verifications VerificationRequest[]
+  alerts        Alert[]
+
+  @@unique([gymId, memberCode])
+  @@index([gymId, status])
+  @@index([gymId, mobile])
+  @@index([gymId, fullName])
+}
+
+model Membership {
+  id              String           @id @default(cuid())
+  gymId           String
+  memberId        String
+  planId          String?
+  durationMonths  Int?
+  startDate       DateTime?        @db.Date
+  endDate         DateTime         @db.Date
+  pricePaise      Int              @default(0)
+  discountPaise   Int              @default(0)
+  discountReason  String?
+  admissionPaise  Int              @default(0)
+  status          MembershipStatus
+  source          MemberSource
+  /// true when created from QR/import declaration rather than a payment in this system
+  isDeclared      Boolean          @default(false)
+  declaredEndDate DateTime?        @db.Date
+  createdById     String?
+  confirmedAt     DateTime?        @db.Timestamptz
+  cancelledAt     DateTime?        @db.Timestamptz
+  createdAt       DateTime         @default(now()) @db.Timestamptz
+  updatedAt       DateTime         @updatedAt @db.Timestamptz
+
+  gym      Gym          @relation(fields: [gymId], references: [id])
+  member   Member       @relation(fields: [memberId], references: [id])
+  plan     Plan?        @relation(fields: [planId], references: [id])
+  payments Payment[]
+  messages MessageLog[]
+
+  @@index([gymId, status, endDate])
+  @@index([memberId, endDate])
+}
+
+model Payment {
+  id                  String        @id @default(cuid())
+  gymId               String
+  memberId            String
+  membershipId        String?
+  amountPaise         Int
+  method              PaymentMethod
+  status              PaymentStatus
+  receiptNo           String?
+  providerOrderId     String?       @unique
+  providerPaymentId   String?       @unique
+  providerSignatureOk Boolean       @default(false)
+  failureReason       String?
+  paidAt              DateTime?     @db.Timestamptz
+  recordedById        String?
+  voidedById          String?
+  voidReason          String?
+  receiptMediaId      String?
+  createdAt           DateTime      @default(now()) @db.Timestamptz
+  updatedAt           DateTime      @updatedAt @db.Timestamptz
+
+  gym        Gym         @relation(fields: [gymId], references: [id])
+  member     Member      @relation(fields: [memberId], references: [id])
+  membership Membership? @relation(fields: [membershipId], references: [id])
+
+  @@unique([gymId, receiptNo])
+  @@index([gymId, status, paidAt])
+  @@index([memberId])
+}
+
+// ───────────────────────────── Leads & verification ─────────────────────────────
+
+model Lead {
+  id                String     @id @default(cuid())
+  gymId             String
+  name              String
+  mobile            String
+  goal              String?
+  source            LeadSource
+  status            LeadStatus @default(NEW)
+  utm               Json?
+  notes             String?
+  followUpAt        DateTime?  @db.Timestamptz
+  convertedMemberId String?
+  consentContact    Boolean    @default(true)
+  createdAt         DateTime   @default(now()) @db.Timestamptz
+  updatedAt         DateTime   @updatedAt @db.Timestamptz
+
+  gym Gym @relation(fields: [gymId], references: [id])
+
+  @@index([gymId, status, createdAt])
+  @@index([gymId, mobile])
+}
+
+model VerificationRequest {
+  id                    String             @id @default(cuid())
+  gymId                 String
+  memberId              String
+  referenceCode         String // shown to member at reception, e.g. "Q-4821"
+  declaredPlanMonths    Int?
+  declaredEndDate       DateTime           @db.Date
+  declaredAmountPaise   Int?
+  matchedImportMemberId String?
+  status                VerificationStatus @default(PENDING)
+  decidedById           String?
+  decidedAt             DateTime?          @db.Timestamptz
+  approvedEndDate       DateTime?          @db.Date
+  rejectReason          String?
+  createdAt             DateTime           @default(now()) @db.Timestamptz
+
+  gym    Gym    @relation(fields: [gymId], references: [id])
+  member Member @relation(fields: [memberId], references: [id])
+
+  @@unique([gymId, referenceCode])
+  @@index([gymId, status, createdAt])
+}
+
+// ───────────────────────────── Media & consent ─────────────────────────────
+
+model MediaFile {
+  id          String    @id @default(cuid())
+  gymId       String
+  memberId    String?
+  kind        MediaKind
+  storageKey  String    @unique
+  mimeType    String
+  sizeBytes   Int
+  width       Int?
+  height      Int?
+  sha256      String
+  deleteAfter DateTime? @db.Timestamptz
+  deletedAt   DateTime? @db.Timestamptz
+  createdAt   DateTime  @default(now()) @db.Timestamptz
+
+  gym     Gym     @relation(fields: [gymId], references: [id])
+  member  Member? @relation("MemberMedia", fields: [memberId], references: [id])
+  photoOf Member? @relation("MemberPhoto")
+
+  @@index([gymId, kind])
+  @@index([memberId])
+}
+
+model Consent {
+  id            String      @id @default(cuid())
+  gymId         String
+  memberId      String
+  type          ConsentType
+  granted       Boolean
+  noticeVersion String
+  channel       String // "web_signup" | "qr" | "crm_desk" | "kiosk" | "whatsapp"
+  ipHash        String?
+  userAgent     String?
+  recordedById  String? // staff for desk/parental consent
+  guardianName  String?
+  createdAt     DateTime    @default(now()) @db.Timestamptz
+  withdrawnAt   DateTime?   @db.Timestamptz
+
+  gym    Gym    @relation(fields: [gymId], references: [id])
+  member Member @relation(fields: [memberId], references: [id])
+
+  @@index([memberId, type])
+}
+
+// ───────────────────────────── Face & attendance ─────────────────────────────
+
+model FaceTemplate {
+  id              String             @id @default(cuid())
+  gymId           String
+  memberId        String
+  /// AES-256-GCM encrypted Float32 little-endian vector
+  vectorEnc       Bytes
+  dimensions      Int
+  modelVersion    String
+  qualityScore    Float
+  sourceMediaId   String?
+  sourceKind      String // "signup_selfie" | "assisted" | "adaptive"
+  createdByDevice String?
+  status          FaceTemplateStatus @default(ACTIVE)
+  createdAt       DateTime           @default(now()) @db.Timestamptz
+  revokedAt       DateTime?          @db.Timestamptz
+
+  gym    Gym    @relation(fields: [gymId], references: [id])
+  member Member @relation(fields: [memberId], references: [id])
+
+  @@index([gymId, status, modelVersion])
+  @@index([memberId])
+}
+
+model EnrollmentJob {
+  id           String              @id @default(cuid())
+  gymId        String
+  memberId     String
+  mediaId      String
+  modelVersion String
+  status       EnrollmentJobStatus @default(PENDING)
+  claimedBy    String? // kiosk device id
+  attempts     Int                 @default(0)
+  error        String?
+  createdAt    DateTime            @default(now()) @db.Timestamptz
+  updatedAt    DateTime            @updatedAt @db.Timestamptz
+
+  gym    Gym    @relation(fields: [gymId], references: [id])
+  member Member @relation(fields: [memberId], references: [id])
+
+  @@index([gymId, status])
+}
+
+model KioskDevice {
+  id              String      @id @default(cuid())
+  gymId           String
+  name            String
+  tokenHash       String?     @unique
+  pairingCodeHash String?
+  pairingExpires  DateTime?   @db.Timestamptz
+  status          KioskStatus @default(ACTIVE)
+  appVersion      String?
+  modelVersion    String?
+  lastSeenAt      DateTime?   @db.Timestamptz
+  lastHeartbeat   Json? // battery, temperatureC, queueSize, cameraOk, freeStorageMb
+  shadowMode      Boolean     @default(true)
+  createdAt       DateTime    @default(now()) @db.Timestamptz
+  revokedAt       DateTime?   @db.Timestamptz
+
+  gym        Gym               @relation(fields: [gymId], references: [id])
+  attendance AttendanceEvent[]
+}
+
+model AttendanceEvent {
+  id                String           @id @default(cuid())
+  gymId             String
+  memberId          String
+  kioskDeviceId     String?
+  clientEventId     String           @unique
+  method            AttendanceMethod
+  capturedAt        DateTime         @db.Timestamptz
+  attendanceDate    DateTime         @db.Date
+  matchScore        Float?
+  livenessScore     Float?
+  modelVersion      String?
+  feeStateAtCheckIn String? // PAID | DUE_SOON | EXPIRED | NONE
+  snapshotMediaId   String?
+  recordedById      String?
+  voidedAt          DateTime?        @db.Timestamptz
+  createdAt         DateTime         @default(now()) @db.Timestamptz
+
+  gym         Gym          @relation(fields: [gymId], references: [id])
+  member      Member       @relation(fields: [memberId], references: [id])
+  kioskDevice KioskDevice? @relation(fields: [kioskDeviceId], references: [id])
+
+  @@index([gymId, attendanceDate])
+  @@index([memberId, capturedAt])
+}
+
+// ───────────────────────────── Messaging ─────────────────────────────
+
+model ReminderRule {
+  id           String   @id @default(cuid())
+  gymId        String
+  code         String // PRE_7 | PRE_3 | PRE_2 | PRE_1 | DUE_TODAY | POST
+  /// days relative to endDate; for POST this is the first day (+1)
+  offsetDays   Int
+  /// for POST: last offset (null = no limit); otherwise equals offsetDays
+  offsetDaysTo Int?
+  /// "HH:mm" IST
+  slots        String[]
+  templateName String
+  isEnabled    Boolean  @default(true)
+  updatedAt    DateTime @updatedAt @db.Timestamptz
+
+  gym Gym @relation(fields: [gymId], references: [id])
+
+  @@unique([gymId, code])
+}
+
+model MessageLog {
+  id                String           @id @default(cuid())
+  gymId             String
+  memberId          String?
+  membershipId      String?
+  direction         MessageDirection
+  purpose           MessagePurpose
+  ruleCode          String?
+  templateName      String?
+  language          Language?
+  toNumber          String? // E.164; masked in UI
+  fromNumber        String?
+  idempotencyKey    String?          @unique
+  providerMessageId String?          @unique
+  status            MessageStatus
+  bodyPreview       String? // rendered text for log/simulator (no secrets)
+  payload           Json? // variables / inbound content
+  errorCode         String?
+  errorMessage      String?
+  scheduledFor      DateTime?        @db.Timestamptz
+  sentAt            DateTime?        @db.Timestamptz
+  deliveredAt       DateTime?        @db.Timestamptz
+  readAt            DateTime?        @db.Timestamptz
+  createdAt         DateTime         @default(now()) @db.Timestamptz
+
+  gym        Gym         @relation(fields: [gymId], references: [id])
+  member     Member?     @relation(fields: [memberId], references: [id])
+  membership Membership? @relation(fields: [membershipId], references: [id])
+
+  @@index([gymId, createdAt])
+  @@index([memberId, createdAt])
+  @@index([gymId, status])
+}
+
+model WebhookEvent {
+  id          String    @id @default(cuid())
+  gymId       String?
+  provider    String // "razorpay" | "whatsapp"
+  externalId  String // event id / message id + status
+  eventType   String
+  signatureOk Boolean
+  payload     Json
+  processedAt DateTime? @db.Timestamptz
+  error       String?
+  receivedAt  DateTime  @default(now()) @db.Timestamptz
+
+  gym Gym? @relation(fields: [gymId], references: [id])
+
+  @@unique([provider, externalId])
+  @@index([provider, processedAt])
+}
+
+// ───────────────────────────── Tasks, alerts, audit ─────────────────────────────
+
+model CallTask {
+  id           String         @id @default(cuid())
+  gymId        String
+  memberId     String?
+  leadId       String?
+  reason       CallTaskReason
+  priority     Int
+  status       TaskStatus     @default(OPEN)
+  dueDate      DateTime       @db.Date
+  snoozedUntil DateTime?      @db.Date
+  attempts     Int            @default(0)
+  outcome      CallOutcome?
+  note         String?
+  doneById     String?
+  doneAt       DateTime?      @db.Timestamptz
+  createdAt    DateTime       @default(now()) @db.Timestamptz
+  updatedAt    DateTime       @updatedAt @db.Timestamptz
+
+  gym    Gym     @relation(fields: [gymId], references: [id])
+  member Member? @relation(fields: [memberId], references: [id])
+
+  @@index([gymId, status, dueDate, priority])
+  @@index([memberId, reason, status])
+}
+
+model Alert {
+  id        String    @id @default(cuid())
+  gymId     String
+  type      AlertType
+  memberId  String?
+  title     String // i18n key
+  params    Json?
+  readAt    DateTime? @db.Timestamptz
+  createdAt DateTime  @default(now()) @db.Timestamptz
+
+  gym    Gym     @relation(fields: [gymId], references: [id])
+  member Member? @relation(fields: [memberId], references: [id])
+
+  @@index([gymId, readAt, createdAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  gymId      String
+  actorType  String // "staff" | "system" | "member" | "kiosk" | "webhook"
+  actorId    String?
+  action     String // "payment.void", "member.left", "settings.update", "export.members", ...
+  entityType String
+  entityId   String?
+  before     Json?
+  after      Json?
+  ipHash     String?
+  createdAt  DateTime @default(now()) @db.Timestamptz
+
+  gym Gym @relation(fields: [gymId], references: [id])
+
+  @@index([gymId, entityType, entityId])
+  @@index([gymId, createdAt])
+}
+
+model OutboxEvent {
+  id           String       @id @default(cuid())
+  gymId        String
+  type         String // "whatsapp.receipt", "kiosk.enroll", "alert.owner", ...
+  payload      Json
+  dedupeKey    String       @unique
+  status       OutboxStatus @default(PENDING)
+  attempts     Int          @default(0)
+  lastError    String?
+  availableAt  DateTime     @default(now()) @db.Timestamptz
+  createdAt    DateTime     @default(now()) @db.Timestamptz
+  dispatchedAt DateTime?    @db.Timestamptz
+
+  gym Gym @relation(fields: [gymId], references: [id])
+
+  @@index([status, availableAt])
+}
+
+// ───────────────────────────── Worker operations ─────────────────────────────
+
+/// One row per worker instance; health endpoint checks lastBeatAt < 3 min
+model WorkerHeartbeat {
+  id         String   @id // e.g. "worker-main"
+  version    String
+  lastBeatAt DateTime @db.Timestamptz
+  startedAt  DateTime @db.Timestamptz
+}
+
+/// Records each scheduled run (reminder slots, nightly jobs) for catch-up and auditing
+model JobRun {
+  id           String    @id @default(cuid())
+  gymId        String?
+  jobName      String // "reminder-slot", "nightly-call-tasks", ...
+  /// business date + slot, e.g. "2026-09-10@19:00"; unique per job to prevent double runs
+  runKey       String
+  status       String // "RUNNING" | "DONE" | "FAILED"
+  itemsPlanned Int       @default(0)
+  itemsSent    Int       @default(0)
+  itemsSkipped Int       @default(0)
+  itemsFailed  Int       @default(0)
+  error        String?
+  startedAt    DateTime  @default(now()) @db.Timestamptz
+  finishedAt   DateTime? @db.Timestamptz
+
+  @@unique([jobName, runKey])
+}

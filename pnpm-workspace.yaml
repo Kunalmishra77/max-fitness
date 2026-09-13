@@ -1,0 +1,128 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# pnpm store location.
+# The user's global config (%LOCALAPPDATA%/pnpm/config/config.yaml) points the store at
+# D:\dev-cache\pnpm-store, but this repo lives on E:. Hardlinks cannot cross volumes, so a
+# cross-drive store makes pnpm byte-copy all ~790 packages — an install that should take
+# under a minute takes over an hour. Overriding it here keeps the global setup untouched.
+storeDir: E:/.pnpm-store
+
+# Versions are pinned once here and referenced as `catalog:` in every package.json,
+# so a bump happens in exactly one place. See CLAUDE.md §2.14 and TRD §3.
+catalog:
+  # ── Runtime & framework ───────────────────────────────────────────────
+  next: 16.3.4
+  react: 19.3.0
+  react-dom: 19.3.0
+  '@types/react': 19.3.0
+  '@types/react-dom': 19.3.0
+
+  # ── Language & tooling ────────────────────────────────────────────────
+  # TypeScript 6.0.x, NOT the `latest` 7.0.x: typescript-eslint@8 caps at <6.1.0 (ADR-012).
+  typescript: 6.0.3
+  '@types/node': 24.13.4
+  # ESLint 10. The 9.x line is deprecated upstream. Import boundaries use
+  # eslint-plugin-import-x (ESLint-10 native fork of eslint-plugin-import, same
+  # no-restricted-paths rule) because eslint-plugin-import@2 caps its peer at ESLint 9 (ADR-019).
+  eslint: 10.10.0
+  '@eslint/js': 10.0.1
+  typescript-eslint: 8.70.0
+  eslint-plugin-import-x: 4.17.1
+  eslint-import-resolver-typescript: 4.4.5
+  globals: 17.12.0
+  prettier: 3.9.6
+  prettier-plugin-tailwindcss: 0.8.1
+  turbo: 2.10.12
+  tsx: 4.23.13
+  cross-env: 10.1.0
+  dotenv: 17.4.2
+
+  # ── Testing ───────────────────────────────────────────────────────────
+  vitest: 5.0.0
+  '@vitest/coverage-v8': 5.0.0
+  '@testing-library/react': 16.3.3
+  '@testing-library/dom': 10.4.1
+  '@testing-library/user-event': 14.6.7
+  happy-dom: 20.14.3
+  msw: 2.15.0
+  '@playwright/test': 1.63.0
+  '@axe-core/playwright': 4.13.0
+  '@lhci/cli': 0.15.1
+
+  # ── Data ──────────────────────────────────────────────────────────────
+  # Prisma 7 stable line. npm `latest` points at an 8.0 RC — do not use it (ADR-006).
+  prisma: 7.10.0
+  '@prisma/client': 7.10.0
+  '@prisma/adapter-pg': 7.10.0
+  pg: 8.23.0
+  '@types/pg': 8.23.1
+  pg-boss: 12.30.0
+
+  # ── Shared libraries ──────────────────────────────────────────────────
+  zod: 4.6.1
+  date-fns: 4.4.0
+  '@date-fns/tz': 1.5.0
+  pino: 10.3.1
+  '@node-rs/argon2': 2.2.1
+
+  # ── Web UI ────────────────────────────────────────────────────────────
+  next-intl: 4.14.3
+  tailwindcss: 4.3.3
+  '@tailwindcss/postcss': 4.3.3
+  '@radix-ui/react-dialog': 1.1.23
+  '@radix-ui/react-label': 2.1.15
+  '@radix-ui/react-slot': 1.3.3
+  '@radix-ui/react-toast': 1.2.23
+  class-variance-authority: 0.7.1
+  clsx: 2.1.1
+  tailwind-merge: 3.6.0
+  embla-carousel-react: 8.6.0
+  react-hook-form: 7.87.0
+  '@radix-ui/react-accordion': 1.2.20
+  '@radix-ui/react-toggle-group': 1.1.19
+
+  # ── Sign-up, selfie & receipts (Phase 3; TRD §3) ──────────────────────
+  # sharp: server-side resize, EXIF strip and re-encode of uploaded selfies.
+  sharp: 0.35.4
+  # Face presence check in the browser only; WASM + model are self-hosted under /mediapipe.
+  '@mediapipe/tasks-vision': 1.0.1
+  # A5 receipt PDFs, rendered in the worker.
+  '@react-pdf/renderer': 4.9.0
+
+# Written by pnpm 11: these versions were younger than pnpm's minimum release age
+# when first installed, and were excluded so the pinned catalog versions resolve.
+minimumReleaseAgeExclude:
+  - '@node-rs/argon2-android-arm-eabi@2.2.1'
+  - '@node-rs/argon2-android-arm64@2.2.1'
+  - '@node-rs/argon2-darwin-arm64@2.2.1'
+  - '@node-rs/argon2-darwin-x64@2.2.1'
+  - '@node-rs/argon2-freebsd-x64@2.2.1'
+  - '@node-rs/argon2-linux-arm-gnueabihf@2.2.1'
+  - '@node-rs/argon2-linux-arm64-gnu@2.2.1'
+  - '@node-rs/argon2-linux-arm64-musl@2.2.1'
+  - '@node-rs/argon2-linux-x64-gnu@2.2.1'
+  - '@node-rs/argon2-linux-x64-musl@2.2.1'
+  - '@node-rs/argon2-win32-arm64-msvc@2.2.1'
+  - '@node-rs/argon2-win32-ia32-msvc@2.2.1'
+  - '@node-rs/argon2-win32-x64-msvc@2.2.1'
+  - '@node-rs/argon2@2.2.1'
+  - icu-minify@4.14.3
+  - next-intl-swc-plugin-extractor@4.14.3
+  - next-intl@4.14.3
+  - use-intl@4.14.3
+
+# pnpm blocks dependency install scripts by default — a dependency should not run
+# code on install. (pnpm 11 reads `allowBuilds`; the older `onlyBuiltDependencies`
+# key is ignored.) Allowed: each fetches or links a native binary the tool cannot run
+# without. Denied: both ship prebuilt binaries as optional dependencies, and their
+# scripts are only a build-from-source fallback. Manage with `pnpm approve-builds`.
+allowBuilds:
+  '@parcel/watcher': false
+  '@prisma/engines': true
+  '@swc/core': false
+  esbuild: true
+  msw: false
+  prisma: true
+  unrs-resolver: true

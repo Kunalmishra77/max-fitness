@@ -1,0 +1,32 @@
+{
+  "name": "@mfp/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./env": "./src/env.ts",
+    "./time": "./src/time/index.ts",
+    "./money": "./src/money.ts",
+    "./schemas": "./src/schemas/index.ts",
+    "./schemas/lead": "./src/schemas/lead.ts",
+    "./schemas/lead-constants": "./src/schemas/lead-constants.ts",
+    "./schemas/registration": "./src/schemas/registration.ts",
+    "./schemas/checkout": "./src/schemas/checkout.ts",
+    "./constants": "./src/constants.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@date-fns/tz": "catalog:",
+    "date-fns": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

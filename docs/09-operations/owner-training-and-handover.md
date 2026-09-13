@@ -34,3 +34,26 @@ Back: 3-step pictures for "फीस लें" and "कॉल करें → 
 - Week 1: daily 10-minute check-in call; review calls cleared, messages, kiosk accuracy.
 - Weeks 2–4: twice weekly; tune reminder cap, alerts, words/icons that confused the owner.
 - Day 30 report: KPIs vs PRD targets, issues fixed, backlog for 1.1.
+
+
+## 7. Demo script (appendix — 2026-09-12)
+
+Run `pnpm db:seed` first: it rebuilds clean demo data (about 215 members, real fee states, this month's collections) and removes anything left by testing. Start the app with `pnpm dev` and the worker with `pnpm --filter @mfp/worker dev`.
+
+Payments are in **demo mode** (ADR-037): the pay button opens an in-app dialog instead of Razorpay. No money moves. Real Razorpay keys go in at delivery.
+
+| # | Do this | Expect |
+|---|---|---|
+| 1 | Open `/` on a phone-sized window | Landing page, hero, fee board; English with a हिंदी toggle |
+| 2 | Tap **Sign up** | The sign-up sheet opens over the page; the page stays behind it |
+| 3 | Fill name, mobile, date of birth, Male/Female; tap **Take selfie** → **Open camera** | Camera explainer first, then the oval guide and "Face found" |
+| 4 | Take the photo → **Use this photo**, tick the Terms box, **Continue to plans** | Step 2 in the same sheet, with the plan chosen on the landing page already selected |
+| 5 | **Continue to payment** → **Pay ₹…** → **Simulate success** | Confirmation: member code, dates, receipt number, WhatsApp line |
+| 6 | Tap **Download receipt** | The receipt page: gym details, receipt number, amount in words |
+| 7 | Open `/crm` and log in as **9000000001 / 2468** | Max Register Home in Hindi: tiles, आज के कॉल, जन्मदिन, इस महीने का हिसाब |
+| 8 | Tap **फीस बाकी** | The members whose fees are overdue, red band and "X दिन से बाकी" |
+| 9 | Open a member → **₹ फीस लें** | Plan tiles for their gender with the new dates |
+| 10 | Plan → **कैश** → **हाँ, मिल गया** | "रिन्यू हो गया", receipt number and member code |
+| 11 | Log out, log in as reception **9000000002 / 1357** | The same Home **without** the money section (money is owner-only) |
+
+Not built yet, so do not open them in a demo: add member at the desk, call outcomes, verification queue, attendance marking, leads, reports and settings. Those tabs show a plain "coming soon" screen.

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Placeholder mark until the brand kit arrives (assets/brand): signboard red on plate navy. -->
+  <rect width="64" height="64" rx="12" fill="#14213D"/>
+  <path d="M14 48V16h7l11 16 11-16h7v32h-7V28l-11 15-11-15v20z" fill="#D62828"/>
+</svg>

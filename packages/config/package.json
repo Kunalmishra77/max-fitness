@@ -1,0 +1,19 @@
+{
+  "name": "@mfp/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tsconfig/base.json": "../../tsconfig.base.json"
+  },
+  "scripts": {
+    "tokens": "tsx scripts/tokens-to-css.ts",
+    "typecheck": "tsc --noEmit",
+    "placeholder-media": "tsx scripts/placeholder-media.ts"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}

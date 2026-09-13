@@ -1,0 +1,836 @@
+{
+  "meta": {
+    "title": "Max Fitness Gym, Indirapuram | Owner-coached gym in Nyay Khand 1",
+    "description": "Gym in Nyay Khand 1, Indirapuram since 2000. Owner-led coaching and beginner-friendly trainers, rated 4.8 on Google. Open 4:30 am–10 pm. Monthly from ₹1,200."
+  },
+  "common": {
+    "gymName": "Max Fitness Gym",
+    "locality": "Nyay Khand 1, Indirapuram",
+    "language": "Language",
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "retry": "Try again",
+    "empty": "Nothing here yet",
+    "signUp": "Sign up",
+    "bookTrial": "Book a free trial",
+    "seeAllPlans": "See all plans",
+    "whatsapp": "Chat on WhatsApp",
+    "needsConfirmation": "Needs confirmation",
+    "demo": "Demo",
+    "placeholder": "Placeholder"
+  },
+  "foundation": {
+    "title": "Foundation check",
+    "subtitle": "Phase 1 wiring proof — web, core rules and Supabase are talking to each other.",
+    "notForCustomers": "Internal page. Not part of the public website.",
+    "plansHeading": "Plan prices",
+    "plansNote": "Prices come from the database; the per-month and savings figures are computed by packages/core.",
+    "feeStatesHeading": "Members by fee state",
+    "feeStatesNote": "Counted today in IST from the v_member_fee read model.",
+    "stackHeading": "Stack",
+    "perMonth": "{amount}/month",
+    "save": "Save {amount}",
+    "bestValue": "Best value",
+    "months": "{count, plural, one {# month} other {# months}}",
+    "male": "Male",
+    "female": "Female",
+    "noPlans": "No plans found. Run pnpm db:seed.",
+    "noMembers": "No members found. Run pnpm db:seed.",
+    "dbError": "Could not reach the database. Check DATABASE_URL and that the migration has been applied.",
+    "stack": {
+      "locale": "Locale",
+      "today": "Today (IST)",
+      "demoMode": "Demo mode",
+      "whatsappProvider": "WhatsApp provider",
+      "storageDriver": "Storage driver",
+      "health": "Health check"
+    },
+    "configError": "The server configuration is incomplete. Check the .env file — the server log names the missing or invalid keys (never their values)."
+  },
+  "feeState": {
+    "paid": "Paid",
+    "dueSoon": "Due soon",
+    "expired": "Overdue",
+    "none": "No plan"
+  },
+  "nav": {
+    "about": "About",
+    "facilities": "Facilities",
+    "plans": "Plans",
+    "reviews": "Reviews",
+    "contact": "Contact",
+    "signUp": "Sign up",
+    "call": "Call {phone}",
+    "menu": "Menu",
+    "closeMenu": "Close menu",
+    "language": "Language",
+    "switchTo": "हिंदी",
+    "skipToContent": "Skip to main content",
+    "home": "Max Fitness Gym home",
+    "primary": "Main",
+    "owner": "Owner"
+  },
+  "promo": {
+    "barDismiss": "Dismiss announcement",
+    "bannerCta": "Claim on WhatsApp"
+  },
+  "whatsapp": {
+    "prefill": "Hi Max Fitness Gym, I found you on your website. I'd like to know about membership.",
+    "trialPrefill": "Hi Max Fitness Gym, I'd like to book a free trial session.",
+    "offerPrefill": "Hi Max Fitness Gym, I'd like to know about the current offer."
+  },
+  "hero": {
+    "carouselLabel": "Why train at Max Fitness Gym",
+    "slideLabel": "Slide {n} of {total}",
+    "showSlide": "Show slide {n} of {total}",
+    "pause": "Pause slideshow",
+    "play": "Play slideshow",
+    "slides": {
+      "beginners": {
+        "title": "New to the gym? Start right, not sore.",
+        "sub": "Our trainers set up your first weeks step by step, so you learn good form from day one."
+      },
+      "women": {
+        "title": "Women's membership at {price} a month.",
+        "titleNoPrice": "Membership for women, guided by trainers.",
+        "sub": "A respectful, well-run floor with trainers who guide every set."
+      },
+      "owner": {
+        "title": "Coached by the owner. Since 2000.",
+        "sub": "Ajay Kuliyal and a team of trainers plan your workouts and diet. Rated {rating} from {count} Google reviews."
+      }
+    }
+  },
+  "lead": {
+    "title": "Get a call back",
+    "name": "Your name",
+    "mobile": "Mobile number",
+    "mobilePrefix": "+91",
+    "goal": "Your goal",
+    "goalPlaceholder": "Choose your goal",
+    "goals": {
+      "LOSE_WEIGHT": "Lose weight",
+      "BUILD_MUSCLE": "Build muscle",
+      "GET_FIT": "Get fit and active",
+      "STRENGTH": "Strength training",
+      "OTHER": "Other"
+    },
+    "consent": "By submitting, you agree we may call or WhatsApp you about membership.",
+    "submit": "Request a call back",
+    "submitting": "Sending…",
+    "success": "Request sent. We'll call you back soon.",
+    "sendAnother": "Send another request",
+    "whatsappToo": "We reply on WhatsApp too.",
+    "honeypotLabel": "Company (leave this empty)",
+    "errors": {
+      "name": "Enter your name.",
+      "mobile": "Enter a 10-digit mobile number starting with 6, 7, 8 or 9.",
+      "goal": "Choose your goal.",
+      "consent": "Please agree to be contacted.",
+      "rateLimited": "Too many requests from this device. Please try again in a while, or call us.",
+      "generic": "Something went wrong. Please try again, or call us.",
+      "network": "You seem to be offline. Check your connection and try again."
+    }
+  },
+  "trust": {
+    "label": "Why members trust us",
+    "google": "<num>{rating}</num> on Google ({count} reviews)",
+    "justdial": "<num>{rating}</num> on Justdial ({count} reviews)",
+    "since": "Since <num>{year}</num>",
+    "openTill": "Open today till {time}",
+    "opensAt": "Opens today at {time}",
+    "closedNow": "Closed now",
+    "closedToday": "Closed today",
+    "beginners": "Beginner-friendly trainers"
+  },
+  "about": {
+    "h2": "A neighbourhood gym where the owner still coaches.",
+    "p1": "Max Fitness Gym has been part of Nyay Khand since 2000. Members come for the equipment and stay for the people: trainers who notice your form, remember your name and push you just enough.",
+    "p2": "Whether you're lifting for the first time or chasing a new personal best, the floor is set up to help you train safely and keep coming back.",
+    "factsLabel": "At a glance",
+    "years": "<num>{count}</num> years in Indirapuram",
+    "beginners": "Beginners guided from the first session",
+    "openTill": "Open till {time}",
+    "photoMain": "Wide view of the training floor",
+    "photoInset": "A trainer guiding a member's form"
+  },
+  "facilities": {
+    "h2": "Everything you need, nothing you don't.",
+    "zones": {
+      "strength": {
+        "name": "Strength zone",
+        "body": "Machines, free weights, benches and full mirrors for form checks."
+      },
+      "cardio": {
+        "name": "Cardio zone",
+        "body": "Treadmills and recumbent bikes for warm-ups, fat loss and endurance."
+      },
+      "functional": {
+        "name": "Functional floor",
+        "body": "Battle ropes, step platforms and agility cones on an open wooden floor."
+      },
+      "boxing": {
+        "name": "Boxing corner",
+        "body": "Heavy bags for conditioning and stress-busting rounds."
+      }
+    },
+    "alsoHere": "Also here",
+    "extras": {
+      "personalTraining": "Personal training",
+      "lockers": "Lockers",
+      "drinkingWater": "Drinking water",
+      "parking": "Parking nearby",
+      "airConditioned": "Air-conditioned",
+      "dietPlans": "Diet plans"
+    }
+  },
+  "start": {
+    "h2": "Starting is simple.",
+    "stepLabel": "Step {n}",
+    "steps": {
+      "visit": {
+        "title": "Visit or call",
+        "body": "Drop in opposite Sai Mandir or call {phone}."
+      },
+      "trial": {
+        "title": "Meet the trainers",
+        "body": "Walk the floor and ask anything before you pay."
+      },
+      "plan": {
+        "title": "Pick your plan",
+        "body": "Monthly or save with 3, 6 or 12 months."
+      },
+      "trainer": {
+        "title": "Start with a trainer",
+        "body": "Your first workouts are planned for your level."
+      }
+    }
+  },
+  "plans": {
+    "h2": "Membership fees",
+    "toggleLabel": "Show prices for",
+    "men": "Men",
+    "women": "Women",
+    "colPlan": "Plan",
+    "colPrice": "Price",
+    "colPerMonth": "Per month",
+    "colSave": "You save",
+    "monthly": "Monthly",
+    "months": "{count} months",
+    "bestValue": "Best value",
+    "choose": "Choose",
+    "chooseLabel": "Choose {plan} for {price}",
+    "noSavingLabel": "No saving",
+    "note": "Pay online by UPI or card, or pay at reception. Prices are for gym floor access with trainer guidance.",
+    "unavailable": "Today's fees are being updated. Call or WhatsApp us and we'll tell you straight away."
+  },
+  "reviews": {
+    "h2": "What members say",
+    "readAll": "Read all reviews on Google",
+    "demoLabel": "Demo review",
+    "rating": "{count} out of 5 stars",
+    "source": "Google review"
+  },
+  "gallery": {
+    "h2": "Inside the gym",
+    "open": "Open photo {n} of {total}",
+    "close": "Close photo",
+    "next": "Next photo",
+    "previous": "Previous photo",
+    "counter": "{n} of {total}",
+    "placeholder": "Photo coming soon",
+    "items": {
+      "floor": "Training floor",
+      "strength": "Strength zone",
+      "cardio": "Cardio zone",
+      "functional": "Functional floor",
+      "boxing": "Boxing corner",
+      "reception": "Reception"
+    }
+  },
+  "visit": {
+    "h2": "Visit us",
+    "hoursHeading": "Opening hours",
+    "today": "Today",
+    "closed": "Closed",
+    "findingUs": "Finding us",
+    "landmark": "Opposite Sai Mandir",
+    "directions": "Get directions",
+    "call": "Call {phone}",
+    "whatsapp": "Chat on WhatsApp",
+    "hoursUnknown": "Timings will be updated soon. Call us to check today's hours.",
+    "range": "{open} – {close}",
+    "dayRange": "{day} {range}",
+    "time": "{hour}:{minute} {meridiem, select, am {am} other {pm}}",
+    "days": {
+      "0": "Sunday",
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday"
+    }
+  },
+  "faq": {
+    "h2": "Questions people ask",
+    "items": {
+      "timings": {
+        "q": "What are the gym timings?",
+        "a": "We're open {hours}.",
+        "aUnknown": "Call us on {phone} for today's timings."
+      },
+      "fees": {
+        "q": "How much is the membership?",
+        "a": "Monthly is {menPrice} for men and {womenPrice} for women. 3, 6 and 12-month plans cost less per month.",
+        "aUnknown": "Call or WhatsApp us for today's fees."
+      },
+      "trial": {
+        "q": "Can I try before joining?",
+        "a": "Yes, your first session is free. Just walk in or message us on WhatsApp."
+      },
+      "beginner": {
+        "q": "I've never been to a gym. Is that okay?",
+        "a": "Absolutely. Most of our members started as beginners. Trainers will show you the machines and plan your first weeks."
+      },
+      "women": {
+        "q": "Is it comfortable for women?",
+        "a": "[Owner-approved answer about the environment, trainers and timings]"
+      },
+      "payment": {
+        "q": "How do I pay?",
+        "a": "Online by UPI, card or netbanking when you sign up, or at reception by cash or UPI."
+      },
+      "selfie": {
+        "q": "Why do you ask for a selfie?",
+        "a": "It's your member photo so our staff recognise you. If you agree, the attendance phone at reception can also mark your attendance automatically. You can say no and staff will mark it manually."
+      },
+      "pause": {
+        "q": "What if I miss some days — can I pause?",
+        "a": "[Owner policy on pausing a membership]"
+      },
+      "refund": {
+        "q": "Is there a refund?",
+        "a": "[Owner refund policy]. See our Refund & cancellation policy."
+      },
+      "bring": {
+        "q": "What should I bring?",
+        "a": "Water bottle, a small towel and clean indoor shoes."
+      },
+      "personalTraining": {
+        "q": "Is there personal training?",
+        "a": "Yes. Personal training is ₹3,000 a month and includes a diet plan."
+      },
+      "minAge": {
+        "q": "What's the minimum age?",
+        "a": "{minAge} years. Members under 18 need a parent or guardian to sign at reception."
+      }
+    }
+  },
+  "finalCta": {
+    "h2": "Come and see the floor before you join.",
+    "sub": "Walk in, meet the trainers, then decide."
+  },
+  "contact": {
+    "h2": "Contact",
+    "showMap": "Show map",
+    "mapNote": "Loads Google Maps from google.com.",
+    "mapTitle": "Map showing Max Fitness Gym, Nyay Khand 1, Indirapuram"
+  },
+  "footer": {
+    "privacy": "Privacy policy",
+    "terms": "Terms of membership",
+    "refund": "Refund & cancellation",
+    "contact": "Contact",
+    "copyright": "© {year} Max Fitness Gym",
+    "quickLinks": "On this page",
+    "legalLinks": "Policies",
+    "hours": "Hours"
+  },
+  "sticky": {
+    "label": "Quick actions",
+    "call": "Call",
+    "whatsapp": "WhatsApp",
+    "signUp": "Sign up"
+  },
+  "consent": {
+    "label": "Analytics consent",
+    "body": "We'd like to use privacy-friendly analytics to understand how people use this site. Nothing is tracked unless you allow it.",
+    "accept": "Allow analytics",
+    "decline": "No thanks",
+    "policy": "Privacy policy"
+  },
+  "legal": {
+    "draft": "DRAFT — pending client review",
+    "backHome": "Back to home",
+    "updated": "Last updated {date}",
+    "titles": {
+      "privacy": "Privacy policy",
+      "terms": "Terms of membership",
+      "refund": "Refund & cancellation",
+      "contact": "Contact"
+    },
+    "hiPending": ""
+  },
+  "contactPage": {
+    "intro": "Call, WhatsApp or drop in — we're opposite Sai Mandir in Nyay Khand 1.",
+    "grievanceHeading": "Privacy questions and complaints",
+    "grievanceBody": "For anything about your personal data, or to make a complaint, contact our grievance officer: [Grievance officer name] · [email address] · [phone number]. We acknowledge every complaint within 48 hours."
+  },
+  "owner": {
+    "name": "Ajay Kuliyal",
+    "role": "Owner and trainer, Max Fitness Gym",
+    "title": "Coaching on the floor, every day.",
+    "lead": "Members don't only meet Ajay at the front desk. In their Google reviews they describe a coach who plans diets and workouts, checks progress day to day and keeps them motivated, with a team of trainers alongside.",
+    "quote": "Ajay sir helps me stay motivated and monitors my condition on a day to day basis.",
+    "quoteSource": "{author}, Google review",
+    "factsHeading": "At a glance",
+    "facts": {
+      "since": {
+        "value": "2000",
+        "text": "Max Fitness Gym opens in Nyay Khand"
+      },
+      "rating": {
+        "value": "{rating}★",
+        "text": "from {count} Google reviews"
+      },
+      "team": {
+        "value": "Team",
+        "text": "Trainers on the floor with Ajay"
+      },
+      "today": {
+        "value": "Today",
+        "text": "Still coaching members every day"
+      }
+    },
+    "cta": "Train with Ajay",
+    "portraitAlt": "Ajay Kuliyal, owner of Max Fitness Gym (photo coming soon)"
+  },
+  "signup": {
+    "title": "Sign up",
+    "metaTitle": "Sign up online",
+    "stepper": "Step {step} of 3: {name}",
+    "steps": {
+      "details": "Your details",
+      "plan": "Choose your plan",
+      "pay": "Payment"
+    },
+    "back": "Back",
+    "fullName": "Full name",
+    "mobile": "Mobile number",
+    "mobilePrefix": "+91",
+    "email": "Email",
+    "optional": "optional",
+    "dob": "Date of birth",
+    "dobDay": "Day",
+    "dobMonth": "Month",
+    "dobYear": "Year",
+    "gender": "Gender",
+    "genders": {
+      "MALE": "Male",
+      "FEMALE": "Female"
+    },
+    "selfie": "Selfie",
+    "takeSelfie": "Take selfie",
+    "selfieHelper": "Used as your member photo",
+    "selfieAdded": "Your member photo",
+    "retake": "Retake",
+    "consentTerms": "I agree to the <terms>Terms of membership</terms> and <privacy>Privacy policy</privacy>.",
+    "consentWhatsapp": "Send my membership updates, receipts and reminders on WhatsApp.",
+    "consentWhatsappOff": "You won't get renewal reminders.",
+    "consentFace": "Use my face for automatic attendance at reception.",
+    "consentFaceHelper": "Optional. Staff can mark attendance manually instead.",
+    "consentFaceMinor": "Automatic attendance is not offered to members under 18. Staff will mark your attendance.",
+    "minorNote": "You're under 18. You can sign up, but a parent or guardian must sign at reception before your first workout.",
+    "continueToPlans": "Continue to plans",
+    "submitting": "Saving your details…",
+    "errors": {
+      "fullName": "Enter your full name, using letters only.",
+      "mobile": "Enter a 10-digit Indian mobile number.",
+      "email": "Check your email address, or leave it empty.",
+      "dob": "Choose your date of birth.",
+      "gender": "Choose male or female.",
+      "terms": "Please agree to the Terms and Privacy policy to continue.",
+      "privacy": "Please agree to the Terms and Privacy policy to continue.",
+      "noticeVersion": "Please refresh the page and try again.",
+      "selfie": "Add a selfie to continue.",
+      "underAge": "You need to be at least {minAge} to join. Please visit reception with a parent or guardian.",
+      "selfieUnsupported": "That file isn't a photo we can use. Take a new selfie, or choose a JPEG or PNG photo.",
+      "selfieUnreadable": "That photo couldn't be opened. Please take it again.",
+      "selfieTooLarge": "That photo is too large. Please take it again.",
+      "selfieTooSmall": "That photo is too small. Move closer and take it again.",
+      "rateLimited": "Too many attempts. Please wait a few minutes and try again.",
+      "network": "You seem to be offline. Check your connection and try again.",
+      "generic": "Something went wrong. Please try again, or call us.",
+      "expired": "Your sign-up session has expired. Please start again.",
+      "startAgain": "Start again"
+    },
+    "camera": {
+      "title": "Take a selfie",
+      "close": "Close",
+      "explainer": "We'll open your camera to take your member photo. Your browser will ask for permission next.",
+      "open": "Open camera",
+      "starting": "Starting camera…",
+      "guidance": "Face the light. Remove caps and sunglasses.",
+      "faceFound": "Face found",
+      "moveInside": "Move your face inside the oval.",
+      "oneFace": "Only one person in the photo, please.",
+      "closer": "Come a little closer.",
+      "capture": "Take photo",
+      "use": "Use this photo",
+      "retake": "Retake",
+      "denied": "Camera access is blocked. Allow the camera in your browser settings, or take a photo with your phone camera instead.",
+      "tryAgain": "Try again",
+      "usePhoneCamera": "Use phone camera",
+      "inUse": "Your camera is being used by another app. Close that app and try again.",
+      "noCamera": "We couldn't use a camera here. Take a photo with your phone camera instead.",
+      "inApp": "Camera may not work inside Instagram or WhatsApp. Open this page in Chrome for the best experience.",
+      "copyLink": "Copy link",
+      "linkCopied": "Link copied",
+      "previewAlt": "Your selfie",
+      "preparing": "Preparing your photo…",
+      "unusable": "That photo couldn't be used. Please try another."
+    },
+    "plan": {
+      "monthlyHeading": "Monthly membership",
+      "packagesHeading": "Save with a package",
+      "monthly": "Monthly",
+      "months": "{count} months",
+      "perMonth": "{price} / month",
+      "save": "save {amount}",
+      "bestValue": "Best value",
+      "admission": "Admission fee {amount}, charged once",
+      "deskConfirms": "Final price confirmed at reception.",
+      "startDate": "Start date",
+      "today": "Today, {date}",
+      "endsOn": "Ends on {date}",
+      "choose": "Choose a plan to continue.",
+      "continue": "Continue to payment",
+      "unavailable": "Plans can't be loaded right now. Call or WhatsApp us and we'll sign you up."
+    },
+    "pay": {
+      "summary": "{name}, {plan}, {start} to {end}",
+      "amount": "Amount",
+      "planLine": "{plan}",
+      "admissionLine": "Admission fee",
+      "total": "Total",
+      "payNow": "Pay {amount}",
+      "orReception": "or",
+      "payAtReception": "Pay at reception",
+      "receptionHelper": "We'll hold your plan for 48 hours.",
+      "secure": "Secure payments by Razorpay: UPI, cards and netbanking.",
+      "processing": "Confirming your payment…",
+      "creating": "Opening payment…",
+      "failedTitle": "Payment didn't go through",
+      "failedBody": "If money was debited, your bank returns it automatically, usually within 5–7 working days.",
+      "tryAgain": "Try again",
+      "reviewTitle": "We've received your payment",
+      "reviewBody": "The amount needs a quick check by the gym. We'll confirm your membership on WhatsApp, or call us on {phone}.",
+      "pendingTitle": "Still confirming your payment",
+      "pendingBody": "This can take a minute. Don't pay again. We'll send your receipt on WhatsApp as soon as it's confirmed.",
+      "simulatedTitle": "Demo payment",
+      "simulatedBody": "This is a demo. No money is taken. Choose what happens.",
+      "simulateSuccess": "Simulate success",
+      "simulateFailure": "Simulate failure",
+      "cancel": "Cancel"
+    },
+    "done": {
+      "title": "You're a member, {name}.",
+      "memberCode": "Member code {code}",
+      "period": "{plan}, {start} to {end}",
+      "paid": "Paid {amount}, receipt {receiptNo}",
+      "downloadReceipt": "Download receipt",
+      "directions": "Get directions",
+      "firstVisit": "On your first visit, bring water, a small towel and clean indoor shoes.",
+      "whatsappSent": "We've sent this to your WhatsApp.",
+      "minorReminder": "Bring a parent or guardian to sign at reception before your first workout.",
+      "reservedTitle": "Your plan is reserved, {name}.",
+      "reservedBody": "Pay {amount} at reception by {until} to start.",
+      "backHome": "Back to home"
+    }
+  },
+  "receipt": {
+    "metaTitle": "Payment receipt",
+    "title": "Payment receipt",
+    "receiptNo": "Receipt no.",
+    "date": "Date",
+    "member": "Member",
+    "memberCode": "Member code",
+    "plan": "Plan",
+    "period": "{plan} membership, {start} to {end}",
+    "monthly": "Monthly",
+    "months": "{count} months",
+    "planLine": "Membership fee",
+    "admissionLine": "Admission fee",
+    "total": "Total paid",
+    "inWords": "Amount in words",
+    "method": "Paid by",
+    "methods": {
+      "RAZORPAY": "Online (Razorpay)",
+      "CASH": "Cash",
+      "UPI_DIRECT": "UPI",
+      "CARD_POS": "Card",
+      "BANK_TRANSFER": "Bank transfer",
+      "SIMULATED": "Demo payment (no money taken)"
+    },
+    "computerGenerated": "This is a computer-generated receipt and needs no signature.",
+    "download": "Download PDF",
+    "print": "Print",
+    "pdfPending": "The PDF is being prepared. Refresh in a minute to download it.",
+    "expired": "This receipt link has expired or is not valid. Message us on WhatsApp and we will send your receipt again.",
+    "whatsapp": "Message us on WhatsApp"
+  },
+  "renew": {
+    "metaTitle": "Renew your membership",
+    "title": "Renew your membership, {name}",
+    "currentEnds": "Current plan ends on {date}. Your new plan starts on {newStart}.",
+    "startsOn": "Your new plan starts on {newStart}.",
+    "expired": "This renewal link has expired. Message us on WhatsApp and we'll send a new one.",
+    "blocked": "Please renew at reception.",
+    "whatsapp": "Message us on WhatsApp",
+    "back": "Back to plans",
+    "photoAlt": "Your member photo"
+  },
+  "crm": {
+    "appName": "Max Register",
+    "login": {
+      "title": "Log in",
+      "subtitle": "Enter your mobile number and PIN",
+      "mobile": "Mobile number",
+      "pin": "PIN",
+      "pinHelper": "4 to 6 digits",
+      "trusted": "This is my own phone",
+      "trustedHelper": "Stay logged in on this phone for 30 days",
+      "submit": "Log in",
+      "submitting": "Checking…",
+      "invalid": "Mobile number or PIN is wrong.",
+      "attemptsLeft": "{count} tries left",
+      "locked": "Too many wrong PINs. Try again in {minutes} minutes.",
+      "generic": "Something went wrong. Please try again.",
+      "logout": "Log out"
+    },
+    "nav": {
+      "home": "Home",
+      "members": "Members",
+      "fees": "Fees",
+      "attendance": "Attendance",
+      "more": "More"
+    },
+    "home": {
+      "greeting": "Namaste 🙏",
+      "totalMembers": "Total members",
+      "attendedToday": "Came today",
+      "dueThisWeek": "Fees this week",
+      "dueAmount": "{amount} expected",
+      "expired": "Fees due",
+      "calls": "Calls today",
+      "noCalls": "No calls today ✓",
+      "seeAll": "See all",
+      "birthdays": "Birthdays today",
+      "noBirthdays": "No birthdays today",
+      "verify": "To check",
+      "verifyHelper": "Existing members from QR",
+      "thisMonth": "This month",
+      "lastMonth": "Last month {amount}",
+      "addMember": "New member"
+    },
+    "feeState": {
+      "PAID": "Fees paid",
+      "DUE_SOON": "Fees this week",
+      "EXPIRED": "Fees due",
+      "NONE": "No plan",
+      "daysLeft": "{count} days left",
+      "dueToday": "Last day today",
+      "overdue": "{count} days overdue",
+      "till": "till {date}"
+    },
+    "members": {
+      "title": "Members",
+      "search": "Search name, number or code",
+      "filterAll": "All",
+      "empty": "No members found",
+      "count": "{count} members",
+      "left": "Left the gym"
+    },
+    "profile": {
+      "call": "Call",
+      "whatsapp": "WhatsApp",
+      "takeFees": "Take fees",
+      "attendanceMonth": "Attendance — this month",
+      "attendanceDays": "Came {count} days this month",
+      "plansAndMoney": "Plans and payments",
+      "noPayments": "No payments yet",
+      "months": "{count} months",
+      "monthly": "1 month",
+      "receipt": "Receipt {receiptNo}",
+      "back": "Back"
+    },
+    "renew": {
+      "title": "Take fees",
+      "step1": "Choose a plan",
+      "step2": "How was it paid?",
+      "step3": "Confirm",
+      "newPlan": "New plan: {start} to {end}",
+      "methods": {
+        "CASH": "Cash",
+        "UPI_DIRECT": "UPI",
+        "CARD_POS": "Card",
+        "BANK_TRANSFER": "Bank"
+      },
+      "confirmQuestion": "Received {amount} by {method}?",
+      "confirm": "Yes, received",
+      "back": "Back",
+      "done": "Renewed",
+      "receiptSent": "Receipt sent on WhatsApp",
+      "memberCode": "Member code {code}",
+      "viewReceipt": "View receipt",
+      "backToMember": "Back to member",
+      "failed": "The payment could not be recorded. Please try again.",
+      "notAllowed": "You are not allowed to take payments."
+    },
+    "calls": {
+      "title": "Calls today",
+      "empty": "No calls today ✓",
+      "reasons": {
+        "EXPIRED_BUT_VISITING": "Visiting, fees due",
+        "SIGNUP_NOT_PAID": "Signed up, not paid",
+        "EXPIRED_NOT_RENEWED": "Fees due, not renewed",
+        "DUE_SOON_NO_RESPONSE": "Fees this week",
+        "ABSENT_7_DAYS": "Not seen for 7 days",
+        "UNSUBSCRIBED": "Stopped reminders",
+        "NEW_LEAD": "New enquiry",
+        "VERIFICATION_PENDING": "Waiting to be checked",
+        "OTHER": "Call"
+      }
+    },
+    "soon": {
+      "title": "This part is coming soon",
+      "body": "For now, use Home, Members and Fees."
+    },
+    "outcome": {
+      "title": "What happened?",
+      "WILL_RENEW": "Will renew",
+      "CALL_LATER": "Call later",
+      "NO_ANSWER": "No answer",
+      "LEFT_GYM": "Left the gym",
+      "WRONG_NUMBER": "Wrong number",
+      "DONE": "Done",
+      "saved": "Saved",
+      "failed": "Could not save. Please try again.",
+      "cancel": "Cancel"
+    },
+    "void": {
+      "action": "Void payment",
+      "title": "Void this payment?",
+      "body": "{amount}, receipt {receiptNo}. The membership goes back to unpaid.",
+      "reason": "Reason",
+      "reasonHelper": "For example: wrong amount entered",
+      "pin": "Enter your PIN",
+      "pinHelper": "Money actions need the PIN again",
+      "confirm": "Yes, void it",
+      "cancel": "Cancel",
+      "done": "Payment voided",
+      "failed": "Could not void it. Please try again.",
+      "wrongPin": "That PIN is wrong.",
+      "notAllowed": "Only the owner can void a payment.",
+      "voided": "Voided"
+    },
+    "add": {
+      "title": "New member",
+      "step": "Question {current} of {total}",
+      "next": "Next",
+      "back": "Back",
+      "skip": "Not now",
+      "photoTitle": "Face in the camera",
+      "photoHelper": "The photo can be taken later",
+      "photoTake": "Take photo",
+      "photoRetake": "Retake",
+      "photoDone": "Photo taken",
+      "nameTitle": "What is their name?",
+      "nameLabel": "Full name",
+      "mobileTitle": "Mobile number?",
+      "mobileLabel": "Mobile number",
+      "mobileHelper": "Reminders go to this number",
+      "genderTitle": "Man or woman?",
+      "MALE": "Man",
+      "FEMALE": "Woman",
+      "OTHER": "Other",
+      "dobTitle": "Date of birth?",
+      "dobDay": "Day",
+      "dobMonth": "Month",
+      "dobYear": "Year",
+      "consentTitle": "Consent",
+      "consentTerms": "The member has heard the terms and the privacy notice",
+      "consentWhatsapp": "Send fee reminders on WhatsApp",
+      "consentFace": "Use face attendance",
+      "consentFaceMinor": "Face attendance stays off under 18",
+      "save": "Add member",
+      "saving": "Adding…",
+      "duplicate": "A member with this name and number already exists. You can still add them.",
+      "done": "Member added",
+      "takeFees": "Take fees now",
+      "later": "Fees later",
+      "notAllowed": "You are not allowed to add members.",
+      "errors": {
+        "fullName": "Enter the full name.",
+        "mobile": "Enter a valid mobile number.",
+        "dob": "Choose a valid date of birth.",
+        "gender": "Choose one.",
+        "terms": "Without consent the member cannot be added.",
+        "underAge": "Members must be at least {minAge} years old.",
+        "generic": "Could not add them. Please try again."
+      }
+    },
+    "attendance": {
+      "title": "Attendance",
+      "today": "Came today",
+      "todayCount": "{count} came in",
+      "empty": "Nobody has come in yet today",
+      "tabToday": "Today",
+      "tabAbsent": "Not coming",
+      "absentEmpty": "Everyone is coming ✓",
+      "absentSince": "Away for {count} days",
+      "absentNever": "Never came",
+      "methodFACE": "Face",
+      "methodFACE_CONFIRMED": "Face",
+      "methodKEYPAD": "Keypad",
+      "methodMANUAL": "By hand",
+      "markTitle": "Mark attendance",
+      "search": "Search by name, number or code",
+      "mark": "Mark attendance",
+      "marking": "Marking…",
+      "marked": "{name} is marked in",
+      "alreadyMarked": "{name} is already marked in",
+      "undo": "Undo",
+      "undone": "Attendance undone",
+      "failed": "Could not mark it. Please try again.",
+      "notAllowed": "You are not allowed to mark attendance."
+    },
+    "leads": {
+      "title": "Enquiries",
+      "empty": "No enquiries yet",
+      "count": "{count} enquiries",
+      "tabOpen": "Open",
+      "tabAll": "All",
+      "goal": "Goal: {goal}",
+      "source": "From: {source}",
+      "askedOn": "Asked on {date}",
+      "NEW": "New",
+      "CONTACTED": "Contacted",
+      "TRIAL_BOOKED": "Trial booked",
+      "VISITED": "Visited",
+      "CONVERTED": "Joined",
+      "LOST": "Lost",
+      "action": "Move on",
+      "moveTo": "What happened?",
+      "note": "Short note (optional)",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "failed": "Could not save. Please try again.",
+      "cancel": "Cancel",
+      "notAllowed": "You are not allowed to change enquiries.",
+      "addMember": "Add as member"
+    }
+  }
+}

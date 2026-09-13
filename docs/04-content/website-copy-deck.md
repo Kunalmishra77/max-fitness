@@ -1,25 +1,27 @@
-# Website Copy Deck (v1)
+# Website Copy Deck (v1.1)
 
 Markers: **[VERIFY]** needs owner confirmation before production · **{placeholder}** to fill · Keys map to `apps/web/messages/{en,hi}.json`.
+
+> v1.1, 2026-09-11: facts checked against the gym's Google Business Profile and its reviews (ADR-031). The "national champion" claim was removed because no source confirms it; the owner section replaces the champion story. Unverified promises (free first session, 2-hour call-back) were taken out of live copy.
 
 ---
 
 ## Announcement bar — `promo.bar`
-- EN: "First session free for new members. Walk in or book on WhatsApp." [VERIFY free trial]
+- EN: "First session free for new members. Walk in or book on WhatsApp." [VERIFY free trial — not in live copy until confirmed]
 - HI: "नए लोगों के लिए पहला सेशन फ्री। आइए या WhatsApp पर बुक करें।"
 
 ## Navigation — `nav.*`
-About · Facilities · Plans · Champion · Reviews · Contact · **Sign up**
-HI: हमारे बारे में · सुविधाएँ · प्लान · चैंपियन · रिव्यू · संपर्क · **साइन अप**
+About · Facilities · Plans · Owner · Reviews · Contact · **Sign up**
+HI: हमारे बारे में · सुविधाएँ · प्लान · मालिक · रिव्यू · संपर्क · **साइन अप**
 
 ## Hero slides — `hero.slides[]`
 
-**Slide 1 (champion)**
-- H1 EN: "Train where a national champion runs the floor."
-- Sub EN: "Indirapuram's strength gym since 2000. Serious equipment, patient trainers."
-- H1 HI: "जहाँ नेशनल चैंपियन खुद ट्रेनिंग देखते हैं।"
-- Sub HI: "2000 से इंदिरापुरम का भरोसेमंद जिम। दमदार मशीनें, धैर्य से सिखाने वाले ट्रेनर।"
-- CTAs: "Sign up" / "Book a free trial"
+**Slide 1 (owner)**
+- H1 EN: "Coached by the owner. Since 2000."
+- Sub EN: "Ajay Kuliyal and a team of trainers plan your workouts and diet. Rated {rating} from {count} Google reviews."
+- H1 HI: "मालिक की देखरेख में ट्रेनिंग। 2000 से।"
+- Sub HI: "अजय कुलियाल और ट्रेनर्स की टीम आपके वर्कआउट और डाइट की योजना बनाती है। Google पर {count} रिव्यू में {rating} रेटिंग।"
+- CTAs: "Sign up" / "Chat on WhatsApp"
 
 **Slide 2 (beginners)**
 - EN: "New to the gym? Start right, not sore."
@@ -27,11 +29,11 @@ HI: हमारे बारे में · सुविधाएँ · प्
 - HI: "जिम में नए हैं? सही शुरुआत कीजिए।" / "पहले हफ्तों में ट्रेनर हर कदम पर साथ रहते हैं, ताकि सही तरीका पहले दिन से सीखें।"
 - CTAs: "Sign up" / "Chat on WhatsApp"
 
-**Slide 3 (women)** [VERIFY environment claims]
+**Slide 3 (women)**
 - EN: "Women's membership at ₹1,200 a month."
-- Sub: "A respectful, well-run floor with trainers who guide every set."
+- Sub: "A respectful, well-run floor with trainers who guide every set." (reviews: "very female friendly", "Safe for girls")
 - HI: "महिलाओं के लिए मेंबरशिप सिर्फ ₹1,200 महीना।" / "सम्मानजनक माहौल, और हर सेट पर ट्रेनर का मार्गदर्शन।"
-- CTAs: "See all plans" / "Sign up"
+- CTAs: "Sign up" / "Chat on WhatsApp"
 
 Slider controls (a11y): "Pause slideshow", "Play slideshow", "Show slide {n} of 3".
 
@@ -41,31 +43,32 @@ Slider controls (a11y): "Pause slideshow", "Play slideshow", "Show slide {n} of 
 - HI goals: वजन घटाना, मसल्स बनाना, फिट और एक्टिव रहना, ताकत बढ़ाना, अन्य
 - Consent line (small): "By submitting, you agree we may call or WhatsApp you about membership."
 - Button: "Request a call back" / "कॉल बैक माँगें"
-- Success: "Request sent. We'll call you soon, usually within 2 hours during gym hours." [VERIFY response time]
+- Success: "Request sent. We'll call you back soon." (a response-time promise needs the owner's commitment)
 - Errors: "Enter your name." · "Enter a 10-digit mobile number starting with 6, 7, 8 or 9."
 
 ## Trust strip — `trust.*`
-"4.8 on Google (231 reviews)" · "4.9 on Justdial (262 reviews)" · "Since 2000" · "Led by a National Champion" · "Open today till 10 pm"
+"4.8 on Google (231 reviews)" · "4.9 on Justdial (262 reviews)" · "Since 2000" · "Beginner-friendly trainers" · "{Mon–Sat 4:30 am – 10:00 pm}" (hours line from settings)
 
 ## About — `about.*`
-- H2: "A neighbourhood gym with a champion's standards."
+- H2: "A neighbourhood gym where the owner still coaches."
 - P1: "Max Fitness Gym has been part of Nyay Khand since 2000. Members come for the equipment and stay for the people: trainers who notice your form, remember your name and push you just enough."
 - P2: "Whether you're lifting for the first time or chasing a new personal best, the floor is set up to help you train safely and keep coming back."
-- Facts: "26 years in Indirapuram" · "Beginners guided from the first session" · "Open till 10 pm"
-- HI H2: "मोहल्ले का जिम, चैंपियन वाले स्टैंडर्ड के साथ।"
+- Facts: "26 years in Indirapuram" · "Beginners guided from the first session" · "{hours line from settings}"
+- HI H2: "मोहल्ले का जिम, मालिक की अपनी कोचिंग के साथ।"
 
 ## Facilities — `facilities.*`
 - H2: "Everything you need, nothing you don't."
 - Strength zone: "Machines, free weights, benches and full mirrors for form checks."
-- Cardio zone: "Treadmills and recumbent bikes for warm-ups, fat loss and endurance."
-- Functional floor: "Battle ropes, step platforms and agility cones on an open wooden floor."
-- Boxing corner: "Heavy bags for conditioning and stress-busting rounds."
-- Also: "Personal training" [VERIFY] · "Changing area" [VERIFY] · "Lockers" [VERIFY] · "Drinking water" [VERIFY] · "Parking nearby" [VERIFY] · "Air-conditioned" [VERIFY]
+- Cardio zone: "Treadmills and recumbent bikes for warm-ups, fat loss and endurance." (reviews: separate cardio area)
+- Functional floor: "Battle ropes, step platforms and agility cones on an open wooden floor." (owner photo, 2020)
+- Boxing corner: "Heavy bags for conditioning and stress-busting rounds." (owner photo, 2020)
+- Also: "Personal training" (confirmed) · "Diet plans" (confirmed) · "Lockers" [VERIFY] · "Drinking water" [VERIFY] · "Parking nearby" [VERIFY] · "Air-conditioned" [VERIFY]
+- Not listed: changing area (a 2025 review reports none) — add only if the owner confirms one exists now.
 
 ## How to start — `start.*`
 - H2: "Starting is simple."
 - 1 "Visit or call" — "Drop in opposite Sai Mandir or call 098714 06350."
-- 2 "Try a free session" — "Meet the trainers and see the floor." [VERIFY]
+- 2 "Meet the trainers" — "Walk the floor and ask anything before you pay."
 - 3 "Pick your plan" — "Monthly or save with 3, 6 or 12 months."
 - 4 "Start with a trainer" — "Your first workouts are planned for your level."
 
@@ -80,52 +83,51 @@ Slider controls (a11y): "Pause slideshow", "Play slideshow", "Show slide {n} of 
 ## Promo banner — `promo.banner` (editable from CRM)
 - Default: "Festive offer: join for 6 months and get 2 weeks extra." [placeholder — owner decides] · Button: "Claim on WhatsApp"
 
-## Champion story — `champion.*` (fill after interview)
-- Name line: "{Owner full name}"
-- Title (gold): "National Champion"
-- Detail: "{Discipline}, {Championship name}, {Year}" [VERIFY]
-- Lead: "Before Max Fitness had a single machine, {first name} was training for a national podium. In 2000 {he/she} opened this gym to give Indirapuram the same discipline, patience and honest coaching that built a champion."
-- Quote: "“{A short line in the owner's own words, Hindi or English}”"
-- Timeline entries: "{Year} — {started training}" · "{Year} — {national title}" · "2000 — Opened Max Fitness Gym" · "Today — Still coaching on the floor"
-- CTA: "Train with {first name}"
-- HI title: "नेशनल चैंपियन"
+## Owner — `owner.*` (replaces the champion story)
+- Name: "Ajay Kuliyal" · Role: "Owner and trainer, Max Fitness Gym"
+- Title (gold): "Coaching on the floor, every day." / HI "हर दिन फ्लोर पर कोचिंग।"
+- Lead: "Members don't only meet Ajay at the front desk. In their Google reviews they describe a coach who plans diets and workouts, checks progress day to day and keeps them motivated, with a team of trainers alongside."
+- Quote (a member's Google review, verbatim): "“Ajay sir helps me stay motivated and monitors my condition on a day to day basis.”" — Aadhar G., Google review
+- At a glance: "2000 — Max Fitness Gym opens in Nyay Khand" · "{rating}★ — from {count} Google reviews" · "Team — Trainers on the floor with Ajay" · "Today — Still coaching members every day"
+- CTA: "Train with Ajay"
+- Portrait: owner photo still needed (shot list P10 and portrait).
+- A championship or other title appears here only with the owner's proof (certificate, event, year).
 
 ## Testimonials — `reviews.*`
 - H2: "What members say"
-- Link: "Read all reviews on Google"
-- Items: 6 real reviews selected with owner approval; display "{First name} {Initial}." + stars + excerpt ≤ 220 chars.
-- DEMO placeholders (non-production only, labelled "Demo review"):
+- Link: "Read all reviews on Google" (listing reviews URL)
+- Items: 6 real 5★ Google reviews, display "{First name} {Initial}." + stars + exact excerpt ≤ 220 chars: Gaurav · Vineet D. · Rohit S. · Santosh B. · Akshay D. · Afzal K. (see `apps/web/src/content/landing-content.ts`).
+- DEMO placeholders (non-production only, used only if no real reviews, labelled "Demo review"):
   - "Very helpful trainers. I had never been to a gym and they taught me everything patiently." — Demo A.
   - "Good equipment and the owner personally corrects form. Worth the fee." — Demo B.
 
 ## Timings & visit — `visit.*`
 - H2: "Visit us"
-- Address: "Krishan Plaza, Plot No. 6, Nyay Khand 1, Indirapuram, Ghaziabad, Uttar Pradesh 201020"
-- Landmark: "Opposite Sai Mandir"
-- Hours table: from settings; today row labelled "Today".
-- Buttons: "Get directions" · "Call 098714 06350" · "Chat on WhatsApp"
+- Address: "Krishan Plaza, Plot No. 6, Abhay Khand 1, Nyay Khand I (opposite Sai Mandir), Indirapuram, Ghaziabad 201014" [VERIFY PIN — Google shows 201020]
+- Hours table: from settings (Mon–Sat 4:30 am – 10:00 pm, Sunday closed, per Google); today's row labelled "Today".
+- Buttons: "Call 098714 06350" · "Chat on WhatsApp" · "Get directions"
 
 ## FAQs — `faq.*`
-1. **What are the gym timings?** — "We're open {hours from settings}. Evenings after 6 pm are busiest; mornings and afternoons are calmer." [VERIFY]
+1. **What are the gym timings?** — "We're open {hours from settings}."
 2. **How much is the membership?** — "Monthly is ₹1,500 for men and ₹1,200 for women. 3, 6 and 12-month plans cost less per month."
 3. **Can I try before joining?** — "Yes, your first session is free. Just walk in or message us on WhatsApp." [VERIFY]
 4. **I've never been to a gym. Is that okay?** — "Absolutely. Most of our members started as beginners. Trainers will show you the machines and plan your first weeks."
-5. **Is it comfortable for women?** — "{Owner-approved answer about environment, trainers, timings}." [VERIFY]
+5. **Is it comfortable for women?** — "{Owner-approved answer about environment, trainers, timings}." [VERIFY — reviews call it female-friendly, but one reports no female washroom or changing room]
 6. **How do I pay?** — "Online by UPI, card or netbanking when you sign up, or at reception by cash or UPI."
 7. **Why do you ask for a selfie?** — "It's your member photo so our staff recognise you. If you agree, the attendance phone at reception can also mark your attendance automatically. You can say no and staff will mark it manually."
 8. **What if I miss some days — can I pause?** — "{Owner policy}." [VERIFY]
 9. **Is there a refund?** — "{Owner policy}. See our Refund & Cancellation policy." [VERIFY]
 10. **What should I bring?** — "Water bottle, a small towel and clean indoor shoes."
-11. **Is there personal training?** — "{Yes/No and price}." [VERIFY]
+11. **Is there personal training?** — "Yes. Personal training is ₹3,000 a month and includes a diet plan." (owner's note on Google)
 12. **What's the minimum age?** — "{16} years. Members under 18 need a parent or guardian to sign at reception." [VERIFY]
 
 ## Final CTA — `finalCta.*`
-- H2: "Your first session is on us."
+- H2: "Come and see the floor before you join."
 - Sub: "Walk in, meet the trainers, then decide."
 - Buttons: "Sign up" · "Chat on WhatsApp"
 
 ## Footer — `footer.*`
-"Max Fitness Gym, Krishan Plaza, Plot No. 6, Nyay Khand 1, Indirapuram, Ghaziabad 201020 · 098714 06350" · "Privacy policy" · "Terms of membership" · "Refund & cancellation" · "Contact" · "© {year} Max Fitness Gym"
+"Max Fitness Gym, Krishan Plaza, Plot No. 6, Abhay Khand 1, Nyay Khand I (opposite Sai Mandir), Indirapuram, Ghaziabad 201014 · 098714 06350" · "Privacy policy" · "Terms of membership" · "Refund & cancellation" · "Contact" · "© {year} Max Fitness Gym"
 
 ## Mobile sticky bar
 "Call" · "WhatsApp" · "Sign up"

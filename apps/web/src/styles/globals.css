@@ -1,0 +1,121 @@
+@import 'tailwindcss';
+@import './tokens.css';
+@import './fonts.css';
+
+/*
+ * Global styles.
+ *
+ * Token values live in tokens.css, which is generated from
+ * docs/03-design/design-tokens.json (`pnpm tokens`). This file holds only the
+ * base layer that cannot be expressed as a token.
+ */
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    /* DESIGN-BLUEPRINT §4: Hind for body, Khand for display. next/font sets these. */
+    font-family: var(--font-body), system-ui, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Devanagari needs ~10% more line height than Latin at the same size
+     (DESIGN-BLUEPRINT §4). */
+  html[lang='hi'] {
+    line-height: calc(var(--leading-body) * var(--leading-devanagari-boost));
+  }
+
+  body {
+    background-color: var(--color-brand-chalk);
+    color: var(--color-brand-ink);
+    margin: 0;
+    min-height: 100dvh;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display), var(--font-body), system-ui, sans-serif;
+    font-weight: 700;
+    line-height: var(--leading-display);
+    /* DESIGN-BLUEPRINT §4: sentence case, never all-caps. */
+    text-transform: none;
+  }
+
+  /*
+   * Focus must always be visible (CLAUDE.md §4, WCAG 2.2 AA). Using :focus-visible
+   * keeps the ring off mouse clicks while guaranteeing it for keyboard users.
+   */
+  :focus-visible {
+    outline: 3px solid var(--color-semantic-focus-ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-button);
+  }
+
+  /* DESIGN-BLUEPRINT §8 and coding-standards.md §5. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Numbers read like a scoreboard (DESIGN-BLUEPRINT §4). */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/*
+ * The hero's one orchestrated moment (DESIGN-BLUEPRINT §8): the first headline is
+ * wiped up into place on first paint. Nothing else on the page animates in.
+ * The reduced-motion rule above collapses it to an instant change.
+ */
+@keyframes hero-reveal {
+  from {
+    clip-path: inset(0 0 100% 0);
+    translate: 0 0.35em;
+  }
+  to {
+    clip-path: inset(0 0 -0.2em 0);
+    translate: 0 0;
+  }
+}
+
+.hero-reveal {
+  animation: hero-reveal var(--duration-reveal) var(--ease-enter) both;
+}
+
+.hero-reveal-late {
+  animation-delay: 140ms;
+}
+
+/* Hero rep tally: the current mark fills over one slide's duration. */
+@keyframes tally-fill {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+.tally-fill {
+  animation: tally-fill var(--duration-slide) linear forwards;
+}
+
+/*
+ * Sections below the fold skip style, layout and paint until they approach the viewport
+ * (ADR-033). `auto` remembers each section's real height once rendered, so the
+ * scrollbar settles instead of jumping.
+ */
+.deferred-render {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 900px;
+}

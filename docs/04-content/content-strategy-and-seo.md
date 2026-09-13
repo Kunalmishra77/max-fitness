@@ -1,12 +1,14 @@
 # Content Strategy & Local SEO
 
 ## 1. Positioning
-**"Indirapuram's champion-led strength gym that's patient with beginners."**
+**"Indirapuram's owner-coached gym since 2000 — patient with beginners."**
+
+> Revised 2026-09-11 after researching the Google Business Profile (ADR-031). The earlier "champion-led" positioning relied on a national title that no source confirms; restore it only with the owner's proof.
 
 Three pillars (every page, post and message should support at least one):
-1. **Champion expertise** — the owner's national title and 26 years coaching.
-2. **Beginner-friendly guidance** — the most repeated theme in reviews: helpful trainers, welcoming floor.
-3. **Neighbourhood value** — honest prices shown upfront, women's pricing, open till 10 pm, opposite Sai Mandir.
+1. **Owner-led coaching** — owner Ajay Kuliyal coaches members himself with a team of trainers; diet plans and personal training (₹3,000/month, per the owner's Google note).
+2. **Beginner-friendly guidance** — the most repeated theme in 231 Google reviews (4.8★): helpful, humble trainers and a welcoming floor.
+3. **Neighbourhood value** — honest prices shown upfront, women's pricing, open 4:30 am–10 pm Mon–Sat, opposite Sai Mandir.
 
 ## 2. Voice
 - Plain, warm, confident. Short sentences. Talks like a good trainer, not an ad.
@@ -27,20 +29,20 @@ Three pillars (every page, post and message should support at least one):
 | Local, high intent | gym in Indirapuram; gym near Nyay Khand; gym in Nyay Khand 1 Indirapuram; best gym in Indirapuram | Home title/H1/intro, GBP |
 | Price | gym fees in Indirapuram; monthly gym fee Ghaziabad; gym membership price Indirapuram | Plans section, FAQ |
 | Segment | ladies gym Indirapuram; gym for women in Indirapuram; gym for beginners Ghaziabad | Hero slide 3, FAQ |
-| Trust | national champion gym trainer Ghaziabad; bodybuilding/strength coach Indirapuram (per owner's discipline) | Champion section |
+| Trust | personal trainer Indirapuram; gym with diet plan Ghaziabad; owner-run gym Nyay Khand | Owner section, facilities |
 | Hindi | इंदिरापुरम में जिम; जिम फीस इंदिरापुरम | Hindi version |
-| Landmarks | gym near Sai Mandir Nyay Khand; gym near Shakti Khand / Abhay Khand (confirm proximity) | Contact/visit copy |
+| Landmarks | gym near Sai Mandir Nyay Khand; gym near Abhay Khand (Google lists "Abhay Khand 1, Nyay Khand I") | Contact/visit copy |
 
-On-page:
-- `<title>`: "Max Fitness Gym, Indirapuram | Champion-led gym in Nyay Khand 1"
-- Meta description: "Strength gym in Nyay Khand 1, Indirapuram since 2000, led by a national champion. Beginner-friendly trainers, open till 10 pm. Monthly from ₹1,200."
+On-page (revised 2026-09-11, ADR-031):
+- `<title>`: "Max Fitness Gym, Indirapuram | Owner-coached gym in Nyay Khand 1"
+- Meta description: "Gym in Nyay Khand 1, Indirapuram since 2000. Owner-led coaching and beginner-friendly trainers, rated 4.8 on Google. Open 4:30 am–10 pm. Monthly from ₹1,200."
 - One H1 (hero headline), logical H2 per section.
 - Image alt text describes the real scene ("Member training with battle ropes on the functional floor at Max Fitness Gym").
 
 ## 4. Structured data
-- `ExerciseGym` JSON-LD: name, address (Krishan Plaza, Plot No. 6, Nyay Khand 1, Indirapuram, Ghaziabad, UP 201020), geo (confirm lat/long from GBP pin), telephone, openingHoursSpecification, url, image, priceRange ("₹₹"), sameAs (GBP URL, Justdial, Instagram).
+- `ExerciseGym` JSON-LD: name, address (Krishan Plaza, Plot No. 6, Abhay Khand 1, Nyay Khand I, Indirapuram, Ghaziabad, UP 201014 — Google lists 201020, owner to confirm), geo **28.633763, 77.350075** (GBP pin, verified 2026-09-11), hasMap, telephone, openingHoursSpecification, url, priceRange ("₹₹"), sameAs (Google Maps listing `?cid=10796321720318476385`, Justdial). Instagram when the gym's own account is confirmed. Image when real photos exist.
 - `FAQPage` for the FAQ section.
-- `Person` for owner with `award` (only verified text).
+- `Person` for the owner only with verified facts; no `award` unless the owner provides proof of a title.
 - **Do not** add `aggregateRating` from Google/Justdial reviews to your own LocalBusiness markup — self-serving review markup isn't eligible for rich results and can be treated as spam.
 
 ## 5. Google Business Profile (quick wins, week 1)

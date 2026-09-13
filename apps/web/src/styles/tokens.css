@@ -1,0 +1,121 @@
+/*
+ * GENERATED FILE — DO NOT EDIT BY HAND.
+ *
+ * Source:    docs/03-design/design-tokens.json (v1.0.0)
+ * Generator: packages/config/scripts/tokens-to-css.ts
+ * Regenerate: pnpm tokens
+ *
+ * These become Tailwind v4 utilities: --color-* gives bg-/text-/border-,
+ * --text-* gives font sizes, --spacing-* the spacing scale, and so on.
+ * coding-standards.md §5: components use these utilities, never raw hex.
+ */
+
+@theme {
+  /* ── Brand and semantic colour (DESIGN-BLUEPRINT §3) ───────────── */
+  --color-brand-plate-navy:          #14213D; /* Dark sections, footer, text on light */
+  --color-brand-signboard-red:       #D62828; /* Primary actions and prices only */
+  --color-brand-signboard-red-text:  #C1121F; /* Use when white text contrast on red is marginal */
+  --color-brand-chalk:               #F2F3EF; /* Light sections, form panels */
+  --color-brand-medal-gold:          #E3A92B; /* Champion section + single best-value marker */
+  --color-brand-wall-blue:           #2F5DAA; /* Links, focus, info */
+  --color-brand-rubber-grey:         #5C6272; /* Secondary text, borders at 20-24% */
+  --color-brand-ink:                 #0F1729; /* Body text on light */
+  --color-brand-white:               #FFFFFF;
+  --color-semantic-fee-paid:         #1F8A4C; /* Green: fees paid */
+  --color-semantic-fee-due-soon:     #B7791F; /* Amber: due within 7 days */
+  --color-semantic-fee-expired:      #C62828; /* Red: overdue/urgent */
+  --color-semantic-fee-none:         #8A8F99; /* Grey: left / no plan */
+  --color-semantic-info:             #2F5DAA;
+  --color-semantic-birthday:         #C2185B;
+  --color-semantic-surface-crm:      #FFFFFF;
+  --color-semantic-surface-crm-alt:  #F5F6F8;
+  --color-semantic-focus-ring:       #2F5DAA;
+  --color-tint-fee-paid-bg:          #E6F4EC;
+  --color-tint-fee-due-soon-bg:      #FDF3E1;
+  --color-tint-fee-expired-bg:       #FCE8E8;
+  --color-tint-fee-none-bg:          #EEF0F2;
+  --color-tint-birthday-bg:          #FCE4EF;
+
+  /* ── Type families (DESIGN-BLUEPRINT §4) ───────────────────────── */
+  /* Loaded via next/font; the variables are set on <html>. */
+  --font-display:  Khand, 'Hind', system-ui, sans-serif; /* Weights 600, 700; subsets latin, devanagari */
+  --font-body:     Hind, system-ui, sans-serif; /* Weights 400, 500, 600; subsets latin, devanagari */
+
+  /* ── Type scale ────────────────────────────────────────────────── */
+  --text-display-xl:  clamp(2.75rem, 1.6rem + 5vw, 5.5rem);
+  --text-display-l:   clamp(2.25rem, 1.5rem + 3.4vw, 4rem);
+  --text-display-m:   clamp(1.75rem, 1.3rem + 2vw, 2.75rem);
+  --text-title:       clamp(1.25rem, 1.15rem + 0.4vw, 1.5rem);
+  --text-body-l:      clamp(1.125rem, 1.08rem + 0.2vw, 1.25rem);
+  --text-body:        clamp(1rem, 0.98rem + 0.1vw, 1.0625rem);
+  --text-small:       0.875rem;
+  --text-crm-number:  2.75rem; /* Home tile numbers (Khand 700) */
+  --text-crm-body:    1.125rem; /* CRM base text size */
+  --text-kiosk-name:  4.5rem;
+
+  /* ── Line heights ──────────────────────────────────────────────── */
+  /* Devanagari gets +10% at the same size — see --leading-devanagari-boost. */
+  --leading-display:           0.95;
+  --leading-tight:             1.05;
+  --leading-ui:                1.3;
+  --leading-body:              1.6;
+  --leading-devanagari-boost:  1.1;
+
+  /* ── Radius by hierarchy (DESIGN-BLUEPRINT §5) ─────────────────── */
+  /* Not one radius everywhere: photos 2px, buttons 6px, panels 12px, modals 16px. */
+  --radius-button:    6px;
+  --radius-input:     6px;
+  --radius-panel:     12px;
+  --radius-modal:     16px;
+  --radius-photo:     2px;
+  --radius-avatar:    9999px;
+  --radius-crm-tile:  16px;
+
+  /* ── Spacing scale ─────────────────────────────────────────────── */
+  --spacing-0:   0;
+  --spacing-1:   4px;
+  --spacing-2:   8px;
+  --spacing-3:   12px;
+  --spacing-4:   16px;
+  --spacing-5:   20px;
+  --spacing-6:   24px;
+  --spacing-8:   32px;
+  --spacing-10:  40px;
+  --spacing-12:  48px;
+  --spacing-16:  64px;
+  --spacing-24:  96px;
+
+  /* ── Sizes and touch targets ───────────────────────────────────── */
+  /* CRM targets are ≥56px and kiosk ≥72px (CLAUDE.md §2.10). */
+  --size-tap-web:          44px;
+  --size-tap-crm:          56px;
+  --size-tap-crm-primary:  64px;
+  --size-tap-kiosk:        72px;
+  --size-input-height:     48px;
+  --size-button-hero:      56px;
+  --size-content-max:      1200px;
+
+  /* ── Shadows ───────────────────────────────────────────────────── */
+  /* Elevated overlays only; cards on Chalk use a 1px border instead. */
+  --shadow-overlay:     0 12px 40px rgba(20,33,61,0.28);
+  --shadow-sticky-nav:  0 2px 12px rgba(20,33,61,0.20);
+
+  /* ── Motion ────────────────────────────────────────────────────── */
+  /* Respect prefers-reduced-motion at the call site. */
+  --duration-fast:    120ms;
+  --duration-base:    180ms;
+  --duration-reveal:  500ms;
+  --duration-slide:   7000ms;
+  --duration-undo:    10000ms;
+
+  /* ── Easing ────────────────────────────────────────────────────── */
+  --ease-standard:  cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter:     cubic-bezier(0, 0, 0, 1);
+
+  /* ── Breakpoints ───────────────────────────────────────────────── */
+  /* Every screen must work at 360px (CLAUDE.md §2.10). */
+  --breakpoint-sm:  360px;
+  --breakpoint-md:  768px;
+  --breakpoint-lg:  1024px;
+  --breakpoint-xl:  1280px;
+}

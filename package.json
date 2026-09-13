@@ -1,0 +1,48 @@
+{
+  "name": "max-fitness-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Max Fitness Platform — website, Max Register CRM, WhatsApp reminder engine and Max Haazri attendance kiosk",
+  "packageManager": "pnpm@11.11.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "turbo run typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "pnpm --filter @mfp/web run test:e2e",
+    "db:generate": "pnpm --filter @mfp/db run db:generate",
+    "db:migrate": "pnpm --filter @mfp/db run db:migrate",
+    "db:deploy": "pnpm --filter @mfp/db run db:deploy",
+    "db:seed": "pnpm --filter @mfp/db run db:seed",
+    "db:reset": "pnpm --filter @mfp/db run db:reset",
+    "db:studio": "pnpm --filter @mfp/db run db:studio",
+    "tokens": "pnpm --filter @mfp/config run tokens",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "cross-env": "catalog:",
+    "eslint": "catalog:",
+    "eslint-import-resolver-typescript": "catalog:",
+    "eslint-plugin-import-x": "catalog:",
+    "globals": "catalog:",
+    "prettier": "catalog:",
+    "prettier-plugin-tailwindcss": "catalog:",
+    "tsx": "catalog:",
+    "turbo": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:",
+    "vitest": "catalog:"
+  }
+}
