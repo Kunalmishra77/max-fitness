@@ -11,10 +11,20 @@ import { CRM_DEFAULT_LOCALE, LOCALE_COOKIE, routing } from './routing';
  */
 export default getRequestConfig(async ({ requestLocale }) => {
   const requested = await requestLocale;
+
   // The CRM has no locale in its URL (CLAUDE.md §2.9), so there is nothing for next-intl
   // to infer: without this, every CRM screen would render in the website's English
   // default while its `lang` attribute said Hindi. The cookie is the CRM's language.
-  const fromCookie = (await cookies()).get(LOCALE_COOKIE)?.value;
+  //
+  // The website's pages are generated at build time, where there is no request and
+  // reading a cookie throws. Guarding it is what lets one config serve both: a static
+  // page has its locale in the URL and never needs the cookie.
+  let fromCookie: string | undefined;
+  try {
+    fromCookie = (await cookies()).get(LOCALE_COOKIE)?.value;
+  } catch {
+    fromCookie = undefined;
+  }
   const locale = hasLocale(routing.locales, requested)
     ? requested
     : hasLocale(routing.locales, fromCookie)

@@ -46,5 +46,5 @@ apps/web/public/mediapipe/wasm/
 # Generated E2E camera fixtures (apps/web/scripts/make-face-fixture.mjs)
 apps/web/e2e/fixtures/
 
-# vercel cli
+# vercel cli (`.env*` is already covered above, where `.env.example` is un-ignored)
 .vercel/
