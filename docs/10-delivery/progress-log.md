@@ -36,6 +36,30 @@ Blockers / questions for client:
 - Same as Phase 3: payment-failure wording, prices, minimum age, admission fee, PIN confirmation, photos, policy answers, grievance officer.
 - Demo staff logins are the seeded ones (owner 9000000001 / 2468, reception 9000000002 / 1357). Real PINs must be set before anyone uses this outside a demo.
 
+### 2026-09-14 (late night) — Phase 4 — Staff logins
+Done:
+- **Staff screen (ADR-048)**, owner-only behind the PIN, under "और". The owner adds reception or a trainer with a PIN of their own, changes a forgotten PIN, and switches off someone who has left. There is also a toggle for whether reception may take fees.
+- **Security rules, tested in core first:**
+  - a PIN never reaches the audit log, neither the digits nor the hash
+  - a PIN reset or a switch-off revokes every live session of that person at once, and a reset clears any lockout
+  - nobody is made an owner, and no owner can be reset or switched off, from this screen
+  - hashing is a separate `PinSetter` port, so login and PIN re-entry stay verify-only
+  - names and PINs go through one shared Zod schema that reuses the member name rule
+- **Proved end to end, not just in unit tests.** The owner adds a trainer; the trainer signs in on a second browser; the owner switches them off; the trainer's very next request lands on the login screen. On a phone, the add form's PIN field measures 296px.
+- **Latent bug fixed.** "Reception may take fees" is a setting in the permission matrix, but no such setting existed, and `currentActor` passed `pricing.allowDeskDiscounts` instead. Switching discounts off would also have stopped reception taking fees. It is now `pricing.receptionMayTakePayments`, default on.
+- **The dev server crashed once** with a Turbopack internal panic — a Next.js bug, Windows exit `0xC0000409` — unrelated to the change. It was restarted.
+- **Verification:**
+  - unit tests: **977 passed** (77 files)
+  - database integration: **46 passed**, including add, duplicate mobile, reset with lockout cleared and session revoked, switch-off with session revoked, and no PIN or hash in the audit
+  - Playwright staff journeys: **3/3**, including reception refused on phone and desktop
+  - eslint clean, typecheck **6/6 packages**
+  - demo data re-seeded afterwards
+
+Pending / next:
+- **Before handover: the owner cannot yet change their own PIN.** The demo owner PIN `2468` stays until that flow exists, and it should come next — the current PIN, a new one, and the other devices signed out.
+- Settings still to come: kiosk pairing, reminder times and the post-expiry limit, language and voice, kill switch.
+- Unchanged: storage bucket and worker host before real members; privacy export and erasure; PWA; the wizard camera step; the slow first login after a deploy.
+
 ### 2026-09-14 (night) — Phase 4 — Settings, first slice
 Done:
 - **Settings screen (ADR-047; crm-ux-blueprint §14)**, owner-only and behind the PIN, under "और":

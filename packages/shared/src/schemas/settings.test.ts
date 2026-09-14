@@ -15,6 +15,13 @@ describe('defaultGymSettings — every ⚙ default from business-rules.md', () =
     expect(s.defaultLanguage).toBe('hi');
   });
 
+  it('lets reception take fees by default, as a setting of its own (crm-module-spec §3)', () => {
+    expect(GymSettingsSchema.parse({}).pricing.receptionMayTakePayments).toBe(true);
+    // Separate from discounts: switching one off must not switch the other off.
+    const noReceptionFees = GymSettingsSchema.parse({ pricing: { receptionMayTakePayments: false } });
+    expect(noReceptionFees.pricing).toMatchObject({ receptionMayTakePayments: false, allowDeskDiscounts: true });
+  });
+
   it('matches the pricing defaults', () => {
     expect(s.pricing.admissionFeePaise).toBe(0); // BR-2.6
     expect(s.pricing.otherGenderPricing).toBe('ASK_AT_DESK'); // BR-2.5

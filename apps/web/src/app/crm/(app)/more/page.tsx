@@ -36,6 +36,16 @@ export default async function CrmMorePage() {
         </li>
         {showSettings ? (
           <li>
+            <Link href="/crm/settings/staff" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
+              👥 {t('staff.title')}
+              <span aria-hidden className="text-xl text-brand-rubber-grey">
+                ›
+              </span>
+            </Link>
+          </li>
+        ) : null}
+        {showSettings ? (
+          <li>
             <Link href="/crm/settings" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
               ⚙️ {t('settings.title')}
               <span aria-hidden className="text-xl text-brand-rubber-grey">

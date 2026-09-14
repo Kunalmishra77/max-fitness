@@ -84,6 +84,12 @@ export const PricingSettingsSchema = z.object({
   otherGenderPricing: z.enum(['ASK_AT_DESK', 'MALE_RATE', 'FEMALE_RATE']).default('ASK_AT_DESK'),
   /** BR-2.7. Only staff with permission may discount, and only at the desk. */
   allowDeskDiscounts: z.boolean().default(true),
+  /**
+   * crm-module-spec §3 "Renew / record payment — Reception ✓ (setting)". Its own switch:
+   * it used to be read from `allowDeskDiscounts`, so turning discounts off also stopped
+   * reception taking fees (ADR-048).
+   */
+  receptionMayTakePayments: z.boolean().default(true),
   /** BR-11.1. Partial payments are disabled in 1.0. */
   allowPartialPayments: z.boolean().default(false),
 });

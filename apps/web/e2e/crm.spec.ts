@@ -83,6 +83,41 @@ test.describe('Max Register', () => {
     await expect(page.getByText(offer)).toBeVisible({ timeout: 30_000 });
   });
 
+  test('adds a trainer who can log in, and switching them off logs them out', async ({ page, browser }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'Adds and switches off a staff login; one project is enough.');
+    await login(page, OWNER);
+    await page.goto('/crm/more');
+    await page.getByRole('link', { name: /स्टाफ/ }).click();
+    await expect(page).toHaveURL(/\/crm\/settings\/staff$/);
+
+    // Letters only in the name; a fresh number each run.
+    const trainer = { name: 'टेस्ट ट्रेनर', mobile: `98${Date.now().toString().slice(-8)}`, pin: '5738' };
+    const add = page.getByRole('region', { name: 'नया स्टाफ जोड़ें' });
+    await add.getByLabel('नाम').fill(trainer.name);
+    await add.getByLabel('मोबाइल नंबर').fill(trainer.mobile);
+    await add.getByRole('radio', { name: 'ट्रेनर' }).click();
+    await add.getByLabel('PIN (4 से 6 अंक)').fill(trainer.pin);
+    await add.getByRole('button', { name: 'जोड़ें' }).click();
+    await expect(add.getByRole('status')).toHaveText(`${trainer.name} जुड़ गए`, { timeout: 30_000 });
+
+    // The new login is real: the trainer signs in on their own phone.
+    const baseURL = testInfo.project.use.baseURL;
+    const phone = await browser.newContext(baseURL === undefined ? {} : { baseURL });
+    const trainerPage = await phone.newPage();
+    await login(trainerPage, { mobile: trainer.mobile, pin: trainer.pin });
+
+    // The owner switches them off...
+    const row = page.getByRole('listitem').filter({ hasText: trainer.mobile.slice(-4) }).filter({ hasText: trainer.name });
+    await row.getByRole('button', { name: 'बंद करें' }).click();
+    await row.getByRole('button', { name: 'हाँ, बंद करें' }).click();
+    await expect(row.getByRole('status')).toHaveText('बंद कर दिया — सारे फ़ोन से लॉगआउट', { timeout: 30_000 });
+
+    // ...and the trainer's very next request lands on the login screen.
+    await trainerPage.goto('/crm/members');
+    await expect(trainerPage).toHaveURL(/\/crm\/login$/);
+    await phone.close();
+  });
+
   test('keeps settings from reception', async ({ page }) => {
     await login(page, RECEPTION);
     await page.goto('/crm/settings');

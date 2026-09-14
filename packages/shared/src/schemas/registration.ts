@@ -29,7 +29,7 @@ export type RegistrationErrorCode = (typeof REGISTRATION_ERROR_CODES)[number];
 export const MEMBER_GENDERS = ['MALE', 'FEMALE', 'OTHER'] as const;
 
 /** Letters (Latin or Devanagari, with their combining marks), spaces and . ' - */
-const NAME_PATTERN = /^[\p{Script=Latin}\p{Script=Devanagari}\p{M}][\p{Script=Latin}\p{Script=Devanagari}\p{M} .'-]*$/u;
+export const NAME_PATTERN = /^[\p{Script=Latin}\p{Script=Devanagari}\p{M}][\p{Script=Latin}\p{Script=Devanagari}\p{M} .'-]*$/u;
 
 /**
  * Email is optional. The privacy notice lists it as optional, and it is the one field

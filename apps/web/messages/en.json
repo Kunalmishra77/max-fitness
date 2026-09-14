@@ -944,6 +944,50 @@
         "5": "Friday",
         "6": "Saturday"
       }
+    },
+    "staff": {
+      "title": "Staff",
+      "helper": "Who can log in",
+      "you": "You",
+      "OWNER": "Owner",
+      "RECEPTION": "Reception",
+      "TRAINER": "Trainer",
+      "SUPER_ADMIN": "Admin",
+      "active": "Active",
+      "inactive": "Switched off",
+      "lastLogin": "Last login {date}",
+      "neverLoggedIn": "Has not logged in yet",
+      "add": "Add a staff member",
+      "name": "Name",
+      "mobile": "Mobile number",
+      "role": "Role",
+      "pin": "PIN (4 to 6 digits)",
+      "pinHelper": "Tell them this PIN yourself — it is not shown anywhere",
+      "addSave": "Add",
+      "saving": "Working…",
+      "added": "{name} added",
+      "resetPin": "Change PIN",
+      "newPin": "New PIN",
+      "resetSave": "Change PIN",
+      "resetDone": "PIN changed — they are logged out on every phone",
+      "deactivate": "Switch off",
+      "activate": "Switch back on",
+      "confirmDeactivate": "Switch off {name}? They will not be able to log in and will be logged out on every phone.",
+      "yes": "Yes, switch off",
+      "cancel": "Cancel",
+      "deactivated": "Switched off — logged out everywhere",
+      "activated": "Switched back on",
+      "receptionFees": "Reception can take fees",
+      "receptionFeesHelper": "When off, only you can take fees",
+      "ownPinLater": "Changing your own PIN is coming soon",
+      "errors": {
+        "name": "Enter the full name.",
+        "mobile": "Enter a valid mobile number.",
+        "role": "Choose reception or trainer.",
+        "pin": "The PIN must be 4 to 6 digits.",
+        "taken": "Someone already logs in with this number.",
+        "generic": "That did not work. Please try again."
+      }
     }
   }
 }

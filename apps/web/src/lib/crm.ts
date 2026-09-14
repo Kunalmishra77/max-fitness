@@ -12,6 +12,8 @@ import {
   PrismaRegistrationUnitOfWork,
   PrismaReportsReader,
   PrismaSettingsUnitOfWork,
+  PrismaStaffReader,
+  PrismaStaffUnitOfWork,
   PrismaVoidPaymentUnitOfWork,
 } from '@mfp/db';
 import { elevateSession, login as loginService } from '@mfp/core';
@@ -54,7 +56,9 @@ export async function currentActor(): Promise<CrmSessionActor | null> {
     // passing database hiccup signs staff out in the middle of their work.
     return await withOneRetry(async () => {
       const gym = await loadGym(container);
-      return new PrismaCrmSessions(container.prisma).actorFor(token, container.clock.now(), gym.settings.pricing.allowDeskDiscounts);
+      // Whether reception may take fees is its own setting; this used to read the discount
+      // switch, so turning discounts off also stopped reception taking fees (ADR-048).
+      return new PrismaCrmSessions(container.prisma).actorFor(token, container.clock.now(), gym.settings.pricing.receptionMayTakePayments);
     });
   } catch (error) {
     console.error(`[crm] session lookup failed: ${error instanceof Error ? error.name : 'Error'}`);
@@ -159,6 +163,16 @@ export function attendanceDeps(gym: GymContext) {
     uow: new PrismaAttendanceUnitOfWork(container.prisma),
     cooldownMinutes: gym.settings.attendance.checkInCooldownMinutes,
   };
+}
+
+/** Managing staff logins; PINs are hashed with Argon2id (security-plan §3.1). */
+export function staffDeps() {
+  const container = getContainer();
+  return { clock: container.clock, uow: new PrismaStaffUnitOfWork(container.prisma), hasher: new Argon2PinHasher() };
+}
+
+export function staffReader() {
+  return new PrismaStaffReader(getContainer().prisma);
 }
 
 /** The owner's settings and plan prices (crm-ux-blueprint §14). */

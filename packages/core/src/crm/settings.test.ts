@@ -164,6 +164,11 @@ describe('updateGymSettings', () => {
     expect(store.saved).toEqual([]);
   });
 
+  it('lets the owner decide whether reception may take fees, separately from discounts', async () => {
+    await expect(save({ pricing: { receptionMayTakePayments: false } })).resolves.toEqual({ changedGroups: ['pricing'] });
+    expect(store.saved[0]?.pricing).toMatchObject({ receptionMayTakePayments: false, allowDeskDiscounts: true });
+  });
+
   it('refuses settings this screen does not manage, so a feature flag cannot be flipped from here', async () => {
     await expect(save({ features: { kioskShadowMode: false } } as never)).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
     expect(store.saved).toEqual([]);

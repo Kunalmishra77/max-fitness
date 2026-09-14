@@ -17,6 +17,7 @@ import { randomBytes } from 'node:crypto';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { RegistrationFieldsSchema, addDays, todayIST, type Clock } from '@mfp/shared';
 import {
+  addStaff,
   advanceLead,
   DomainError,
   elevationExpiry,
@@ -28,6 +29,8 @@ import {
   recordDeskPayment,
   registerAtDesk,
   registerMember,
+  resetStaffPin,
+  setStaffActive,
   undoAttendance,
   voidPayment,
   type CheckoutSettings,
@@ -43,6 +46,7 @@ import { PrismaAttendanceUnitOfWork } from '../src/repositories/attendance.repos
 import { PrismaLeadPipelineUnitOfWork } from '../src/repositories/lead-pipeline.repository';
 import { PrismaReportsReader } from '../src/repositories/reports-read.repository';
 import { PrismaSettingsUnitOfWork } from '../src/repositories/settings.repository';
+import { PrismaStaffUnitOfWork } from '../src/repositories/staff.repository';
 import { PrismaCallOutcomeUnitOfWork, PrismaVoidPaymentUnitOfWork } from '../src/repositories/crm-actions.repository';
 import { PrismaCrmReader } from '../src/repositories/crm-read.repository';
 import { PrismaDeskPaymentUnitOfWork } from '../src/repositories/desk-payment.repository';
@@ -499,6 +503,46 @@ suite('CRM fee desk against Postgres', () => {
 
     // Put the price back: other tests in this file sell the plan at MONTH_PRICE.
     await updatePlanPrices({ prices: [{ code: 'M1_MALE', pricePaise: MONTH_PRICE }] }, deps);
+  });
+
+  it('adds a receptionist, resets their PIN and switches them off, signing them out each time', async () => {
+    const clock = fakeClockAt('2026-09-12T11:30');
+    const deps = { actor: ownerActor(clock), clock, uow: new PrismaStaffUnitOfWork(prisma) };
+    // The repository stores whatever the hasher returns; Argon2 itself is tested in integrations.
+    const hasher = { hash: (pin: string) => Promise.resolve(`test-hash-of-length-${pin.length}`) };
+    const mobile = '+919800000001';
+    const inAnHour = new Date(clock.now().getTime() + 3_600_000);
+
+    const { staffUserId } = await addStaff({ name: 'रीना शर्मा', mobile, role: 'RECEPTION', pin: '4826' }, { ...deps, hasher });
+    expect(await prisma.staffUser.findUniqueOrThrow({ where: { id: staffUserId } })).toMatchObject({
+      role: 'RECEPTION',
+      isActive: true,
+      language: 'hi',
+      pinHash: 'test-hash-of-length-4',
+    });
+    await expect(addStaff({ name: 'दूसरी रीना', mobile, role: 'TRAINER', pin: '1111' }, { ...deps, hasher })).rejects.toMatchObject({ code: 'CONFLICT' });
+
+    // A lockout and a live session, to see the reset clear the first and end the second.
+    await prisma.staffUser.update({ where: { id: staffUserId }, data: { failedPinCount: 4, lockedUntil: inAnHour } });
+    await prisma.session.create({ data: { staffUserId, tokenHash: unique('token'), expiresAt: inAnHour } });
+
+    await resetStaffPin({ staffUserId, pin: '739104' }, { ...deps, hasher });
+    expect(await prisma.staffUser.findUniqueOrThrow({ where: { id: staffUserId } })).toMatchObject({
+      pinHash: 'test-hash-of-length-6',
+      failedPinCount: 0,
+      lockedUntil: null,
+    });
+    expect(await prisma.session.count({ where: { staffUserId, revokedAt: null } })).toBe(0);
+
+    await prisma.session.create({ data: { staffUserId, tokenHash: unique('token'), expiresAt: inAnHour } });
+    await expect(setStaffActive({ staffUserId, active: false }, deps)).resolves.toEqual({ changed: true });
+    expect((await prisma.staffUser.findUniqueOrThrow({ where: { id: staffUserId } })).isActive).toBe(false);
+    expect(await prisma.session.count({ where: { staffUserId, revokedAt: null } })).toBe(0);
+
+    const audit = await prisma.auditLog.findMany({ where: { gymId, entityId: staffUserId } });
+    expect(audit.map((row) => row.action).sort()).toEqual(['staff.add', 'staff.deactivate', 'staff.pin_reset']);
+    // Neither the PIN nor its hash is ever in the audit log.
+    expect(JSON.stringify(audit)).not.toMatch(/4826|739104|test-hash/);
   });
 
   it('records a call outcome, snoozing the task to an IST date', async () => {

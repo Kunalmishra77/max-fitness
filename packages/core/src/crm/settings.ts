@@ -109,7 +109,7 @@ export async function updatePlanPrices(
 
 /** The groups, and the fields within them, this screen may change. Anything else is refused. */
 const MANAGED_FIELDS = {
-  pricing: ['admissionFeePaise'],
+  pricing: ['admissionFeePaise', 'receptionMayTakePayments'],
   privacy: ['minAge'],
   promo: ['enabled', 'textEn', 'textHi'],
   trust: ['googleRating', 'googleReviews', 'justdialRating', 'justdialReviews', 'establishedYear'],
@@ -120,7 +120,7 @@ type ManagedGroup = keyof typeof MANAGED_FIELDS;
 const MANAGED_GROUPS = Object.keys(MANAGED_FIELDS) as ManagedGroup[];
 
 export interface SettingsPatch {
-  readonly pricing?: { readonly admissionFeePaise?: number };
+  readonly pricing?: { readonly admissionFeePaise?: number; readonly receptionMayTakePayments?: boolean };
   readonly privacy?: { readonly minAge?: number };
   readonly promo?: { readonly enabled?: boolean; readonly textEn?: string; readonly textHi?: string };
   readonly trust?: {

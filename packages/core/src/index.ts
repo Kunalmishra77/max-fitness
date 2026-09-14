@@ -42,5 +42,6 @@ export * from './crm/lead-pipeline';
 export * from './reports/reports';
 export * from './crm/mark-attendance';
 export * from './crm/settings';
+export * from './crm/staff';
 export * from './crm/record-call-outcome';
 export * from './crm/void-payment';

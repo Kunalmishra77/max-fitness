@@ -2,8 +2,11 @@
 
 import { redirect } from 'next/navigation';
 import {
+  addStaff,
   advanceLead,
   can,
+  resetStaffPin,
+  setStaffActive,
   markAttendance,
   mayAfterPinEntry,
   recordCallOutcome,
@@ -15,8 +18,8 @@ import {
   type LeadStatus,
 } from '@mfp/core';
 import { revalidateLandingContent } from '@/lib/revalidate-landing';
-import type { PriceInput, SettingsPatchInput, SettingsResult, UnlockResult } from '@/lib/settings-types';
-import { RegistrationFieldsSchema } from '@mfp/shared';
+import type { PriceInput, SettingsPatchInput, SettingsResult, StaffCreateFields, StaffResult, UnlockResult } from '@/lib/settings-types';
+import { RegistrationFieldsSchema, StaffCreateSchema, StaffPinSchema } from '@mfp/shared';
 import type { AddMemberErrorCode, AddMemberFields, AddMemberResult } from '@/components/crm/add-member-flow';
 import type { MarkResult, UndoResult } from '@/components/crm/attendance-marker';
 import type { CallOutcomeChoice, OutcomeResult } from '@/components/crm/call-outcome';
@@ -32,6 +35,7 @@ import {
   requireCrmContext,
   settingsDeps,
   signOut,
+  staffDeps,
   voidPaymentDeps,
 } from '@/lib/crm';
 
@@ -176,6 +180,46 @@ export async function savePlanPricesAction(prices: readonly PriceInput[]): Promi
 
 export async function saveSettingsAction(patch: SettingsPatchInput): Promise<SettingsResult> {
   return settingsSave(async (deps) => (await updateGymSettings({ patch }, deps)).changedGroups.length > 0);
+}
+
+/** Shared by the staff actions: owner with a fresh PIN, and what an error means for the form. */
+async function staffChange(work: (deps: ReturnType<typeof staffDeps> & { actor: Awaited<ReturnType<typeof requireCrmContext>>['actor'] }) => Promise<unknown>): Promise<StaffResult> {
+  const { actor } = await requireCrmContext();
+  const now = getContainer().clock.now();
+  if (!mayAfterPinEntry(actor, 'settings.manage', now)) return { ok: false, code: 'FORBIDDEN' };
+  if (!can(actor, 'settings.manage', now)) return { ok: false, code: 'PIN_REQUIRED' };
+
+  try {
+    await work({ actor, ...staffDeps() });
+    return { ok: true };
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    const field = (error as { meta?: { field?: string } }).meta?.field;
+    const withField = field === undefined ? {} : { field };
+    if (code === 'VALIDATION_FAILED' || code === 'NOT_FOUND') return { ok: false, code: 'VALIDATION_FAILED', ...withField };
+    if (code === 'CONFLICT') return { ok: false, code: 'CONFLICT', ...withField };
+    if (code === 'FORBIDDEN') return { ok: false, code: 'FORBIDDEN' };
+    console.error(`[crm] staff change failed: ${code ?? (error instanceof Error ? error.name : 'Error')}`);
+    return { ok: false, code: 'generic' };
+  }
+}
+
+/** Add reception or a trainer, with a PIN of their own (security-plan §3.1). */
+export async function addStaffAction(fields: StaffCreateFields): Promise<StaffResult> {
+  const parsed = StaffCreateSchema.safeParse(fields);
+  if (!parsed.success) return { ok: false, code: 'VALIDATION_FAILED', field: parsed.error.issues[0]?.message ?? 'name' };
+  return staffChange((deps) => addStaff(parsed.data, deps));
+}
+
+/** A new PIN for someone who forgot theirs; it signs them out everywhere. */
+export async function resetStaffPinAction(staffUserId: string, pin: string): Promise<StaffResult> {
+  if (!StaffPinSchema.safeParse(pin).success) return { ok: false, code: 'VALIDATION_FAILED', field: 'pin' };
+  return staffChange((deps) => resetStaffPin({ staffUserId, pin }, deps));
+}
+
+/** Switch someone off (signed out everywhere) or back on. */
+export async function setStaffActiveAction(staffUserId: string, active: boolean): Promise<StaffResult> {
+  return staffChange((deps) => setStaffActive({ staffUserId, active }, deps));
 }
 
 /** Move an enquiry along the pipeline (BR-10.1). */

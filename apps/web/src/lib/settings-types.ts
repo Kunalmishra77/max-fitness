@@ -11,6 +11,16 @@ export type SettingsResult =
 
 export type UnlockResult = { ok: true } | { ok: false; code: 'INVALID_PIN' | 'ACCOUNT_LOCKED' | 'FORBIDDEN' | 'INTERNAL' };
 
+/** What the staff actions answer. `field` names the form field to point at. */
+export type StaffResult = { ok: true } | { ok: false; code: 'PIN_REQUIRED' | 'FORBIDDEN' | 'VALIDATION_FAILED' | 'CONFLICT' | 'generic'; field?: string };
+
+export interface StaffCreateFields {
+  readonly name: string;
+  readonly mobile: string;
+  readonly role: 'RECEPTION' | 'TRAINER';
+  readonly pin: string;
+}
+
 export interface PriceInput {
   readonly code: string;
   readonly pricePaise: number;
@@ -24,7 +34,7 @@ export interface HoursInput {
 }
 
 export interface SettingsPatchInput {
-  readonly pricing?: { readonly admissionFeePaise?: number };
+  readonly pricing?: { readonly admissionFeePaise?: number; readonly receptionMayTakePayments?: boolean };
   readonly privacy?: { readonly minAge?: number };
   readonly promo?: { readonly enabled?: boolean; readonly textEn?: string; readonly textHi?: string };
   readonly trust?: {

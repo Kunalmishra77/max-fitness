@@ -17,3 +17,4 @@ export * from './repositories/attendance.repository';
 export * from './repositories/lead-pipeline.repository';
 export * from './repositories/reports-read.repository';
 export * from './repositories/settings.repository';
+export * from './repositories/staff.repository';
