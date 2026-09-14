@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { RegistrationFieldsSchema } from '@mfp/shared';
 import { fakeClockAt } from '../testing/builders';
 import type { PutObjectRequest, StorageDriver, StoredObject } from '../ports/storage';
-import type { ConsentRecord, NewMemberRecord, RegistrationStore, SelfieMediaRecord } from '../signup/registration.service';
+import type { ConsentRecord, LeadConversion, NewMemberRecord, RegistrationStore, SelfieMediaRecord } from '../signup/registration.service';
 import type { CrmActor } from './permissions';
 import { registerAtDesk } from './add-member';
 
@@ -39,6 +39,12 @@ class FakeStore implements RegistrationStore {
   readonly media: SelfieMediaRecord[] = [];
   readonly photos: Array<{ memberId: string; mediaId: string }> = [];
   readonly consents: ConsentRecord[] = [];
+  readonly conversions: LeadConversion[] = [];
+
+  convertLeadsForMobile(conversion: LeadConversion) {
+    this.conversions.push(conversion);
+    return Promise.resolve(1);
+  }
 
   countMembersWithMobileAndName() {
     return Promise.resolve(this.duplicates);
@@ -140,6 +146,14 @@ describe('registerAtDesk', () => {
     expect(storage.puts).toHaveLength(1);
     expect(store.media[0]).toMatchObject({ gymId: 'gym_1', memberId: 'mem_1', width: 480, height: 640 });
     expect(store.photos).toEqual([{ memberId: 'mem_1', mediaId: 'media_1' }]);
+  });
+
+  it('turns an enquiry from the same number into this member — the desk is where most enquiries end up joining (BR-10.2)', async () => {
+    await add({ fields: fields() });
+
+    expect(store.conversions).toEqual([
+      { gymId: 'gym_1', mobile: '+919876543210', since: new Date(clock.now().getTime() - 60 * 86_400_000), memberId: 'mem_1', at: clock.now() },
+    ]);
   });
 
   it('refuses a trainer', async () => {

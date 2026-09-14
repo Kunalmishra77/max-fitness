@@ -13,7 +13,7 @@ import { useState, useTransition } from 'react';
  */
 
 export type MarkResult =
-  | { ok: true; decision: 'RECORD'; eventId: string }
+  | { ok: true; decision: 'RECORD'; eventId: string; callTaskRaised: boolean }
   | { ok: true; decision: 'WITHIN_COOLDOWN' | 'DUPLICATE_EVENT'; eventId: null }
   | { ok: false; code: 'FORBIDDEN' | 'NOT_FOUND' | 'generic' };
 
@@ -32,7 +32,9 @@ export function AttendanceMarker({
 }) {
   const t = useTranslations('crm.attendance');
   const router = useRouter();
-  const [state, setState] = useState<{ kind: 'marked'; eventId: string } | { kind: 'already' } | { kind: 'failed'; message: string } | null>(null);
+  const [state, setState] = useState<
+    { kind: 'marked'; eventId: string; callTaskRaised: boolean } | { kind: 'already' } | { kind: 'failed'; message: string } | null
+  >(null);
   const [pending, start] = useTransition();
 
   const onMark = () => {
@@ -43,7 +45,7 @@ export function AttendanceMarker({
       if (!result.ok) {
         setState({ kind: 'failed', message: result.code === 'FORBIDDEN' ? t('notAllowed') : t('failed') });
       } else if (result.decision === 'RECORD') {
-        setState({ kind: 'marked', eventId: result.eventId });
+        setState({ kind: 'marked', eventId: result.eventId, callTaskRaised: result.callTaskRaised });
         router.refresh();
       } else {
         setState({ kind: 'already' });
@@ -83,7 +85,11 @@ export function AttendanceMarker({
 
       {state?.kind === 'marked' ? (
         <div role="status" className="fixed inset-x-0 bottom-20 z-30 mx-4 flex items-center justify-between gap-3 rounded-panel bg-brand-plate-navy p-4 text-white shadow-[var(--shadow-overlay)]">
-          <span className="text-crm-body font-semibold">{t('marked', { name })}</span>
+          <span>
+            <span className="block text-crm-body font-semibold">{t('marked', { name })}</span>
+            {/* BR-9.3: the desk should know now, not tomorrow morning, that this one is worth a word. */}
+            {state.callTaskRaised ? <span className="block text-small text-white/85">{t('callListed')}</span> : null}
+          </span>
           <button type="button" disabled={pending} onClick={() => onUndo(state.eventId)} className="min-h-12 shrink-0 rounded-button bg-white px-4 text-crm-body font-bold text-brand-plate-navy">
             {t('undo')}
           </button>

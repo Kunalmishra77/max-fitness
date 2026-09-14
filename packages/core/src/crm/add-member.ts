@@ -1,5 +1,6 @@
 import { todayIST, type Clock, type RegistrationFields } from '@mfp/shared';
 import type { StorageDriver, StoredObject } from '../ports/storage';
+import { autoConvertWindowStart } from '../leads/lead.rules';
 import { assessAge, registrationConsents } from '../signup/registration.rules';
 import type { RegistrationUnitOfWork, SelfieImage } from '../signup/registration.service';
 import { assertCan, type CrmActor } from './permissions';
@@ -97,6 +98,10 @@ export async function registerAtDesk(
           userAgent: null,
         })),
       );
+
+      // BR-10.2: the desk is where most enquiries end up joining.
+      const now = deps.clock.now();
+      await store.convertLeadsForMobile({ gymId: actor.gymId, mobile: fields.mobile, since: autoConvertWindowStart(now), memberId, at: now });
 
       return { memberId, isMinor, possibleDuplicate: matches > 0 };
     });

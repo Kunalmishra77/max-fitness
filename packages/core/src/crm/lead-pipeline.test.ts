@@ -20,6 +20,12 @@ const newLead: LeadForUpdate = { id: 'lead_1', gymId: 'gym_1', status: 'NEW', no
 class FakeStore implements LeadPipelineStore {
   lead: LeadForUpdate | null = newLead;
   readonly updates: Array<LeadUpdate & { leadId: string }> = [];
+  readonly closedTasks: Array<{ leadId: string; closedAt: Date; doneById: string }> = [];
+
+  closeOpenLeadTasks(leadId: string, closedAt: Date, doneById: string) {
+    this.closedTasks.push({ leadId, closedAt, doneById });
+    return Promise.resolve();
+  }
 
   loadLead(gymId: string, leadId: string) {
     return Promise.resolve(this.lead?.id === leadId && this.lead.gymId === gymId ? this.lead : null);
@@ -96,6 +102,22 @@ describe('advanceLead', () => {
 
     store.lead = null;
     await expect(move()).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
+  it('closes the enquiry’s open "new lead" call once someone has dealt with it (BR-7 auto-close)', async () => {
+    await move({ note: 'फोन किया' });
+    expect(store.closedTasks).toEqual([{ leadId: 'lead_1', closedAt: clock.now(), doneById: 'staff_2' }]);
+  });
+
+  it('closes it however the enquiry moves, including straight to lost', async () => {
+    await move({ to: 'LOST' });
+    expect(store.closedTasks).toHaveLength(1);
+  });
+
+  it('closes nothing when the move itself is refused', async () => {
+    store.lead = { ...newLead, status: 'VISITED' };
+    await expect(move({ to: 'CONTACTED' })).rejects.toMatchObject({ code: 'CONFLICT' });
+    expect(store.closedTasks).toEqual([]);
   });
 
   it('can mark a lead lost from anywhere in the pipeline', async () => {

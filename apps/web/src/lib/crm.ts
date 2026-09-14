@@ -18,6 +18,7 @@ import { Argon2PinHasher } from '@mfp/integrations/auth';
 import { todayIST, type ISTDate } from '@mfp/shared';
 import { getContainer } from './container';
 import { checkoutSettingsOf, loadGym, type GymContext } from './gym';
+import { withOneRetry } from './retry';
 import { hashIp } from './signup-access';
 
 /**
@@ -47,8 +48,12 @@ export async function currentActor(): Promise<CrmSessionActor | null> {
 
   const container = getContainer();
   try {
-    const gym = await loadGym(container);
-    return await new PrismaCrmSessions(container.prisma).actorFor(token, container.clock.now(), gym.settings.pricing.allowDeskDiscounts);
+    // A failed lookup is tried once more before it counts as "no session": otherwise a
+    // passing database hiccup signs staff out in the middle of their work.
+    return await withOneRetry(async () => {
+      const gym = await loadGym(container);
+      return new PrismaCrmSessions(container.prisma).actorFor(token, container.clock.now(), gym.settings.pricing.allowDeskDiscounts);
+    });
   } catch (error) {
     console.error(`[crm] session lookup failed: ${error instanceof Error ? error.name : 'Error'}`);
     return null;

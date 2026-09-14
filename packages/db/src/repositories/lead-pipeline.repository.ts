@@ -28,6 +28,13 @@ function leadPipelineStore(tx: TransactionClient): LeadPipelineStore {
       });
     },
 
+    async closeOpenLeadTasks(leadId: string, closedAt: Date, doneById: string): Promise<void> {
+      await tx.callTask.updateMany({
+        where: { leadId, reason: 'NEW_LEAD', status: 'OPEN' },
+        data: { status: 'DONE', doneAt: closedAt, doneById },
+      });
+    },
+
     async updateLead(leadId: string, update: LeadUpdate): Promise<void> {
       await tx.lead.update({
         where: { id: leadId },

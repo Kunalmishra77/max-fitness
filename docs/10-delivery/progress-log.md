@@ -36,6 +36,18 @@ Blockers / questions for client:
 - Same as Phase 3: payment-failure wording, prices, minimum age, admission fee, PIN confirmation, photos, policy answers, grievance officer.
 - Demo staff logins are the seeded ones (owner 9000000001 / 2468, reception 9000000002 / 1357). Real PINs must be set before anyone uses this outside a demo.
 
+### 2026-09-14 (later) — Phase 4 — Four rules the CRM was skipping
+Done:
+- **`EXPIRED_BUT_VISITING` from a desk check-in (ADR-045; BR-7 priority 1, BR-9.3).** A member whose fees have run out and who is marked in by hand goes to the top of today's calls, once — the partial unique index plus `skipDuplicates` turns a second visit into a no-op, proved against Postgres. The undo bar says so straight away: "फीस खत्म है — आज के कॉल में सबसे ऊपर डाल दिया".
+- **Moving an enquiry closes its `NEW_LEAD` call.** `shouldAutoClose` had returned `false` for `NEW_LEAD`, so nothing ever closed one and the calls list kept showing enquiries someone had already rung. Any move now closes it; a refused move closes nothing.
+- **BR-10.2 auto-conversion, for both doors.** Registering on the website or at the desk converts every enquiry from the same number made in the last 60 days that is not already converted — a lost one included — and closes its open `NEW_LEAD` calls, inside the registration transaction. An enquiry older than 60 days is left alone.
+- **The session lookup retries once on failure**, never on "no session", so a passing database hiccup no longer signs staff out mid-work.
+- **Verification:** core unit **528 passed**; web, shared, integrations and worker **401 passed**; database integration **43 passed** against Supabase, including the new expired-visitor, lead-task and conversion tests; eslint clean; typecheck **6/6 packages**. Playwright CRM desktop **11/11**, but not in one run: the first run failed 3 read-only journeys on first-compile latency — the dev log shows `/crm/login` taking **82 s** to compile and a profile page **17.6 s** against a 15 s expectation, with no application errors — and the same 3 passed on the warm server in under 5 s each. Two of my own older integration tests needed the new `callTaskRaised` field added to exact-match assertions. Demo data re-seeded after the writing journeys.
+
+Pending / next:
+- Unchanged: object storage and a worker host before real members; reports, settings, privacy export and erasure, PWA, the wizard camera step; the unexplained login flake of 2026-09-12 (the retry reduces sign-outs but does not explain it).
+- For the client: whether "converted" should mean "registered" (BR-10.2 as written, and as built) or "paid".
+
 ### 2026-09-14 — Live demo on Vercel, code on GitHub
 Done:
 - **Code:** `github.com/Kunalmishra77/max-fitness`, branch `main`. `.env` and every secret stayed out of the repository; only `.env.example` is tracked.

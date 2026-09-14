@@ -40,6 +40,8 @@ export interface LeadUpdate {
 export interface LeadPipelineStore {
   loadLead(gymId: string, leadId: string): Promise<LeadForUpdate | null>;
   updateLead(leadId: string, update: LeadUpdate): Promise<void>;
+  /** Close the enquiry's open `NEW_LEAD` call tasks (BR-7 auto-close). */
+  closeOpenLeadTasks(leadId: string, closedAt: Date, doneById: string): Promise<void>;
 }
 
 export interface LeadPipelineUnitOfWork {
@@ -85,6 +87,10 @@ export async function advanceLead(
       followUpAt: input.followUpAt ?? null,
       convertedMemberId: input.convertedMemberId ?? null,
     });
+
+    // Any move means someone has dealt with the enquiry, so "not contacted in two gym hours"
+    // is no longer true — and the calls list should stop saying it is.
+    await store.closeOpenLeadTasks(lead.id, now, deps.actor.staffUserId);
 
     return { leadId: lead.id, status: input.to };
   });

@@ -1,4 +1,11 @@
-import type { AttendanceEventRecord, AttendanceStore, AttendanceUnitOfWork, MemberForAttendance, StoredAttendanceEvent } from '@mfp/core';
+import type {
+  AttendanceEventRecord,
+  AttendanceStore,
+  AttendanceUnitOfWork,
+  CallTaskToRaise,
+  MemberForAttendance,
+  StoredAttendanceEvent,
+} from '@mfp/core';
 import { withTransaction, type PrismaClient, type TransactionClient } from '../client';
 import { toDbDate } from '../dates';
 
@@ -51,6 +58,25 @@ function attendanceStore(tx: TransactionClient): AttendanceStore {
       });
       await tx.member.update({ where: { id: record.memberId }, data: { lastAttendanceAt: record.capturedAt } });
       return created.id;
+    },
+
+    async raiseCallTask(task: CallTaskToRaise): Promise<boolean> {
+      // One OPEN task per member and reason is a partial unique index; `skipDuplicates`
+      // turns a second walk-in (or a race) into a no-op rather than an error.
+      const { count } = await tx.callTask.createMany({
+        data: [
+          {
+            gymId: task.gymId,
+            memberId: task.memberId,
+            reason: task.reason,
+            priority: task.priority,
+            dueDate: toDbDate(task.dueDate),
+            status: 'OPEN',
+          },
+        ],
+        skipDuplicates: true,
+      });
+      return count === 1;
     },
 
     async loadEvent(gymId: string, eventId: string): Promise<StoredAttendanceEvent | null> {

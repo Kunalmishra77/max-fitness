@@ -1,6 +1,7 @@
 import { todayIST, type Clock, type E164Mobile, type Gender, type ISTDate, type Language, type RegistrationFields } from '@mfp/shared';
 import type { StorageDriver, StoredObject } from '../ports/storage';
 import { issueToken } from '../tokens/signed-links';
+import { autoConvertWindowStart } from '../leads/lead.rules';
 import { assessAge, registrationConsents, type RegistrationConsentType } from './registration.rules';
 
 /**
@@ -70,6 +71,20 @@ export interface ConsentRecord {
   readonly userAgent: string | null;
 }
 
+/**
+ * BR-10.2: someone who enquired and then registers is the same person arriving twice.
+ * Every enquiry from the same number in the window, not already converted, becomes this
+ * member — a lost one included, since joining is the fact that matters.
+ */
+export interface LeadConversion {
+  readonly gymId: string;
+  readonly mobile: E164Mobile;
+  /** Enquiries made on or after this moment count. */
+  readonly since: Date;
+  readonly memberId: string;
+  readonly at: Date;
+}
+
 export interface RegistrationStore {
   /** Same mobile and same name, case-insensitive — a hint only; families share numbers (SU-08). */
   countMembersWithMobileAndName(gymId: string, mobile: E164Mobile, fullName: string): Promise<number>;
@@ -77,6 +92,8 @@ export interface RegistrationStore {
   createSelfieMedia(record: SelfieMediaRecord): Promise<string>;
   setMemberPhoto(memberId: string, mediaId: string): Promise<void>;
   createConsents(records: readonly ConsentRecord[]): Promise<void>;
+  /** Converts the matching enquiries and closes their open `NEW_LEAD` calls; returns how many. */
+  convertLeadsForMobile(conversion: LeadConversion): Promise<number>;
 }
 
 export interface RegistrationUnitOfWork {
@@ -158,6 +175,9 @@ export async function registerMember(
           userAgent: deps.userAgent,
         })),
       );
+
+      const now = deps.clock.now();
+      await store.convertLeadsForMobile({ gymId: deps.gymId, mobile: fields.mobile, since: autoConvertWindowStart(now), memberId, at: now });
 
       return { memberId, possibleDuplicate: matches > 0 };
     });

@@ -5,6 +5,7 @@ import {
   markAttendance,
   undoAttendance,
   type AttendanceEventRecord,
+  type CallTaskToRaise,
   type AttendanceStore,
   type MemberForAttendance,
   type StoredAttendanceEvent,
@@ -29,6 +30,15 @@ class FakeStore implements AttendanceStore {
   event: StoredAttendanceEvent | null = null;
   readonly created: AttendanceEventRecord[] = [];
   readonly voided: Array<{ eventId: string; at: Date }> = [];
+  readonly tasks: CallTaskToRaise[] = [];
+  /** The partial unique index already holds an open task of this reason for the member. */
+  openTaskExists = false;
+
+  raiseCallTask(task: CallTaskToRaise) {
+    if (this.openTaskExists) return Promise.resolve(false);
+    this.tasks.push(task);
+    return Promise.resolve(true);
+  }
 
   memberForAttendance(gymId: string, memberId: string) {
     return Promise.resolve(this.member?.id === memberId && gymId === 'gym_1' ? this.member : null);
@@ -64,7 +74,7 @@ describe('markAttendance', () => {
     );
 
   it('records a manual check-in against today, with the staff member who marked it', async () => {
-    await expect(mark()).resolves.toEqual({ decision: 'RECORD', eventId: 'evt_1' });
+    await expect(mark()).resolves.toEqual({ decision: 'RECORD', eventId: 'evt_1', callTaskRaised: false });
 
     expect(store.created).toEqual([
       {
@@ -87,7 +97,7 @@ describe('markAttendance', () => {
 
   it('counts one visit per cooldown, however many times someone walks past (BR-9.1)', async () => {
     store.member = { ...member, lastAttendanceAt: new Date(clock.now().getTime() - 179 * 60_000) };
-    await expect(mark()).resolves.toEqual({ decision: 'WITHIN_COOLDOWN', eventId: null });
+    await expect(mark()).resolves.toEqual({ decision: 'WITHIN_COOLDOWN', eventId: null, callTaskRaised: false });
     expect(store.created).toEqual([]);
 
     store.member = { ...member, lastAttendanceAt: new Date(clock.now().getTime() - 181 * 60_000) };
@@ -96,8 +106,35 @@ describe('markAttendance', () => {
 
   it('treats the same tap arriving twice as the same visit', async () => {
     store.knownEventIds.add('tap_1');
-    await expect(mark()).resolves.toEqual({ decision: 'DUPLICATE_EVENT', eventId: null });
+    await expect(mark()).resolves.toEqual({ decision: 'DUPLICATE_EVENT', eventId: null, callTaskRaised: false });
     expect(store.created).toEqual([]);
+  });
+
+  it('puts a member whose fees have run out at the top of the call list when they walk in (BR-7, BR-9.3)', async () => {
+    await expect(mark({ feeStateAtCheckIn: 'EXPIRED' })).resolves.toEqual({ decision: 'RECORD', eventId: 'evt_1', callTaskRaised: true });
+
+    expect(store.tasks).toEqual([{ gymId: 'gym_1', memberId: 'mem_1', reason: 'EXPIRED_BUT_VISITING', priority: 1, dueDate: '2026-09-12' }]);
+  });
+
+  it('raises no task for a paid member, for someone who has left, or for a visit that was not recorded', async () => {
+    await mark({ feeStateAtCheckIn: 'PAID' });
+    await mark({ clientEventId: 'tap_2', feeStateAtCheckIn: 'DUE_SOON' });
+
+    store.member = { ...member, status: 'LEFT' };
+    await mark({ clientEventId: 'tap_3', feeStateAtCheckIn: 'EXPIRED' });
+
+    store.member = { ...member, lastAttendanceAt: new Date(clock.now().getTime() - 60_000) };
+    await expect(mark({ clientEventId: 'tap_4', feeStateAtCheckIn: 'EXPIRED' })).resolves.toMatchObject({
+      decision: 'WITHIN_COOLDOWN',
+      callTaskRaised: false,
+    });
+
+    expect(store.tasks).toEqual([]);
+  });
+
+  it('does not raise a second task while one is still open', async () => {
+    store.openTaskExists = true;
+    await expect(mark({ feeStateAtCheckIn: 'EXPIRED' })).resolves.toMatchObject({ decision: 'RECORD', callTaskRaised: false });
   });
 
   it('refuses a member who is not in this gym', async () => {

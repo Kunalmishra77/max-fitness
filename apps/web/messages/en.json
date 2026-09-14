@@ -804,7 +804,8 @@
       "undo": "Undo",
       "undone": "Attendance undone",
       "failed": "Could not mark it. Please try again.",
-      "notAllowed": "You are not allowed to mark attendance."
+      "notAllowed": "You are not allowed to mark attendance.",
+      "callListed": "Fees have run out — added to the top of today’s calls"
     },
     "leads": {
       "title": "Enquiries",

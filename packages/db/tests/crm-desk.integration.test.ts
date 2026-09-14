@@ -334,7 +334,7 @@ suite('CRM fee desk against Postgres', () => {
 
     // Walking past again inside the cooldown is the same visit (BR-9.1).
     const again = await markAttendance({ memberId, clientEventId: unique('tap') }, { actor, clock, uow: attendanceUow, cooldownMinutes: 180 });
-    expect(again).toEqual({ decision: 'WITHIN_COOLDOWN', eventId: null });
+    expect(again).toEqual({ decision: 'WITHIN_COOLDOWN', eventId: null, callTaskRaised: false });
     expect(await prisma.attendanceEvent.count({ where: { memberId, voidedAt: null } })).toBe(1);
 
     await undoAttendance({ eventId: marked.eventId! }, { actor, clock, uow: attendanceUow });
@@ -351,7 +351,7 @@ suite('CRM fee desk against Postgres', () => {
     const clientEventId = unique('tap');
 
     expect(await markAttendance({ memberId, clientEventId }, deps)).toMatchObject({ decision: 'RECORD' });
-    expect(await markAttendance({ memberId, clientEventId }, deps)).toEqual({ decision: 'DUPLICATE_EVENT', eventId: null });
+    expect(await markAttendance({ memberId, clientEventId }, deps)).toEqual({ decision: 'DUPLICATE_EVENT', eventId: null, callTaskRaised: false });
     expect(await prisma.attendanceEvent.count({ where: { memberId } })).toBe(1);
   });
 
@@ -376,6 +376,77 @@ suite('CRM fee desk against Postgres', () => {
     expect((await prisma.lead.findUniqueOrThrow({ where: { id: lead.id } })).status).toBe('CONVERTED');
     // A closed enquiry stays closed.
     await expect(advanceLead({ leadId: lead.id, to: 'LOST' }, { actor, clock, uow })).rejects.toMatchObject({ code: 'CONFLICT' });
+  });
+
+  it('puts an expired member who walks in on the call list once, however often they come (BR-7, BR-9.3)', async () => {
+    const clock = fakeClockAt('2026-09-12T11:30');
+    const { memberId } = await paidAtDesk(clock, 'Desk Expired Visitor');
+    const uow = new PrismaAttendanceUnitOfWork(prisma);
+    const actor = ownerActor(clock);
+
+    const first = await markAttendance({ memberId, clientEventId: unique('tap'), feeStateAtCheckIn: 'EXPIRED' }, { actor, clock, uow, cooldownMinutes: 180 });
+    expect(first).toMatchObject({ decision: 'RECORD', callTaskRaised: true });
+
+    // A second recorded visit (no cooldown here) must not stack a second open task.
+    const second = await markAttendance({ memberId, clientEventId: unique('tap'), feeStateAtCheckIn: 'EXPIRED' }, { actor, clock, uow, cooldownMinutes: 0 });
+    expect(second).toMatchObject({ decision: 'RECORD', callTaskRaised: false });
+
+    const tasks = await prisma.callTask.findMany({ where: { memberId, reason: 'EXPIRED_BUT_VISITING' } });
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0]).toMatchObject({ status: 'OPEN', priority: 1 });
+    expect(fromDbDate(tasks[0]!.dueDate)).toBe(todayIST(clock));
+  });
+
+  it('closes an enquiry’s open "new lead" call when the enquiry moves on (BR-7 auto-close)', async () => {
+    const clock = fakeClockAt('2026-09-12T11:30');
+    const lead = await prisma.lead.create({
+      data: { gymId, name: 'बिना कॉल की पूछताछ', mobile: '+919000060006', source: 'WEBSITE_HERO', status: 'NEW' },
+    });
+    const task = await prisma.callTask.create({
+      data: { gymId, leadId: lead.id, reason: 'NEW_LEAD', priority: 2, dueDate: toDbDate(todayIST(clock)), status: 'OPEN' },
+    });
+
+    await advanceLead({ leadId: lead.id, to: 'CONTACTED' }, { actor: ownerActor(clock), clock, uow: new PrismaLeadPipelineUnitOfWork(prisma) });
+
+    expect(await prisma.callTask.findUniqueOrThrow({ where: { id: task.id }, select: { status: true, doneById: true } })).toEqual({
+      status: 'DONE',
+      doneById: ownerId,
+    });
+  });
+
+  it('turns recent enquiries from the same number into the member who registers, and leaves an old one alone (BR-10.2)', async () => {
+    const clock = fakeClockAt('2026-09-12T11:30');
+    const mobile = '+919000050005';
+    const recentNew = await prisma.lead.create({ data: { gymId, name: 'नई पूछताछ', mobile, source: 'WEBSITE_HERO', status: 'NEW' } });
+    const recentLost = await prisma.lead.create({ data: { gymId, name: 'छोड़ी पूछताछ', mobile, source: 'PHONE', status: 'LOST' } });
+    const tooOld = await prisma.lead.create({
+      data: { gymId, name: 'पुरानी पूछताछ', mobile, source: 'PHONE', status: 'NEW', createdAt: new Date(clock.now().getTime() - 61 * 86_400_000) },
+    });
+    const task = await prisma.callTask.create({
+      data: { gymId, leadId: recentNew.id, reason: 'NEW_LEAD', priority: 2, dueDate: toDbDate(todayIST(clock)), status: 'OPEN' },
+    });
+
+    const { memberId } = await registerAtDesk(
+      {
+        fields: RegistrationFieldsSchema.parse({
+          fullName: 'पूछताछ से मेंबर',
+          mobile: '9000050005',
+          dob: '1993-02-02',
+          gender: 'MALE',
+          language: 'hi',
+          consents: { terms: true, privacy: true, whatsappUpdates: true, faceAttendance: false },
+          noticeVersion: '1.0',
+        }),
+      },
+      { actor: ownerActor(clock), clock, uow: new PrismaRegistrationUnitOfWork(prisma), storage: new MemoryStorage(), minAge: 16 },
+    );
+
+    const leads = await prisma.lead.findMany({ where: { id: { in: [recentNew.id, recentLost.id, tooOld.id] } } });
+    const byId = new Map(leads.map((row) => [row.id, row]));
+    expect(byId.get(recentNew.id)).toMatchObject({ status: 'CONVERTED', convertedMemberId: memberId });
+    expect(byId.get(recentLost.id)).toMatchObject({ status: 'CONVERTED', convertedMemberId: memberId });
+    expect(byId.get(tooOld.id)).toMatchObject({ status: 'NEW', convertedMemberId: null });
+    expect((await prisma.callTask.findUniqueOrThrow({ where: { id: task.id } })).status).toBe('DONE');
   });
 
   it('records a call outcome, snoozing the task to an IST date', async () => {

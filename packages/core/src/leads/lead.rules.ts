@@ -26,6 +26,14 @@ export type LeadDedupeDecision =
   | { readonly action: 'create' }
   | { readonly action: 'merge'; readonly leadId: string };
 
+/** BR-10.2: an enquiry becomes a member who registers with its number within this many days. */
+export const LEAD_AUTO_CONVERT_WINDOW_DAYS = 60;
+
+/** The start of the auto-conversion window (BR-10.2), for the repository query. */
+export function autoConvertWindowStart(now: Date): Date {
+  return new Date(now.getTime() - LEAD_AUTO_CONVERT_WINDOW_DAYS * DAY_MS);
+}
+
 /** The start of the dedupe window, for the repository query. */
 export function dedupeWindowStart(now: Date): Date {
   return new Date(now.getTime() - LEAD_DEDUPE_WINDOW_DAYS * DAY_MS);

@@ -1,5 +1,6 @@
-import type { Clock, FeeState, ISTDate, MemberStatus } from '@mfp/shared';
+import { CALL_TASK_PRIORITY, type Clock, type FeeState, type ISTDate, type MemberStatus } from '@mfp/shared';
 import { attendanceDateOf, cooldownDecision, type CooldownDecision } from '../attendance/cooldown';
+import { shouldCreateExpiredButVisiting } from '../calls/call-task.rules';
 import { DomainError } from '../errors';
 import { assertCan, type CrmActor } from './permissions';
 
@@ -43,6 +44,15 @@ export interface StoredAttendanceEvent {
   readonly voidedAt: Date | null;
 }
 
+/** The priority-1 call for a member who walked in with their fees run out (BR-7). */
+export interface CallTaskToRaise {
+  readonly gymId: string;
+  readonly memberId: string;
+  readonly reason: 'EXPIRED_BUT_VISITING';
+  readonly priority: number;
+  readonly dueDate: ISTDate;
+}
+
 export interface AttendanceStore {
   memberForAttendance(gymId: string, memberId: string): Promise<MemberForAttendance | null>;
   /** True when this tap has already been stored — the request was retried. */
@@ -50,6 +60,8 @@ export interface AttendanceStore {
   createEvent(record: AttendanceEventRecord): Promise<string>;
   loadEvent(gymId: string, eventId: string): Promise<StoredAttendanceEvent | null>;
   voidEvent(eventId: string, at: Date): Promise<void>;
+  /** `false` when an open task of this reason already exists for the member. */
+  raiseCallTask(task: CallTaskToRaise): Promise<boolean>;
 }
 
 export interface AttendanceUnitOfWork {
@@ -60,6 +72,8 @@ export interface MarkAttendanceResult {
   readonly decision: CooldownDecision;
   /** `null` when nothing was written, so the screen can say "already marked". */
   readonly eventId: string | null;
+  /** True when this visit put the member on the call list as `EXPIRED_BUT_VISITING`. */
+  readonly callTaskRaised: boolean;
 }
 
 export async function markAttendance(
@@ -92,7 +106,7 @@ export async function markAttendance(
       cooldownMinutes: deps.cooldownMinutes,
       isDuplicateEventId: await store.hasEventId(input.clientEventId),
     });
-    if (decision !== 'RECORD') return { decision, eventId: null };
+    if (decision !== 'RECORD') return { decision, eventId: null, callTaskRaised: false };
 
     const eventId = await store.createEvent({
       gymId: deps.actor.gymId,
@@ -105,7 +119,22 @@ export async function markAttendance(
       feeStateAtCheckIn: input.feeStateAtCheckIn ?? null,
     });
 
-    return { decision, eventId };
+    // BR-7 / BR-9.3: someone still turning up after their fees ran out is the warmest lead
+    // the gym has. Only a visit that was actually recorded counts, and the database keeps
+    // it to one open task per member.
+    const feeState = input.feeStateAtCheckIn;
+    const callTaskRaised =
+      feeState !== undefined && shouldCreateExpiredButVisiting({ feeStateAtCheckIn: feeState, memberStatus: member.status })
+        ? await store.raiseCallTask({
+            gymId: deps.actor.gymId,
+            memberId: member.id,
+            reason: 'EXPIRED_BUT_VISITING',
+            priority: CALL_TASK_PRIORITY.EXPIRED_BUT_VISITING,
+            dueDate: attendanceDateOf(now),
+          })
+        : false;
+
+    return { decision, eventId, callTaskRaised };
   });
 }
 

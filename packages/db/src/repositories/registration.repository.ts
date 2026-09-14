@@ -70,6 +70,28 @@ function storeFor(tx: TransactionClient): RegistrationStore {
       await tx.member.update({ where: { id: memberId }, data: { photoMediaId: mediaId } });
     },
 
+    async convertLeadsForMobile(conversion) {
+      // BR-10.2. Ids first, because the call tasks are closed by lead id in the same step.
+      const leads = await tx.lead.findMany({
+        where: {
+          gymId: conversion.gymId,
+          mobile: conversion.mobile,
+          createdAt: { gte: conversion.since },
+          status: { not: 'CONVERTED' },
+        },
+        select: { id: true },
+      });
+      if (leads.length === 0) return 0;
+
+      const ids = leads.map((lead) => lead.id);
+      await tx.lead.updateMany({ where: { id: { in: ids } }, data: { status: 'CONVERTED', convertedMemberId: conversion.memberId } });
+      await tx.callTask.updateMany({
+        where: { leadId: { in: ids }, reason: 'NEW_LEAD', status: 'OPEN' },
+        data: { status: 'DONE', doneAt: conversion.at },
+      });
+      return ids.length;
+    },
+
     async createConsents(records) {
       await tx.consent.createMany({
         data: records.map((r) => ({

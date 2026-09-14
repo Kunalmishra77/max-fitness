@@ -8,6 +8,7 @@ import {
   REGISTRATION_TOKEN_TTL_SECONDS,
   registerMember,
   type ConsentRecord,
+  type LeadConversion,
   type NewMemberRecord,
   type RegistrationDeps,
   type RegistrationStore,
@@ -47,7 +48,13 @@ class FakeRegistrationStore implements RegistrationStore {
   readonly media: Array<SelfieMediaRecord & { id: string }> = [];
   readonly photos = new Map<string, string>();
   readonly consents: ConsentRecord[] = [];
+  readonly conversions: LeadConversion[] = [];
   existingMatches = 0;
+
+  convertLeadsForMobile(conversion: LeadConversion): Promise<number> {
+    this.conversions.push(conversion);
+    return Promise.resolve(1);
+  }
   failConsents = false;
 
   countMembersWithMobileAndName(_gymId: string, _mobile: E164Mobile, _fullName: string): Promise<number> {
@@ -108,6 +115,22 @@ function setup(overrides: Partial<typeof baseFields> = {}) {
 }
 
 describe('registerMember', () => {
+  it('turns an enquiry from the same number in the last 60 days into this member (BR-10.2)', async () => {
+    const { store, clock, deps, fields } = setup();
+    await registerMember(fields, selfie, deps);
+
+    expect(store.conversions).toEqual([
+      { gymId: 'gym_1', mobile: '+919876543210', since: new Date(clock.now().getTime() - 60 * 86_400_000), memberId: 'mem_1', at: clock.now() },
+    ]);
+  });
+
+  it('converts nothing when the registration is refused', async () => {
+    const { store, deps } = setup();
+    const underAge = RegistrationFieldsSchema.parse({ ...baseFields, dob: '2015-01-01' });
+    await expect(registerMember(underAge, selfie, deps)).rejects.toBeInstanceOf(DomainError);
+    expect(store.conversions).toEqual([]);
+  });
+
   it('creates a pending member with their selfie and consents, and returns a registration token', async () => {
     const { store, storage, clock, deps, fields } = setup();
 
