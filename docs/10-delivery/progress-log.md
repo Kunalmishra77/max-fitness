@@ -36,6 +36,43 @@ Blockers / questions for client:
 - Same as Phase 3: payment-failure wording, prices, minimum age, admission fee, PIN confirmation, photos, policy answers, grievance officer.
 - Demo staff logins are the seeded ones (owner 9000000001 / 2468, reception 9000000002 / 1357). Real PINs must be set before anyone uses this outside a demo.
 
+### 2026-09-14 (evening) — Phase 4 — The owner's reports ("हिसाब")
+Done:
+- **Reports screen (ADR-046; crm-module-spec §6)**, owner-only, under "और":
+  - money this month by method, against last month
+  - new members and renewals
+  - the share renewed on time
+  - who left, and why
+  - busy hours, weekdays and weekends apart
+  - plan mix over 90 days
+  - men and women among active members
+  - face attendance share
+
+  Reception gets a plain notice, and does not see the link.
+- **The numbers are decided in `packages/core/src/reports`**, as pure tested functions; the database only fetches. Each edge is chosen and tested:
+  - the IST month
+  - demo payments never counted as income
+  - a renewal must start within grace — someone back later came back, they did not renew
+  - the renewal rate waits until grace has run out, so it is final the day it appears
+  - busy hours are per-day averages
+  - percentages always add to 100
+- **Charts to the data-viz method.** Busy hours are two small multiples on one scale, not two series on one plot. Single-series bars carry their value at the tip; the only two-series figure has a legend. Colours were validated against the CRM's white surface before use (all six checks pass). Every value is readable without hovering, and the column chart has a table twin.
+- **Looking at it found three things the tests could not:**
+  1. The grid's middle hairline was drawn *over* the bars, cutting the tallest ones.
+  2. The tooltip anchored to the hit area rather than the bar, so it floated above the chart and covered the table button.
+  3. **The month comparison was misleading.** Mid-month, the screen said money was "₹61,100 less than last month" because it compared 14 days with all of August. Compared with August 1–14 — like with like, now in core with a test — the same data reads "₹18,800 more". All three fixed and checked again on fresh screenshots at 360px and 1280px.
+- **Two leftover integration-test gyms** (13 members each, from the 2026-09-12 run whose teardown failed on the attendance foreign key) were found in the shared database, listed, confirmed to hold only test rows, and deleted by id. The demo gym was untouched.
+- **Verification:**
+  - unit tests: **945 passed** (74 files)
+  - database integration: **44 passed**, including the reports reader
+  - Playwright report journeys: **4/4**, phone and desktop — owner sees reports and the table twin, reception is refused
+  - eslint clean, typecheck **6/6 packages**
+
+Pending / next:
+- "Reminder impact" waits for the WhatsApp engine (Phase 6).
+- Throwaway `gym_it_` gyms can still be left behind by a test run that fails in teardown; sweep them before launch.
+- Unchanged: storage bucket and worker host before real members; settings, privacy export and erasure, PWA, the wizard camera step.
+
 ### 2026-09-14 (later) — Phase 4 — Four rules the CRM was skipping
 Done:
 - **`EXPIRED_BUT_VISITING` from a desk check-in (ADR-045; BR-7 priority 1, BR-9.3).** A member whose fees have run out and who is marked in by hand goes to the top of today's calls, once — the partial unique index plus `skipDuplicates` turns a second visit into a no-op, proved against Postgres. The undo bar says so straight away: "फीस खत्म है — आज के कॉल में सबसे ऊपर डाल दिया".

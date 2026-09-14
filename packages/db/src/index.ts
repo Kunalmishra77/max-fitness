@@ -15,3 +15,4 @@ export * from './repositories/crm-read.repository';
 export * from './repositories/crm-actions.repository';
 export * from './repositories/attendance.repository';
 export * from './repositories/lead-pipeline.repository';
+export * from './repositories/reports-read.repository';

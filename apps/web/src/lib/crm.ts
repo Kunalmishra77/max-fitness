@@ -10,6 +10,7 @@ import {
   PrismaElevationStore,
   PrismaLeadPipelineUnitOfWork,
   PrismaRegistrationUnitOfWork,
+  PrismaReportsReader,
   PrismaVoidPaymentUnitOfWork,
 } from '@mfp/db';
 import { elevateSession, login as loginService } from '@mfp/core';
@@ -157,6 +158,11 @@ export function attendanceDeps(gym: GymContext) {
     uow: new PrismaAttendanceUnitOfWork(container.prisma),
     cooldownMinutes: gym.settings.attendance.checkInCooldownMinutes,
   };
+}
+
+/** The rows behind the owner's reports (crm-module-spec §6). */
+export function reportsReader() {
+  return new PrismaReportsReader(getContainer().prisma);
 }
 
 /** Moving an enquiry along the pipeline (BR-10.1). */

@@ -63,6 +63,28 @@ test.describe('Max Register', () => {
     await expect(page.getByRole('heading', { name: /इस महीने/ })).toHaveCount(0);
   });
 
+  test('shows the owner the reports, with a table behind the chart', async ({ page }) => {
+    await login(page, OWNER);
+    await page.goto('/crm/more');
+    await page.getByRole('link', { name: /हिसाब/ }).click();
+    await expect(page).toHaveURL(/\/crm\/reports$/);
+
+    await expect(page.getByRole('heading', { name: 'इस महीने की कमाई' })).toBeVisible();
+    await expect(page.getByText(/₹/).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'सबसे भीड़ का समय' })).toBeVisible();
+
+    // Every chart has a table twin, so nothing is readable only by hovering.
+    await page.getByRole('button', { name: 'टेबल में देखें' }).click();
+    await expect(page.getByRole('table')).toBeVisible();
+  });
+
+  test('keeps the reports from reception', async ({ page }) => {
+    await login(page, RECEPTION);
+    await page.goto('/crm/reports');
+    await expect(page.getByRole('alert').filter({ hasText: 'हिसाब सिर्फ़ मालिक देख सकते हैं।' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'इस महीने की कमाई' })).toHaveCount(0);
+  });
+
   test('searches members and opens a profile', async ({ page }) => {
     await login(page, OWNER);
     await page.goto('/crm/members');

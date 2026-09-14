@@ -21,6 +21,7 @@ import {
   DomainError,
   elevationExpiry,
   markAttendance,
+  monthBounds,
   recordCallOutcome,
   recordDeskPayment,
   registerAtDesk,
@@ -38,6 +39,7 @@ import { createPrismaClient, type PrismaClient } from '../src/client';
 import { fromDbDate, toDbDate } from '../src/dates';
 import { PrismaAttendanceUnitOfWork } from '../src/repositories/attendance.repository';
 import { PrismaLeadPipelineUnitOfWork } from '../src/repositories/lead-pipeline.repository';
+import { PrismaReportsReader } from '../src/repositories/reports-read.repository';
 import { PrismaCallOutcomeUnitOfWork, PrismaVoidPaymentUnitOfWork } from '../src/repositories/crm-actions.repository';
 import { PrismaCrmReader } from '../src/repositories/crm-read.repository';
 import { PrismaDeskPaymentUnitOfWork } from '../src/repositories/desk-payment.repository';
@@ -447,6 +449,30 @@ suite('CRM fee desk against Postgres', () => {
     expect(byId.get(recentLost.id)).toMatchObject({ status: 'CONVERTED', convertedMemberId: memberId });
     expect(byId.get(tooOld.id)).toMatchObject({ status: 'NEW', convertedMemberId: null });
     expect((await prisma.callTask.findUniqueOrThrow({ where: { id: task.id } })).status).toBe('DONE');
+  });
+
+  it('reads the rows behind the reports inside IST month and window bounds', async () => {
+    const clock = fakeClockAt('2026-09-12T11:30');
+    const today = todayIST(clock);
+    const { memberId } = await paidAtDesk(clock, 'Desk Report');
+    await markAttendance(
+      { memberId, clientEventId: unique('tap') },
+      { actor: ownerActor(clock), clock, uow: new PrismaAttendanceUnitOfWork(prisma), cooldownMinutes: 0 },
+    );
+
+    const inputs = await new PrismaReportsReader(prisma).inputs(gymId, monthBounds(today), {
+      attendanceFrom: addDays(today, -27),
+      attendanceTo: today,
+      planMixFrom: addDays(today, -89),
+    });
+
+    expect(inputs.paidThisMonth).toContainEqual({ method: 'CASH', amountPaise: MONTH_PRICE });
+    // Every payment in this throwaway gym was made in September.
+    expect(inputs.paidLastMonth).toEqual([]);
+    expect(inputs.memberships.some((row) => row.memberId === memberId)).toBe(true);
+    expect(inputs.attendance.length).toBeGreaterThan(0);
+    expect(inputs.planMix).toContainEqual(expect.objectContaining({ durationMonths: 1 }));
+    expect(inputs.activeByGender.some((row) => row.gender === 'MALE' && row.count > 0)).toBe(true);
   });
 
   it('records a call outcome, snoozing the task to an IST date', async () => {

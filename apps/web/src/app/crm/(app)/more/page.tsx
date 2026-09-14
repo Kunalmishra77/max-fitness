@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { BottomNav, CrmHeader } from '@/components/crm/crm-chrome';
+import { can } from '@mfp/core';
+import { getContainer } from '@/lib/container';
 import { requireCrmContext } from '@/lib/crm';
 
 /**
@@ -13,8 +15,10 @@ import { requireCrmContext } from '@/lib/crm';
 export const dynamic = 'force-dynamic';
 
 export default async function CrmMorePage() {
-  await requireCrmContext();
+  const { actor } = await requireCrmContext();
   const t = await getTranslations('crm');
+  // Reports are mostly money, so the link is shown to whoever may see money.
+  const showReports = can(actor, 'money.view', getContainer().clock.now());
 
   return (
     <>
@@ -28,6 +32,16 @@ export default async function CrmMorePage() {
             </span>
           </Link>
         </li>
+        {showReports ? (
+          <li>
+            <Link href="/crm/reports" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
+              📊 {t('reports.title')}
+              <span aria-hidden className="text-xl text-brand-rubber-grey">
+                ›
+              </span>
+            </Link>
+          </li>
+        ) : null}
         <li>
           <Link href="/crm/leads" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
             🔵 {t('leads.title')}
