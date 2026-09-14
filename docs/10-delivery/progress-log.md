@@ -36,6 +36,23 @@ Blockers / questions for client:
 - Same as Phase 3: payment-failure wording, prices, minimum age, admission fee, PIN confirmation, photos, policy answers, grievance officer.
 - Demo staff logins are the seeded ones (owner 9000000001 / 2468, reception 9000000002 / 1357). Real PINs must be set before anyone uses this outside a demo.
 
+### 2026-09-14 — Live demo on Vercel, code on GitHub
+Done:
+- **Code:** `github.com/Kunalmishra77/max-fitness`, branch `main`. `.env` and every secret stayed out of the repository; only `.env.example` is tracked.
+- **Live:** https://max-fitness-kappa.vercel.app — the website at `/` and `/hi`, sign-up at `/join`, and Max Register at `/crm`. Vercel project `max-fitness`, Node 24, functions in Mumbai beside the database, demo mode on deliberately (ADR-044). The repository is connected, so every push to `main` deploys.
+- **Checked on the live site, not assumed:** `/` 200, `/hi` 200 with `lang="hi"`, `/join` 200, `/crm` redirects to the login screen, the login screen renders in Hindi, plans come from the database, and a junk path such as `/favicon.ico` is a 404 rather than a 500. The read-only CRM journeys ran against production and **passed 10/10** on phone and desktop sizes: wrong PIN refused, no session sent to login, Today in Hindi with tiles and money, money hidden from reception, search and profile. Journeys that take fees, add members or void payments were **not** run against production, because they would write into the demo data.
+- **Four things only a real deployment could have found:**
+  1. `next build` had been failing since the CRM slice: the CRM's locale cookie was read during static generation. Every check since then had used `next dev`.
+  2. The first fix wrapped that read in try/catch. The build passed, but on Vercel the read succeeded at request time, `/` and `/hi` switched from static to dynamic, and Next served a **500 on the live landing page**. The cookie is now read only when the URL has no locale, which is the CRM.
+  3. A clean checkout could not build: the generated Prisma client is gitignored and nothing regenerated it. `prisma generate` now runs on install.
+  4. Vercel's Next builder needs `apps/web` as the Root Directory. That is a dashboard field with no CLI flag, so the client set it; a local `vercel build` on Windows could not map route groups, so builds run on Vercel.
+- **The health route reports "not ok"** on the live site, correctly: the database is fine, but no worker is running, because Vercel cannot host one.
+
+Pending / next:
+- Before real members use it: object storage (S3/R2) for photos and receipt PDFs, which do not survive on Vercel's `/tmp`; a host for the worker (reminders, outbox, nightly call tasks); real Razorpay keys.
+- Re-seed the demo data before showing the client (`pnpm db:seed`), because the live site and the local machine share one database.
+- Product work unchanged from the entries below: reports, settings, privacy export and erasure, PWA, verify queue with Phase 5, the wizard camera step, and the carried-over fixes.
+
 ### 2026-09-12 (end of day) — Phase 4 — Enquiries: the website's leads finally reach the owner
 Done:
 - **The enquiries screen (ADR-043; BR-10.1)** under "और": Open and All tabs, each enquiry with the date it came, its goal, its notes, and the two things staff do — call or WhatsApp — plus one button to say what came of it. Enquiries have been arriving since Phase 2 (the website form writes them, rings the bell and queues the owner's WhatsApp), but nobody could see a single one of them in the CRM; all 25 seeded enquiries were invisible.
