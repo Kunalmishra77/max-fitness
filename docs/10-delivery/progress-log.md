@@ -36,6 +36,38 @@ Blockers / questions for client:
 - Same as Phase 3: payment-failure wording, prices, minimum age, admission fee, PIN confirmation, photos, policy answers, grievance officer.
 - Demo staff logins are the seeded ones (owner 9000000001 / 2468, reception 9000000002 / 1357). Real PINs must be set before anyone uses this outside a demo.
 
+### 2026-09-14 (night) — Phase 4 — Settings, first slice
+Done:
+- **Settings screen (ADR-047; crm-ux-blueprint §14)**, owner-only and behind the PIN, under "और":
+  - plan prices, with ₹100 steppers and the per-month figure beside each
+  - joining rules: admission fee and minimum age
+  - the website's offer, in Hindi and English
+  - trust numbers
+  - opening hours for the week
+
+  Each section saves on its own. If the PIN lapses while the owner is typing, the section asks for it in place and then saves what was typed.
+- **In core, tested first:**
+  - `updatePlanPrices`: whole rupees, ₹100–₹1,00,000, writes only real changes
+  - `updateGymSettings`: an allowlist of fields, validated by the same schema every reader uses — a feature flag cannot be flipped from here
+  - both need the owner with a fresh PIN, and both audit only real changes
+  - the gym row is locked for the save, so two phones cannot undo each other
+  - BR-2.8 holds: nothing touches a membership
+- **The open client questions — 3/6/12-month prices, admission fee, minimum age — can now be settled by the owner on the day**, without a release.
+- **Three findings, each from checking the real thing rather than assuming:**
+  1. **Saving an offer did not show it on the website.** Next 16's `revalidateTag(tag, 'max')` is stale-while-revalidate, so the first visitor after a save — the owner checking — still got the old page. `revalidateLandingContent` now uses `updateTag`, which expires the cache at once; the end-to-end test saves an offer and finds it on `/hi`.
+  2. **On a phone the price fields were 30px wide.** This project's `sm` breakpoint is 360px (design tokens), not Tailwind's 640px, so `sm:grid-cols-2` applied at phone width. Measured in the browser, fixed with `min-[480px]`, re-measured: one column, the field 182px wide.
+  3. **The first end-to-end run failed all three settings journeys before reaching the settings screen.** Logins stuck on "देख रहे हैं…" and a page load was aborted — the dev server was starved because the full unit, typecheck and database runs were going at the same time. On a quiet server the same journeys passed, so heavy checks are no longer run alongside the browser tests.
+- **Verification:**
+  - unit tests: **957 passed** (75 files)
+  - database integration: **45 passed**, including prices, settings merge and audit rows against Supabase
+  - Playwright settings journeys: **3/3** on the quiet server — the owner's offer appears on `/hi` straight away, and reception is refused on phone and desktop
+  - eslint clean, typecheck **6/6 packages**
+  - demo data re-seeded afterwards
+
+Pending / next:
+- Settings still to come: staff (add, PIN reset, permissions), kiosk pairing, reminder times and the post-expiry limit, language and voice, kill switch.
+- Unchanged: storage bucket and worker host before real members; privacy export and erasure; PWA; the wizard camera step.
+
 ### 2026-09-14 (evening) — Phase 4 — The owner's reports ("हिसाब")
 Done:
 - **Reports screen (ADR-046; crm-module-spec §6)**, owner-only, under "और":

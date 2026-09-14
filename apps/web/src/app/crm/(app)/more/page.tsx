@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { BottomNav, CrmHeader } from '@/components/crm/crm-chrome';
-import { can } from '@mfp/core';
+import { can, mayAfterPinEntry } from '@mfp/core';
 import { getContainer } from '@/lib/container';
 import { requireCrmContext } from '@/lib/crm';
 
@@ -19,6 +19,8 @@ export default async function CrmMorePage() {
   const t = await getTranslations('crm');
   // Reports are mostly money, so the link is shown to whoever may see money.
   const showReports = can(actor, 'money.view', getContainer().clock.now());
+  // Settings ask for the PIN on the way in; the link shows to whoever the PIN would admit.
+  const showSettings = mayAfterPinEntry(actor, 'settings.manage', getContainer().clock.now());
 
   return (
     <>
@@ -32,6 +34,16 @@ export default async function CrmMorePage() {
             </span>
           </Link>
         </li>
+        {showSettings ? (
+          <li>
+            <Link href="/crm/settings" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
+              ⚙️ {t('settings.title')}
+              <span aria-hidden className="text-xl text-brand-rubber-grey">
+                ›
+              </span>
+            </Link>
+          </li>
+        ) : null}
         {showReports ? (
           <li>
             <Link href="/crm/reports" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">

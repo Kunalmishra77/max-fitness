@@ -1,7 +1,21 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { advanceLead, markAttendance, mayAfterPinEntry, recordCallOutcome, registerAtDesk, undoAttendance, voidPayment, type LeadStatus } from '@mfp/core';
+import {
+  advanceLead,
+  can,
+  markAttendance,
+  mayAfterPinEntry,
+  recordCallOutcome,
+  registerAtDesk,
+  undoAttendance,
+  updateGymSettings,
+  updatePlanPrices,
+  voidPayment,
+  type LeadStatus,
+} from '@mfp/core';
+import { revalidateLandingContent } from '@/lib/revalidate-landing';
+import type { PriceInput, SettingsPatchInput, SettingsResult, UnlockResult } from '@/lib/settings-types';
 import { RegistrationFieldsSchema } from '@mfp/shared';
 import type { AddMemberErrorCode, AddMemberFields, AddMemberResult } from '@/components/crm/add-member-flow';
 import type { MarkResult, UndoResult } from '@/components/crm/attendance-marker';
@@ -9,7 +23,17 @@ import type { CallOutcomeChoice, OutcomeResult } from '@/components/crm/call-out
 import type { LeadResult } from '@/components/crm/lead-actions';
 import type { VoidResult } from '@/components/crm/void-payment';
 import { getContainer } from '@/lib/container';
-import { attendanceDeps, callOutcomeDeps, deskRegistrationDeps, elevate, leadPipelineDeps, requireCrmContext, signOut, voidPaymentDeps } from '@/lib/crm';
+import {
+  attendanceDeps,
+  callOutcomeDeps,
+  deskRegistrationDeps,
+  elevate,
+  leadPipelineDeps,
+  requireCrmContext,
+  settingsDeps,
+  signOut,
+  voidPaymentDeps,
+} from '@/lib/crm';
 
 /**
  * Server actions shared by CRM screens.
@@ -107,6 +131,51 @@ export async function undoAttendanceAction(eventId: string): Promise<UndoResult>
     console.error(`[crm] undo attendance failed: ${(error as { code?: string }).code ?? (error instanceof Error ? error.name : 'Error')}`);
     return { ok: false };
   }
+}
+
+/**
+ * Enter the PIN again to open settings (security-plan.md §3.1).
+ *
+ * The role is checked before the PIN is looked at, so someone who could never change
+ * settings does not spend a PIN attempt, or learn whether the PIN was right.
+ */
+export async function unlockSettingsAction(pin: string): Promise<UnlockResult> {
+  const { actor } = await requireCrmContext();
+  if (!mayAfterPinEntry(actor, 'settings.manage', getContainer().clock.now())) return { ok: false, code: 'FORBIDDEN' };
+  const elevated = await elevate(actor, pin);
+  if (elevated.ok) return { ok: true };
+  return { ok: false, code: elevated.code === 'VALIDATION_FAILED' ? 'INVALID_PIN' : elevated.code };
+}
+
+/** Shared by both saves: who may, whether the PIN is still fresh, and what an error means. */
+async function settingsSave(work: (deps: ReturnType<typeof settingsDeps> & { actor: Awaited<ReturnType<typeof requireCrmContext>>['actor'] }) => Promise<boolean>): Promise<SettingsResult> {
+  const { actor } = await requireCrmContext();
+  const now = getContainer().clock.now();
+  if (!mayAfterPinEntry(actor, 'settings.manage', now)) return { ok: false, code: 'FORBIDDEN' };
+  // The PIN lapses five minutes after it was entered; the screen asks again and retries.
+  if (!can(actor, 'settings.manage', now)) return { ok: false, code: 'PIN_REQUIRED' };
+
+  try {
+    const changed = await work({ actor, ...settingsDeps() });
+    // Prices, promo, trust numbers and hours all show on the public site (ADR-022).
+    if (changed) revalidateLandingContent();
+    return { ok: true, changed };
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    const field = (error as { meta?: { field?: string } }).meta?.field;
+    if (code === 'VALIDATION_FAILED' || code === 'NOT_FOUND') return { ok: false, code: 'VALIDATION_FAILED', ...(field === undefined ? {} : { field }) };
+    if (code === 'FORBIDDEN') return { ok: false, code: 'PIN_REQUIRED' };
+    console.error(`[crm] settings save failed: ${code ?? (error instanceof Error ? error.name : 'Error')}`);
+    return { ok: false, code: 'generic' };
+  }
+}
+
+export async function savePlanPricesAction(prices: readonly PriceInput[]): Promise<SettingsResult> {
+  return settingsSave(async (deps) => (await updatePlanPrices({ prices }, deps)).changed > 0);
+}
+
+export async function saveSettingsAction(patch: SettingsPatchInput): Promise<SettingsResult> {
+  return settingsSave(async (deps) => (await updateGymSettings({ patch }, deps)).changedGroups.length > 0);
 }
 
 /** Move an enquiry along the pipeline (BR-10.1). */

@@ -23,6 +23,8 @@ import {
   markAttendance,
   monthBounds,
   recordCallOutcome,
+  updateGymSettings,
+  updatePlanPrices,
   recordDeskPayment,
   registerAtDesk,
   registerMember,
@@ -40,6 +42,7 @@ import { fromDbDate, toDbDate } from '../src/dates';
 import { PrismaAttendanceUnitOfWork } from '../src/repositories/attendance.repository';
 import { PrismaLeadPipelineUnitOfWork } from '../src/repositories/lead-pipeline.repository';
 import { PrismaReportsReader } from '../src/repositories/reports-read.repository';
+import { PrismaSettingsUnitOfWork } from '../src/repositories/settings.repository';
 import { PrismaCallOutcomeUnitOfWork, PrismaVoidPaymentUnitOfWork } from '../src/repositories/crm-actions.repository';
 import { PrismaCrmReader } from '../src/repositories/crm-read.repository';
 import { PrismaDeskPaymentUnitOfWork } from '../src/repositories/desk-payment.repository';
@@ -473,6 +476,29 @@ suite('CRM fee desk against Postgres', () => {
     expect(inputs.attendance.length).toBeGreaterThan(0);
     expect(inputs.planMix).toContainEqual(expect.objectContaining({ durationMonths: 1 }));
     expect(inputs.activeByGender.some((row) => row.gender === 'MALE' && row.count > 0)).toBe(true);
+  });
+
+  it('changes a plan price and the joining rules, keeps every other setting, and audits both', async () => {
+    const clock = fakeClockAt('2026-09-12T11:30');
+    const deps = { actor: ownerActor(clock), clock, uow: new PrismaSettingsUnitOfWork(prisma) };
+
+    await expect(updatePlanPrices({ prices: [{ code: 'M1_MALE', pricePaise: MONTH_PRICE + 10_000 }] }, deps)).resolves.toEqual({ changed: 1 });
+    expect((await prisma.plan.findUniqueOrThrow({ where: { id: MONTH_PLAN_ID } })).pricePaise).toBe(MONTH_PRICE + 10_000);
+
+    await expect(updateGymSettings({ patch: { privacy: { minAge: 18 }, pricing: { admissionFeePaise: 20_000 } } }, deps)).resolves.toEqual({
+      changedGroups: ['pricing', 'privacy'],
+    });
+    // The throwaway gym started with `{}`: the save writes the whole validated document.
+    const settings = (await prisma.gym.findUniqueOrThrow({ where: { id: gymId }, select: { settings: true } })).settings as Record<string, unknown>;
+    expect(settings['privacy']).toMatchObject({ minAge: 18, privacyNoticeVersion: '1.0' });
+    expect(settings['pricing']).toMatchObject({ admissionFeePaise: 20_000, allowDeskDiscounts: true });
+    expect(settings['membership']).toMatchObject({ renewalGraceDays: 5 });
+
+    const audit = await prisma.auditLog.findMany({ where: { gymId, action: { in: ['plans.price', 'settings.update'] } }, orderBy: { createdAt: 'asc' } });
+    expect(audit.map((row) => row.action)).toEqual(['plans.price', 'settings.update']);
+
+    // Put the price back: other tests in this file sell the plan at MONTH_PRICE.
+    await updatePlanPrices({ prices: [{ code: 'M1_MALE', pricePaise: MONTH_PRICE }] }, deps);
   });
 
   it('records a call outcome, snoozing the task to an IST date', async () => {

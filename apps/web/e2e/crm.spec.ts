@@ -63,6 +63,33 @@ test.describe('Max Register', () => {
     await expect(page.getByRole('heading', { name: /इस महीने/ })).toHaveCount(0);
   });
 
+  test('lets the owner change the website offer, and the website shows it straight away', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'Changes gym settings; one project is enough.');
+    // Signing in counts as entering the PIN, so settings open without asking again.
+    await login(page, OWNER);
+    await page.goto('/crm/more');
+    await page.getByRole('link', { name: /सेटिंग/ }).click();
+    await expect(page).toHaveURL(/\/crm\/settings$/);
+
+    const offer = `टेस्ट ऑफर ${Date.now().toString().slice(-5)}`;
+    const promo = page.getByRole('region', { name: 'वेबसाइट पर ऑफर' });
+    await promo.getByLabel('ऑफर दिखाएँ').check();
+    await promo.getByLabel('ऑफर (हिंदी)').fill(offer);
+    await promo.getByRole('button', { name: 'सेव करें' }).click();
+    await expect(promo.getByRole('status')).toHaveText('सेव हो गया — वेबसाइट पर तुरंत दिखेगा', { timeout: 30_000 });
+
+    // The landing page is cached; the save refreshes that cache (ADR-022).
+    await page.goto('/hi');
+    await expect(page.getByText(offer)).toBeVisible({ timeout: 30_000 });
+  });
+
+  test('keeps settings from reception', async ({ page }) => {
+    await login(page, RECEPTION);
+    await page.goto('/crm/settings');
+    await expect(page.getByRole('alert').filter({ hasText: 'सेटिंग सिर्फ़ मालिक बदल सकते हैं।' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'प्लान के दाम' })).toHaveCount(0);
+  });
+
   test('shows the owner the reports, with a table behind the chart', async ({ page }) => {
     await login(page, OWNER);
     await page.goto('/crm/more');

@@ -11,6 +11,7 @@ import {
   PrismaLeadPipelineUnitOfWork,
   PrismaRegistrationUnitOfWork,
   PrismaReportsReader,
+  PrismaSettingsUnitOfWork,
   PrismaVoidPaymentUnitOfWork,
 } from '@mfp/db';
 import { elevateSession, login as loginService } from '@mfp/core';
@@ -158,6 +159,12 @@ export function attendanceDeps(gym: GymContext) {
     uow: new PrismaAttendanceUnitOfWork(container.prisma),
     cooldownMinutes: gym.settings.attendance.checkInCooldownMinutes,
   };
+}
+
+/** The owner's settings and plan prices (crm-ux-blueprint §14). */
+export function settingsDeps() {
+  const container = getContainer();
+  return { clock: container.clock, uow: new PrismaSettingsUnitOfWork(container.prisma) };
 }
 
 /** The rows behind the owner's reports (crm-module-spec §6). */
