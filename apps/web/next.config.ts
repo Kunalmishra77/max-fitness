@@ -23,8 +23,14 @@ const nextConfig: NextConfig = {
    */
   transpilePackages: ['@mfp/shared', '@mfp/core', '@mfp/db', '@mfp/integrations'],
 
-  /** Standalone output for the Phase 8 container image (deployment-plan.md §1). */
-  output: 'standalone',
+  /**
+   * Standalone output for the Phase 8 container image (deployment-plan.md §1).
+   *
+   * Not on Vercel, which packages each route itself: with standalone on, its builder
+   * could not map routes to functions ("Unable to find lambda for route"). Vercel sets
+   * `VERCEL=1` for every build, local `vercel build` included.
+   */
+  ...(process.env['VERCEL'] === '1' ? {} : { output: 'standalone' as const }),
 
   /** The legal pages read content/legal/*.md at request time, so the standalone trace must carry them. */
   outputFileTracingIncludes: { '/[locale]/legal/[slug]': ['./content/legal/**/*'] },
