@@ -1006,6 +1006,30 @@
       "locked": "Too many wrong PINs — try again in {minutes} minutes.",
       "failed": "The PIN was not changed. Please try again.",
       "link": "Change my PIN"
+    },
+    "privacy": {
+      "title": "Member's data",
+      "helper": "Export or erase a member's data when they ask",
+      "export": "Export data (JSON)",
+      "exportHelper": "Everything held about the member in one file — due within 15 days",
+      "erase": "Erase all data",
+      "eraseTitle": "Erase {name}'s data?",
+      "eraseBody": "Name, number, photos, receipt PDFs and face data are removed for good. Payments stay, under the member code. This cannot be undone.",
+      "reason": "Reason",
+      "reasonHelper": "For example: the member asked on WhatsApp",
+      "pin": "Enter your PIN",
+      "confirm": "Yes, erase for good",
+      "cancel": "Cancel",
+      "pinTitle": "Enter your PIN to export data",
+      "unlock": "Open",
+      "erasing": "Erasing…",
+      "erased": "Data erased",
+      "filesLeft": "{count, plural, one {# file} other {# files}} could not be removed yet — it will be retried",
+      "wrongPin": "That PIN is wrong.",
+      "locked": "Too many wrong PINs — try again in a while.",
+      "notAllowed": "Only the owner can export or erase a member's data.",
+      "failed": "That did not work. Please try again.",
+      "erasedMember": "Erased member"
     }
   }
 }

@@ -9,6 +9,7 @@ import {
   PrismaDeskPaymentUnitOfWork,
   PrismaElevationStore,
   PrismaLeadPipelineUnitOfWork,
+  PrismaMemberPrivacy,
   PrismaOwnPinUnitOfWork,
   PrismaRegistrationUnitOfWork,
   PrismaReportsReader,
@@ -191,6 +192,13 @@ export function attendanceDeps(gym: GymContext) {
     uow: new PrismaAttendanceUnitOfWork(container.prisma),
     cooldownMinutes: gym.settings.attendance.checkInCooldownMinutes,
   };
+}
+
+/** A member's data rights: export reads, erasure runs in a transaction, then files are removed. */
+export function memberPrivacy() {
+  const container = getContainer();
+  const privacy = new PrismaMemberPrivacy(container.prisma);
+  return { clock: container.clock, storage: container.storage, uow: privacy, store: privacy.store };
 }
 
 /** Managing staff logins; PINs are hashed with Argon2id (security-plan §3.1). */

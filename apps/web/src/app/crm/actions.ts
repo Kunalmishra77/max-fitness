@@ -5,6 +5,7 @@ import {
   addStaff,
   advanceLead,
   can,
+  eraseMember,
   resetStaffPin,
   setStaffActive,
   markAttendance,
@@ -18,7 +19,16 @@ import {
   type LeadStatus,
 } from '@mfp/core';
 import { revalidateLandingContent } from '@/lib/revalidate-landing';
-import type { OwnPinOutcome, PriceInput, SettingsPatchInput, SettingsResult, StaffCreateFields, StaffResult, UnlockResult } from '@/lib/settings-types';
+import type {
+  EraseResult,
+  OwnPinOutcome,
+  PriceInput,
+  SettingsPatchInput,
+  SettingsResult,
+  StaffCreateFields,
+  StaffResult,
+  UnlockResult,
+} from '@/lib/settings-types';
 import { RegistrationFieldsSchema, StaffCreateSchema, StaffPinSchema } from '@mfp/shared';
 import type { AddMemberErrorCode, AddMemberFields, AddMemberResult } from '@/components/crm/add-member-flow';
 import type { MarkResult, UndoResult } from '@/components/crm/attendance-marker';
@@ -33,6 +43,7 @@ import {
   deskRegistrationDeps,
   elevate,
   leadPipelineDeps,
+  memberPrivacy,
   requireCrmContext,
   settingsDeps,
   signOut,
@@ -181,6 +192,46 @@ export async function savePlanPricesAction(prices: readonly PriceInput[]): Promi
 
 export async function saveSettingsAction(patch: SettingsPatchInput): Promise<SettingsResult> {
   return settingsSave(async (deps) => (await updateGymSettings({ patch }, deps)).changedGroups.length > 0);
+}
+
+/** Enter the PIN again so a member's data can be exported (the download checks it too). */
+export async function unlockMemberDataAction(pin: string): Promise<UnlockResult> {
+  const { actor } = await requireCrmContext();
+  if (!mayAfterPinEntry(actor, 'member.export', getContainer().clock.now())) return { ok: false, code: 'FORBIDDEN' };
+  const elevated = await elevate(actor, pin);
+  if (elevated.ok) return { ok: true };
+  return { ok: false, code: elevated.code === 'VALIDATION_FAILED' ? 'INVALID_PIN' : elevated.code };
+}
+
+/**
+ * Erase a member's data (privacy-and-dpdp-compliance §6).
+ *
+ * The PIN is typed with the reason, checked first, and only for a role that could ever do
+ * this; the erasure then runs as the freshly elevated actor.
+ */
+export async function eraseMemberAction(memberId: string, reason: string, pin: string): Promise<EraseResult> {
+  const { actor } = await requireCrmContext();
+  if (!mayAfterPinEntry(actor, 'member.erase', getContainer().clock.now())) return { ok: false, code: 'FORBIDDEN' };
+
+  const elevated = await elevate(actor, pin);
+  if (!elevated.ok) return { ok: false, code: elevated.code === 'VALIDATION_FAILED' ? 'INVALID_PIN' : elevated.code };
+
+  const { clock, storage, uow } = memberPrivacy();
+  try {
+    const result = await eraseMember({ memberId, reason }, { actor: { ...actor, elevatedUntil: elevated.elevatedUntil }, clock, uow, storage });
+    if (result.filesNotDeleted.length > 0) {
+      // Keys are random and carry no personal data; the count is what the log needs.
+      console.error(`[crm] erasure left ${result.filesNotDeleted.length} stored file(s) to remove again`);
+    }
+    return { ok: true, filesLeft: result.filesNotDeleted.length };
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    if (code === 'VALIDATION_FAILED') return { ok: false, code: 'VALIDATION_FAILED' };
+    if (code === 'NOT_FOUND' || code === 'CONFLICT') return { ok: false, code: 'NOT_FOUND' };
+    if (code === 'FORBIDDEN') return { ok: false, code: 'FORBIDDEN' };
+    console.error(`[crm] erasure failed: ${code ?? (error instanceof Error ? error.name : 'Error')}`);
+    return { ok: false, code: 'INTERNAL' };
+  }
 }
 
 /** Change your own PIN; any signed-in staff member may, with their current PIN. */

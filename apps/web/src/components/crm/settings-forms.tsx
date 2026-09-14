@@ -21,7 +21,7 @@ const inr = (rupees: number) => new Intl.NumberFormat('en-IN', { style: 'currenc
 
 // ── PIN ─────────────────────────────────────────────────────────────────────
 
-export function PinGate({ unlock, onUnlocked, compact = false }: { unlock: Unlock; onUnlocked: () => void; compact?: boolean }) {
+export function PinGate({ unlock, onUnlocked, compact = false, title }: { unlock: Unlock; onUnlocked: () => void; compact?: boolean; title?: string }) {
   const t = useTranslations('crm.settings');
   const id = useId();
   const [pin, setPin] = useState('');
@@ -40,7 +40,7 @@ export function PinGate({ unlock, onUnlocked, compact = false }: { unlock: Unloc
 
   return (
     <div className={compact ? 'mt-3 rounded-panel bg-tint-fee-none-bg p-3' : 'p-6'}>
-      <p className="text-crm-body font-bold text-brand-plate-navy">{compact ? t('pinExpired') : t('pinTitle')}</p>
+      <p className="text-crm-body font-bold text-brand-plate-navy">{title ?? (compact ? t('pinExpired') : t('pinTitle'))}</p>
       {compact ? null : <p className="mt-1 text-small text-brand-rubber-grey">{t('pinHelper')}</p>}
       <label htmlFor={`${id}-pin`} className="mt-3 block text-small font-semibold">
         {t('pin')}

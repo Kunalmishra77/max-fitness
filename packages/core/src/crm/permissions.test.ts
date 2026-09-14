@@ -28,6 +28,9 @@ const MATRIX: Record<CrmCapability, Record<CrmActor['role'], boolean>> = {
   'call.outcome': { OWNER: true, RECEPTION: true, TRAINER: false, SUPER_ADMIN: true },
   'settings.manage': { OWNER: true, RECEPTION: false, TRAINER: false, SUPER_ADMIN: true },
   'member.export': { OWNER: true, RECEPTION: false, TRAINER: false, SUPER_ADMIN: true },
+  // crm-module-spec §3 "Export / delete member data — owner + PIN"; its own capability,
+  // because a permission named "export" should not be what guards a deletion.
+  'member.erase': { OWNER: true, RECEPTION: false, TRAINER: false, SUPER_ADMIN: true },
 };
 
 describe('CRM permissions', () => {
@@ -54,6 +57,12 @@ describe('CRM permissions', () => {
     expect(can(owner, 'payment.void', NOW)).toBe(false);
     // Ordinary work needs no re-entry.
     expect(can(owner, 'payment.record', NOW)).toBe(true);
+  });
+
+  it('needs a recent PIN to export or erase a member, however senior the actor', () => {
+    const owner = actor('OWNER', { elevatedUntil: null });
+    expect(can(owner, 'member.export', NOW)).toBe(false);
+    expect(can(owner, 'member.erase', NOW)).toBe(false);
   });
 
   it('treats an expired elevation as no elevation', () => {

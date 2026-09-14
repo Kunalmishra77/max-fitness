@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
 
 /**
@@ -151,6 +152,59 @@ test.describe('Max Register', () => {
     // ...and the new PIN is the one that works.
     await login(other, { mobile: RECEPTION.mobile, pin: newPin });
     await otherPhone.close();
+  });
+
+  test("exports a member's data, then erases it for good", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'Creates and erases a member; one project is enough.');
+    // The longest journey here: a whole add-member wizard, a download and an erasure.
+    test.setTimeout(240_000);
+    await login(page, OWNER);
+
+    // A member made for this test, through the desk wizard. Letters only in the name.
+    await page.goto('/crm/members/new');
+    await page.getByRole('button', { name: 'अभी नहीं' }).click();
+    const name = `हटाने वाला ${'कखगघचछजझञट'[new Date().getSeconds() % 10] ?? 'क'}`;
+    await page.getByLabel('पूरा नाम').fill(name);
+    await page.getByRole('button', { name: 'आगे' }).click();
+    await page.getByLabel('मोबाइल नंबर').fill('9812345679');
+    await page.getByRole('button', { name: 'आगे' }).click();
+    await page.getByRole('button', { name: 'मर्द', exact: true }).click();
+    await page.getByRole('button', { name: 'आगे' }).click();
+    await page.getByLabel('दिन').fill('07');
+    await page.getByLabel('महीना').fill('07');
+    await page.getByLabel('साल').fill('1994');
+    await page.getByRole('button', { name: 'आगे' }).click();
+    await page.getByText('मेंबर ने नियम और प्राइवेसी नोटिस सुन लिया है').click();
+    await page.getByRole('button', { name: 'मेंबर जोड़ें' }).click();
+    await expect(page.getByRole('heading', { name: 'मेंबर जुड़ गया' })).toBeVisible({ timeout: 30_000 });
+    await page.getByRole('link', { name: 'अब फीस लें' }).click();
+    await expect(page).toHaveURL(/\/renew$/);
+    const profileUrl = page.url().replace(/\/renew$/, '');
+    await page.goto(profileUrl);
+
+    // Export: signed in a moment ago, so the PIN still counts and the download is ready.
+    const downloading = page.waitForEvent('download');
+    await page.getByRole('link', { name: 'डेटा निकालें (JSON)' }).click();
+    const download = await downloading;
+    const exported = JSON.parse(await readFile((await download.path()) ?? '', 'utf8')) as { format: string; data: { member: { fullName: string } } };
+    expect(exported.format).toBe('max-fitness-member-export/1');
+    expect(exported.data.member.fullName).toBe(name);
+    // The file is named by member code, never by the person's name.
+    expect(download.suggestedFilename()).toMatch(/^(MF-\d{4}|member)-\d{4}-\d{2}-\d{2}\.json$/);
+
+    // Erase, with a reason and the PIN.
+    await page.getByRole('button', { name: 'सारा डेटा हटाएँ' }).click();
+    const confirm = page.getByRole('group', { name: `${name} का डेटा हटाएँ?` });
+    await confirm.getByLabel('वजह').fill('टेस्ट: मेंबर ने कहा');
+    await confirm.getByLabel('अपना PIN डालें').fill(OWNER.pin);
+    await confirm.getByRole('button', { name: 'हाँ, हमेशा के लिए हटाएँ' }).click();
+    await expect(page).toHaveURL(/\/crm\/members$/, { timeout: 30_000 });
+
+    // The profile is gone, and the name can no longer be found.
+    const response = await page.goto(profileUrl);
+    expect(response?.status()).toBe(404);
+    await page.goto(`/crm/members?q=${encodeURIComponent(name)}`);
+    await expect(page.getByText(name)).toHaveCount(0);
   });
 
   test('keeps settings from reception', async ({ page }) => {

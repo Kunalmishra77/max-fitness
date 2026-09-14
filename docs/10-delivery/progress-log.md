@@ -36,6 +36,23 @@ Blockers / questions for client:
 - Same as Phase 3: payment-failure wording, prices, minimum age, admission fee, PIN confirmation, photos, policy answers, grievance officer.
 - Demo staff logins are the seeded ones (owner 9000000001 / 2468, reception 9000000002 / 1357). Real PINs must be set before anyone uses this outside a demo.
 
+### 2026-09-14 (after own PIN) — Phase 4 — A member's data: export and erasure
+Done:
+- **Core (test-first):** `member.erase` joins `member.export` as its own capability — owner or super-admin, PIN in the last five minutes, and one never guards the other. `exportMemberData` returns a versioned JSON document (`max-fitness-member-export/1`) and audits the export without copying personal data; face templates are counted, never exported. `eraseMember` needs a reason, refuses an unknown member (`NOT_FOUND`) or one already erased (`CONFLICT`), runs anonymise → media → face data → messages → alerts → calls → enquiries → audit in one transaction, then deletes stored files and reports any that would not go without undoing the erasure.
+- **Database:** `PrismaMemberPrivacy` — export snapshot across profile, memberships, payments, attendance, consents, messages and call notes; erasure anonymises the member (code kept, `deletedAt` set, status LEFT), marks their photos and receipt PDFs deleted, deletes face templates and enrolment jobs, scrubs message numbers/text/payload and alert details, closes open calls as `AUTO_CLOSED` and clears call notes, and anonymises enquiries converted into them. Consents, payments, memberships and attendance stay.
+- **Web:** `GET /crm/members/{id}/export` (session and fresh PIN checked in the route, `no-store`, `noindex`, file named by member code); `unlockMemberDataAction` and `eraseMemberAction` (PIN checked with the reason, only for a role that could ever erase); a "मेंबर का डेटा" section on the member profile, owner only, that says what goes and what stays.
+- **Verified:** typecheck 8/8; lint clean; unit tests 923 (core + shared + web); database integration 19/19 in the CRM suite, including export → erase → kept rows → no personal data in the audit → second export `NOT_FOUND` and second erase `CONFLICT`. **Mutation proof:** leaving alerts unscrubbed made the integration test fail (`expected { name: 'Desk Erase' } to be null`); restored, it passes. **E2E** (desktop): adds a member through the wizard, downloads the export and checks its format, name and code-based file name, erases with a reason and the PIN, then finds the profile gone (404) and the name absent from search — passed in 2.9 minutes on `next dev`, so the journey has a 240-second timeout of its own.
+
+Decisions (decision-log):
+- ADR-050 what erasure deletes, scrubs and keeps; export and erasure as separate capabilities; database first, files after.
+
+Pending / next:
+- Automatic retention (face templates 30 days after leaving, member data three years after the last membership) needs the worker, which the demo deployment does not run.
+- Settings still to come: kiosk pairing, reminder times, language/voice, kill switch. PWA shell; camera step in the add-member wizard.
+
+Blockers / questions for client:
+- Unchanged: prices, minimum age, admission fee, facility and policy details, grievance officer.
+
 ### 2026-09-14 (last) — Phase 4 — Changing your own PIN
 Done:
 - **"मेरा PIN बदलें" (ADR-049)**, open to every role from "और" and linked from the staff screen. The current PIN is the proof; the new PIN is typed twice, is four to six digits, and must differ from the current one. On success every other device is signed out, and the phone the change was made from stays in.

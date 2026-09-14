@@ -26,6 +26,11 @@ export type OwnPinOutcome =
   | { ok: true }
   | { ok: false; code: 'INVALID_PIN' | 'ACCOUNT_LOCKED' | 'VALIDATION_FAILED' | 'INTERNAL'; attemptsLeft?: number; minutes?: number };
 
+/** Erasing a member's data. `filesLeft` counts stored files that could not be removed yet. */
+export type EraseResult =
+  | { ok: true; filesLeft: number }
+  | { ok: false; code: 'INVALID_PIN' | 'ACCOUNT_LOCKED' | 'FORBIDDEN' | 'VALIDATION_FAILED' | 'NOT_FOUND' | 'INTERNAL' };
+
 export interface PriceInput {
   readonly code: string;
   readonly pricePaise: number;

@@ -3,8 +3,9 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { can, mayAfterPinEntry } from '@mfp/core';
 import { formatISTDate } from '@mfp/shared';
-import { voidPaymentAction } from '@/app/crm/actions';
+import { eraseMemberAction, unlockMemberDataAction, voidPaymentAction } from '@/app/crm/actions';
 import { BottomNav, CrmHeader, FEE_TONE, rupees } from '@/components/crm/crm-chrome';
+import { MemberDataSection } from '@/components/crm/member-data';
 import { VoidPaymentButton } from '@/components/crm/void-payment';
 import { getContainer } from '@/lib/container';
 import { requireCrmContext } from '@/lib/crm';
@@ -33,6 +34,9 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
   // The button shows for a role that may void; the PIN it then asks for is what actually
   // permits it (security-plan.md §3.1).
   const mayVoid = mayAfterPinEntry(actor, 'payment.void', clock.now());
+  // Owner only, and hidden rather than disabled for everyone else (crm-ux-blueprint §16).
+  const mayManageData = mayAfterPinEntry(actor, 'member.erase', clock.now());
+  const exportReady = can(actor, 'member.export', clock.now());
   const daysInMonth = new Date(Number(today.slice(0, 4)), Number(today.slice(5, 7)), 0).getDate();
   const attended = new Set(member.attendanceDays);
   const feeLine =
@@ -159,6 +163,16 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
           ))}
         </ul>
       </section>
+
+      {mayManageData ? (
+        <MemberDataSection
+          memberId={member.id}
+          memberName={member.fullName}
+          exportReady={exportReady}
+          unlock={unlockMemberDataAction}
+          erase={eraseMemberAction}
+        />
+      ) : null}
 
       <BottomNav active="members" />
     </>

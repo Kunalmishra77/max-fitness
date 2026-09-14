@@ -20,6 +20,8 @@ import {
   addStaff,
   advanceLead,
   changeOwnPin,
+  eraseMember,
+  exportMemberData,
   sessionTokenHash,
   DomainError,
   elevationExpiry,
@@ -49,6 +51,7 @@ import { PrismaLeadPipelineUnitOfWork } from '../src/repositories/lead-pipeline.
 import { PrismaReportsReader } from '../src/repositories/reports-read.repository';
 import { PrismaSettingsUnitOfWork } from '../src/repositories/settings.repository';
 import { PrismaOwnPinUnitOfWork, PrismaStaffUnitOfWork } from '../src/repositories/staff.repository';
+import { ERASED_NAME, PrismaMemberPrivacy } from '../src/repositories/member-privacy.repository';
 import { PrismaCallOutcomeUnitOfWork, PrismaVoidPaymentUnitOfWork } from '../src/repositories/crm-actions.repository';
 import { PrismaCrmReader } from '../src/repositories/crm-read.repository';
 import { PrismaDeskPaymentUnitOfWork } from '../src/repositories/desk-payment.repository';
@@ -587,6 +590,54 @@ suite('CRM fee desk against Postgres', () => {
     const audit = await prisma.auditLog.findMany({ where: { gymId, entityId: staff.id } });
     expect(audit.map((row) => row.action)).toEqual(['staff.pin_change']);
     expect(JSON.stringify(audit)).not.toMatch(/2468|8642|test-hash/);
+  });
+
+  it("exports a member's data, then erases the person and keeps the accounts", async () => {
+    const clock = fakeClockAt('2026-09-12T11:30');
+    const actor = ownerActor(clock);
+    const privacy = new PrismaMemberPrivacy(prisma);
+    const { memberId, paymentId, receiptNo } = await paidAtDesk(clock, 'Desk Erase');
+
+    // Things erasure must reach: a face template, an alert naming them, a linked enquiry.
+    await prisma.faceTemplate.create({
+      data: { gymId, memberId, vectorEnc: Buffer.from([1, 2, 3]), dimensions: 3, modelVersion: 'test', qualityScore: 0.9, sourceKind: 'signup_selfie' },
+    });
+    await prisma.alert.create({ data: { gymId, memberId, type: 'NEW_LEAD', title: 'alert.test', params: { name: 'Desk Erase' } } });
+    await prisma.lead.create({ data: { gymId, name: 'Desk Erase', mobile: '+919000020002', source: 'PHONE', status: 'CONVERTED', convertedMemberId: memberId } });
+
+    const exported = await exportMemberData({ memberId }, { actor, clock, store: privacy.store });
+    expect(exported.data.member).toMatchObject({ fullName: 'Desk Erase', hasPhoto: true });
+    expect(exported.data.payments).toContainEqual(expect.objectContaining({ receiptNo, status: 'PAID' }));
+    expect(exported.data.consents.length).toBeGreaterThan(0);
+    expect(exported.data.faceTemplates).toEqual({ count: 1 });
+
+    const result = await eraseMember({ memberId, reason: 'सदस्य ने कहा' }, { actor, clock, uow: privacy, storage: new MemoryStorage() });
+    expect(result).toMatchObject({ filesNotDeleted: [], faceTemplatesDeleted: 1 });
+    expect(result.filesDeleted).toBeGreaterThan(0);
+
+    const member = await prisma.member.findUniqueOrThrow({ where: { id: memberId } });
+    expect(member).toMatchObject({ fullName: ERASED_NAME, email: null, dob: null, photoMediaId: null, whatsappOptIn: false, faceConsent: false, status: 'LEFT' });
+    expect(member.mobile).not.toContain('9000020002');
+    expect(member.deletedAt).not.toBeNull();
+    // The pseudonymous code stays, so the accounts still add up.
+    expect(member.memberCode).not.toBeNull();
+
+    expect(await prisma.mediaFile.count({ where: { memberId, deletedAt: null } })).toBe(0);
+    expect(await prisma.faceTemplate.count({ where: { memberId } })).toBe(0);
+    expect((await prisma.alert.findFirstOrThrow({ where: { memberId } })).params).toBeNull();
+    expect(await prisma.lead.findFirstOrThrow({ where: { convertedMemberId: memberId } })).toMatchObject({ name: ERASED_NAME, notes: null });
+
+    // Kept: consents as minimal proof, and the payment with its receipt number.
+    expect(await prisma.consent.count({ where: { memberId } })).toBeGreaterThan(0);
+    expect(await prisma.payment.findUniqueOrThrow({ where: { id: paymentId } })).toMatchObject({ status: 'PAID', receiptNo });
+
+    const audit = await prisma.auditLog.findMany({ where: { gymId, entityId: memberId, action: { in: ['member.export', 'member.erase'] } } });
+    expect(audit.map((row) => row.action).sort()).toEqual(['member.erase', 'member.export']);
+    expect(JSON.stringify(audit)).not.toMatch(/Desk Erase|9000020002/);
+
+    // Once erased, there is nothing to export and nothing to erase again.
+    await expect(exportMemberData({ memberId }, { actor, clock, store: privacy.store })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(eraseMember({ memberId, reason: 'again' }, { actor, clock, uow: privacy, storage: new MemoryStorage() })).rejects.toMatchObject({ code: 'CONFLICT' });
   });
 
   it('records a call outcome, snoozing the task to an IST date', async () => {
