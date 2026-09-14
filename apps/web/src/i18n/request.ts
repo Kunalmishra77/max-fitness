@@ -12,24 +12,25 @@ import { CRM_DEFAULT_LOCALE, LOCALE_COOKIE, routing } from './routing';
 export default getRequestConfig(async ({ requestLocale }) => {
   const requested = await requestLocale;
 
-  // The CRM has no locale in its URL (CLAUDE.md §2.9), so there is nothing for next-intl
-  // to infer: without this, every CRM screen would render in the website's English
-  // default while its `lang` attribute said Hindi. The cookie is the CRM's language.
+  // Three cases, and only one of them may touch a cookie.
   //
-  // The website's pages are generated at build time, where there is no request and
-  // reading a cookie throws. Guarding it is what lets one config serve both: a static
-  // page has its locale in the URL and never needs the cookie.
-  let fromCookie: string | undefined;
-  try {
-    fromCookie = (await cookies()).get(LOCALE_COOKIE)?.value;
-  } catch {
-    fromCookie = undefined;
+  // 1. The website: the locale is in the URL. These pages are generated at build time,
+  //    so reading a cookie here would turn a static page dynamic at runtime — Next
+  //    answers that with a 500, which is what took the live landing page down when the
+  //    cookie read was merely wrapped in try/catch.
+  // 2. The CRM: no locale in the URL at all (CLAUDE.md §2.9), so the signed-in person's
+  //    cookie decides, with Hindi as the default. These routes are dynamic already.
+  // 3. Anything else under the locale segment (`/favicon.ico` and friends): not a real
+  //    page, so the website's default locale, and no cookie.
+  let locale: string;
+  if (hasLocale(routing.locales, requested)) {
+    locale = requested;
+  } else if (requested === undefined) {
+    const fromCookie = (await cookies()).get(LOCALE_COOKIE)?.value;
+    locale = hasLocale(routing.locales, fromCookie) ? fromCookie : CRM_DEFAULT_LOCALE;
+  } else {
+    locale = routing.defaultLocale;
   }
-  const locale = hasLocale(routing.locales, requested)
-    ? requested
-    : hasLocale(routing.locales, fromCookie)
-      ? fromCookie
-      : CRM_DEFAULT_LOCALE;
 
   return {
     locale,
