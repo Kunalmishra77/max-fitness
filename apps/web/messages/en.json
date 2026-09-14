@@ -988,6 +988,24 @@
         "taken": "Someone already logs in with this number.",
         "generic": "That did not work. Please try again."
       }
+    },
+    "pin": {
+      "title": "Change my PIN",
+      "helper": "Only you should know your new PIN",
+      "current": "Current PIN",
+      "next": "New PIN (4 to 6 digits)",
+      "confirm": "New PIN again",
+      "save": "Change PIN",
+      "saving": "Changing…",
+      "done": "PIN changed — every other phone is logged out; this one stays in",
+      "mismatch": "The two new PINs do not match.",
+      "same": "Choose a new PIN different from the current one.",
+      "invalidNew": "The new PIN must be 4 to 6 digits.",
+      "wrongCurrent": "The current PIN is wrong.",
+      "attemptsLeft": "{count, plural, one {# try left} other {# tries left}}",
+      "locked": "Too many wrong PINs — try again in {minutes} minutes.",
+      "failed": "The PIN was not changed. Please try again.",
+      "link": "Change my PIN"
     }
   }
 }

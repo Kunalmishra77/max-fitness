@@ -9,6 +9,7 @@ import {
   PrismaDeskPaymentUnitOfWork,
   PrismaElevationStore,
   PrismaLeadPipelineUnitOfWork,
+  PrismaOwnPinUnitOfWork,
   PrismaRegistrationUnitOfWork,
   PrismaReportsReader,
   PrismaSettingsUnitOfWork,
@@ -16,7 +17,8 @@ import {
   PrismaStaffUnitOfWork,
   PrismaVoidPaymentUnitOfWork,
 } from '@mfp/db';
-import { elevateSession, login as loginService } from '@mfp/core';
+import { changeOwnPin as changeOwnPinService, elevateSession, login as loginService } from '@mfp/core';
+import type { OwnPinOutcome } from './settings-types';
 import type { CrmSessionActor } from '@mfp/db';
 import { Argon2PinHasher } from '@mfp/integrations/auth';
 import { todayIST, type ISTDate } from '@mfp/shared';
@@ -132,6 +134,32 @@ export async function signOut(): Promise<void> {
     }
   }
   (await cookies()).delete(CRM_SESSION_COOKIE);
+}
+
+/**
+ * Change your own PIN (security-plan §3.1, §6). The session cookie is how the phone the
+ * change was made from is told apart from every other device, which is signed out.
+ */
+export async function changeOwnPin(actor: CrmSessionActor, currentPin: string, newPin: string): Promise<OwnPinOutcome> {
+  const token = await sessionToken();
+  if (token === null) return { ok: false, code: 'INTERNAL' };
+
+  const container = getContainer();
+  try {
+    await changeOwnPinService(
+      { currentPin, newPin, token },
+      { actor, clock: container.clock, uow: new PrismaOwnPinUnitOfWork(container.prisma), hasher: new Argon2PinHasher() },
+    );
+    return { ok: true };
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    const meta = (error as { meta?: { attemptsLeft?: number; retryAfterSeconds?: number } }).meta ?? {};
+    if (code === 'INVALID_PIN') return { ok: false, code, ...(meta.attemptsLeft === undefined ? {} : { attemptsLeft: meta.attemptsLeft }) };
+    if (code === 'ACCOUNT_LOCKED') return { ok: false, code, minutes: Math.ceil((meta.retryAfterSeconds ?? 900) / 60) };
+    if (code === 'VALIDATION_FAILED') return { ok: false, code };
+    console.error(`[crm] own PIN change failed: ${error instanceof Error ? error.name : 'Error'}`);
+    return { ok: false, code: 'INTERNAL' };
+  }
 }
 
 /** The desk-payment dependencies, built per request. */

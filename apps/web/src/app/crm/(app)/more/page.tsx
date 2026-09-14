@@ -27,6 +27,14 @@ export default async function CrmMorePage() {
       <CrmHeader title={t('nav.more')} back="/crm" />
       <ul className="divide-y divide-brand-rubber-grey/15">
         <li>
+          <Link href="/crm/more/pin" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
+            🔑 {t('pin.link')}
+            <span aria-hidden className="text-xl text-brand-rubber-grey">
+              ›
+            </span>
+          </Link>
+        </li>
+        <li>
           <Link href="/crm/calls" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
             📞 {t('calls.title')}
             <span aria-hidden className="text-xl text-brand-rubber-grey">

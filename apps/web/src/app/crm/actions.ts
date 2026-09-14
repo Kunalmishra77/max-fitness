@@ -18,7 +18,7 @@ import {
   type LeadStatus,
 } from '@mfp/core';
 import { revalidateLandingContent } from '@/lib/revalidate-landing';
-import type { PriceInput, SettingsPatchInput, SettingsResult, StaffCreateFields, StaffResult, UnlockResult } from '@/lib/settings-types';
+import type { OwnPinOutcome, PriceInput, SettingsPatchInput, SettingsResult, StaffCreateFields, StaffResult, UnlockResult } from '@/lib/settings-types';
 import { RegistrationFieldsSchema, StaffCreateSchema, StaffPinSchema } from '@mfp/shared';
 import type { AddMemberErrorCode, AddMemberFields, AddMemberResult } from '@/components/crm/add-member-flow';
 import type { MarkResult, UndoResult } from '@/components/crm/attendance-marker';
@@ -29,6 +29,7 @@ import { getContainer } from '@/lib/container';
 import {
   attendanceDeps,
   callOutcomeDeps,
+  changeOwnPin,
   deskRegistrationDeps,
   elevate,
   leadPipelineDeps,
@@ -180,6 +181,12 @@ export async function savePlanPricesAction(prices: readonly PriceInput[]): Promi
 
 export async function saveSettingsAction(patch: SettingsPatchInput): Promise<SettingsResult> {
   return settingsSave(async (deps) => (await updateGymSettings({ patch }, deps)).changedGroups.length > 0);
+}
+
+/** Change your own PIN; any signed-in staff member may, with their current PIN. */
+export async function changeOwnPinAction(currentPin: string, newPin: string): Promise<OwnPinOutcome> {
+  const { actor } = await requireCrmContext();
+  return changeOwnPin(actor, currentPin, newPin);
 }
 
 /** Shared by the staff actions: owner with a fresh PIN, and what an error means for the form. */

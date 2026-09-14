@@ -19,6 +19,8 @@ import { RegistrationFieldsSchema, addDays, todayIST, type Clock } from '@mfp/sh
 import {
   addStaff,
   advanceLead,
+  changeOwnPin,
+  sessionTokenHash,
   DomainError,
   elevationExpiry,
   markAttendance,
@@ -46,7 +48,7 @@ import { PrismaAttendanceUnitOfWork } from '../src/repositories/attendance.repos
 import { PrismaLeadPipelineUnitOfWork } from '../src/repositories/lead-pipeline.repository';
 import { PrismaReportsReader } from '../src/repositories/reports-read.repository';
 import { PrismaSettingsUnitOfWork } from '../src/repositories/settings.repository';
-import { PrismaStaffUnitOfWork } from '../src/repositories/staff.repository';
+import { PrismaOwnPinUnitOfWork, PrismaStaffUnitOfWork } from '../src/repositories/staff.repository';
 import { PrismaCallOutcomeUnitOfWork, PrismaVoidPaymentUnitOfWork } from '../src/repositories/crm-actions.repository';
 import { PrismaCrmReader } from '../src/repositories/crm-read.repository';
 import { PrismaDeskPaymentUnitOfWork } from '../src/repositories/desk-payment.repository';
@@ -543,6 +545,48 @@ suite('CRM fee desk against Postgres', () => {
     expect(audit.map((row) => row.action).sort()).toEqual(['staff.add', 'staff.deactivate', 'staff.pin_reset']);
     // Neither the PIN nor its hash is ever in the audit log.
     expect(JSON.stringify(audit)).not.toMatch(/4826|739104|test-hash/);
+  });
+
+  it('changes your own PIN: a wrong guess still counts, this session stays, the others end', async () => {
+    const clock = fakeClockAt('2026-09-12T11:30');
+    const inAnHour = new Date(clock.now().getTime() + 3_600_000);
+    const staff = await prisma.staffUser.create({
+      data: { gymId, name: 'पिन बदलने वाला', mobile: '+919800000002', role: 'RECEPTION', pinHash: 'test-hash-2468' },
+    });
+    const hasher = {
+      hash: (pin: string) => Promise.resolve(`test-hash-${pin}`),
+      verify: (stored: string, pin: string) => Promise.resolve(stored === `test-hash-${pin}`),
+    };
+    const thisPhone = unique('this-phone');
+    const otherPhone = unique('other-phone');
+    await prisma.session.createMany({
+      data: [
+        { staffUserId: staff.id, tokenHash: sessionTokenHash(thisPhone), expiresAt: inAnHour },
+        { staffUserId: staff.id, tokenHash: sessionTokenHash(otherPhone), expiresAt: inAnHour },
+      ],
+    });
+    const deps = {
+      actor: { staffUserId: staff.id, gymId, role: 'RECEPTION' as const, elevatedUntil: null, receptionMayTakePayments: true },
+      clock,
+      uow: new PrismaOwnPinUnitOfWork(prisma),
+      hasher,
+    };
+
+    // The wrong guess is recorded and survives: had the service thrown inside the
+    // transaction, the count would have been rolled back and the lockout never reached.
+    await expect(changeOwnPin({ currentPin: '1111', newPin: '8642', token: thisPhone }, deps)).rejects.toMatchObject({ code: 'INVALID_PIN' });
+    expect((await prisma.staffUser.findUniqueOrThrow({ where: { id: staff.id } })).failedPinCount).toBe(1);
+
+    await changeOwnPin({ currentPin: '2468', newPin: '8642', token: thisPhone }, deps);
+    expect(await prisma.staffUser.findUniqueOrThrow({ where: { id: staff.id } })).toMatchObject({ pinHash: 'test-hash-8642', failedPinCount: 0 });
+
+    const sessions = await prisma.session.findMany({ where: { staffUserId: staff.id } });
+    expect(sessions.find((row) => row.tokenHash === sessionTokenHash(thisPhone))?.revokedAt).toBeNull();
+    expect(sessions.find((row) => row.tokenHash === sessionTokenHash(otherPhone))?.revokedAt).not.toBeNull();
+
+    const audit = await prisma.auditLog.findMany({ where: { gymId, entityId: staff.id } });
+    expect(audit.map((row) => row.action)).toEqual(['staff.pin_change']);
+    expect(JSON.stringify(audit)).not.toMatch(/2468|8642|test-hash/);
   });
 
   it('records a call outcome, snoozing the task to an IST date', async () => {

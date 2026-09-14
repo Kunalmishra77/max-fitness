@@ -118,6 +118,41 @@ test.describe('Max Register', () => {
     await phone.close();
   });
 
+  test('lets staff change their own PIN, keeping this phone in and signing the others out', async ({ page, browser }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', "Changes reception's PIN (re-seeded afterwards); one project is enough.");
+    const baseURL = testInfo.project.use.baseURL;
+    const otherPhone = await browser.newContext(baseURL === undefined ? {} : { baseURL });
+    const other = await otherPhone.newPage();
+    await login(other, RECEPTION);
+    await login(page, RECEPTION);
+
+    await page.goto('/crm/more');
+    await page.getByRole('link', { name: /मेरा PIN बदलें/ }).click();
+    const form = page.getByRole('form', { name: 'मेरा PIN बदलें' });
+    const newPin = '8642';
+
+    // A wrong current PIN is refused, and says how many tries are left.
+    await form.getByLabel('अभी वाला PIN').fill('9999');
+    await form.getByLabel('नया PIN (4 से 6 अंक)').fill(newPin);
+    await form.getByLabel('नया PIN दोबारा').fill(newPin);
+    await form.getByRole('button', { name: 'PIN बदलें' }).click();
+    await expect(form.getByRole('alert')).toContainText('अभी वाला PIN गलत है', { timeout: 30_000 });
+
+    await form.getByLabel('अभी वाला PIN').fill(RECEPTION.pin);
+    await form.getByRole('button', { name: 'PIN बदलें' }).click();
+    await expect(form.getByRole('status')).toHaveText('PIN बदल गया — बाकी सारे फ़ोन से लॉगआउट हो गया, यह फ़ोन चालू है', { timeout: 30_000 });
+
+    // This phone stays signed in...
+    await page.goto('/crm');
+    await expect(page).toHaveURL(/\/crm$/);
+    // ...the other one is out...
+    await other.goto('/crm/members');
+    await expect(other).toHaveURL(/\/crm\/login$/);
+    // ...and the new PIN is the one that works.
+    await login(other, { mobile: RECEPTION.mobile, pin: newPin });
+    await otherPhone.close();
+  });
+
   test('keeps settings from reception', async ({ page }) => {
     await login(page, RECEPTION);
     await page.goto('/crm/settings');

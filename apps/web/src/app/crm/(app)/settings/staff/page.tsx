@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { can, mayAfterPinEntry } from '@mfp/core';
 import { formatISTDateTime } from '@mfp/shared';
@@ -66,7 +67,12 @@ export default async function CrmStaffPage() {
           unlock={unlockSettingsAction}
         />
         <AddStaffForm add={addStaffAction} unlock={unlockSettingsAction} />
-        <p className="px-1 text-small text-brand-rubber-grey">{t('staff.ownPinLater')}</p>
+        <Link href="/crm/more/pin" className="flex min-h-14 items-center justify-between rounded-panel bg-white px-4 text-crm-body font-semibold shadow-sm">
+          🔑 {t('pin.link')}
+          <span aria-hidden className="text-xl text-brand-rubber-grey">
+            ›
+          </span>
+        </Link>
       </div>
       <BottomNav active="more" />
     </>

@@ -36,6 +36,24 @@ Blockers / questions for client:
 - Same as Phase 3: payment-failure wording, prices, minimum age, admission fee, PIN confirmation, photos, policy answers, grievance officer.
 - Demo staff logins are the seeded ones (owner 9000000001 / 2468, reception 9000000002 / 1357). Real PINs must be set before anyone uses this outside a demo.
 
+### 2026-09-14 (last) — Phase 4 — Changing your own PIN
+Done:
+- **"मेरा PIN बदलें" (ADR-049)**, open to every role from "और" and linked from the staff screen. The current PIN is the proof; the new PIN is typed twice, is four to six digits, and must differ from the current one. On success every other device is signed out, and the phone the change was made from stays in.
+- **The current-PIN check spends the login screen's five attempts and lockout.** A locked account is refused without spending an attempt; a switched-off account is refused exactly like a wrong PIN.
+- **A bug avoided, and proved rather than assumed.** A wrong guess has to be recorded inside the transaction but reported after it: thrown inside, the failure count rolls back with everything else and the lockout never builds up. A unit test cannot see this, because an in-memory store never rolls back. The database integration test was then run against a deliberately broken version that throws inside — it failed exactly there (`expected +0 to be 1`, the count rolled back to zero) — and passed again once the code was restored.
+- **Proved end to end:** reception signs in on two browsers; a wrong current PIN is refused with the tries left; the PIN is changed; this browser stays signed in, the other is sent to the login screen, and the new PIN is the one that works.
+- **Verification:**
+  - unit tests: **908 passed** across core, shared and web
+  - database integration: **47 passed**, including the own-PIN test and its mutation check
+  - Playwright own-PIN journey: passed
+  - eslint clean, typecheck **6/6 packages**
+  - demo data re-seeded afterwards, so reception's PIN is back to the demo value
+
+Pending / next:
+- **Handover:** the owner can now replace the demo PIN `2468` themselves; do it on handover day, and remove or switch off the demo reception login.
+- Settings still to come: kiosk pairing, reminder times and the post-expiry limit, language and voice, kill switch.
+- Unchanged: storage bucket and worker host before real members; privacy export and erasure; PWA; the wizard camera step; the slow first login after a deploy.
+
 ### 2026-09-14 (late night) — Phase 4 — Staff logins
 Done:
 - **Staff screen (ADR-048)**, owner-only behind the PIN, under "और". The owner adds reception or a trainer with a PIN of their own, changes a forgotten PIN, and switches off someone who has left. There is also a toggle for whether reception may take fees.

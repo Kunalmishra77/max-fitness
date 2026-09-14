@@ -21,6 +21,11 @@ export interface StaffCreateFields {
   readonly pin: string;
 }
 
+/** Changing your own PIN. `minutes` for a lockout, `attemptsLeft` after a wrong current PIN. */
+export type OwnPinOutcome =
+  | { ok: true }
+  | { ok: false; code: 'INVALID_PIN' | 'ACCOUNT_LOCKED' | 'VALIDATION_FAILED' | 'INTERNAL'; attemptsLeft?: number; minutes?: number };
+
 export interface PriceInput {
   readonly code: string;
   readonly pricePaise: number;
