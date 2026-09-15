@@ -45,5 +45,6 @@ export * from './crm/settings';
 export * from './crm/staff';
 export * from './crm/own-pin';
 export * from './crm/member-privacy';
+export * from './crm/reminder-settings';
 export * from './crm/record-call-outcome';
 export * from './crm/void-payment';

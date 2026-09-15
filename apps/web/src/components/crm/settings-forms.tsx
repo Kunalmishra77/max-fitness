@@ -3,7 +3,15 @@
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useId, useState, useTransition, type ReactNode } from 'react';
-import type { HoursInput, PriceInput, SettingsPatchInput, SettingsResult, UnlockResult } from '@/lib/settings-types';
+import type {
+  HoursInput,
+  PriceInput,
+  ReminderRuleInput,
+  ReminderSettingsInput,
+  SettingsPatchInput,
+  SettingsResult,
+  UnlockResult,
+} from '@/lib/settings-types';
 
 /**
  * The owner's settings forms (crm-ux-blueprint §14).
@@ -80,7 +88,22 @@ export function SettingsUnlock({ unlock }: { unlock: Unlock }) {
 
 // ── Section with its own Save ───────────────────────────────────────────────
 
-function Section({ title, helper, unlock, save, children }: { title: string; helper?: string; unlock: Unlock; save: () => Promise<SettingsResult>; children: ReactNode }) {
+/** `savedText` for sections that do not show on the public site, so "saved" does not promise it does. */
+function Section({
+  title,
+  helper,
+  savedText,
+  unlock,
+  save,
+  children,
+}: {
+  title: string;
+  helper?: string;
+  savedText?: string;
+  unlock: Unlock;
+  save: () => Promise<SettingsResult>;
+  children: ReactNode;
+}) {
   const t = useTranslations('crm.settings');
   const id = useId();
   const [status, setStatus] = useState<{ text: string; tone: 'ok' | 'error' } | null>(null);
@@ -92,7 +115,7 @@ function Section({ title, helper, unlock, save, children }: { title: string; hel
     start(async () => {
       const result = await save();
       if (result.ok) {
-        setStatus({ text: result.changed ? t('saved') : t('noChange'), tone: 'ok' });
+        setStatus({ text: result.changed ? (savedText ?? t('saved')) : t('noChange'), tone: 'ok' });
       } else if (result.code === 'PIN_REQUIRED') {
         setNeedsPin(true);
       } else {
@@ -369,6 +392,190 @@ export function HoursForm({ hours, save, unlock }: { hours: readonly HoursInput[
           </div>
         );
       })}
+    </Section>
+  );
+}
+
+// ── Reminder times ──────────────────────────────────────────────────────────
+
+/** More than three a day is nagging; the server refuses it too. */
+const MAX_TIMES = 3;
+
+export function RemindersForm({
+  rules,
+  postExpiryMaxDays,
+  quietHours,
+  save,
+  unlock,
+}: {
+  rules: readonly ReminderRuleInput[];
+  postExpiryMaxDays: number;
+  quietHours: { start: string; end: string };
+  save: (input: ReminderSettingsInput) => Promise<SettingsResult>;
+  unlock: Unlock;
+}) {
+  const t = useTranslations('crm.settings');
+  const id = useId();
+  const [rows, setRows] = useState<ReminderRuleInput[]>(() => rules.map((rule) => ({ ...rule, slots: [...rule.slots] })));
+  const [days, setDays] = useState(postExpiryMaxDays);
+  const update = (code: string, change: (row: ReminderRuleInput) => ReminderRuleInput) =>
+    setRows((current) => current.map((row) => (row.code === code ? change(row) : row)));
+
+  return (
+    <Section
+      title={t('reminders')}
+      helper={t('remindersHelper', { start: quietHours.start, end: quietHours.end })}
+      savedText={t('savedPlain')}
+      unlock={unlock}
+      save={() => save({ rules: rows, postExpiryMaxDays: Math.round(days) })}
+    >
+      {rows.map((row) => {
+        const name = t(`ruleNames.${row.code}` as never);
+        return (
+          <div key={row.code} className="grid gap-2 border-b border-brand-rubber-grey/15 pb-3">
+            <div className="flex min-h-14 items-center justify-between gap-3">
+              <span className="text-crm-body font-semibold">{name}</span>
+              {/* The whole label is the tap target, 56px tall like every CRM control. */}
+              <label className="flex min-h-14 items-center gap-2 px-2 text-small">
+                <input
+                  type="checkbox"
+                  aria-label={`${name}: ${t('ruleOn')}`}
+                  checked={row.isEnabled}
+                  onChange={(event) => update(row.code, (current) => ({ ...current, isEnabled: event.target.checked }))}
+                  className="size-6 accent-brand-plate-navy"
+                />
+                {t('ruleOn')}
+              </label>
+            </div>
+            {row.isEnabled ? (
+              <div className="grid gap-2">
+                {row.slots.map((slot, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <input
+                      type="time"
+                      aria-label={`${name} ${t('time')} ${index + 1}`}
+                      value={slot}
+                      onChange={(event) => update(row.code, (current) => ({ ...current, slots: current.slots.map((s, i) => (i === index ? event.target.value : s)) }))}
+                      className={`${field} min-w-0`}
+                    />
+                    {row.slots.length > 1 ? (
+                      <button
+                        type="button"
+                        aria-label={`${name}: ${t('removeTime')} ${index + 1}`}
+                        onClick={() => update(row.code, (current) => ({ ...current, slots: current.slots.filter((_, i) => i !== index) }))}
+                        className="size-14 shrink-0 rounded-button bg-tint-fee-none-bg text-xl font-bold"
+                      >
+                        ×
+                      </button>
+                    ) : null}
+                  </div>
+                ))}
+                {row.slots.length < MAX_TIMES ? (
+                  <button
+                    type="button"
+                    onClick={() => update(row.code, (current) => ({ ...current, slots: [...current.slots, '12:00'] }))}
+                    className="min-h-14 rounded-button border-2 border-dashed border-brand-rubber-grey/40 text-crm-body font-semibold text-brand-plate-navy"
+                  >
+                    {t('addTime')}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+      <div>
+        <label htmlFor={`${id}-days`} className="block text-small font-semibold">
+          {t('postDays')}
+        </label>
+        <input
+          id={`${id}-days`}
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={60}
+          value={days}
+          onChange={(event) => setDays(Number(event.target.value))}
+          className={`${field} mt-1`}
+        />
+        {/* BR-5.2: a long tail keeps messaging people who left, and Meta downgrades the number. */}
+        <p className={`mt-1 text-small ${days > 14 ? 'font-semibold text-semantic-fee-expired' : 'text-brand-rubber-grey'}`}>
+          {days > 14 ? t('postDaysWarning') : t('postDaysHelper')}
+        </p>
+      </div>
+    </Section>
+  );
+}
+
+// ── Kill switch ─────────────────────────────────────────────────────────────
+
+export function AutomaticMessagesForm({ paused, save, unlock }: { paused: boolean; save: (patch: SettingsPatchInput) => Promise<SettingsResult>; unlock: Unlock }) {
+  const t = useTranslations('crm.settings');
+  const router = useRouter();
+  const [stop, setStop] = useState(paused);
+
+  return (
+    <Section
+      title={t('automatic')}
+      helper={t('automaticHelper')}
+      savedText={t('savedPlain')}
+      unlock={unlock}
+      save={async () => {
+        const result = await save({ reminders: { automaticPaused: stop } });
+        // The state line reads what is stored, so refresh it once the save is in.
+        if (result.ok) router.refresh();
+        return result;
+      }}
+    >
+      <p className={`rounded-panel p-3 text-crm-body font-semibold ${paused ? 'bg-tint-fee-expired-bg text-semantic-fee-expired' : 'bg-tint-fee-none-bg text-brand-plate-navy'}`}>
+        {paused ? t('automaticStopped') : t('automaticRunning')}
+      </p>
+      <label className="flex min-h-14 items-center gap-3 text-crm-body">
+        <input type="checkbox" checked={stop} onChange={(event) => setStop(event.target.checked)} className="size-6 accent-brand-signboard-red" />
+        {t('automaticStop')}
+      </label>
+    </Section>
+  );
+}
+
+// ── Language and voice ──────────────────────────────────────────────────────
+
+export function LanguageVoiceForm({
+  language,
+  kioskVoice,
+  save,
+  unlock,
+}: {
+  language: 'hi' | 'en';
+  kioskVoice: boolean;
+  save: (patch: SettingsPatchInput) => Promise<SettingsResult>;
+  unlock: Unlock;
+}) {
+  const t = useTranslations('crm.settings');
+  const id = useId();
+  const [lang, setLang] = useState(language);
+  const [voice, setVoice] = useState(kioskVoice);
+
+  return (
+    <Section title={t('languageVoice')} savedText={t('savedPlain')} unlock={unlock} save={() => save({ defaultLanguage: lang, attendance: { kioskVoice: voice } })}>
+      <fieldset>
+        <legend className="text-small font-semibold">{t('defaultLanguage')}</legend>
+        <div className="mt-1 grid grid-cols-2 gap-2">
+          {(['hi', 'en'] as const).map((code) => (
+            <label
+              key={code}
+              className={`flex min-h-14 items-center justify-center gap-2 rounded-panel border-2 text-crm-body font-semibold ${lang === code ? 'border-brand-plate-navy bg-tint-fee-none-bg' : 'border-brand-rubber-grey/30'}`}
+            >
+              <input type="radio" name={`${id}-language`} checked={lang === code} onChange={() => setLang(code)} className="size-5 accent-brand-plate-navy" />
+              {code === 'hi' ? t('hindi') : t('english')}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <label className="flex min-h-14 items-center gap-3 text-crm-body">
+        <input type="checkbox" checked={voice} onChange={(event) => setVoice(event.target.checked)} className="size-6 accent-brand-plate-navy" />
+        {t('kioskVoice')}
+      </label>
     </Section>
   );
 }

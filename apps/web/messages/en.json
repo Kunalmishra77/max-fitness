@@ -943,7 +943,35 @@
         "4": "Thursday",
         "5": "Friday",
         "6": "Saturday"
-      }
+      },
+      "savedPlain": "Saved",
+      "reminders": "Reminder times",
+      "remindersHelper": "When WhatsApp reminders go out — only between {start} and {end}",
+      "ruleNames": {
+        "PRE_7": "7 days before",
+        "PRE_3": "3 days before",
+        "PRE_2": "2 days before",
+        "PRE_1": "1 day before",
+        "DUE_TODAY": "On the due day",
+        "POST": "After the fee runs out"
+      },
+      "ruleOn": "On",
+      "time": "Time",
+      "addTime": "+ Add a time",
+      "removeTime": "Remove time",
+      "postDays": "Days after the fee runs out",
+      "postDaysHelper": "1 to 60 days. After that, messages stop and the member goes on the call list.",
+      "postDaysWarning": "A long stretch keeps messaging members who have left, and can lower the WhatsApp number’s rating.",
+      "automatic": "Automatic messages",
+      "automaticHelper": "While stopped, no reminder goes out on its own. Payment receipts still do.",
+      "automaticStop": "Stop all automatic messages",
+      "automaticStopped": "All automatic messages are stopped right now",
+      "automaticRunning": "Automatic messages are on",
+      "languageVoice": "Language and voice",
+      "defaultLanguage": "Language for new members and the attendance phone",
+      "hindi": "हिंदी",
+      "english": "English",
+      "kioskVoice": "Attendance phone greets out loud"
     },
     "staff": {
       "title": "Staff",

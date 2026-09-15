@@ -36,6 +36,20 @@ Blockers / questions for client:
 - Same as Phase 3: payment-failure wording, prices, minimum age, admission fee, PIN confirmation, photos, policy answers, grievance officer.
 - Demo staff logins are the seeded ones (owner 9000000001 / 2468, reception 9000000002 / 1357). Real PINs must be set before anyone uses this outside a demo.
 
+### 2026-09-15 (later) — Phase 4 — Settings: reminder times, kill switch, language and kiosk voice
+Done:
+- **Core (test-first):** `updateReminderSettings` — per reminder on/off and one to three times, stored in order; a time outside quiet hours, a non-time, a duplicate or a fourth time is refused with the rule named; days after expiry 1–60, written to settings and to the POST rule's `offsetDaysTo` in the same transaction (ADR-015); audited only when something changed. `updateGymSettings` now also takes the kill switch (`reminders.automaticPaused`), the kiosk voice (`attendance.kioskVoice`) and `defaultLanguage`, and refuses `reminders.postExpiryMaxDays` so it cannot drift from the POST rule. `checkReminderEligibility` returns `AUTOMATIC_MESSAGES_STOPPED` before every other reason.
+- **Database:** the settings unit of work loads and updates `ReminderRule` rows under the same gym-row lock.
+- **Web:** three new sections on Settings — "रिमाइंडर का समय" (times per reminder, add/remove a time, days after expiry with a warning above 14), "अपने-आप वाले मैसेज" (the stored state in words and colour, and the stop switch), "भाषा और आवाज़". Sections that do not show on the public site now say "सेव हो गया" rather than promising the website changed.
+- **Verified:** typecheck 8/8; lint clean; unit tests 934 (core + shared + web); database integration 20/20 in the CRM suite, including a time outside quiet hours changing nothing, rules and the POST cap written together, and the kill switch saved beside the cap. **Mutation proof:** leaving `offsetDaysTo` out of the rule update made the integration test fail; restored, it passes. **E2E** (desktop): a 22:00 reminder time refused, 11:00 saved and still there after a reload, put back to 10:00, and the kill switch stopped and restarted with its stored state shown; the website-offer and reception journeys still pass. The first run on a freshly started `next dev` failed two journeys while `/crm/more` and `/crm/settings` compiled for the first time (a click before hydration, a navigation past the timeout); on the warmed server all three passed without changes.
+
+Decisions (decision-log):
+- ADR-052 reminder times on `ReminderRule`, 1–60 days with no "no limit", a kill switch the engine must honour, gym language vs staff language, kiosk voice; pairing the attendance phone deferred to Phase 7.
+
+Pending / next:
+- Pairing the attendance phone (needs `/kiosk/pair`, device tokens and the kiosk app). PWA shell; camera step in the add-member wizard.
+- The Phase 6 engine must pass `automaticMessagesStopped` from settings into every eligibility check.
+
 ### 2026-09-15 — Delivery — Deploys from GitHub fixed
 Done:
 - Found why every push-triggered Vercel deployment failed: `.gitignore`'s bare `storage/` had kept `packages/integrations/src/storage/` (5 files) out of git, and Vercel's restored cache skipped the `postinstall` Prisma generation. Patterns anchored, files committed, build command generates the client first (ADR-051).

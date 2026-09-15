@@ -1,29 +1,57 @@
-import type { SettingsAuditEntry, SettingsStore, SettingsUnitOfWork } from '@mfp/core';
+import type {
+  ReminderRuleRow,
+  ReminderSettingsStore,
+  ReminderSettingsUnitOfWork,
+  SettingsAuditEntry,
+  SettingsStore,
+  SettingsUnitOfWork,
+} from '@mfp/core';
 import type { GymSettings } from '@mfp/shared';
 import type { Prisma } from '../generated/prisma/client';
 import { withTransaction, type PrismaClient, type TransactionClient } from '../client';
 
 /**
- * The owner's settings and plan prices (crm-ux-blueprint §14).
+ * The owner's settings, plan prices and reminder times (crm-ux-blueprint §14).
  *
  * Settings are one JSON document, so a save is read-modify-write: the gym row is
  * locked for the length of the transaction, or two saves from two phones could each
- * read the old document and the second would quietly undo the first.
+ * read the old document and the second would quietly undo the first. Reminder times
+ * take the same lock, because the post-expiry cap is written to settings and to the
+ * POST rule together (ADR-015).
  */
-export class PrismaSettingsUnitOfWork implements SettingsUnitOfWork {
+export class PrismaSettingsUnitOfWork implements SettingsUnitOfWork, ReminderSettingsUnitOfWork {
   readonly #prisma: PrismaClient;
 
   constructor(prisma: PrismaClient) {
     this.#prisma = prisma;
   }
 
-  transaction<T>(work: (store: SettingsStore) => Promise<T>): Promise<T> {
+  transaction<T>(work: (store: SettingsStore & ReminderSettingsStore) => Promise<T>): Promise<T> {
     return withTransaction(this.#prisma, (tx) => work(settingsStore(tx)));
   }
 }
 
-function settingsStore(tx: TransactionClient): SettingsStore {
+function settingsStore(tx: TransactionClient): SettingsStore & ReminderSettingsStore {
   return {
+    async loadReminderRules(gymId: string): Promise<readonly ReminderRuleRow[]> {
+      return await tx.reminderRule.findMany({
+        where: { gymId },
+        select: { code: true, offsetDays: true, offsetDaysTo: true, slots: true, isEnabled: true },
+        orderBy: { offsetDays: 'asc' },
+      });
+    },
+
+    async saveReminderRule(
+      gymId: string,
+      code: string,
+      values: { readonly slots: readonly string[]; readonly isEnabled: boolean; readonly offsetDaysTo: number | null },
+    ): Promise<void> {
+      await tx.reminderRule.update({
+        where: { gymId_code: { gymId, code } },
+        data: { slots: [...values.slots], isEnabled: values.isEnabled, offsetDaysTo: values.offsetDaysTo },
+      });
+    },
+
     async loadSettings(gymId: string): Promise<unknown> {
       const rows = await tx.$queryRaw<Array<{ settings: unknown }>>`
         SELECT "settings" FROM "Gym" WHERE "id" = ${gymId} FOR UPDATE

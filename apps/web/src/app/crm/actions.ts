@@ -6,6 +6,7 @@ import {
   advanceLead,
   can,
   eraseMember,
+  updateReminderSettings,
   resetStaffPin,
   setStaffActive,
   markAttendance,
@@ -23,6 +24,7 @@ import type {
   EraseResult,
   OwnPinOutcome,
   PriceInput,
+  ReminderSettingsInput,
   SettingsPatchInput,
   SettingsResult,
   StaffCreateFields,
@@ -192,6 +194,11 @@ export async function savePlanPricesAction(prices: readonly PriceInput[]): Promi
 
 export async function saveSettingsAction(patch: SettingsPatchInput): Promise<SettingsResult> {
   return settingsSave(async (deps) => (await updateGymSettings({ patch }, deps)).changedGroups.length > 0);
+}
+
+/** Reminder times, on/off, and the days after expiry (ADR-052). */
+export async function saveReminderSettingsAction(input: ReminderSettingsInput): Promise<SettingsResult> {
+  return settingsSave(async (deps) => (await updateReminderSettings(input, deps)).changed);
 }
 
 /** Enter the PIN again so a member's data can be exported (the download checks it too). */

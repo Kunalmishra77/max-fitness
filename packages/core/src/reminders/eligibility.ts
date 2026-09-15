@@ -20,6 +20,7 @@ import {
  */
 
 export const INELIGIBLE_REASONS = [
+  'AUTOMATIC_MESSAGES_STOPPED',
   'MEMBER_NOT_ACTIVE',
   'NOT_OPTED_IN',
   'UNSUBSCRIBED',
@@ -33,6 +34,8 @@ export const INELIGIBLE_REASONS = [
 export type IneligibleReason = (typeof INELIGIBLE_REASONS)[number];
 
 export interface EligibilityInput {
+  /** The owner's kill switch, `settings.reminders.automaticPaused` (ADR-052). */
+  readonly automaticMessagesStopped?: boolean;
   readonly memberStatus: MemberStatus;
   readonly whatsappOptIn: boolean;
   readonly remindersUnsubscribedAt: Date | null;
@@ -70,6 +73,12 @@ function no(reason: IneligibleReason): EligibilityResult {
  * unsubscribed should be recorded as LEFT, which is the more informative reason.
  */
 export function checkReminderEligibility(input: EligibilityInput): EligibilityResult {
+  // 0. The kill switch comes before BR-5.3's own list: when the owner has stopped
+  //    automatic messages, that is the reason, whatever else is true of the member.
+  if (input.automaticMessagesStopped === true) {
+    return no('AUTOMATIC_MESSAGES_STOPPED');
+  }
+
   // 1. Only ACTIVE members get reminders. LEFT, BLOCKED, PENDING_* never do (BR-4.1).
   if (input.memberStatus !== 'ACTIVE') {
     return no('MEMBER_NOT_ACTIVE');

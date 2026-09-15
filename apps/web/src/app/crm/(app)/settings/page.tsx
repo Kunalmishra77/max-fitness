@@ -1,8 +1,18 @@
 import { getTranslations } from 'next-intl/server';
 import { can, mayAfterPinEntry } from '@mfp/core';
-import { savePlanPricesAction, saveSettingsAction, unlockSettingsAction } from '@/app/crm/actions';
+import { savePlanPricesAction, saveReminderSettingsAction, saveSettingsAction, unlockSettingsAction } from '@/app/crm/actions';
 import { BottomNav, CrmHeader } from '@/components/crm/crm-chrome';
-import { HoursForm, JoiningForm, PricesForm, PromoForm, SettingsUnlock, TrustForm } from '@/components/crm/settings-forms';
+import {
+  AutomaticMessagesForm,
+  HoursForm,
+  JoiningForm,
+  LanguageVoiceForm,
+  PricesForm,
+  PromoForm,
+  RemindersForm,
+  SettingsUnlock,
+  TrustForm,
+} from '@/components/crm/settings-forms';
 import { getContainer } from '@/lib/container';
 import { requireCrmContext } from '@/lib/crm';
 
@@ -11,8 +21,9 @@ import { requireCrmContext } from '@/lib/crm';
  *
  * Owner only, behind the PIN. What is here first is what the client has not yet
  * decided and the owner should be able to decide alone: plan prices, the admission fee
- * and the minimum age; then the website's offer, trust numbers and opening hours. Staff,
- * the kiosk, reminder times, language and voice follow in later slices.
+ * and the minimum age; then the website's offer, trust numbers and opening hours; then
+ * reminder times, the switch that stops every automatic message, and the gym's language
+ * and kiosk voice (ADR-052). Staff have their own screen; pairing the kiosk follows.
  */
 
 export const dynamic = 'force-dynamic';
@@ -45,12 +56,16 @@ export default async function CrmSettingsPage() {
     );
   }
 
-  const plans = await prisma.plan.findMany({
-    where: { gymId: gym.id, isActive: true, gender: { in: ['MALE', 'FEMALE'] } },
-    select: { code: true, gender: true, durationMonths: true, pricePaise: true },
-    orderBy: [{ gender: 'asc' }, { durationMonths: 'asc' }],
-  });
-  const { pricing, privacy, promo, trust, hours } = gym.settings;
+  const [plans, reminderRules] = await Promise.all([
+    prisma.plan.findMany({
+      where: { gymId: gym.id, isActive: true, gender: { in: ['MALE', 'FEMALE'] } },
+      select: { code: true, gender: true, durationMonths: true, pricePaise: true },
+      orderBy: [{ gender: 'asc' }, { durationMonths: 'asc' }],
+    }),
+    // In the order they reach a member: a week before, then the day, then after.
+    prisma.reminderRule.findMany({ where: { gymId: gym.id }, select: { code: true, slots: true, isEnabled: true }, orderBy: { offsetDays: 'asc' } }),
+  ]);
+  const { pricing, privacy, promo, trust, hours, reminders, attendance, defaultLanguage } = gym.settings;
 
   return (
     <>
@@ -65,6 +80,15 @@ export default async function CrmSettingsPage() {
         <PromoForm enabled={promo.enabled} textHi={promo.textHi} textEn={promo.textEn} save={saveSettingsAction} unlock={unlockSettingsAction} />
         <TrustForm trust={trust} save={saveSettingsAction} unlock={unlockSettingsAction} />
         <HoursForm hours={hours} save={saveSettingsAction} unlock={unlockSettingsAction} />
+        <RemindersForm
+          rules={reminderRules}
+          postExpiryMaxDays={reminders.postExpiryMaxDays ?? 7}
+          quietHours={reminders.quietHours}
+          save={saveReminderSettingsAction}
+          unlock={unlockSettingsAction}
+        />
+        <AutomaticMessagesForm paused={reminders.automaticPaused} save={saveSettingsAction} unlock={unlockSettingsAction} />
+        <LanguageVoiceForm language={defaultLanguage} kioskVoice={attendance.kioskVoice} save={saveSettingsAction} unlock={unlockSettingsAction} />
       </div>
       <BottomNav active="more" />
     </>

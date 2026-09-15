@@ -23,8 +23,8 @@ export interface SettingsAuditEntry {
   readonly gymId: string;
   readonly actorType: 'staff';
   readonly actorId: string;
-  readonly action: 'settings.update' | 'plans.price';
-  readonly entityType: 'Gym' | 'Plan';
+  readonly action: 'settings.update' | 'plans.price' | 'reminders.update';
+  readonly entityType: 'Gym' | 'Plan' | 'ReminderRule';
   readonly entityId: string | null;
   readonly before: Readonly<Record<string, unknown>>;
   readonly after: Readonly<Record<string, unknown>>;
@@ -114,6 +114,11 @@ const MANAGED_FIELDS = {
   promo: ['enabled', 'textEn', 'textHi'],
   trust: ['googleRating', 'googleReviews', 'justdialRating', 'justdialReviews', 'establishedYear'],
   hours: null,
+  // The kill switch only. The days after expiry go through `updateReminderSettings`,
+  // which keeps the POST rule in step with them (ADR-015).
+  reminders: ['automaticPaused'],
+  attendance: ['kioskVoice'],
+  defaultLanguage: null,
 } as const;
 
 type ManagedGroup = keyof typeof MANAGED_FIELDS;
@@ -132,6 +137,11 @@ export interface SettingsPatch {
   };
   /** The whole week, replacing what is there. */
   readonly hours?: ReadonlyArray<{ readonly day: number; readonly open: string; readonly close: string; readonly closed: boolean }>;
+  /** Stop or restart every automatic message. */
+  readonly reminders?: { readonly automaticPaused?: boolean };
+  readonly attendance?: { readonly kioskVoice?: boolean };
+  /** The language new members and the kiosk start in. */
+  readonly defaultLanguage?: 'hi' | 'en';
 }
 
 const refuse = (field: string) => new DomainError('VALIDATION_FAILED', `The setting "${field}" cannot be changed here`, { field });
@@ -172,6 +182,9 @@ export async function updateGymSettings(
       promo: { ...current.promo, ...patch.promo },
       trust: { ...current.trust, ...patch.trust },
       hours: patch.hours ?? current.hours,
+      reminders: { ...current.reminders, ...patch.reminders },
+      attendance: { ...current.attendance, ...patch.attendance },
+      defaultLanguage: patch.defaultLanguage ?? current.defaultLanguage,
     });
     if (!merged.success) {
       const issue = merged.error.issues[0];

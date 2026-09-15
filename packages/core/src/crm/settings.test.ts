@@ -169,6 +169,27 @@ describe('updateGymSettings', () => {
     expect(store.saved[0]?.pricing).toMatchObject({ receptionMayTakePayments: false, allowDeskDiscounts: true });
   });
 
+  it('stops and restarts automatic messages, switches the kiosk voice and sets the default language', async () => {
+    await expect(save({ reminders: { automaticPaused: true } })).resolves.toEqual({ changedGroups: ['reminders'] });
+    expect(store.saved[0]?.reminders).toMatchObject({ automaticPaused: true, postExpiryMaxDays: 7 });
+    expect(store.audit[0]).toMatchObject({ before: { reminders: { automaticPaused: false } }, after: { reminders: { automaticPaused: true } } });
+
+    store.settings = store.saved[0];
+    await expect(save({ attendance: { kioskVoice: false }, defaultLanguage: 'en' })).resolves.toEqual({
+      changedGroups: ['attendance', 'defaultLanguage'],
+    });
+    expect(store.saved[1]).toMatchObject({ defaultLanguage: 'en', attendance: { kioskVoice: false, checkInCooldownMinutes: 180 } });
+  });
+
+  it('refuses the days after expiry here, because they must change together with the POST rule', async () => {
+    await expect(save({ reminders: { postExpiryMaxDays: 10 } } as never)).rejects.toMatchObject({
+      code: 'VALIDATION_FAILED',
+      meta: { field: 'reminders.postExpiryMaxDays' },
+    });
+    await expect(save({ defaultLanguage: 'fr' } as never)).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+    expect(store.saved).toEqual([]);
+  });
+
   it('refuses settings this screen does not manage, so a feature flag cannot be flipped from here', async () => {
     await expect(save({ features: { kioskShadowMode: false } } as never)).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
     expect(store.saved).toEqual([]);

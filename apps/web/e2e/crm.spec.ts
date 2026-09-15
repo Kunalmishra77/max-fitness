@@ -207,6 +207,42 @@ test.describe('Max Register', () => {
     await expect(page.getByText(name)).toHaveCount(0);
   });
 
+  test('sets a reminder time, refuses one at night, and stops automatic messages', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'Changes reminder settings; one project is enough.');
+    await login(page, OWNER);
+    await page.goto('/crm/settings');
+
+    const reminders = page.getByRole('region', { name: 'रिमाइंडर का समय' });
+    const save = reminders.getByRole('button', { name: 'सेव करें' });
+    const firstTime = reminders.getByLabel('7 दिन पहले समय 1');
+
+    // 22:00 is after quiet hours: refused at the screen, not skipped by the engine later.
+    await firstTime.fill('22:00');
+    await save.click();
+    await expect(reminders.getByRole('status')).toHaveText('कुछ भरा हुआ सही नहीं है — दोबारा देखें।', { timeout: 30_000 });
+
+    await firstTime.fill('11:00');
+    await save.click();
+    await expect(reminders.getByRole('status')).toHaveText('सेव हो गया', { timeout: 30_000 });
+    await page.reload();
+    await expect(page.getByRole('region', { name: 'रिमाइंडर का समय' }).getByLabel('7 दिन पहले समय 1')).toHaveValue('11:00');
+
+    // Put it back for the demo.
+    await page.getByRole('region', { name: 'रिमाइंडर का समय' }).getByLabel('7 दिन पहले समय 1').fill('10:00');
+    await page.getByRole('region', { name: 'रिमाइंडर का समय' }).getByRole('button', { name: 'सेव करें' }).click();
+    await expect(page.getByRole('region', { name: 'रिमाइंडर का समय' }).getByRole('status')).toHaveText('सेव हो गया', { timeout: 30_000 });
+
+    // The kill switch says what is stored, in words.
+    const automatic = page.getByRole('region', { name: 'अपने-आप वाले मैसेज' });
+    await automatic.getByLabel('सारे अपने-आप वाले मैसेज रोकें').check();
+    await automatic.getByRole('button', { name: 'सेव करें' }).click();
+    await expect(automatic.getByText('अभी सारे अपने-आप वाले मैसेज रुके हुए हैं')).toBeVisible({ timeout: 30_000 });
+
+    await automatic.getByLabel('सारे अपने-आप वाले मैसेज रोकें').uncheck();
+    await automatic.getByRole('button', { name: 'सेव करें' }).click();
+    await expect(automatic.getByText('अपने-आप वाले मैसेज चालू हैं')).toBeVisible({ timeout: 30_000 });
+  });
+
   test('keeps settings from reception', async ({ page }) => {
     await login(page, RECEPTION);
     await page.goto('/crm/settings');

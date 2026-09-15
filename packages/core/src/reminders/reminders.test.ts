@@ -343,6 +343,18 @@ describe('checkReminderEligibility — BR-5.3', () => {
     ).toBe(true);
   });
 
+  it('refuses every automatic reminder while the owner has stopped automatic messages (kill switch)', () => {
+    expect(checkReminderEligibility(eligibilityInput({ automaticMessagesStopped: true }))).toEqual({
+      eligible: false,
+      reason: 'AUTOMATIC_MESSAGES_STOPPED',
+    });
+    // It outranks everything else: the log should say the owner stopped it.
+    expect(
+      checkReminderEligibility(eligibilityInput({ automaticMessagesStopped: true, memberStatus: 'LEFT', alreadySent: true })),
+    ).toEqual({ eligible: false, reason: 'AUTOMATIC_MESSAGES_STOPPED' });
+    expect(checkReminderEligibility(eligibilityInput({ automaticMessagesStopped: false }))).toEqual({ eligible: true });
+  });
+
   it('reports the most informative reason when several apply', () => {
     // LEFT and unsubscribed: LEFT is the more useful log line.
     expect(

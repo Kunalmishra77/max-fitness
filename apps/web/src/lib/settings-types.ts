@@ -55,4 +55,19 @@ export interface SettingsPatchInput {
     readonly establishedYear?: number;
   };
   readonly hours?: readonly HoursInput[];
+  readonly reminders?: { readonly automaticPaused?: boolean };
+  readonly attendance?: { readonly kioskVoice?: boolean };
+  readonly defaultLanguage?: 'hi' | 'en';
+}
+
+/** One reminder: its times (HH:mm, IST) and whether it is on. */
+export interface ReminderRuleInput {
+  readonly code: string;
+  readonly slots: readonly string[];
+  readonly isEnabled: boolean;
+}
+
+export interface ReminderSettingsInput {
+  readonly rules: readonly ReminderRuleInput[];
+  readonly postExpiryMaxDays: number;
 }

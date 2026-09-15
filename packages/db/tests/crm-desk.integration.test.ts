@@ -30,6 +30,7 @@ import {
   recordCallOutcome,
   updateGymSettings,
   updatePlanPrices,
+  updateReminderSettings,
   recordDeskPayment,
   registerAtDesk,
   registerMember,
@@ -149,6 +150,7 @@ suite('CRM fee desk against Postgres', () => {
     await prisma.session.deleteMany({ where: { staffUser: { gymId } } });
     await prisma.staffUser.deleteMany({ where: { gymId } });
     await prisma.counter.deleteMany({ where: { gymId } });
+    await prisma.reminderRule.deleteMany({ where: { gymId } });
     await prisma.plan.deleteMany({ where: { gymId } });
     await prisma.gym.deleteMany({ where: { id: gymId } });
     await prisma.$disconnect();
@@ -638,6 +640,53 @@ suite('CRM fee desk against Postgres', () => {
     // Once erased, there is nothing to export and nothing to erase again.
     await expect(exportMemberData({ memberId }, { actor, clock, store: privacy.store })).rejects.toMatchObject({ code: 'NOT_FOUND' });
     await expect(eraseMember({ memberId, reason: 'again' }, { actor, clock, uow: privacy, storage: new MemoryStorage() })).rejects.toMatchObject({ code: 'CONFLICT' });
+  });
+
+  it('moves reminder times and the days after expiry, keeping the POST rule and settings in step, and stops automatic messages', async () => {
+    const clock = fakeClockAt('2026-09-12T11:30');
+    const deps = { actor: ownerActor(clock), clock, uow: new PrismaSettingsUnitOfWork(prisma) };
+    await prisma.reminderRule.createMany({
+      data: [
+        { gymId, code: 'PRE_7', offsetDays: -7, offsetDaysTo: -7, slots: ['10:00'], templateName: 'mf_renewal_due' },
+        { gymId, code: 'POST', offsetDays: 1, offsetDaysTo: 7, slots: ['10:00', '19:00'], templateName: 'mf_renewal_expired' },
+      ],
+    });
+    const rulesNow = async () =>
+      (await prisma.reminderRule.findMany({ where: { gymId }, orderBy: { offsetDays: 'asc' } })).map((rule) => ({
+        code: rule.code,
+        slots: rule.slots,
+        isEnabled: rule.isEnabled,
+        offsetDaysTo: rule.offsetDaysTo,
+      }));
+
+    // A time outside quiet hours changes nothing at all.
+    await expect(
+      updateReminderSettings({ rules: [{ code: 'PRE_7', slots: ['22:00'], isEnabled: true }], postExpiryMaxDays: 12 }, deps),
+    ).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+    expect((await rulesNow())[1]?.offsetDaysTo).toBe(7);
+
+    await expect(
+      updateReminderSettings(
+        {
+          rules: [
+            { code: 'PRE_7', slots: ['11:30'], isEnabled: false },
+            { code: 'POST', slots: ['19:00', '10:00'], isEnabled: true },
+          ],
+          postExpiryMaxDays: 12,
+        },
+        deps,
+      ),
+    ).resolves.toEqual({ changed: true });
+    expect(await rulesNow()).toEqual([
+      { code: 'PRE_7', slots: ['11:30'], isEnabled: false, offsetDaysTo: -7 },
+      { code: 'POST', slots: ['10:00', '19:00'], isEnabled: true, offsetDaysTo: 12 },
+    ]);
+
+    await expect(updateGymSettings({ patch: { reminders: { automaticPaused: true } } }, deps)).resolves.toEqual({ changedGroups: ['reminders'] });
+    const stored = (await prisma.gym.findUniqueOrThrow({ where: { id: gymId } })).settings as { reminders: { automaticPaused: boolean; postExpiryMaxDays: number } };
+    // The kill switch and the cap live side by side; saving one kept the other.
+    expect(stored.reminders).toMatchObject({ automaticPaused: true, postExpiryMaxDays: 12 });
+    expect(await prisma.auditLog.count({ where: { gymId, action: 'reminders.update' } })).toBe(1);
   });
 
   it('records a call outcome, snoozing the task to an IST date', async () => {

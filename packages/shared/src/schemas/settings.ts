@@ -106,6 +106,11 @@ export const MembershipSettingsSchema = z.object({
 export type MembershipSettings = z.infer<typeof MembershipSettingsSchema>;
 
 export const ReminderSettingsSchema = z.object({
+  /**
+   * The kill switch (whatsapp-automation-engine "Kill switch"; ADR-052): the owner has
+   * stopped every automatic message. Checked at send time, before anything else.
+   */
+  automaticPaused: z.boolean().default(false),
   quietHours: QuietHoursSchema.prefault({ start: '08:00', end: '21:00' }),
   /**
    * BR-5.2. Last day after expiry on which automatic reminders are sent.
@@ -128,6 +133,8 @@ export const AttendanceSettingsSchema = z.object({
   absentDaysThreshold: z.number().int().min(1).max(90).default(7),
   /** Alert the owner when the kiosk has not been seen for this long (crm-module-spec §4). */
   kioskOfflineAlertMinutes: z.number().int().min(5).max(720).default(30),
+  /** The kiosk speaks its greeting (api-specification §7 pairing `settings.voice`). */
+  kioskVoice: z.boolean().default(true),
 });
 export type AttendanceSettings = z.infer<typeof AttendanceSettingsSchema>;
 
