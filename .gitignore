@@ -11,8 +11,10 @@ coverage/
 .env.*
 !.env.example
 .DS_Store
-# uploads & local storage
-storage/
+# uploads & local storage (STORAGE_LOCAL_PATH=./storage, relative to where the app runs).
+# Anchored: a bare `storage/` also hid packages/integrations/src/storage from git (ADR-051).
+/storage/
+/apps/*/storage/
 tmp/
 # android
 apps/kiosk-android/.gradle/

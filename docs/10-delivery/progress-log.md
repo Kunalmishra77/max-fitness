@@ -36,6 +36,14 @@ Blockers / questions for client:
 - Same as Phase 3: payment-failure wording, prices, minimum age, admission fee, PIN confirmation, photos, policy answers, grievance officer.
 - Demo staff logins are the seeded ones (owner 9000000001 / 2468, reception 9000000002 / 1357). Real PINs must be set before anyone uses this outside a demo.
 
+### 2026-09-15 — Delivery — Deploys from GitHub fixed
+Done:
+- Found why every push-triggered Vercel deployment failed: `.gitignore`'s bare `storage/` had kept `packages/integrations/src/storage/` (5 files) out of git, and Vercel's restored cache skipped the `postinstall` Prisma generation. Patterns anchored, files committed, build command generates the client first (ADR-051).
+- Checked that no other source file under `apps/` or `packages/` is ignored by mistake.
+
+Pending / next:
+- The Vercel project "web", created by mistake by a CLI run inside `apps/web`, needs deleting from the dashboard (owner's decision).
+
 ### 2026-09-14 (after own PIN) — Phase 4 — A member's data: export and erasure
 Done:
 - **Core (test-first):** `member.erase` joins `member.export` as its own capability — owner or super-admin, PIN in the last five minutes, and one never guards the other. `exportMemberData` returns a versioned JSON document (`max-fitness-member-export/1`) and audits the export without copying personal data; face templates are counted, never exported. `eraseMember` needs a reason, refuses an unknown member (`NOT_FOUND`) or one already erased (`CONFLICT`), runs anonymise → media → face data → messages → alerts → calls → enquiries → audit in one transaction, then deletes stored files and reports any that would not go without undoing the erasure.
