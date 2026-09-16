@@ -38,6 +38,8 @@ import type { CallOutcomeChoice, OutcomeResult } from '@/components/crm/call-out
 import type { LeadResult } from '@/components/crm/lead-actions';
 import type { VoidResult } from '@/components/crm/void-payment';
 import { getContainer } from '@/lib/container';
+import { deskPhotoFromForm } from '@/lib/desk-photo';
+import { SelfieRejectedError, type ProcessedSelfie } from '@/lib/selfie-image';
 import {
   attendanceDeps,
   callOutcomeDeps,
@@ -74,8 +76,10 @@ const FIELD_CODES = new Set<AddMemberErrorCode>(['fullName', 'mobile', 'dob', 'g
  * The fields go through the same Zod schema the website uses, so "what counts as a
  * name, a number and a date of birth" is decided in one place (CLAUDE.md §2.3).
  */
-export async function addMemberAction(fields: AddMemberFields): Promise<AddMemberResult> {
+export async function addMemberAction(fields: AddMemberFields, photoForm: FormData | null = null): Promise<AddMemberResult> {
   const { actor, gym } = await requireCrmContext();
+  // Before decoding any image: a trainer's upload should cost the server nothing.
+  if (!can(actor, 'member.edit', getContainer().clock.now())) return { ok: false, code: 'FORBIDDEN' };
 
   const parsed = RegistrationFieldsSchema.safeParse({
     fullName: fields.fullName,
@@ -97,8 +101,16 @@ export async function addMemberAction(fields: AddMemberFields): Promise<AddMembe
     return { ok: false, code: code !== undefined && FIELD_CODES.has(code) ? code : 'generic' };
   }
 
+  let selfie: ProcessedSelfie | null;
   try {
-    const result = await registerAtDesk({ fields: parsed.data }, { actor, ...deskRegistrationDeps(gym) });
+    selfie = await deskPhotoFromForm(photoForm);
+  } catch (error) {
+    if (error instanceof SelfieRejectedError) return { ok: false, code: 'photo' };
+    throw error;
+  }
+
+  try {
+    const result = await registerAtDesk({ fields: parsed.data, selfie }, { actor, ...deskRegistrationDeps(gym) });
     return { ok: true, memberId: result.memberId, possibleDuplicate: result.possibleDuplicate };
   } catch (error) {
     const code = (error as { code?: string }).code;

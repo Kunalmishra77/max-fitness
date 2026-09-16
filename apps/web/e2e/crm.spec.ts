@@ -1,5 +1,9 @@
 import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
+
+/** A drawn face, never a photo of a person (scripts/make-face-fixture.mjs). */
+const FACE_PHOTO = fileURLToPath(new URL('./fixtures/face.jpg', import.meta.url));
 
 /**
  * Max Register, the owner's CRM (crm-ux-blueprint §1–§6; testing-strategy §3 journeys 9–11).
@@ -268,6 +272,48 @@ test.describe('Max Register', () => {
     // The public website is not the thing anyone installs.
     await page.goto('/hi');
     await expect(page.locator('link[rel="manifest"]')).toHaveCount(0);
+  });
+
+  test('photographs a walk-in at the desk and shows the photo on their profile', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'Creates a member; one project is enough.');
+    // A whole wizard, an image upload and a profile: the longest path through the desk.
+    test.setTimeout(240_000);
+    await login(page, OWNER);
+    await page.goto('/crm/members/new');
+
+    await page.getByRole('button', { name: 'फोटो लें' }).click();
+    const sheet = page.getByRole('dialog');
+    await expect(sheet.getByRole('heading', { name: 'मेंबर की फोटो' })).toBeVisible();
+    // Through the phone's own camera app — the way a desk that refused the permission does it.
+    await sheet.locator('input[type=file]').setInputFiles(FACE_PHOTO);
+    await sheet.getByRole('button', { name: 'यही फोटो रखें' }).click();
+    await expect(page.getByRole('img', { name: 'फोटो ले ली' })).toBeVisible();
+    await page.getByRole('button', { name: 'आगे' }).click();
+
+    // Letters only: the shared schema refuses digits in a name.
+    const name = `फोटो वाला ${'कखगघचछजझञट'[new Date().getSeconds() % 10] ?? 'क'}`;
+    await page.getByLabel('पूरा नाम').fill(name);
+    await page.getByRole('button', { name: 'आगे' }).click();
+    await page.getByLabel('मोबाइल नंबर').fill('9812345677');
+    await page.getByRole('button', { name: 'आगे' }).click();
+    await page.getByRole('button', { name: 'मर्द', exact: true }).click();
+    await page.getByRole('button', { name: 'आगे' }).click();
+    await page.getByLabel('दिन').fill('09');
+    await page.getByLabel('महीना').fill('09');
+    await page.getByLabel('साल').fill('1993');
+    await page.getByRole('button', { name: 'आगे' }).click();
+    await page.getByText('मेंबर ने नियम और प्राइवेसी नोटिस सुन लिया है').click();
+    await page.getByRole('button', { name: 'मेंबर जोड़ें' }).click();
+    await expect(page.getByRole('heading', { name: 'मेंबर जुड़ गया' })).toBeVisible({ timeout: 60_000 });
+
+    await page.getByRole('link', { name: 'अब फीस लें' }).click();
+    await expect(page).toHaveURL(/\/renew$/);
+    await page.goto(page.url().replace(/\/renew$/, ''));
+
+    // The stored photo, through a short-lived signed link, actually loads.
+    const photo = page.getByRole('img', { name: `${name} की फोटो` });
+    await expect(photo).toBeVisible();
+    await expect.poll(() => photo.evaluate((img) => (img as HTMLImageElement).naturalWidth), { timeout: 30_000 }).toBeGreaterThan(0);
   });
 
   test('keeps settings from reception', async ({ page }) => {

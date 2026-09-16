@@ -36,6 +36,22 @@ Blockers / questions for client:
 - Same as Phase 3: payment-failure wording, prices, minimum age, admission fee, PIN confirmation, photos, policy answers, grievance officer.
 - Demo staff logins are the seeded ones (owner 9000000001 / 2468, reception 9000000002 / 1357). Real PINs must be set before anyone uses this outside a demo.
 
+### 2026-09-16 (later) — Phase 4 — Camera step in the desk's add-member wizard
+Done:
+- **Camera sheet reused:** `SelfieCapture` takes `facing` (`environment` at the desk: back camera, un-mirrored preview, back camera for the phone-camera fallback) and `namespace` (`crm.add.camera`, the desk's words, same keys as the website's).
+- **Wizard:** "फोटो लें" opens the sheet; the photo is shown with "दोबारा लें"; the step reads "आगे" once there is a photo and "अभी नहीं" while there is none; the photo goes with the details as a form field; a refused photo sends staff back to the photo step, cleared, with a message.
+- **Server:** `deskPhotoFromForm` runs the website's selfie pipeline (size, signature, decode, re-encode without metadata); `addMemberAction` checks permission before decoding anything and answers `photo` on a refusal.
+- **Profile:** the member's photo at the top, through a five-minute signed link.
+- **CRM-sized desk sheet:** at the desk the sheet's buttons use the CRM tap sizes (56px and up) and a 56px close button; the website keeps its own.
+- **Verified:** typecheck 8/8; lint clean; unit tests 955 (core + shared + web), 19 of them for this slice (the server pipeline with real JPEGs, the wizard's three paths, the desk sheet's camera, mirroring, words and button size). **Mutation proof:** sending `null` instead of the photo form made the wizard test fail; restored, it passes. **E2E on `next dev`** (desktop): a walk-in photographed through the phone-camera path, saved, and the photo loading on their profile (`naturalWidth > 0`) — passed twice; the existing walk-in and export/erase journeys pass. The website's join-modal journey, which shares the sheet, passed its selfie step and registered with the photo (201) twice, but kept failing further on as each intercepted route (`(.)join`, `(.)join/plan`, `(.)join/done`) compiled for the first time in 60–70 s, and finally on a `page.goto('/')` timeout from an overloaded dev server; a scripted walk through the whole modal (selfie → plan → demo payment → confirmation) completed. It is run again against the production deployment below.
+- 360px and 1280px screenshots: photo step empty, sheet open, photo taken; no horizontal scroll, wizard buttons 64px, preview 192px.
+
+Decisions (decision-log):
+- ADR-054 one camera sheet for selfie and desk, photo in the same save, same server pipeline, permission before decoding, profile photo via signed link.
+
+Pending / next:
+- A real storage bucket before members use the demo (photos on Vercel live in `/tmp`). Pairing the attendance phone (Phase 7). Web push for alerts (Phase 6).
+
 ### 2026-09-16 — Phase 4 — Max Register as an installed app (PWA)
 Done:
 - **Manifest** at `/crm/manifest.webmanifest`, linked only from the CRM layout: scope and start URL `/crm`, standalone, portrait, Hindi, plate-navy theme and splash. Next's root `app/manifest.ts` convention was tried first and abandoned — it linked the manifest from every page, offering the back office to website visitors (ADR-053).

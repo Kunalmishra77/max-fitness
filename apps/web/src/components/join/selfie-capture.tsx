@@ -34,6 +34,13 @@ export interface SelfieCaptureProps {
   readonly loadDetector?: () => Promise<FaceDetectorLike | null>;
   /** Injected in tests; defaults to the canvas JPEG renderer. */
   readonly renderPhoto?: (source: HTMLVideoElement, frame: FrameSize, face: Box | null) => Promise<Blob>;
+  /**
+   * `user` for a selfie (the website); `environment` when staff photograph a member at the
+   * desk. Only the selfie preview is mirrored — a mirror image of someone else looks wrong.
+   */
+  readonly facing?: 'user' | 'environment';
+  /** Whose words: the member's (`signup.camera`) or the desk's (`crm.add.camera`). Same keys. */
+  readonly namespace?: 'signup.camera' | 'crm.add.camera';
 }
 
 type Phase = 'explainer' | 'starting' | 'live' | 'preparing' | 'preview' | 'denied' | 'inUse' | 'noCamera' | 'unusable';
@@ -48,8 +55,20 @@ function cameraSupported(): boolean {
   return typeof window !== 'undefined' && window.isSecureContext && typeof navigator.mediaDevices?.getUserMedia === 'function';
 }
 
-export function SelfieCapture({ open, onOpenChange, onCaptured, loadDetector = defaultLoadDetector, renderPhoto = renderSquareJpeg }: SelfieCaptureProps) {
-  const t = useTranslations('signup.camera');
+export function SelfieCapture({
+  open,
+  onOpenChange,
+  onCaptured,
+  loadDetector = defaultLoadDetector,
+  renderPhoto = renderSquareJpeg,
+  facing = 'user',
+  namespace = 'signup.camera',
+}: SelfieCaptureProps) {
+  const t = useTranslations(namespace);
+  // At the desk this is a CRM screen, with the CRM's bigger targets (CLAUDE.md §2.10).
+  const atDesk = namespace === 'crm.add.camera';
+  const regular = atDesk ? 'crm' : 'web';
+  const large = atDesk ? 'crmPrimary' : 'hero';
   const [phase, setPhase] = useState<Phase>('explainer');
   const [check, setCheck] = useState<FaceCheck | 'unavailable' | 'loading'>('loading');
   const [steady, setSteady] = useState(false);
@@ -96,7 +115,7 @@ export function SelfieCapture({ open, onOpenChange, onCaptured, loadDetector = d
   const startCamera = useCallback(async () => {
     setPhase('starting');
     clearPreview();
-    const ideal: MediaStreamConstraints = { video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false };
+    const ideal: MediaStreamConstraints = { video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false };
 
     let stream: MediaStream;
     try {
@@ -120,7 +139,7 @@ export function SelfieCapture({ open, onOpenChange, onCaptured, loadDetector = d
     setSteady(false);
     setCheck(detectorRef.current === null ? 'loading' : 'none');
     setPhase('live');
-  }, [clearPreview]);
+  }, [clearPreview, facing]);
 
   // Attach the stream once the video element exists.
   useEffect(() => {
@@ -231,7 +250,7 @@ export function SelfieCapture({ open, onOpenChange, onCaptured, loadDetector = d
   };
 
   const phoneCameraButton = (variant: 'primary' | 'outlineDark') => (
-    <button type="button" onClick={() => fileRef.current?.click()} className={buttonVariants({ variant, full: true })}>
+    <button type="button" onClick={() => fileRef.current?.click()} className={buttonVariants({ variant, size: regular, full: true })}>
       {t('usePhoneCamera')}
     </button>
   );
@@ -245,7 +264,7 @@ export function SelfieCapture({ open, onOpenChange, onCaptured, loadDetector = d
       <SheetContent className="mx-auto max-h-[95dvh] max-w-lg md:bottom-auto md:top-1/2 md:-translate-y-1/2 md:rounded-[var(--radius-modal)]">
         <div className="flex items-center justify-between gap-4">
           <DialogTitle className="font-display text-title font-bold text-brand-plate-navy">{t('title')}</DialogTitle>
-          <DialogClose className={buttonVariants({ variant: 'ghost', size: 'icon' })} aria-label={t('close')}>
+          <DialogClose className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), atDesk && 'size-14')} aria-label={t('close')}>
             <span aria-hidden className="text-2xl leading-none">×</span>
           </DialogClose>
         </div>
@@ -259,13 +278,13 @@ export function SelfieCapture({ open, onOpenChange, onCaptured, loadDetector = d
           </div>
         ) : null}
 
-        <input ref={fileRef} type="file" accept="image/*" capture="user" className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => void onFilePicked(e)} />
+        <input ref={fileRef} type="file" accept="image/*" capture={facing} className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => void onFilePicked(e)} />
 
         {phase === 'explainer' ? (
           <div className="mt-4 grid gap-4">
             <DialogDescription className="text-body leading-body">{supported ? t('explainer') : t('noCamera')}</DialogDescription>
             {supported ? (
-              <button type="button" onClick={() => void startCamera()} className={buttonVariants({ variant: 'primary', full: true })}>
+              <button type="button" onClick={() => void startCamera()} className={buttonVariants({ variant: 'primary', size: regular, full: true })}>
                 {t('open')}
               </button>
             ) : null}
@@ -282,7 +301,7 @@ export function SelfieCapture({ open, onOpenChange, onCaptured, loadDetector = d
         {phase === 'live' ? (
           <div className="mt-4 grid gap-3">
             <div className="relative aspect-[3/4] w-full overflow-hidden rounded-panel bg-brand-plate-navy">
-              <video ref={videoRef} playsInline muted autoPlay className="size-full -scale-x-100 object-cover" />
+              <video ref={videoRef} playsInline muted autoPlay className={cn('size-full object-cover', facing === 'user' && '-scale-x-100')} />
               {/* The oval guide: a transparent ellipse with the rest of the frame dimmed. */}
               <div
                 aria-hidden
@@ -297,7 +316,7 @@ export function SelfieCapture({ open, onOpenChange, onCaptured, loadDetector = d
             <p role="status" aria-live="polite" className={cn('min-h-6 text-body font-semibold', steady ? 'text-semantic-fee-paid' : 'text-brand-ink')}>
               {guidance}
             </p>
-            <button type="button" disabled={!canCapture} onClick={() => void capture()} className={buttonVariants({ variant: 'primary', size: 'hero', full: true })}>
+            <button type="button" disabled={!canCapture} onClick={() => void capture()} className={buttonVariants({ variant: 'primary', size: large, full: true })}>
               {t('capture')}
             </button>
           </div>
@@ -307,10 +326,10 @@ export function SelfieCapture({ open, onOpenChange, onCaptured, loadDetector = d
           <div className="mt-4 grid gap-3">
             {/* A local object URL: next/image cannot optimise it and must not try. */}
             <img src={preview.url} alt={t('previewAlt')} className="mx-auto aspect-square w-full max-w-sm rounded-panel object-cover" />
-            <button type="button" onClick={usePhoto} className={buttonVariants({ variant: 'primary', size: 'hero', full: true })}>
+            <button type="button" onClick={usePhoto} className={buttonVariants({ variant: 'primary', size: large, full: true })}>
               {t('use')}
             </button>
-            <button type="button" onClick={() => (supported ? void startCamera() : fileRef.current?.click())} className={buttonVariants({ variant: 'outlineDark', full: true })}>
+            <button type="button" onClick={() => (supported ? void startCamera() : fileRef.current?.click())} className={buttonVariants({ variant: 'outlineDark', size: regular, full: true })}>
               {t('retake')}
             </button>
           </div>
@@ -322,7 +341,7 @@ export function SelfieCapture({ open, onOpenChange, onCaptured, loadDetector = d
               {t(phase === 'denied' ? 'denied' : phase === 'inUse' ? 'inUse' : phase === 'noCamera' ? 'noCamera' : 'unusable')}
             </p>
             {phase === 'noCamera' ? null : (
-              <button type="button" onClick={() => void startCamera()} className={buttonVariants({ variant: 'primary', full: true })}>
+              <button type="button" onClick={() => void startCamera()} className={buttonVariants({ variant: 'primary', size: regular, full: true })}>
                 {t('tryAgain')}
               </button>
             )}

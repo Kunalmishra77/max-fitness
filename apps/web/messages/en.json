@@ -663,7 +663,8 @@
       "months": "{count} months",
       "monthly": "1 month",
       "receipt": "Receipt {receiptNo}",
-      "back": "Back"
+      "back": "Back",
+      "photoAlt": "Photo of {name}"
     },
     "renew": {
       "title": "Take fees",
@@ -778,7 +779,34 @@
         "gender": "Choose one.",
         "terms": "Without consent the member cannot be added.",
         "underAge": "Members must be at least {minAge} years old.",
-        "generic": "Could not add them. Please try again."
+        "generic": "Could not add them. Please try again.",
+        "photo": "That photo could not be used. Take it again, or skip it for now."
+      },
+      "camera": {
+        "title": "Member’s photo",
+        "close": "Close",
+        "explainer": "The phone’s back camera opens for the member’s photo. If the browser asks, tap “Allow”.",
+        "open": "Open camera",
+        "starting": "Starting the camera…",
+        "guidance": "Stand the member facing the light. Ask them to take off caps and sunglasses.",
+        "faceFound": "Face found",
+        "moveInside": "Bring the member’s face inside the oval.",
+        "oneFace": "Only the member should be in the photo.",
+        "closer": "Move a little closer.",
+        "capture": "Take photo",
+        "use": "Use this photo",
+        "retake": "Retake",
+        "denied": "Camera permission is off. Turn it on in the browser settings, or use the phone’s camera.",
+        "tryAgain": "Try again",
+        "usePhoneCamera": "Use the phone’s camera",
+        "inUse": "The camera is in use by another app. Close it and try again.",
+        "noCamera": "The camera could not open here. Use the phone’s camera.",
+        "inApp": "The camera may not open inside WhatsApp or Instagram. Open Max Register in Chrome.",
+        "copyLink": "Copy link",
+        "linkCopied": "Link copied",
+        "previewAlt": "Member’s photo",
+        "preparing": "Preparing the photo…",
+        "unusable": "That photo could not be used. Please take another."
       }
     },
     "attendance": {

@@ -2,7 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useId, useMemo, useState, useTransition } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, useTransition, type ComponentType } from 'react';
+import { SelfieCapture, type SelfieCaptureProps } from '@/components/join/selfie-capture';
 
 /**
  * Add a member at the desk (crm-ux-blueprint §7).
@@ -11,9 +12,14 @@ import { useId, useMemo, useState, useTransition } from 'react';
  * and skippable. Nothing is written until the last tap; the server validates the same
  * fields again with the shared schema and answers with a code this screen looks up, so
  * the two languages stay in the message catalogues.
+ *
+ * The photo is taken with the website's camera sheet, pointed the other way: the phone's
+ * back camera, an un-mirrored preview, and the desk's words. It travels with the details
+ * in the same save, as a form field, and a photo the server cannot use sends staff back
+ * to take another.
  */
 
-export type AddMemberErrorCode = 'fullName' | 'mobile' | 'dob' | 'gender' | 'terms' | 'underAge' | 'FORBIDDEN' | 'generic';
+export type AddMemberErrorCode = 'fullName' | 'mobile' | 'dob' | 'gender' | 'terms' | 'underAge' | 'photo' | 'FORBIDDEN' | 'generic';
 export type AddMemberResult =
   | { ok: true; memberId: string; possibleDuplicate: boolean }
   | { ok: false; code: AddMemberErrorCode; minAge?: number };
@@ -35,11 +41,36 @@ type Step = (typeof STEPS)[number];
 
 const pad = (value: string) => value.padStart(2, '0');
 
-export function AddMemberFlow({ action }: { action: (fields: AddMemberFields) => Promise<AddMemberResult> }) {
+export function AddMemberFlow({
+  action,
+  Camera = SelfieCapture,
+}: {
+  action: (fields: AddMemberFields, photo: FormData | null) => Promise<AddMemberResult>;
+  /** Injected in tests; the real sheet needs a camera. */
+  Camera?: ComponentType<SelfieCaptureProps>;
+}) {
   const t = useTranslations('crm.add');
   const router = useRouter();
   const id = useId();
   const [step, setStep] = useState<Step>('photo');
+  const [photo, setPhoto] = useState<{ blob: Blob; url: string } | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const photoUrl = useRef<string | null>(null);
+
+  const keepPhoto = (blob: Blob | null) => {
+    if (photoUrl.current !== null) URL.revokeObjectURL(photoUrl.current);
+    const next = blob === null ? null : { blob, url: URL.createObjectURL(blob) };
+    photoUrl.current = next?.url ?? null;
+    setPhoto(next);
+  };
+
+  // The preview's object URL is released when the wizard goes away.
+  useEffect(
+    () => () => {
+      if (photoUrl.current !== null) URL.revokeObjectURL(photoUrl.current);
+    },
+    [],
+  );
   const [fullName, setFullName] = useState('');
   const [mobile, setMobile] = useState('');
   const [gender, setGender] = useState<AddMemberFields['gender'] | null>(null);
@@ -80,7 +111,12 @@ export function AddMemberFlow({ action }: { action: (fields: AddMemberFields) =>
     if (gender === null) return;
     setError(null);
     start(async () => {
-      const result = await action({ fullName: fullName.trim(), mobile, gender, dob: dobValue, terms, whatsappUpdates, faceAttendance });
+      let form: FormData | null = null;
+      if (photo !== null) {
+        form = new FormData();
+        form.set('photo', photo.blob, 'member-photo.jpg');
+      }
+      const result = await action({ fullName: fullName.trim(), mobile, gender, dob: dobValue, terms, whatsappUpdates, faceAttendance }, form);
       if (result.ok) {
         setDone({ memberId: result.memberId, possibleDuplicate: result.possibleDuplicate });
         router.refresh();
@@ -96,12 +132,17 @@ export function AddMemberFlow({ action }: { action: (fields: AddMemberFields) =>
         if (result.code === 'fullName') setStep('name');
         if (result.code === 'mobile') setStep('mobile');
         if (result.code === 'dob' || result.code === 'underAge') setStep('dob');
+        if (result.code === 'photo') {
+          keepPhoto(null);
+          setStep('photo');
+        }
       }
     });
   };
 
   const field = 'mt-3 min-h-16 w-full rounded-input border-2 border-brand-rubber-grey/40 bg-white px-4 text-crm-body';
   const primary = 'min-h-16 w-full rounded-panel bg-brand-signboard-red text-crm-body font-bold text-white disabled:opacity-50';
+  const secondary = 'min-h-16 w-full rounded-panel border-2 border-brand-plate-navy text-crm-body font-bold text-brand-plate-navy';
 
   if (done !== null) {
     return (
@@ -139,10 +180,26 @@ export function AddMemberFlow({ action }: { action: (fields: AddMemberFields) =>
         {step === 'photo' ? (
           <div className="text-center">
             <h2 className="font-display text-title font-bold text-brand-plate-navy">{t('photoTitle')}</h2>
-            <p aria-hidden className="mt-6 text-6xl">
-              📷
-            </p>
-            <p className="mt-4 text-crm-body text-brand-rubber-grey">{t('photoHelper')}</p>
+            {photo === null ? (
+              <>
+                <p aria-hidden className="mt-6 text-6xl">
+                  📷
+                </p>
+                <button type="button" onClick={() => setCameraOpen(true)} className={`mt-6 ${secondary}`}>
+                  {t('photoTake')}
+                </button>
+                <p className="mt-4 text-crm-body text-brand-rubber-grey">{t('photoHelper')}</p>
+              </>
+            ) : (
+              <>
+                {/* A local object URL: next/image cannot optimise it and must not try. */}
+                <img src={photo.url} alt={t('photoDone')} className="mx-auto mt-6 size-48 rounded-full object-cover" />
+                <button type="button" onClick={() => setCameraOpen(true)} className={`mt-4 ${secondary}`}>
+                  {t('photoRetake')}
+                </button>
+              </>
+            )}
+            <Camera open={cameraOpen} onOpenChange={setCameraOpen} onCaptured={keepPhoto} facing="environment" namespace="crm.add.camera" />
           </div>
         ) : null}
 
@@ -260,7 +317,7 @@ export function AddMemberFlow({ action }: { action: (fields: AddMemberFields) =>
           </button>
         ) : (
           <button type="button" disabled={!canContinue} onClick={() => go(1)} className={primary}>
-            {step === 'photo' ? t('skip') : t('next')}
+            {step === 'photo' && photo === null ? t('skip') : t('next')}
           </button>
         )}
         {index === 0 ? null : (

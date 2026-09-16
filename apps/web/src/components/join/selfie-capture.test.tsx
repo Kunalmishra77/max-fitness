@@ -198,4 +198,35 @@ describe('SelfieCapture', () => {
 
     expect(track.stop).toHaveBeenCalled();
   });
+
+  it('opens the back camera, un-mirrored and in the desk’s words, when staff photograph a member', async () => {
+    const { stream } = fakeStream();
+    getUserMedia.mockResolvedValue(stream);
+    render(
+      <WithIntl>
+        <SelfieCapture
+          open
+          onOpenChange={vi.fn()}
+          onCaptured={vi.fn()}
+          loadDetector={() => Promise.resolve(null)}
+          facing="environment"
+          namespace="crm.add.camera"
+        />
+      </WithIntl>,
+    );
+
+    expect(screen.getByText(/back camera opens for the member/)).toBeTruthy();
+    // Desk buttons are CRM-sized (CLAUDE.md §2.10: 56px or more), not the website's 48px.
+    expect(screen.getByRole('button', { name: 'Open camera' }).className).toContain('--size-tap-crm');
+    expect(screen.getByRole('button', { name: 'Use the phone’s camera' }).className).toContain('--size-tap-crm');
+    // The phone's camera app opens on the back camera too.
+    expect(document.querySelector('input[type=file]')?.getAttribute('capture')).toBe('environment');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Open camera' }));
+    await screen.findByText('Stand the member facing the light. Ask them to take off caps and sunglasses.');
+
+    expect(getUserMedia).toHaveBeenCalledWith(expect.objectContaining({ video: expect.objectContaining({ facingMode: 'environment' }) }));
+    // A mirror image is a comfort for a selfie; for someone else it just looks wrong.
+    expect(document.querySelector('video')?.className).not.toContain('-scale-x-100');
+  });
 });

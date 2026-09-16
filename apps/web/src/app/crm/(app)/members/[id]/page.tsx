@@ -29,7 +29,10 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
   const member = await reader.member(gym.id, id, today);
   if (member === null) notFound();
 
-  const { clock } = getContainer();
+  const { clock, storage } = getContainer();
+  // Photos are private objects, shown through a link that lapses in five minutes
+  // (CLAUDE.md §2.8) — long enough to look at the page, too short to share.
+  const photoUrl = member.photoKey === null ? null : await storage.signedUrl(member.photoKey, 300);
   const mayTakeFees = can(actor, 'payment.record', clock.now());
   // The button shows for a role that may void; the PIN it then asks for is what actually
   // permits it (security-plan.md §3.1).
@@ -53,6 +56,10 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
       <CrmHeader title={member.fullName} back="/crm/members" />
 
       <div className="bg-white px-4 pt-4 pb-5 text-center">
+        {photoUrl === null ? null : (
+          // A signed, short-lived URL to a private file: next/image would cache it.
+          <img src={photoUrl} alt={t('profile.photoAlt', { name: member.fullName })} width={96} height={96} className="mx-auto mb-3 size-24 rounded-full object-cover" />
+        )}
         <p className="font-display text-display-m font-bold text-brand-plate-navy">{member.fullName}</p>
         <p className="text-crm-body text-brand-rubber-grey">{member.memberCode ?? '—'}</p>
 
