@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url';
 import { PgBoss } from 'pg-boss';
 import { parseEnv, systemClock, WORKER_HEARTBEAT_STALE_SECONDS } from '@mfp/shared';
 import { createPrismaClient } from '@mfp/db';
-import { LocalStorageDriver, resolveStorageRoot } from '@mfp/integrations/storage';
+import { createStorageDriver } from '@mfp/integrations/storage';
 import { nightlyCallTasksHandler, registerReceiptPdfWorker, RECEIPT_PDF_QUEUE, startOutboxPoller, type Phase3Deps } from './jobs/phase3-jobs';
 import { createLogger, type Logger } from './logger';
 import { EVENT_QUEUES, IST_TZ, SCHEDULES, type ScheduleDefinition } from './schedules';
@@ -81,8 +81,8 @@ async function main(): Promise<void> {
   const phase3: Phase3Deps = {
     boss,
     prisma,
-    // The same folder as the web app's, whichever app directory each runs from.
-    storage: new LocalStorageDriver({ rootPath: resolveStorageRoot(env.STORAGE_LOCAL_PATH), urlSigningSecret: env.LINK_TOKEN_SECRET }),
+    // The same place as the web app's: its folder, or the same Supabase bucket (ADR-055).
+    storage: createStorageDriver(env),
     clock: systemClock,
     log,
     gymSlug: env.GYM_SLUG,

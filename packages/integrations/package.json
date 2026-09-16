@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "catalog:",
     "@mfp/core": "workspace:*",
     "@mfp/shared": "workspace:*",
     "@node-rs/argon2": "catalog:",

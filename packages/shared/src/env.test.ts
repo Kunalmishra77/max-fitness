@@ -127,6 +127,52 @@ describe('parseEnv — provider credentials must be present before they are need
   it('demands a bucket when storage is S3', () => {
     expect(() => parseEnv(base({ STORAGE_DRIVER: 's3' }))).toThrow(/S3_BUCKET/);
   });
+
+  it('demands the endpoint, region and both keys when storage is S3 (Supabase Storage, ADR-055)', () => {
+    const error = (() => {
+      try {
+        parseEnv(base({ STORAGE_DRIVER: 's3', S3_BUCKET: 'member-media', S3_SECRET_ACCESS_KEY: 'do-not-echo-me' }));
+        return null;
+      } catch (caught) {
+        return caught as Error;
+      }
+    })();
+    expect(error).toBeInstanceOf(EnvValidationError);
+    expect(error?.message).toMatch(/S3_ENDPOINT/);
+    expect(error?.message).toMatch(/S3_REGION/);
+    expect(error?.message).toMatch(/S3_ACCESS_KEY_ID/);
+    // A key that is set is never repeated back.
+    expect(error?.message).not.toContain('do-not-echo-me');
+  });
+
+  it('boots with a complete S3 configuration', () => {
+    const env = parseEnv(
+      base({
+        STORAGE_DRIVER: 's3',
+        S3_ENDPOINT: 'https://abcdefghijklmnop.storage.supabase.co/storage/v1/s3',
+        S3_REGION: 'ap-south-1',
+        S3_BUCKET: 'member-media',
+        S3_ACCESS_KEY_ID: 'id',
+        S3_SECRET_ACCESS_KEY: 'secret',
+      }),
+    );
+    expect(env.STORAGE_DRIVER).toBe('s3');
+  });
+
+  it('refuses an S3 endpoint that is not https', () => {
+    expect(() =>
+      parseEnv(
+        base({
+          STORAGE_DRIVER: 's3',
+          S3_ENDPOINT: 'http://abcdefghijklmnop.storage.supabase.co/storage/v1/s3',
+          S3_REGION: 'ap-south-1',
+          S3_BUCKET: 'member-media',
+          S3_ACCESS_KEY_ID: 'id',
+          S3_SECRET_ACCESS_KEY: 'secret',
+        }),
+      ),
+    ).toThrow(/S3_ENDPOINT/);
+  });
 });
 
 describe('parseEnv — payment keys in production', () => {

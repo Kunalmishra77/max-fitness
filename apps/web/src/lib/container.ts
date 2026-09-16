@@ -10,7 +10,7 @@ import {
 } from '@mfp/db';
 import type { CheckoutUnitOfWork, PaymentConfirmationUnitOfWork, RegistrationUnitOfWork, WebhookEventStore } from '@mfp/core';
 import type { MessageLogWriter, PaymentProvider, StorageDriver, WhatsAppProvider } from '@mfp/core/ports';
-import { LocalStorageDriver, resolveStorageRoot } from '@mfp/integrations/storage';
+import { createStorageDriver } from '@mfp/integrations/storage';
 import { SimulatedPaymentProvider, RazorpayPaymentProvider } from '@mfp/integrations/payments';
 import { SimulatorWhatsAppProvider, MetaCloudWhatsAppProvider } from '@mfp/integrations/whatsapp';
 
@@ -65,10 +65,9 @@ function build(): Container {
 
   const messageLog = new PrismaMessageLogWriter(prisma);
 
-  const storage: StorageDriver = new LocalStorageDriver({
-    rootPath: resolveStorageRoot(env.STORAGE_LOCAL_PATH),
-    urlSigningSecret: env.LINK_TOKEN_SECRET,
-  });
+  // The local folder, or the private Supabase bucket over S3 (ADR-055) — the worker
+  // builds its driver the same way, so both always read the same place.
+  const storage: StorageDriver = createStorageDriver(env);
 
   // CLAUDE.md §2.7: in demo mode payments are simulated and WhatsApp goes to the
   // in-app simulator, which will still make a real send to an allowlisted number.

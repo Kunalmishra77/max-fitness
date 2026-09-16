@@ -66,6 +66,8 @@ catalog:
   '@date-fns/tz': 1.5.0
   pino: 10.3.1
   '@node-rs/argon2': 2.2.1
+  # Supabase Storage through its S3-compatible endpoint (StorageDriver s3, TRD §4; ADR-055).
+  '@aws-sdk/client-s3': 3.1133.0
 
   # ── Web UI ────────────────────────────────────────────────────────────
   next-intl: 4.14.3
@@ -112,6 +114,7 @@ minimumReleaseAgeExclude:
   - next-intl-swc-plugin-extractor@4.14.3
   - next-intl@4.14.3
   - use-intl@4.14.3
+  - '@aws-sdk/client-s3@3.1133.0'
 
 # pnpm blocks dependency install scripts by default — a dependency should not run
 # code on install. (pnpm 11 reads `allowBuilds`; the older `onlyBuiltDependencies`

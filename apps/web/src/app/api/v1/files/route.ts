@@ -11,7 +11,9 @@ import { getContainer } from '@/lib/container';
  * key, and the response is private, uncached by shared caches and never indexed. An
  * expired or forged link is a plain 404 — it says nothing about whether the file exists.
  *
- * Only the local driver needs this route. With S3 the signed URL points at the bucket.
+ * Both drivers serve through this route: with the local folder the bytes are on disk,
+ * with the Supabase bucket (ADR-055) the route reads them over S3. The bucket stays
+ * private and the link is always ours, short-lived and signed.
  *
  * The driver is recognised by its shape rather than `instanceof`: Next bundles a route
  * handler separately from the container module, so the same class arrives as two
@@ -23,13 +25,13 @@ interface SignedUrlVerifier {
 }
 
 function verifiesSignedUrls(storage: StorageDriver): storage is StorageDriver & SignedUrlVerifier {
-  return storage.name === 'local' && typeof (storage as Partial<SignedUrlVerifier>).verifySignedUrl === 'function';
+  return typeof (storage as Partial<SignedUrlVerifier>).verifySignedUrl === 'function';
 }
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/** `prefix/object`, as `LocalStorageDriver` mints them. */
+/** `prefix/object`, as both drivers mint them. */
 const STORAGE_KEY = /^[a-zA-Z0-9_-]+\/[A-Za-z0-9_-]{16,64}$/;
 
 export async function GET(request: NextRequest) {

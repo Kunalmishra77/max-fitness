@@ -142,6 +142,25 @@ export const EnvSchema = z
     message: 'S3_BUCKET is required when STORAGE_DRIVER is "s3"',
     path: ['S3_BUCKET'],
   })
+  // Supabase Storage through its S3 endpoint (ADR-055): every part of the connection is
+  // checked at boot, each reported by name, so a missing key is not found by the first
+  // member who tries to join.
+  .refine((env) => env.STORAGE_DRIVER === 'local' || /^https:\/\/\S+$/.test(env.S3_ENDPOINT), {
+    message: 'S3_ENDPOINT must be an https URL when STORAGE_DRIVER is "s3"',
+    path: ['S3_ENDPOINT'],
+  })
+  .refine((env) => env.STORAGE_DRIVER === 'local' || env.S3_REGION.length > 0, {
+    message: 'S3_REGION is required when STORAGE_DRIVER is "s3"',
+    path: ['S3_REGION'],
+  })
+  .refine((env) => env.STORAGE_DRIVER === 'local' || env.S3_ACCESS_KEY_ID.length > 0, {
+    message: 'S3_ACCESS_KEY_ID is required when STORAGE_DRIVER is "s3"',
+    path: ['S3_ACCESS_KEY_ID'],
+  })
+  .refine((env) => env.STORAGE_DRIVER === 'local' || env.S3_SECRET_ACCESS_KEY.length > 0, {
+    message: 'S3_SECRET_ACCESS_KEY is required when STORAGE_DRIVER is "s3"',
+    path: ['S3_SECRET_ACCESS_KEY'],
+  })
   // Real payments need real keys. Only a production deployment that is NOT in demo
   // mode takes money; a deliberate demo deployment uses the simulated gateway.
   .refine((env) => env.NODE_ENV !== 'production' || env.DEMO_MODE || env.RAZORPAY_KEY_SECRET.length > 0, {

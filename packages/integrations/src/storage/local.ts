@@ -1,7 +1,8 @@
-import { createHash, randomBytes, createHmac, timingSafeEqual } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve, sep } from 'node:path';
 import type { PutObjectRequest, StorageDriver, StoredObject } from '@mfp/core/ports';
+import { newObjectKey, SignedFileUrls } from './keys';
 
 /**
  * Local filesystem storage (ADR-008, override 6).
@@ -29,24 +30,22 @@ export interface LocalStorageOptions {
   readonly now?: () => Date;
 }
 
-const KEY_BYTES = 24; // 32 base64url characters
-
 export class LocalStorageDriver implements StorageDriver {
   readonly name = 'local' as const;
   readonly #root: string;
-  readonly #secret: string;
-  readonly #basePath: string;
-  readonly #now: () => Date;
+  readonly #urls: SignedFileUrls;
 
   constructor(options: LocalStorageOptions) {
     this.#root = resolve(options.rootPath);
-    this.#secret = options.urlSigningSecret;
-    this.#basePath = options.publicBasePath ?? '/api/v1/files';
-    this.#now = options.now ?? (() => new Date());
+    this.#urls = new SignedFileUrls({
+      secret: options.urlSigningSecret,
+      ...(options.publicBasePath === undefined ? {} : { basePath: options.publicBasePath }),
+      ...(options.now === undefined ? {} : { now: options.now }),
+    });
   }
 
   async put(request: PutObjectRequest): Promise<StoredObject> {
-    const key = `${sanitisePrefix(request.prefix)}/${randomBytes(KEY_BYTES).toString('base64url')}`;
+    const key = newObjectKey(request.prefix);
     const path = this.#pathFor(key);
 
     await mkdir(dirname(path), { recursive: true });
@@ -86,20 +85,12 @@ export class LocalStorageDriver implements StorageDriver {
    * the caller passes the TTL and the route enforces the ceiling.
    */
   signedUrl(key: string, ttlSeconds: number): Promise<string> {
-    const expires = Math.floor(this.#now().getTime() / 1000) + ttlSeconds;
-    const signature = signKey(this.#secret, key, expires);
-    const params = new URLSearchParams({ key, expires: String(expires), sig: signature });
-    return Promise.resolve(`${this.#basePath}?${params.toString()}`);
+    return Promise.resolve(this.#urls.sign(key, ttlSeconds));
   }
 
   /** Verify a signed URL's parameters. Used by the file route before reading anything. */
   verifySignedUrl(key: string, expires: number, signature: string): boolean {
-    if (Math.floor(this.#now().getTime() / 1000) >= expires) return false;
-    const expected = signKey(this.#secret, key, expires);
-    const a = Buffer.from(expected);
-    const b = Buffer.from(signature);
-    if (a.length !== b.length) return false;
-    return timingSafeEqual(a, b);
+    return this.#urls.verify(key, expires, signature);
   }
 
   /** Resolve a key to an absolute path, refusing anything that escapes the root. */
@@ -110,21 +101,4 @@ export class LocalStorageDriver implements StorageDriver {
     }
     return path;
   }
-}
-
-function signKey(secret: string, key: string, expires: number): string {
-  return createHmac('sha256', secret).update(`${key}|${expires}`).digest('base64url');
-}
-
-function sanitisePrefix(prefix: string): string {
-  // Check the raw value first: stripping characters before looking for `..` would
-  // turn `../etc` into `etc` and let a traversal attempt through silently.
-  if (prefix.includes('..')) {
-    throw new Error('Invalid storage prefix');
-  }
-  const cleaned = prefix.replace(/[^a-zA-Z0-9/_-]/g, '').replace(/^\/+|\/+$/g, '');
-  if (cleaned.length === 0) {
-    throw new Error('Invalid storage prefix');
-  }
-  return cleaned;
 }

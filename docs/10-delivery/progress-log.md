@@ -36,6 +36,20 @@ Blockers / questions for client:
 - Same as Phase 3: payment-failure wording, prices, minimum age, admission fee, PIN confirmation, photos, policy answers, grievance officer.
 - Demo staff logins are the seeded ones (owner 9000000001 / 2468, reception 9000000002 / 1357). Real PINs must be set before anyone uses this outside a demo.
 
+### 2026-09-16 (evening) — Delivery — Private Supabase Storage bucket over S3
+Done:
+- `@aws-sdk/client-s3` 3.1133.0 added to the catalog and to `packages/integrations` (client's choice, ADR-055).
+- `S3StorageDriver` (private bucket, random keys, content hash, hard delete, keys checked before any request, "not found" distinguished from failure) and `createS3Client` (path-style, checksums only when required).
+- Shared `storage/keys.ts` for key minting, key shape and signed read links; the local driver now uses it too.
+- `createStorageDriver` used by both the web container and the worker. `/api/v1/files` serves either driver.
+- `parseEnv` requires the https endpoint, region, bucket and both keys when `STORAGE_DRIVER=s3`; `.env.example` explains where each comes from in the Supabase dashboard.
+- `s3.live.test.ts` for the real bucket, behind `S3_LIVE_TEST=1`.
+- **Verified:** typecheck 8/8; lint clean; unit tests 425 passed across integrations, shared and web (6 for the S3 driver, 2 for the factory, 3 for the new env checks), with the 2 live tests skipped as designed. **Mutation proof:** letting `exists` answer `false` for any error made "does not hide a real failure" fail; restored, it passes. The live suite first failed while being *collected* — the SDK refuses a missing region the moment a client is created — so the client is now built inside each test. **E2E** (desktop, local driver): the desk photo journey still saves and shows the photo after the refactor. The first attempt timed out launching the browser: the machine had 738 MB of 8 GB free and the dev server was compacting its cache for 8 minutes; the same test then passed.
+- The local driver's behaviour is unchanged; Vercel still runs `STORAGE_DRIVER=local` until the bucket and keys exist.
+
+Pending / next:
+- **Client action:** create a private bucket in Supabase Storage and an S3 access key, put the five `S3_*` values in `.env`; then the live test runs, and the values plus `STORAGE_DRIVER=s3` go to Vercel.
+
 ### 2026-09-16 (later) — Phase 4 — Camera step in the desk's add-member wizard
 Done:
 - **Camera sheet reused:** `SelfieCapture` takes `facing` (`environment` at the desk: back camera, un-mirrored preview, back camera for the phone-camera fallback) and `namespace` (`crm.add.camera`, the desk's words, same keys as the website's).
