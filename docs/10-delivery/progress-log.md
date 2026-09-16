@@ -36,6 +36,21 @@ Blockers / questions for client:
 - Same as Phase 3: payment-failure wording, prices, minimum age, admission fee, PIN confirmation, photos, policy answers, grievance officer.
 - Demo staff logins are the seeded ones (owner 9000000001 / 2468, reception 9000000002 / 1357). Real PINs must be set before anyone uses this outside a demo.
 
+### 2026-09-16 — Phase 4 — Max Register as an installed app (PWA)
+Done:
+- **Manifest** at `/crm/manifest.webmanifest`, linked only from the CRM layout: scope and start URL `/crm`, standalone, portrait, Hindi, plate-navy theme and splash. Next's root `app/manifest.ts` convention was tried first and abandoned — it linked the manifest from every page, offering the back office to website visitors (ADR-053).
+- **Icons** generated from `src/app/icon.svg` by `apps/web/scripts/make-pwa-icons.mjs`: 192, 512 and a maskable 512 on the navy plate.
+- **Service worker** (`public/sw.js`, no build step): precaches the shell and one offline page; `/_next/static`, icons, fonts and the manifest are cache-first; CRM pages are network-first and never cached; `/api/` is never intercepted; non-GET is left alone; old caches are cleared on activate. Registered for `/crm/` only, failing quietly where service workers are unavailable.
+- **Offline page** `/crm/offline` in Hindi and English, holding no member data, with a link back to Today.
+- **Verified:** typecheck 8/8; lint clean; unit tests 947 (core + shared + web), including 13 new ones — the service-worker test evaluates the shipped file itself and fires real events. **Mutation proof:** caching the navigation response made "never stores a CRM page" fail; restored, it passes. **E2E** (desktop): the manifest is linked and served with scope `/crm`, its icon loads, the worker registers with a `/crm/` scope, the offline page renders and leads back to Today, and `/hi` offers no install at all.
+- The first two E2E attempts failed on a dev server that had been running for a day and was compacting its cache (a 53-second health check, a login action that never came back). A fresh `next dev` and the same test: passes.
+
+Decisions (decision-log):
+- ADR-053 manifest under `/crm`, shell-only caching with CRM pages and API never cached, the worker tested as the file that ships, web push deferred with the Phase 6 alert engine.
+
+Pending / next:
+- Web push for alerts (Phase 6). Camera step in the add-member wizard. Pairing the attendance phone (Phase 7).
+
 ### 2026-09-15 (later) — Phase 4 — Settings: reminder times, kill switch, language and kiosk voice
 Done:
 - **Core (test-first):** `updateReminderSettings` — per reminder on/off and one to three times, stored in order; a time outside quiet hours, a non-time, a duplicate or a fourth time is refused with the rule named; days after expiry 1–60, written to settings and to the POST rule's `offsetDaysTo` in the same transaction (ADR-015); audited only when something changed. `updateGymSettings` now also takes the kill switch (`reminders.automaticPaused`), the kiosk voice (`attendance.kioskVoice`) and `defaultLanguage`, and refuses `reminders.postExpiryMaxDays` so it cannot drift from the POST rule. `checkReminderEligibility` returns `AUTOMATIC_MESSAGES_STOPPED` before every other reason.

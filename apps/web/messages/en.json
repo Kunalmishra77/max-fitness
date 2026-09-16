@@ -1058,6 +1058,11 @@
       "notAllowed": "Only the owner can export or erase a member's data.",
       "failed": "That did not work. Please try again.",
       "erasedMember": "Erased member"
+    },
+    "offline": {
+      "title": "No internet",
+      "body": "Max Register works again as soon as the network is back. Anything changed just now was not saved.",
+      "retry": "Try again"
     }
   }
 }

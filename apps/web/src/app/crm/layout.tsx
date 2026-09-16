@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import type { ReactNode } from 'react';
+import { ServiceWorkerRegistrar } from '@/components/crm/service-worker-registrar';
 import { getCrmLocale } from '@/i18n/crm-locale';
 import '@/styles/globals.css';
 
@@ -19,6 +20,11 @@ import '@/styles/globals.css';
 export const metadata: Metadata = {
   title: 'Max Register',
   robots: { index: false, follow: false },
+  // Only the CRM offers the install: the website is not the thing the owner keeps on
+  // their home screen (crm-ux-blueprint §18).
+  manifest: '/crm/manifest.webmanifest',
+  appleWebApp: { capable: true, title: 'Max Register', statusBarStyle: 'black-translucent' },
+  icons: { apple: '/icons/max-192.png' },
 };
 
 export const viewport: Viewport = {
@@ -36,6 +42,7 @@ export default async function CrmRootLayout({ children }: { children: ReactNode 
       <body className="bg-semantic-surface-crm-alt text-brand-ink">
         <NextIntlClientProvider locale={locale} messages={{ crm: messages['crm'] as Record<string, unknown> }} timeZone="Asia/Kolkata">
           {children}
+          <ServiceWorkerRegistrar />
         </NextIntlClientProvider>
       </body>
     </html>

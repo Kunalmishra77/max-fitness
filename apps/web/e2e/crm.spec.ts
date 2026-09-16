@@ -243,6 +243,33 @@ test.describe('Max Register', () => {
     await expect(automatic.getByText('अपने-आप वाले मैसेज चालू हैं')).toBeVisible({ timeout: 30_000 });
   });
 
+  test('offers the owner an installable app with a page for when the network is gone', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'Checks one manifest and one worker; one project is enough.');
+    await login(page, OWNER);
+
+    await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href', '/crm/manifest.webmanifest');
+    const response = await page.request.get('/crm/manifest.webmanifest');
+    expect(response.ok()).toBe(true);
+    const card = (await response.json()) as { scope: string; start_url: string; display: string; icons: Array<{ src: string }> };
+    // Installing gives an icon that opens Max Register, not the website.
+    expect(card).toMatchObject({ scope: '/crm', start_url: '/crm', display: 'standalone' });
+    expect((await page.request.get(card.icons[0]?.src ?? '')).ok()).toBe(true);
+
+    // The worker registers for the CRM alone.
+    await expect
+      .poll(async () => page.evaluate(async () => (await navigator.serviceWorker.getRegistration('/crm/'))?.scope ?? null), { timeout: 30_000 })
+      .toContain('/crm/');
+
+    await page.goto('/crm/offline');
+    await expect(page.getByRole('heading', { name: 'इंटरनेट नहीं है' })).toBeVisible();
+    await page.getByRole('link', { name: 'फिर से कोशिश करें' }).click();
+    await expect(page).toHaveURL(/\/crm$/);
+
+    // The public website is not the thing anyone installs.
+    await page.goto('/hi');
+    await expect(page.locator('link[rel="manifest"]')).toHaveCount(0);
+  });
+
   test('keeps settings from reception', async ({ page }) => {
     await login(page, RECEPTION);
     await page.goto('/crm/settings');
