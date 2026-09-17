@@ -41,7 +41,7 @@ Done:
 - Collected the business account's own uploads from its Google Maps contributor page (20 visible without sign-in); customer photos not used.
 - Eight chosen and placed: About (main and inset), Strength, Cardio and Functional zones, and an eight-photo gallery with lightbox. Boxing and the owner portrait keep their placeholders (no recent photo; the owner's identity in the available shots is not certain).
 - `assets/photos/gbp/` (sources + manifest with turn/crop), `scripts/build-site-photos.mjs` (AVIF/WebP 640/1080/1600, metadata stripped), `SitePhoto` (<picture>, lazy unless priority, cover or contain), `photos` messages in both languages.
-- **Verified:** VERIFICATION_PENDING
+- **Verified:** typecheck 8/8; lint clean; web unit tests 178 (5 for `SitePhoto`, 4 for the photo content: every placed photo exists in every width and format and is described in both languages). **Against production:** a new landing journey measures every gallery tile, checks a photo loaded and opens the lightbox at "2 of 8" — it caught the large desktop tile collapsing to 0 px (its height had come from the placeholder's own content), which was fixed and re-verified on mobile and desktop; screenshots at 360 px and 1440 px show About, Facilities and the gallery with no horizontal scroll. After the first look, Strength and Functional were given the photos their captions describe (dumbbells and bench; step platforms on wood). One push did not start a Vercel build; the fix was deployed with the CLI from the repository root.
 
 Decisions (decision-log):
 - ADR-057 owner uploads only, honest gaps, no claims from pictures, release confirmation left with the owner.
