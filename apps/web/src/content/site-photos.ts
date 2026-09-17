@@ -20,12 +20,16 @@ export const ABOUT_PHOTOS = {
   inset: 'trainer-spot',
 } as const satisfies Record<string, SitePhotoId>;
 
-/** Strength and boxing have no recent photo yet (the uploads show the renovated cardio and turf areas). */
+/**
+ * Each zone gets the upload that shows what its caption promises: dumbbells, bench and
+ * plates for strength; step platforms on the wooden floor for functional. Boxing has no
+ * recent photo yet and keeps its placeholder.
+ */
 export const FACILITY_PHOTOS: Readonly<Record<FacilityZone, SitePhotoId | null>> = {
-  strength: null,
+  strength: 'functional-turf',
   cardio: 'cardio-crossfit',
   boxing: null,
-  functional: 'functional-turf',
+  functional: 'cardio-steps',
 };
 
 /** The first is the large tile; the lightbox shows all of them in this order. */
