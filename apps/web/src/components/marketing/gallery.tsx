@@ -40,7 +40,9 @@ export function Gallery() {
               }}
               aria-label={t('open', { n: i + 1, total })}
               aria-haspopup="dialog"
-              className="block w-full rounded-photo"
+              // The large tile takes its height from the two grid rows it spans; the photo
+              // inside is absolutely placed and gives the button no height of its own.
+              className={cn('block w-full rounded-photo', i === 0 && 'md:h-full')}
             >
               <SitePhoto
                 photo={SITE_PHOTOS[id]}

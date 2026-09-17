@@ -47,6 +47,25 @@ test.describe('landing page', () => {
     );
   });
 
+  test("shows the gym's own photos, the large gallery tile included, and opens them whole", async ({ page }) => {
+    await page.goto('/');
+    const gallery = page.getByRole('region', { name: 'Inside the gym' });
+    await gallery.scrollIntoViewIfNeeded();
+    const tiles = gallery.getByRole('button', { name: /^Open photo/ });
+    await expect(tiles).toHaveCount(5);
+    // A photo box that collapses to nothing is a hole in the page (ADR-057).
+    for (const tile of await tiles.all()) {
+      expect((await tile.boundingBox())?.height ?? 0).toBeGreaterThan(100);
+    }
+    await expect.poll(() => gallery.locator('img').first().evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+
+    await tiles.first().click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByRole('heading', { name: 'Medal winners from the gym with their trophies' })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Next photo' }).click();
+    await expect(dialog.getByText('2 of 8')).toBeVisible();
+  });
+
   test('serves the Hindi page with lang="hi"', async ({ page }) => {
     await page.goto('/hi');
     await expect(page.locator('html')).toHaveAttribute('lang', 'hi');
