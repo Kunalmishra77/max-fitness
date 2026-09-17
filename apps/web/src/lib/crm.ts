@@ -9,6 +9,7 @@ import {
   PrismaDeskPaymentUnitOfWork,
   PrismaElevationStore,
   PrismaLeadPipelineUnitOfWork,
+  PrismaMemberImport,
   PrismaMemberPrivacy,
   PrismaOwnPinUnitOfWork,
   PrismaRegistrationUnitOfWork,
@@ -199,6 +200,13 @@ export function memberPrivacy() {
   const container = getContainer();
   const privacy = new PrismaMemberPrivacy(container.prisma);
   return { clock: container.clock, storage: container.storage, uow: privacy, store: privacy.store };
+}
+
+/** Importing the paper register: the preview reads, the commit writes in one transaction. */
+export function memberImport() {
+  const container = getContainer();
+  const importer = new PrismaMemberImport(container.prisma);
+  return { clock: container.clock, uow: importer, reader: importer.reader };
 }
 
 /** Managing staff logins; PINs are hashed with Argon2id (security-plan §3.1). */

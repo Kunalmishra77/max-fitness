@@ -31,6 +31,8 @@ const MATRIX: Record<CrmCapability, Record<CrmActor['role'], boolean>> = {
   // crm-module-spec §3 "Export / delete member data — owner + PIN"; its own capability,
   // because a permission named "export" should not be what guards a deletion.
   'member.erase': { OWNER: true, RECEPTION: false, TRAINER: false, SUPER_ADMIN: true },
+  // Bringing in the old register creates members in bulk: owner, and a PIN entered a moment ago.
+  'member.import': { OWNER: true, RECEPTION: false, TRAINER: false, SUPER_ADMIN: true },
 };
 
 describe('CRM permissions', () => {
@@ -63,6 +65,7 @@ describe('CRM permissions', () => {
     const owner = actor('OWNER', { elevatedUntil: null });
     expect(can(owner, 'member.export', NOW)).toBe(false);
     expect(can(owner, 'member.erase', NOW)).toBe(false);
+    expect(can(owner, 'member.import', NOW)).toBe(false);
   });
 
   it('treats an expired elevation as no elevation', () => {

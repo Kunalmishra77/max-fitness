@@ -5,7 +5,9 @@ import {
   addStaff,
   advanceLead,
   can,
+  commitMemberImport,
   eraseMember,
+  previewMemberImport,
   updateReminderSettings,
   resetStaffPin,
   setStaffActive,
@@ -39,6 +41,7 @@ import type { LeadResult } from '@/components/crm/lead-actions';
 import type { VoidResult } from '@/components/crm/void-payment';
 import { getContainer } from '@/lib/container';
 import { deskPhotoFromForm } from '@/lib/desk-photo';
+import { MAX_IMPORT_BYTES, type ImportCommitResult, type ImportPreviewResult } from '@/lib/import-types';
 import { SelfieRejectedError, type ProcessedSelfie } from '@/lib/selfie-image';
 import {
   attendanceDeps,
@@ -47,6 +50,7 @@ import {
   deskRegistrationDeps,
   elevate,
   leadPipelineDeps,
+  memberImport,
   memberPrivacy,
   requireCrmContext,
   settingsDeps,
@@ -211,6 +215,71 @@ export async function saveSettingsAction(patch: SettingsPatchInput): Promise<Set
 /** Reminder times, on/off, and the days after expiry (ADR-052). */
 export async function saveReminderSettingsAction(input: ReminderSettingsInput): Promise<SettingsResult> {
   return settingsSave(async (deps) => (await updateReminderSettings(input, deps)).changed);
+}
+
+/** At most this many problem rows go back to the screen; the rest are counted. */
+const MAX_PROBLEMS_SHOWN = 200;
+
+const tooLarge = (csv: unknown) => typeof csv !== 'string' || Buffer.byteLength(csv, 'utf8') > MAX_IMPORT_BYTES;
+
+/**
+ * Check a register file without saving anything (crm-module-spec §7; ADR-056).
+ *
+ * The answer carries counts and the rows worth a look — never the whole file back.
+ */
+export async function previewImportAction(csv: string): Promise<ImportPreviewResult> {
+  const { actor } = await requireCrmContext();
+  if (tooLarge(csv)) return { ok: false, code: 'too_large' };
+
+  const { clock, reader } = memberImport();
+  try {
+    const preview = await previewMemberImport({ csv }, { actor, clock, store: reader });
+    if (!preview.ok) return { ok: false, code: preview.error, ...(preview.missing === undefined ? {} : { missing: [...preview.missing] }) };
+
+    const problems = preview.rows.filter((row) => row.errors.length > 0 || row.warnings.length > 0);
+    const shown = problems.slice(0, MAX_PROBLEMS_SHOWN).map((row) => ({
+      line: row.line,
+      name: row.member?.fullName ?? null,
+      errors: [...row.errors],
+      warnings: [...row.warnings],
+    }));
+    return { ok: true, summary: preview.summary, problems: shown, hiddenProblems: problems.length - shown.length };
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    if (code === 'FORBIDDEN') return { ok: false, code: 'FORBIDDEN' };
+    console.error(`[crm] import preview failed: ${code ?? (error instanceof Error ? error.name : 'Error')}`);
+    return { ok: false, code: 'INTERNAL' };
+  }
+}
+
+/**
+ * Add the members from a register file. The PIN is checked first, and only for a role
+ * that could ever import; the file is read again on the server, not taken from the preview.
+ */
+export async function commitImportAction(csv: string, deskConsent: boolean, pin: string): Promise<ImportCommitResult> {
+  const { actor, gym } = await requireCrmContext();
+  if (!mayAfterPinEntry(actor, 'member.import', getContainer().clock.now())) return { ok: false, code: 'FORBIDDEN' };
+  if (tooLarge(csv)) return { ok: false, code: 'FILE' };
+
+  const elevated = await elevate(actor, pin);
+  if (!elevated.ok) {
+    return { ok: false, code: elevated.code === 'VALIDATION_FAILED' ? 'INVALID_PIN' : elevated.code };
+  }
+
+  const { clock, uow } = memberImport();
+  try {
+    const result = await commitMemberImport(
+      { csv, deskConsent: deskConsent === true },
+      { actor: { ...actor, elevatedUntil: elevated.elevatedUntil }, clock, uow, noticeVersion: gym.settings.privacy.privacyNoticeVersion },
+    );
+    return { ok: true, created: result.created, skipped: result.skipped };
+  } catch (error) {
+    const { code, meta } = error as { code?: string; meta?: { file?: string } };
+    if (code === 'VALIDATION_FAILED') return { ok: false, code: meta?.file === undefined ? 'ROWS_WRONG' : 'FILE' };
+    if (code === 'FORBIDDEN') return { ok: false, code: 'FORBIDDEN' };
+    console.error(`[crm] import failed: ${code ?? (error instanceof Error ? error.name : 'Error')}`);
+    return { ok: false, code: 'INTERNAL' };
+  }
 }
 
 /** Enter the PIN again so a member's data can be exported (the download checks it too). */

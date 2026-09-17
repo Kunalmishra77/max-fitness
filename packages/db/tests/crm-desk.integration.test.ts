@@ -20,6 +20,7 @@ import {
   addStaff,
   advanceLead,
   changeOwnPin,
+  commitMemberImport,
   eraseMember,
   exportMemberData,
   sessionTokenHash,
@@ -53,6 +54,7 @@ import { PrismaReportsReader } from '../src/repositories/reports-read.repository
 import { PrismaSettingsUnitOfWork } from '../src/repositories/settings.repository';
 import { PrismaOwnPinUnitOfWork, PrismaStaffUnitOfWork } from '../src/repositories/staff.repository';
 import { ERASED_NAME, PrismaMemberPrivacy } from '../src/repositories/member-privacy.repository';
+import { PrismaMemberImport } from '../src/repositories/member-import.repository';
 import { PrismaCallOutcomeUnitOfWork, PrismaVoidPaymentUnitOfWork } from '../src/repositories/crm-actions.repository';
 import { PrismaCrmReader } from '../src/repositories/crm-read.repository';
 import { PrismaDeskPaymentUnitOfWork } from '../src/repositories/desk-payment.repository';
@@ -687,6 +689,49 @@ suite('CRM fee desk against Postgres', () => {
     // The kill switch and the cap live side by side; saving one kept the other.
     expect(stored.reminders).toMatchObject({ automaticPaused: true, postExpiryMaxDays: 12 });
     expect(await prisma.auditLog.count({ where: { gymId, action: 'reminders.update' } })).toBe(1);
+  });
+
+  it('imports the paper register: active members, declared memberships, codes in a block, desk consent, and no duplicates', async () => {
+    const clock = fakeClockAt('2026-09-12T11:30');
+    const uow = new PrismaMemberImport(prisma);
+    const csv = [
+      'full_name,mobile,gender,dob,email,plan_months,month_end_date,last_amount,joined_on,notes',
+      'Import One,9000040001,M,14-02-1984,,3,30-09-2026,4000,05-06-2019,Morning batch',
+      'Import Two,9000040002,F,,,,18-09-2026,,,',
+      'Import Three,9000040002,F,,,12,15-03-2027,13500,,',
+    ].join('\n');
+    const deps = { actor: ownerActor(clock), clock, uow, noticeVersion: '1.0' };
+
+    const first = await commitMemberImport({ csv, deskConsent: true }, deps);
+    expect(first).toMatchObject({ created: 3, skipped: 0 });
+
+    const members = await prisma.member.findMany({
+      where: { gymId, source: 'IMPORT' },
+      include: { memberships: true, consents: true },
+      orderBy: { memberCode: 'asc' },
+    });
+    expect(members.map((m) => m.fullName)).toEqual(['Import One', 'Import Two', 'Import Three']);
+    expect(members.every((m) => m.status === 'ACTIVE' && m.whatsappOptIn && m.createdById === ownerId)).toBe(true);
+    // One block of codes, consecutive.
+    const codes = members.map((m) => Number(m.memberCode?.slice(3)));
+    expect(codes).toEqual([codes[0], (codes[0] ?? 0) + 1, (codes[0] ?? 0) + 2]);
+    expect(members[0]?.notes).toBe('Joined 05-06-2019 · Morning batch');
+
+    const one = members[0]?.memberships[0];
+    expect(one).toMatchObject({ status: 'CONFIRMED', source: 'IMPORT', isDeclared: true, durationMonths: 3, pricePaise: 400_000 });
+    const oneStart = one?.startDate ?? null;
+    expect(oneStart === null ? null : fromDbDate(oneStart)).toBe('2026-07-01');
+    expect(one === undefined ? null : fromDbDate(one.endDate)).toBe('2026-09-30');
+    expect(members[1]?.memberships[0]?.startDate).toBeNull();
+    expect(members[2]?.consents).toEqual([expect.objectContaining({ type: 'WHATSAPP_UPDATES', granted: true, channel: 'crm_desk', recordedById: ownerId })]);
+
+    const audit = await prisma.auditLog.findFirstOrThrow({ where: { gymId, action: 'member.import', entityId: first.importId } });
+    expect(audit.after).toEqual({ rows: 3, created: 3, skipped: 0, deskConsent: true });
+    expect(JSON.stringify(audit)).not.toMatch(/Import One|9000040001/);
+
+    // The same file again changes nothing.
+    await expect(commitMemberImport({ csv, deskConsent: true }, deps)).resolves.toMatchObject({ created: 0, skipped: 3 });
+    expect(await prisma.member.count({ where: { gymId, source: 'IMPORT' } })).toBe(3);
   });
 
   it('records a call outcome, snoozing the task to an IST date', async () => {

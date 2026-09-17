@@ -1091,6 +1091,62 @@
       "title": "No internet",
       "body": "Max Register works again as soon as the network is back. Anything changed just now was not saved.",
       "retry": "Try again"
+    },
+    "import": {
+      "title": "Import the old register",
+      "helper": "Fill the register into the template CSV, then choose it here. Everything is checked first — nothing is saved until you add the members.",
+      "template": "Download the template",
+      "file": "Choose the CSV file",
+      "checking": "Checking the file…",
+      "summary": {
+        "ready": "{count} ready to add",
+        "skipped": "{count} already members",
+        "withErrors": "{count, plural, one {# line has mistakes} other {# lines have mistakes}}"
+      },
+      "problemsTitle": "Lines to look at",
+      "line": "Line {line}",
+      "fields": {
+        "full_name": "Name",
+        "mobile": "Mobile",
+        "gender": "Gender (M/F)",
+        "dob": "Date of birth",
+        "email": "Email",
+        "plan_months": "Plan (1/3/6/12)",
+        "month_end_date": "Fee end date",
+        "last_amount": "Amount",
+        "joined_on": "Joined on",
+        "notes": "Notes",
+        "duplicate_row": "Same member twice"
+      },
+      "warnings": {
+        "shared_mobile": "Family number",
+        "already_member": "Already a member — will be skipped",
+        "long_expired": "Fee ended over 60 days ago"
+      },
+      "moreProblems": "…and {count} more lines",
+      "fixFirst": "Fix these lines in the file and choose it again.",
+      "nothingNew": "Everyone in this file is already a member.",
+      "fileErrors": {
+        "empty": "The file has no members in it.",
+        "missing_columns": "These columns are missing: {columns}",
+        "too_many_rows": "At most 2,000 lines at a time.",
+        "unreadable": "The file could not be read. Save it as CSV and choose it again.",
+        "too_large": "The file is larger than 1 MB."
+      },
+      "deskConsent": "These members agreed at the desk to WhatsApp reminders",
+      "deskConsentHelper": "Leave it unticked and they get no reminders until they say yes themselves through the QR.",
+      "pin": "Enter your PIN",
+      "commit": "{count, plural, one {Add # member} other {Add # members}}",
+      "committing": "Adding…",
+      "done": "{count, plural, one {# member added} other {# members added}}",
+      "doneSkipped": "{count, plural, one {# was already a member and was left alone} other {# were already members and were left alone}}",
+      "toMembers": "See the member list",
+      "another": "Import another file",
+      "wrongPin": "That PIN is wrong.",
+      "locked": "Too many wrong PINs — try again in a while.",
+      "notAllowed": "Only the owner can import the register.",
+      "failed": "That did not work. Please try again.",
+      "rowsWrong": "Some lines still have mistakes. Choose the corrected file again."
     }
   }
 }

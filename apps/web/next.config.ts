@@ -57,6 +57,9 @@ const nextConfig: NextConfig = {
     // The generated Prisma client is large; keeping it out of the trace bundle
     // analysis avoids a slow build for no benefit.
     optimizePackageImports: ['@mfp/shared', '@mfp/core'],
+    // The register import sends a CSV of up to 1 MB to a server action, whose default
+    // cap is 1 MB for the whole request (ADR-056). The action checks the size itself.
+    serverActions: { bodySizeLimit: '2mb' },
   },
 };
 

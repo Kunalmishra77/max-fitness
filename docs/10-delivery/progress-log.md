@@ -36,6 +36,20 @@ Blockers / questions for client:
 - Same as Phase 3: payment-failure wording, prices, minimum age, admission fee, PIN confirmation, photos, policy answers, grievance officer.
 - Demo staff logins are the seeded ones (owner 9000000001 / 2468, reception 9000000002 / 1357). Real PINs must be set before anyone uses this outside a demo.
 
+### 2026-09-17 — Phase 5 (slice 1) — Importing the paper register
+Done:
+- **Core (test-first):** `parseMemberImport` (CSV reader for quotes, doubled quotes, BOM, CRLF, blank lines and any column order; per-field mistakes; shared-number and long-expired warnings; duplicates refused), `previewMemberImport` (who is already a member), `commitMemberImport` (owner + fresh PIN via the new `member.import` capability, re-parse, all-or-nothing, skip existing members, member codes in one block, desk consent, audit by counts only).
+- **Database:** `PrismaMemberImport` — members, declared memberships and consents in three `createMany` calls, the code block reserved in one statement, a 60-second transaction.
+- **Web:** `/crm/import` (owner only, linked from “और”): template download from the parser's columns, file check with counts and each problem line, desk-consent tick, PIN, result. Server actions accept up to 2 MB for the CSV.
+- **Verified:** VERIFICATION_PENDING
+
+Decisions (decision-log):
+- ADR-056 what counts as a mistake or a warning, re-parse on commit, skip existing members, declared memberships per BR-3.6, desk consent recorded, file not kept.
+
+Pending / next (Phase 5):
+- Slice 2: `/qr/existing` wizard with the month-end date step, `VerificationRequest`, the CRM verify queue with the import match (BR-13).
+- Slice 3: `/qr/new`, OTP (simulated in demo), QR poster generator.
+
 ### 2026-09-16 (evening) — Delivery — Private Supabase Storage bucket over S3
 Done:
 - `@aws-sdk/client-s3` 3.1133.0 added to the catalog and to `packages/integrations` (client's choice, ADR-055).

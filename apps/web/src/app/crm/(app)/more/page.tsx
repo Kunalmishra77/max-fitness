@@ -21,6 +21,7 @@ export default async function CrmMorePage() {
   const showReports = can(actor, 'money.view', getContainer().clock.now());
   // Settings ask for the PIN on the way in; the link shows to whoever the PIN would admit.
   const showSettings = mayAfterPinEntry(actor, 'settings.manage', getContainer().clock.now());
+  const showImport = mayAfterPinEntry(actor, 'member.import', getContainer().clock.now());
 
   return (
     <>
@@ -56,6 +57,16 @@ export default async function CrmMorePage() {
           <li>
             <Link href="/crm/settings" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
               ⚙️ {t('settings.title')}
+              <span aria-hidden className="text-xl text-brand-rubber-grey">
+                ›
+              </span>
+            </Link>
+          </li>
+        ) : null}
+        {showImport ? (
+          <li>
+            <Link href="/crm/import" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
+              📥 {t('import.title')}
               <span aria-hidden className="text-xl text-brand-rubber-grey">
                 ›
               </span>

@@ -316,6 +316,45 @@ test.describe('Max Register', () => {
     await expect.poll(() => photo.evaluate((img) => (img as HTMLImageElement).naturalWidth), { timeout: 30_000 }).toBeGreaterThan(0);
   });
 
+  test('imports the paper register: checks the file first, then adds the members with the PIN', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'Creates members; one project is enough.');
+    test.setTimeout(240_000);
+    await login(page, OWNER);
+    await page.goto('/crm/more');
+    await page.getByRole('link', { name: /पुराना रजिस्टर जोड़ें/ }).click();
+    await expect(page).toHaveURL(/\/crm\/import$/);
+
+    // The template's columns come from the parser itself.
+    const downloading = page.waitForEvent('download');
+    await page.getByRole('link', { name: 'टेम्पलेट डाउनलोड करें' }).click();
+    const template = await readFile((await (await downloading).path()) ?? '', 'utf8');
+    expect(template.replace(/^﻿/, '').split(/\r?\n/)[0]).toBe('full_name,mobile,gender,dob,email,plan_months,month_end_date,last_amount,joined_on,notes');
+
+    // A fresh name and number each run, so a second run is not "already a member". Letters only.
+    const tag = [...'कखगघचछजझञट'].sort(() => Math.random() - 0.5).slice(0, 3).join('');
+    const mobile = () => `98${String(Math.floor(Math.random() * 1e8)).padStart(8, '0')}`;
+    const [first, second] = [`रजिस्टर एक ${tag}`, `रजिस्टर दो ${tag}`];
+    const header = 'full_name,mobile,gender,month_end_date,plan_months';
+    const upload = (body: string) =>
+      page.getByLabel('CSV फ़ाइल चुनें').setInputFiles({ name: 'register.csv', mimeType: 'text/csv', buffer: Buffer.from(body) });
+
+    // A mistake on line 3: nothing can be added until the file is fixed.
+    await upload(`${header}\n${first},${mobile()},M,30-09-2026,3\n${second},123,F,30-09-2026,1\n`);
+    await expect(page.getByText('1 लाइन में गलती है')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('लाइन 3')).toBeVisible();
+    await expect(page.getByRole('button', { name: /मेंबर जोड़ें/ })).toHaveCount(0);
+
+    await upload(`${header}\n${first},${mobile()},M,30-09-2026,3\n${second},${mobile()},F,30-09-2026,1\n`);
+    await expect(page.getByText('2 जुड़ने के लिए तैयार')).toBeVisible({ timeout: 30_000 });
+    await page.getByText('इन सब मेंबर ने काउंटर पर WhatsApp रिमाइंडर के लिए हाँ कहा है').click();
+    await page.getByLabel('अपना PIN डालें').fill(OWNER.pin);
+    await page.getByRole('button', { name: '2 मेंबर जोड़ें' }).click();
+    await expect(page.getByRole('heading', { name: '2 मेंबर जुड़ गए' })).toBeVisible({ timeout: 60_000 });
+
+    await page.goto(`/crm/members?q=${encodeURIComponent(first)}`);
+    await expect(page.getByText(first)).toBeVisible();
+  });
+
   test('keeps settings from reception', async ({ page }) => {
     await login(page, RECEPTION);
     await page.goto('/crm/settings');

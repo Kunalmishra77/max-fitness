@@ -19,3 +19,4 @@ export * from './repositories/reports-read.repository';
 export * from './repositories/settings.repository';
 export * from './repositories/staff.repository';
 export * from './repositories/member-privacy.repository';
+export * from './repositories/member-import.repository';

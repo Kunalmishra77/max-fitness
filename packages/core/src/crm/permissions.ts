@@ -30,6 +30,7 @@ export const CRM_CAPABILITIES = [
   'settings.manage',
   'member.export',
   'member.erase',
+  'member.import',
 ] as const;
 export type CrmCapability = (typeof CRM_CAPABILITIES)[number];
 
@@ -62,10 +63,11 @@ const ROLES: Record<CrmCapability, readonly CrmRole[]> = {
   'settings.manage': ['OWNER', 'SUPER_ADMIN'],
   'member.export': ['OWNER', 'SUPER_ADMIN'],
   'member.erase': ['OWNER', 'SUPER_ADMIN'],
+  'member.import': ['OWNER', 'SUPER_ADMIN'],
 };
 
 /** Actions that need a PIN entered in the last few minutes, whatever the role. */
-const NEEDS_ELEVATION: ReadonlySet<CrmCapability> = new Set(['payment.void', 'settings.manage', 'member.export', 'member.erase']);
+const NEEDS_ELEVATION: ReadonlySet<CrmCapability> = new Set(['payment.void', 'settings.manage', 'member.export', 'member.erase', 'member.import']);
 
 /** Reception may take money only while the gym's setting allows it. */
 const RECEPTION_PAYMENT_CAPABILITIES: ReadonlySet<CrmCapability> = new Set(['payment.record', 'payment.discount']);
