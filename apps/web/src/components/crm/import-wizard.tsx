@@ -156,7 +156,7 @@ export function ImportWizard({
       {checked === null || summary === undefined ? null : (
         <section aria-labelledby={`${id}-result`} className="grid gap-3">
           <h2 id={`${id}-result`} className="sr-only">
-            {t('file')}
+            {t('checkedTitle')}
           </h2>
           <ul className="grid gap-2 min-[480px]:grid-cols-3">
             <li className="rounded-panel bg-tint-fee-paid-bg p-3 text-crm-body font-semibold text-semantic-fee-paid">{t('summary.ready', { count: summary.ready })}</li>

@@ -51,6 +51,9 @@ describe('ImportWizard', () => {
 
     await waitFor(() => expect(previewAction).toHaveBeenCalledWith(CSV));
     expect(await screen.findByText('2 ready to add')).toBeTruthy();
+    // The result has a name of its own; only the file input answers to the file label.
+    expect(screen.getByRole('region', { name: 'File check' })).toBeTruthy();
+    expect(screen.getAllByLabelText('Choose the CSV file')).toHaveLength(1);
     expect(screen.getByText('1 already members')).toBeTruthy();
     expect(screen.getByText('1 line has mistakes')).toBeTruthy();
     expect(screen.getByText('Line 5')).toBeTruthy();

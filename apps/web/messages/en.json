@@ -1146,7 +1146,8 @@
       "locked": "Too many wrong PINs — try again in a while.",
       "notAllowed": "Only the owner can import the register.",
       "failed": "That did not work. Please try again.",
-      "rowsWrong": "Some lines still have mistakes. Choose the corrected file again."
+      "rowsWrong": "Some lines still have mistakes. Choose the corrected file again.",
+      "checkedTitle": "File check"
     }
   }
 }
