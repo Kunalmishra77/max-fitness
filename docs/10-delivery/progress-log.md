@@ -49,8 +49,11 @@ Done:
 
 - **2026-09-17 — bucket created:** `member-media` in Supabase Storage, through Prisma on the direct connection (no Supabase client or API key): `public = false`, 5 MB per file, only JPEG/PNG/WebP/PDF and plain text (the live test's probe). `storage.objects` has RLS on and no policies, so only the S3 access keys can reach it. `.env` now has `S3_ENDPOINT` (built from the project ref), `S3_REGION=ap-south-1` and `S3_BUCKET`; `STORAGE_DRIVER` stays `local` until the keys exist.
 
+- **2026-09-17 — switched on in production (ADR-055 addendum):** the client added the S3 access keys to `.env`. The live test could not reach Supabase from this machine — the ISP (Jio) resolves `*.supabase.co` to its own range and the TLS handshake fails — so it was checked on Vercel instead: six values set on production without printing them, production deploy, desk photo journey passed against production, the photo was one object in `member-media`, its link served 200 four times out of four at 720px, and erasing the test members through the live CRM left the bucket empty. The demo gym was re-seeded afterwards.
+
 Pending / next:
-- **Client action:** Supabase dashboard → Storage → S3 Connection → "New access key"; put `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY` in `.env` (not in chat). Access keys can only be created in the dashboard or with a personal access token, and neither is available to the agent. Then: live test, the six values plus `STORAGE_DRIVER=s3` to Vercel, redeploy, check a desk photo loads on production.
+- Local development stays on `STORAGE_DRIVER=local`; run `S3_LIVE_TEST=1` from a network that can reach `supabase.co`.
+- Vercel's automatic deploy on push reads the same production variables, so later pushes keep S3.
 
 ### 2026-09-16 (later) — Phase 4 — Camera step in the desk's add-member wizard
 Done:
