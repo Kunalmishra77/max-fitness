@@ -238,15 +238,7 @@
     "next": "Next photo",
     "previous": "Previous photo",
     "counter": "{n} of {total}",
-    "placeholder": "Photo coming soon",
-    "items": {
-      "floor": "Training floor",
-      "strength": "Strength zone",
-      "cardio": "Cardio zone",
-      "functional": "Functional floor",
-      "boxing": "Boxing corner",
-      "reception": "Reception"
-    }
+    "placeholder": "Photo coming soon"
   },
   "visit": {
     "h2": "Visit us",
@@ -1149,5 +1141,15 @@
       "rowsWrong": "Some lines still have mistakes. Choose the corrected file again.",
       "checkedTitle": "File check"
     }
+  },
+  "photos": {
+    "floor-treadmills": "Row of treadmills on the training floor",
+    "cardio-crossfit": "Cardio machines beside the CrossFit wall",
+    "cardio-steps": "Exercise bikes, step platforms and treadmills",
+    "functional-turf": "Members doing push-ups on the turf",
+    "trainer-spot": "A trainer guiding a member through a dumbbell curl",
+    "champions-team": "Medal winners from the gym with their trophies",
+    "champion-trophies": "A member with his medals and a row of trophies",
+    "champions-trio": "Three medal winners on the gym floor"
   }
 }

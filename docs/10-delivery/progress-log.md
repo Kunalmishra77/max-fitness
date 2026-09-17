@@ -36,6 +36,19 @@ Blockers / questions for client:
 - Same as Phase 3: payment-failure wording, prices, minimum age, admission fee, PIN confirmation, photos, policy answers, grievance officer.
 - Demo staff logins are the seeded ones (owner 9000000001 / 2468, reception 9000000002 / 1357). Real PINs must be set before anyone uses this outside a demo.
 
+### 2026-09-17 (later) — Website — Real photos from the gym's Google profile
+Done:
+- Collected the business account's own uploads from its Google Maps contributor page (20 visible without sign-in); customer photos not used.
+- Eight chosen and placed: About (main and inset), Cardio and Functional zones, and an eight-photo gallery with lightbox. Strength, boxing and the owner portrait keep their placeholders (no recent photo; the owner's identity in the available shots is not certain).
+- `assets/photos/gbp/` (sources + manifest with turn/crop), `scripts/build-site-photos.mjs` (AVIF/WebP 640/1080/1600, metadata stripped), `SitePhoto` (<picture>, lazy unless priority, cover or contain), `photos` messages in both languages.
+- **Verified:** VERIFICATION_PENDING
+
+Decisions (decision-log):
+- ADR-057 owner uploads only, honest gaps, no claims from pictures, release confirmation left with the owner.
+
+Pending / next:
+- Owner: confirm the people in the photos are happy to appear; send photos of the strength area, the boxing corner, reception and a portrait.
+
 ### 2026-09-17 — Phase 5 (slice 1) — Importing the paper register
 Done:
 - **Core (test-first):** `parseMemberImport` (CSV reader for quotes, doubled quotes, BOM, CRLF, blank lines and any column order; per-field mistakes; shared-number and long-expired warnings; duplicates refused), `previewMemberImport` (who is already a member), `commitMemberImport` (owner + fresh PIN via the new `member.import` capability, re-parse, all-or-nothing, skip existing members, member codes in one block, desk consent, audit by counts only).

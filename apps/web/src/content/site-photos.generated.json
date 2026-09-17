@@ -1,0 +1,81 @@
+{
+  "floor-treadmills": {
+    "id": "floor-treadmills",
+    "width": 1600,
+    "height": 1200,
+    "widths": [
+      640,
+      1080,
+      1600
+    ]
+  },
+  "cardio-crossfit": {
+    "id": "cardio-crossfit",
+    "width": 1600,
+    "height": 1200,
+    "widths": [
+      640,
+      1080,
+      1600
+    ]
+  },
+  "cardio-steps": {
+    "id": "cardio-steps",
+    "width": 1600,
+    "height": 1200,
+    "widths": [
+      640,
+      1080,
+      1600
+    ]
+  },
+  "functional-turf": {
+    "id": "functional-turf",
+    "width": 1600,
+    "height": 900,
+    "widths": [
+      640,
+      1080,
+      1600
+    ]
+  },
+  "trainer-spot": {
+    "id": "trainer-spot",
+    "width": 720,
+    "height": 720,
+    "widths": [
+      640,
+      720
+    ]
+  },
+  "champions-team": {
+    "id": "champions-team",
+    "width": 1600,
+    "height": 1200,
+    "widths": [
+      640,
+      1080,
+      1600
+    ]
+  },
+  "champion-trophies": {
+    "id": "champion-trophies",
+    "width": 1600,
+    "height": 2133,
+    "widths": [
+      640,
+      1080,
+      1600
+    ]
+  },
+  "champions-trio": {
+    "id": "champions-trio",
+    "width": 1600,
+    "height": 2133,
+    "widths": [
+      640,
+      1080,
+      1600
+    ]
+  }
+}

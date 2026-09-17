@@ -40,7 +40,7 @@ const PRELOAD_FONTS: Record<Locale, readonly FontFile[]> = {
  * Message namespaces used by client components. Only these are serialised into the
  * page; everything else is rendered on the server and never shipped to the browser.
  */
-const CLIENT_NAMESPACES = ['common', 'nav', 'promo', 'hero', 'lead', 'plans', 'gallery', 'contact', 'consent'] as const;
+const CLIENT_NAMESPACES = ['common', 'nav', 'promo', 'hero', 'lead', 'plans', 'gallery', 'photos', 'contact', 'consent'] as const;
 
 /**
  * No locale pages are prerendered at build time; each is rendered statically the first

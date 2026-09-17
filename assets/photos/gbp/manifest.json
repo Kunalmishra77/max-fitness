@@ -1,0 +1,10 @@
+[
+  { "id": "floor-treadmills", "source": "floor-treadmills.jpg", "note": "Treadmill row on the renovated floor" },
+  { "id": "cardio-crossfit", "source": "cardio-crossfit.jpg", "crop": { "left": 0, "top": 0.3, "width": 1, "height": 0.5625 }, "note": "Cardio machines by the CROSSFIT wall" },
+  { "id": "cardio-steps", "source": "cardio-steps.jpg", "rotate": 270, "note": "Bikes, step platforms and treadmills; uploaded sideways" },
+  { "id": "functional-turf", "source": "functional-turf.jpg", "note": "Push-ups on the turf, dumbbells in front" },
+  { "id": "trainer-spot", "source": "trainer-spot.jpg", "crop": { "left": 0, "top": 0.04, "width": 1, "height": 0.5625 }, "note": "Trainer guiding a dumbbell curl; video timestamp cropped out" },
+  { "id": "champions-team", "source": "champions-team.jpg", "note": "Medal winners with trophies on the gym floor" },
+  { "id": "champion-trophies", "source": "champion-trophies.jpg", "note": "Medals and a row of trophies" },
+  { "id": "champions-trio", "source": "champions-trio.jpg", "note": "Three medal winners by the rack" }
+]

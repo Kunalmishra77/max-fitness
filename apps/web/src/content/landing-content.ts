@@ -156,9 +156,6 @@ export const FAQ_ITEMS: ReadonlyArray<{ readonly key: FaqKey; readonly verified:
   { key: 'minAge', verified: false },
 ];
 
-export const GALLERY_ITEMS = ['floor', 'strength', 'cardio', 'functional', 'boxing', 'reception'] as const;
-export type GalleryItem = (typeof GALLERY_ITEMS)[number];
-
 /**
  * Whether unconfirmed content may appear, with its label.
  *

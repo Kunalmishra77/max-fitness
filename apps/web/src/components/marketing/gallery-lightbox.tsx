@@ -3,9 +3,9 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useTranslations } from 'next-intl';
 import type { KeyboardEvent } from 'react';
-import { GALLERY_ITEMS } from '@/content/landing-content';
-import { PhotoPlaceholder } from './brand';
+import { GALLERY_PHOTOS, SITE_PHOTOS } from '@/content/site-photos';
 import { ChevronLeftIcon, ChevronRightIcon, CloseIcon } from './icons';
+import { SitePhoto } from './site-photo';
 
 /**
  * The gallery lightbox, loaded only when a photo is opened (ADR-033). A Radix dialog:
@@ -24,8 +24,9 @@ export function GalleryLightbox({
   onCloseAutoFocus: () => void;
 }) {
   const t = useTranslations('gallery');
-  const total = GALLERY_ITEMS.length;
-  const current = GALLERY_ITEMS[index];
+  const tp = useTranslations('photos');
+  const total = GALLERY_PHOTOS.length;
+  const current = GALLERY_PHOTOS[index];
 
   const step = (delta: number) => onIndexChange((index + delta + total) % total);
 
@@ -60,7 +61,7 @@ export function GalleryLightbox({
           {current === undefined ? null : (
             <>
               <div className="flex w-full max-w-5xl items-center justify-between gap-4">
-                <DialogPrimitive.Title className="text-title font-semibold">{t(`items.${current}`)}</DialogPrimitive.Title>
+                <DialogPrimitive.Title className="text-title font-semibold">{tp(current)}</DialogPrimitive.Title>
                 <DialogPrimitive.Close
                   aria-label={t('close')}
                   className="inline-flex size-11 items-center justify-center rounded-button text-[1.5rem]"
@@ -69,11 +70,15 @@ export function GalleryLightbox({
                 </DialogPrimitive.Close>
               </div>
               <div className="w-full max-w-5xl">
-                <PhotoPlaceholder
-                  tone="onNavy"
-                  label={t(`items.${current}`)}
-                  caption={t('placeholder')}
+                {/* The whole photo, not a crop: portraits and group shots stay intact. */}
+                <SitePhoto
+                  photo={SITE_PHOTOS[current]}
+                  alt={tp(current)}
+                  sizes="(min-width: 1024px) 64rem, 100vw"
                   aspect="aspect-[4/3] md:aspect-[16/10]"
+                  className="bg-transparent"
+                  fit="contain"
+                  priority
                 />
               </div>
               <div className="flex items-center gap-4">

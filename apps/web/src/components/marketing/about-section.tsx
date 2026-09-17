@@ -1,15 +1,15 @@
 import { getTranslations } from 'next-intl/server';
-import { PhotoPlaceholder } from './brand';
+import { ABOUT_PHOTOS, SITE_PHOTOS } from '@/content/site-photos';
 import { Section, SectionHeading } from './section';
+import { SitePhoto } from './site-photo';
 
 /**
  * About (PRD LP-06, wireframe §4): a large floor photo with an inset trainer photo,
- * beside two short paragraphs and three plain facts. The hours fact is the weekly
+ * beside two short paragraphs and three plain facts. Both photos are the gym's own (ADR-057). The hours fact is the weekly
  * schedule, so the section is the same whenever the cached page is served (ADR-032).
  */
 export async function AboutSection({ years, hoursLine }: { years: number; hoursLine: string | null }) {
   const t = await getTranslations('about');
-  const tg = await getTranslations('gallery');
   const num = (chunks: React.ReactNode) => <span className="font-display text-title leading-none font-bold">{chunks}</span>;
 
   const facts: React.ReactNode[] = [
@@ -22,13 +22,19 @@ export async function AboutSection({ years, hoursLine }: { years: number; hoursL
     <Section id="about" tone="chalk" labelledBy="about-heading">
       <div className="grid gap-10 md:grid-cols-12 md:gap-6">
         <div className="relative md:col-span-6">
-          <PhotoPlaceholder tone="onChalk" label={t('photoMain')} caption={tg('placeholder')} aspect="aspect-[4/3]" />
-          <PhotoPlaceholder
-            tone="onChalk"
-            label={t('photoInset')}
-            caption={tg('placeholder')}
+          <SitePhoto
+            photo={SITE_PHOTOS[ABOUT_PHOTOS.main]}
+            alt={t('photoMain')}
+            sizes="(min-width: 768px) 50vw, 100vw"
+            aspect="aspect-[4/3]"
+            className="rounded-photo"
+          />
+          <SitePhoto
+            photo={SITE_PHOTOS[ABOUT_PHOTOS.inset]}
+            alt={t('photoInset')}
+            sizes="20vw"
             aspect="aspect-square"
-            className="absolute -right-3 -bottom-8 hidden w-2/5 border-4 border-brand-chalk bg-[color-mix(in_srgb,var(--color-brand-plate-navy)_12%,var(--color-brand-chalk))] md:flex"
+            className="absolute -right-3 -bottom-8 hidden w-2/5 rounded-photo border-4 border-brand-chalk md:block"
           />
         </div>
 
