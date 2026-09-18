@@ -42,7 +42,7 @@ export default async function CrmAttendancePage({ searchParams }: { searchParams
 
   return (
     <>
-      <CrmHeader title={t('attendance.title')} back="/crm" />
+      <CrmHeader title={t('attendance.title')} subtitle={t('menu.attendance.desc')} back="/crm" />
 
       {mayMark ? (
         <div className="bg-white px-4 pt-3 pb-4">

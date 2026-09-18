@@ -17,6 +17,7 @@ import {
   PrismaRegistrationUnitOfWork,
   PrismaReportsReader,
   PrismaSettingsUnitOfWork,
+  PrismaStaffPreferences,
   PrismaStaffReader,
   PrismaStaffUnitOfWork,
   PrismaVoidPaymentUnitOfWork,
@@ -282,4 +283,11 @@ export async function elevate(actor: CrmSessionActor, pin: string): Promise<Elev
     console.error(`[crm] PIN re-entry failed: ${error instanceof Error ? error.name : 'Error'}`);
     return { ok: false, code: 'INTERNAL' };
   }
+}
+
+/** The signed-in person's language, remembered on their staff record and in the cookie (ADR-062). */
+export async function setCrmLanguage(actor: CrmSessionActor, language: 'hi' | 'en'): Promise<void> {
+  const container = getContainer();
+  await new PrismaStaffPreferences(container.prisma).setLanguage(actor.gymId, actor.staffUserId, language);
+  (await cookies()).set('MFP_LOCALE', language, { sameSite: 'lax', path: '/', maxAge: 31_536_000 });
 }

@@ -22,7 +22,7 @@ export default async function CrmImportPage() {
 
   return (
     <>
-      <CrmHeader title={t('import.title')} back="/crm/more" />
+      <CrmHeader title={t('import.title')} subtitle={t('menu.import.desc')} back="/crm/more" />
       {allowed ? (
         <ImportWizard preview={previewImportAction} commit={commitImportAction} />
       ) : (

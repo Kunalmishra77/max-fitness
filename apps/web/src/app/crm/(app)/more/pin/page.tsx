@@ -19,7 +19,7 @@ export default async function CrmOwnPinPage() {
 
   return (
     <>
-      <CrmHeader title={t('pin.title')} back="/crm/more" />
+      <CrmHeader title={t('pin.title')} subtitle={t('menu.pin.desc')} back="/crm/more" />
       <div className="p-4 pb-24">
         <OwnPinForm action={changeOwnPinAction} />
       </div>

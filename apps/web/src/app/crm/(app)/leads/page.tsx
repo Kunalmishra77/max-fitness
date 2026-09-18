@@ -41,7 +41,7 @@ export default async function CrmLeadsPage({ searchParams }: { searchParams: Pro
 
   return (
     <>
-      <CrmHeader title={t('leads.title')} back="/crm/more" />
+      <CrmHeader title={t('leads.title')} subtitle={t('menu.leads.desc')} back="/crm/more" />
 
       <div className="flex gap-2 px-4 py-3">
         <Link href="/crm/leads" className={tabClass(!all)}>

@@ -611,17 +611,22 @@
       "attemptsLeft": "{count} tries left",
       "locked": "Too many wrong PINs. Try again in {minutes} minutes.",
       "generic": "Something went wrong. Please try again.",
-      "logout": "Log out"
+      "logout": "Log out",
+      "welcome": "Welcome back",
+      "tagline": "Members, fees, attendance and calls — all in one place.",
+      "brandLine": "The front desk of Max Fitness Gym",
+      "help": "Forgot your PIN? Ask the owner to set a new one."
     },
     "nav": {
       "home": "Home",
       "members": "Members",
       "fees": "Fees",
       "attendance": "Attendance",
-      "more": "More"
+      "more": "More",
+      "label": "Main menu"
     },
     "home": {
-      "greeting": "Namaste 🙏",
+      "greeting": "Namaste",
       "totalMembers": "Total members",
       "attendedToday": "Came today",
       "dueThisWeek": "Fees this week",
@@ -636,7 +641,25 @@
       "verifyHelper": "Existing members from QR",
       "thisMonth": "This month",
       "lastMonth": "Last month {amount}",
-      "addMember": "New member"
+      "addMember": "New member",
+      "todayIs": "Today, {date}",
+      "quickTitle": "Quick actions",
+      "quick": {
+        "addMember": "Add member",
+        "takeFees": "Take fees",
+        "markAttendance": "Mark attendance",
+        "verify": "Check QR members"
+      },
+      "help": {
+        "totalMembers": "Members with an active plan",
+        "attendedToday": "Check-ins since morning",
+        "dueThisWeek": "Fees ending in the next 7 days",
+        "expired": "Fees ran out — remind them"
+      },
+      "callsHelp": "Phone these people today; the most urgent are first",
+      "birthdaysHelp": "Wish them when they come in",
+      "moneyHelp": "Fees collected this month",
+      "alerts": "{count, plural, one {# alert} other {# alerts}}"
     },
     "feeState": {
       "PAID": "Fees paid",
@@ -707,10 +730,6 @@
         "VERIFICATION_PENDING": "Waiting to be checked",
         "OTHER": "Call"
       }
-    },
-    "soon": {
-      "title": "This part is coming soon",
-      "body": "For now, use Home, Members and Fees."
     },
     "outcome": {
       "title": "What happened?",
@@ -1185,6 +1204,71 @@
         "notAllowed": "Trainers cannot approve this.",
         "failed": "That did not work. Please try again."
       }
+    },
+    "menu": {
+      "home": {
+        "label": "Home",
+        "desc": "Today's numbers, calls and birthdays"
+      },
+      "members": {
+        "label": "Members",
+        "desc": "Find anyone, see fees and history"
+      },
+      "fees": {
+        "label": "Fees due",
+        "desc": "Members whose fees have run out"
+      },
+      "attendance": {
+        "label": "Attendance",
+        "desc": "Who came today; mark someone in"
+      },
+      "calls": {
+        "label": "Calls today",
+        "desc": "People to phone today, and why"
+      },
+      "leads": {
+        "label": "Enquiries",
+        "desc": "People who asked about joining"
+      },
+      "verify": {
+        "label": "Check QR members",
+        "desc": "Approve members who scanned the QR"
+      },
+      "reports": {
+        "label": "Reports",
+        "desc": "Money in, renewals and new joins"
+      },
+      "import": {
+        "label": "Import old register",
+        "desc": "Add the paper register from a CSV file"
+      },
+      "staff": {
+        "label": "Staff",
+        "desc": "Who can log in, their PINs"
+      },
+      "settings": {
+        "label": "Settings",
+        "desc": "Prices, hours, messages and more"
+      },
+      "pin": {
+        "label": "Change my PIN",
+        "desc": "Set a new PIN for your login"
+      },
+      "groups": {
+        "today": "Today",
+        "people": "Members",
+        "business": "Business",
+        "account": "My account"
+      }
+    },
+    "shell": {
+      "language": "Language",
+      "hindi": "हिंदी",
+      "english": "English",
+      "signedInAs": "Signed in as",
+      "logout": "Log out",
+      "menu": "Menu",
+      "back": "Back"
     }
   },
   "photos": {

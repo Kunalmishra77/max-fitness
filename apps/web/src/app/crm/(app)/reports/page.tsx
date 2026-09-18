@@ -41,7 +41,7 @@ export default async function CrmReportsPage() {
   if (!can(actor, 'money.view', getContainer().clock.now())) {
     return (
       <>
-        <CrmHeader title={t('reports.title')} back="/crm/more" />
+        <CrmHeader title={t('reports.title')} subtitle={t('menu.reports.desc')} back="/crm/more" />
         <p role="alert" className="m-4 rounded-panel bg-tint-fee-none-bg p-4 text-crm-body font-semibold text-brand-obsidian">
           {t('reports.ownerOnly')}
         </p>
@@ -86,7 +86,7 @@ export default async function CrmReportsPage() {
 
   return (
     <>
-      <CrmHeader title={t('reports.title')} back="/crm/more" />
+      <CrmHeader title={t('reports.title')} subtitle={t('menu.reports.desc')} back="/crm/more" />
 
       <div className="grid gap-3 p-4 pb-24">
         <Card title={t('reports.money')}>

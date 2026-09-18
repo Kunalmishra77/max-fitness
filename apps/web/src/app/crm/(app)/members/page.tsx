@@ -34,7 +34,7 @@ export default async function CrmMembersPage({ searchParams }: { searchParams: P
 
   return (
     <>
-      <CrmHeader title={t('members.title')} />
+      <CrmHeader title={t('members.title')} subtitle={t('menu.members.desc')} />
       <div className="bg-white px-4 pb-3">
         <MemberSearch placeholder={t('members.search')} initial={q ?? ''} />
         <div className="mt-3 flex flex-wrap gap-2">
@@ -64,7 +64,7 @@ export default async function CrmMembersPage({ searchParams }: { searchParams: P
 
       <Link
         href="/crm/members/new"
-        className="fixed right-5 bottom-24 z-20 flex size-16 items-center justify-center rounded-full bg-brand-accent text-3xl text-brand-white shadow-[var(--shadow-overlay)]"
+        className="fixed right-5 bottom-24 z-20 flex size-16 transition-transform hover:scale-105 lg:right-10 lg:bottom-10 items-center justify-center rounded-full bg-brand-accent text-3xl text-brand-white shadow-[var(--shadow-overlay)]"
         aria-label={t('home.addMember')}
       >
         ＋

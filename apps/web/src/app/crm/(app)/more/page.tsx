@@ -1,115 +1,87 @@
 import Link from 'next/link';
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
+import { can } from '@mfp/core';
+import { setCrmLanguageAction } from '@/app/crm/actions';
 import { BottomNav, CrmHeader } from '@/components/crm/crm-chrome';
-import { can, mayAfterPinEntry } from '@mfp/core';
+import { CrmIcon } from '@/components/crm/crm-icons';
+import { LanguageSwitch } from '@/components/crm/language-switch';
+import { LogoutButton } from '@/components/crm/logout-button';
 import { getContainer } from '@/lib/container';
 import { requireCrmContext, verificationDeps } from '@/lib/crm';
+import { crmNavItems, type CrmNavItem } from '@/lib/crm-nav';
 
 /**
- * "और" — the rest of the CRM (crm-ux-blueprint §2).
+ * "और" — every other place in Max Register (crm-ux-blueprint §2; ADR-062).
  *
- * Only the calls list exists so far; the others are named here so the owner can see
- * what is coming, without pretending they work.
+ * The same list as the computer's sidebar, grouped, each with a line saying what it is
+ * for, then the language and log out. Places the person may not use are not listed.
  */
 
 export const dynamic = 'force-dynamic';
 
+const GROUPS: ReadonlyArray<CrmNavItem['group']> = ['today', 'people', 'business', 'account'];
+/** Already one tap away on the bottom bar. */
+const ON_BOTTOM_BAR = new Set(['home', 'members', 'fees', 'attendance']);
+
 export default async function CrmMorePage() {
   const { actor, gym } = await requireCrmContext();
   const t = await getTranslations('crm');
-  // Reports are mostly money, so the link is shown to whoever may see money.
-  const showReports = can(actor, 'money.view', getContainer().clock.now());
-  // Settings ask for the PIN on the way in; the link shows to whoever the PIN would admit.
-  const showSettings = mayAfterPinEntry(actor, 'settings.manage', getContainer().clock.now());
-  const showImport = mayAfterPinEntry(actor, 'member.import', getContainer().clock.now());
-  const showVerify = can(actor, 'verification.approve', getContainer().clock.now());
-  const waiting = showVerify ? await verificationDeps().queue.count(gym.id) : 0;
+  const locale = (await getLocale()) === 'en' ? 'en' : 'hi';
+  const now = getContainer().clock.now();
+  const waiting = can(actor, 'verification.approve', now) ? await verificationDeps().queue.count(gym.id) : 0;
+  const items = crmNavItems(actor, now, waiting).filter((item) => !ON_BOTTOM_BAR.has(item.key));
 
   return (
     <>
-      <CrmHeader title={t('nav.more')} back="/crm" />
-      <ul className="divide-y divide-brand-stone/15">
-        <li>
-          <Link href="/crm/more/pin" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
-            🔑 {t('pin.link')}
-            <span aria-hidden className="text-xl text-brand-stone">
-              ›
-            </span>
-          </Link>
-        </li>
-        <li>
-          <Link href="/crm/calls" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
-            📞 {t('calls.title')}
-            <span aria-hidden className="text-xl text-brand-stone">
-              ›
-            </span>
-          </Link>
-        </li>
-        {showSettings ? (
-          <li>
-            <Link href="/crm/settings/staff" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
-              👥 {t('staff.title')}
-              <span aria-hidden className="text-xl text-brand-stone">
-                ›
-              </span>
-            </Link>
-          </li>
-        ) : null}
-        {showSettings ? (
-          <li>
-            <Link href="/crm/settings" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
-              ⚙️ {t('settings.title')}
-              <span aria-hidden className="text-xl text-brand-stone">
-                ›
-              </span>
-            </Link>
-          </li>
-        ) : null}
-        {showVerify ? (
-          <li>
-            <Link href="/crm/verify" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
-              <span>
-                ✅ {t('verify.link')}
-                {waiting > 0 ? <span className="ml-2 rounded-full bg-brand-accent px-2 py-0.5 text-small text-brand-white">{waiting}</span> : null}
-              </span>
-              <span aria-hidden className="text-xl text-brand-stone">
-                ›
-              </span>
-            </Link>
-          </li>
-        ) : null}
-        {showImport ? (
-          <li>
-            <Link href="/crm/import" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
-              📥 {t('import.title')}
-              <span aria-hidden className="text-xl text-brand-stone">
-                ›
-              </span>
-            </Link>
-          </li>
-        ) : null}
-        {showReports ? (
-          <li>
-            <Link href="/crm/reports" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
-              📊 {t('reports.title')}
-              <span aria-hidden className="text-xl text-brand-stone">
-                ›
-              </span>
-            </Link>
-          </li>
-        ) : null}
-        <li>
-          <Link href="/crm/leads" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
-            🔵 {t('leads.title')}
-            <span aria-hidden className="text-xl text-brand-stone">
-              ›
-            </span>
-          </Link>
-        </li>
-      </ul>
-      <div className="p-6 text-center">
-        <h2 className="font-display text-title font-bold text-brand-obsidian">{t('soon.title')}</h2>
-        <p className="mt-2 text-crm-body text-brand-stone">{t('soon.body')}</p>
+      <CrmHeader title={t('nav.more')} back="/crm" subtitle={`${actor.name} · ${t(`staff.${actor.role}`)}`} />
+      <div className="grid gap-6 p-4 lg:p-0">
+        {GROUPS.map((group) => {
+          const inGroup = items.filter((item) => item.group === group);
+          if (inGroup.length === 0) return null;
+          return (
+            <section key={group} aria-labelledby={`more-${group}`}>
+              <h2 id={`more-${group}`} className="px-1 pb-2 text-small font-semibold tracking-[0.18em] text-brand-stone uppercase">
+                {t(`menu.groups.${group}`)}
+              </h2>
+              <ul className="grid gap-3 lg:grid-cols-2">
+                {inGroup.map((item) => (
+                  <li key={item.key}>
+                    <Link
+                      href={item.href}
+                      className="group flex min-h-20 items-center gap-4 rounded-panel border border-brand-stone/15 bg-white px-4 py-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand-accent hover:shadow-md"
+                    >
+                      <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-brand-obsidian text-brand-white transition-colors group-hover:bg-brand-accent">
+                        <CrmIcon name={item.icon} className="size-6" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-2 text-crm-body font-semibold text-brand-obsidian">
+                          {t(`menu.${item.key}.label`)}
+                          {item.badge === undefined ? null : (
+                            <span className="rounded-full bg-brand-accent px-2 py-0.5 text-small font-bold text-brand-white">{item.badge}</span>
+                          )}
+                        </span>
+                        <span className="block text-small text-brand-stone">{t(`menu.${item.key}.desc`)}</span>
+                      </span>
+                      <CrmIcon name="chevron" className="size-5 shrink-0 text-brand-stone transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          );
+        })}
+
+        <section aria-labelledby="more-language" className="flex flex-wrap items-center justify-between gap-3 rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm lg:hidden">
+          <h2 id="more-language" className="flex items-center gap-2 text-crm-body font-semibold text-brand-obsidian">
+            <CrmIcon name="language" className="size-5" />
+            {t('shell.language')}
+          </h2>
+          <LanguageSwitch current={locale} change={setCrmLanguageAction} tone="light" />
+        </section>
+
+        <div className="lg:hidden">
+          <LogoutButton label={t('shell.logout')} withIcon className="text-crm-body text-brand-accent-deep" />
+        </div>
       </div>
       <BottomNav active="more" />
     </>

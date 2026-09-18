@@ -24,7 +24,7 @@ export default async function CrmCallsPage() {
 
   return (
     <>
-      <CrmHeader title={t('calls.title')} back="/crm" />
+      <CrmHeader title={t('calls.title')} subtitle={t('menu.calls.desc')} back="/crm" />
       {tasks.length === 0 ? (
         <p className="px-4 py-10 text-center text-crm-body text-brand-stone">{t('calls.empty')}</p>
       ) : (

@@ -1,5 +1,7 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import {
   addStaff,
@@ -57,6 +59,7 @@ import {
   memberPrivacy,
   requireCrmContext,
   verificationDeps,
+  setCrmLanguage,
   settingsDeps,
   signOut,
   staffDeps,
@@ -69,6 +72,24 @@ import {
  * Every one of them resolves the session again server-side: what the browser sends is a
  * task id and a few words, never who the person is or what they may do.
  */
+
+/** Switch Max Register between Hindi and English for the signed-in person (ADR-062). */
+export async function setCrmLanguageAction(language: string): Promise<void> {
+  const { actor } = await requireCrmContext();
+  if (language !== 'hi' && language !== 'en') return;
+  await setCrmLanguage(actor, language);
+  revalidatePath('/crm', 'layout');
+}
+
+/**
+ * The login screen's language, before anyone is signed in: only the cookie changes. Once
+ * signed in, the person's own saved language applies (ADR-062).
+ */
+export async function setLoginLanguageAction(language: string): Promise<void> {
+  if (language !== 'hi' && language !== 'en') return;
+  (await cookies()).set('MFP_LOCALE', language, { sameSite: 'lax', path: '/', maxAge: 31_536_000 });
+  revalidatePath('/crm/login');
+}
 
 export async function logoutAction(): Promise<void> {
   await signOut();

@@ -54,12 +54,13 @@ test.describe('Max Register', () => {
       ['/crm/members?fee=DUE_SOON', 'इस हफ्ते फीस'],
       ['/crm/members?fee=EXPIRED', 'फीस बाकी'],
     ]) {
-      await expect(page.locator(`a[href="${href}"]`).first()).toContainText(label ?? '');
+      await expect(page.getByRole('main').locator(`a[href="${href}"]`).first()).toContainText(label ?? '');
     }
     await expect(page.getByRole('heading', { name: /आज के कॉल/ })).toBeVisible();
     // Money is owner-only (crm-module-spec §3).
     await expect(page.getByRole('heading', { name: /इस महीने/ })).toBeVisible();
-    await expect(page.getByRole('navigation', { name: 'Max Register' }).getByText('मेंबर')).toBeVisible();
+    // The menu: the bottom bar on a phone, the sidebar on a computer (ADR-062).
+    await expect(page.getByRole('navigation').getByRole('link', { name: 'मेंबर', exact: true }).filter({ visible: true }).first()).toBeVisible();
   });
 
   test('hides the money from reception', async ({ page }) => {
@@ -73,7 +74,7 @@ test.describe('Max Register', () => {
     // Signing in counts as entering the PIN, so settings open without asking again.
     await login(page, OWNER);
     await page.goto('/crm/more');
-    await page.getByRole('link', { name: /सेटिंग/ }).click();
+    await page.getByRole('main').getByRole('link', { name: /सेटिंग/ }).click();
     await expect(page).toHaveURL(/\/crm\/settings$/);
 
     const offer = `टेस्ट ऑफर ${Date.now().toString().slice(-5)}`;
@@ -92,7 +93,7 @@ test.describe('Max Register', () => {
     test.skip(testInfo.project.name !== 'desktop', 'Adds and switches off a staff login; one project is enough.');
     await login(page, OWNER);
     await page.goto('/crm/more');
-    await page.getByRole('link', { name: /स्टाफ/ }).click();
+    await page.getByRole('main').getByRole('link', { name: /स्टाफ/ }).click();
     await expect(page).toHaveURL(/\/crm\/settings\/staff$/);
 
     // Letters only in the name; a fresh number each run.
@@ -132,7 +133,7 @@ test.describe('Max Register', () => {
     await login(page, RECEPTION);
 
     await page.goto('/crm/more');
-    await page.getByRole('link', { name: /मेरा PIN बदलें/ }).click();
+    await page.getByRole('main').getByRole('link', { name: /मेरा PIN बदलें/ }).click();
     const form = page.getByRole('form', { name: 'मेरा PIN बदलें' });
     const newPin = '8642';
 
@@ -321,7 +322,7 @@ test.describe('Max Register', () => {
     test.setTimeout(240_000);
     await login(page, OWNER);
     await page.goto('/crm/more');
-    await page.getByRole('link', { name: /पुराना रजिस्टर जोड़ें/ }).click();
+    await page.getByRole('main').getByRole('link', { name: /पुराना रजिस्टर जोड़ें/ }).click();
     await expect(page).toHaveURL(/\/crm\/import$/);
 
     // The template's columns come from the parser itself.
@@ -365,7 +366,7 @@ test.describe('Max Register', () => {
   test('shows the owner the reports, with a table behind the chart', async ({ page }) => {
     await login(page, OWNER);
     await page.goto('/crm/more');
-    await page.getByRole('link', { name: /हिसाब/ }).click();
+    await page.getByRole('main').getByRole('link', { name: /हिसाब/ }).click();
     await expect(page).toHaveURL(/\/crm\/reports$/);
 
     await expect(page.getByRole('heading', { name: 'इस महीने की कमाई' })).toBeVisible();
@@ -421,7 +422,7 @@ test.describe('Max Register', () => {
     await login(page, OWNER);
 
     await page.goto('/crm/members');
-    await page.getByRole('link', { name: 'नया मेंबर' }).click();
+    await page.getByRole('main').getByRole('link', { name: 'नया मेंबर' }).first().click();
     await expect(page).toHaveURL(/\/crm\/members\/new$/);
 
     // Photo is skippable: a camera that will not open must not stop someone joining.

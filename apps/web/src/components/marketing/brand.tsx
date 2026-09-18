@@ -24,9 +24,8 @@ export function Wordmark({ tone = 'light', className }: { tone?: 'light' | 'dark
         decoding="async"
         className="h-12 w-auto"
       />
-      <span className="flex flex-col font-display leading-none font-bold uppercase">
-        <span className={cn('text-[1.35rem] tracking-[0.04em]', tone === 'light' ? 'text-brand-white' : 'text-brand-obsidian')}>Max Fitness</span>
-        <span className={cn('mt-1 text-[0.68rem] tracking-[0.32em]', tone === 'light' ? 'text-brand-silver' : 'text-brand-stone')}>Gym · Indirapuram</span>
+      <span className="font-display leading-none font-bold uppercase">
+        <span className={cn('text-[1.5rem] tracking-[0.04em]', tone === 'light' ? 'text-brand-white' : 'text-brand-obsidian')}>Max Fitness</span>
       </span>
     </span>
   );

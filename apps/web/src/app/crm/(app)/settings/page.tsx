@@ -38,7 +38,7 @@ export default async function CrmSettingsPage() {
   if (!mayAfterPinEntry(actor, 'settings.manage', now)) {
     return (
       <>
-        <CrmHeader title={t('settings.title')} back="/crm/more" />
+        <CrmHeader title={t('settings.title')} subtitle={t('menu.settings.desc')} back="/crm/more" />
         <p role="alert" className="m-4 rounded-panel bg-tint-fee-none-bg p-4 text-crm-body font-semibold text-brand-obsidian">
           {t('settings.notAllowed')}
         </p>
@@ -50,7 +50,7 @@ export default async function CrmSettingsPage() {
   if (!can(actor, 'settings.manage', now)) {
     return (
       <>
-        <CrmHeader title={t('settings.title')} back="/crm/more" />
+        <CrmHeader title={t('settings.title')} subtitle={t('menu.settings.desc')} back="/crm/more" />
         <SettingsUnlock unlock={unlockSettingsAction} />
         <BottomNav active="more" />
       </>
@@ -71,7 +71,7 @@ export default async function CrmSettingsPage() {
 
   return (
     <>
-      <CrmHeader title={t('settings.title')} back="/crm/more" />
+      <CrmHeader title={t('settings.title')} subtitle={t('menu.settings.desc')} back="/crm/more" />
       <div className="grid gap-3 p-4 pb-24">
         <PricesForm
           plans={plans.map((plan) => ({ code: plan.code, gender: plan.gender as 'MALE' | 'FEMALE', durationMonths: plan.durationMonths, pricePaise: plan.pricePaise }))}

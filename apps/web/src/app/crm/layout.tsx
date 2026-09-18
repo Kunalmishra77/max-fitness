@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#1B2A41',
+  themeColor: '#0A0A0B',
   // The CRM is a working tool; letting it zoom out makes 56px targets small again.
   maximumScale: 5,
 };

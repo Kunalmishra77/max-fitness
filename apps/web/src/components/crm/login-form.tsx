@@ -49,7 +49,8 @@ export function LoginForm({ action }: { action: (values: { mobile: string; pin: 
     }
   };
 
-  const field = 'min-h-16 w-full rounded-input border-2 border-brand-stone/40 bg-white px-4 text-crm-body tracking-widest';
+  const field =
+    'min-h-16 w-full rounded-input border-2 border-brand-stone/30 bg-brand-paper px-4 text-crm-body tracking-widest transition-colors focus:border-brand-accent focus:bg-white';
 
   return (
     <form onSubmit={(event) => void onSubmit(event)} className="mt-8 grid gap-5">

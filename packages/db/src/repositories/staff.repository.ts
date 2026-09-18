@@ -158,3 +158,17 @@ export class PrismaStaffReader {
     });
   }
 }
+
+/** A staff member's own preferences (ADR-062). Only the signed-in person changes their own. */
+export class PrismaStaffPreferences {
+  readonly #prisma: PrismaClient;
+
+  constructor(prisma: PrismaClient) {
+    this.#prisma = prisma;
+  }
+
+  /** The language Max Register opens in for this person, on every device they sign in on. */
+  async setLanguage(gymId: string, staffUserId: string, language: 'hi' | 'en'): Promise<void> {
+    await this.#prisma.staffUser.updateMany({ where: { id: staffUserId, gymId }, data: { language } });
+  }
+}
