@@ -3,7 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { BottomNav, CrmHeader } from '@/components/crm/crm-chrome';
 import { can, mayAfterPinEntry } from '@mfp/core';
 import { getContainer } from '@/lib/container';
-import { requireCrmContext } from '@/lib/crm';
+import { requireCrmContext, verificationDeps } from '@/lib/crm';
 
 /**
  * "और" — the rest of the CRM (crm-ux-blueprint §2).
@@ -15,13 +15,15 @@ import { requireCrmContext } from '@/lib/crm';
 export const dynamic = 'force-dynamic';
 
 export default async function CrmMorePage() {
-  const { actor } = await requireCrmContext();
+  const { actor, gym } = await requireCrmContext();
   const t = await getTranslations('crm');
   // Reports are mostly money, so the link is shown to whoever may see money.
   const showReports = can(actor, 'money.view', getContainer().clock.now());
   // Settings ask for the PIN on the way in; the link shows to whoever the PIN would admit.
   const showSettings = mayAfterPinEntry(actor, 'settings.manage', getContainer().clock.now());
   const showImport = mayAfterPinEntry(actor, 'member.import', getContainer().clock.now());
+  const showVerify = can(actor, 'verification.approve', getContainer().clock.now());
+  const waiting = showVerify ? await verificationDeps().queue.count(gym.id) : 0;
 
   return (
     <>
@@ -57,6 +59,19 @@ export default async function CrmMorePage() {
           <li>
             <Link href="/crm/settings" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
               ⚙️ {t('settings.title')}
+              <span aria-hidden className="text-xl text-brand-rubber-grey">
+                ›
+              </span>
+            </Link>
+          </li>
+        ) : null}
+        {showVerify ? (
+          <li>
+            <Link href="/crm/verify" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
+              <span>
+                ✅ {t('verify.link')}
+                {waiting > 0 ? <span className="ml-2 rounded-full bg-brand-signboard-red px-2 py-0.5 text-small text-white">{waiting}</span> : null}
+              </span>
               <span aria-hidden className="text-xl text-brand-rubber-grey">
                 ›
               </span>

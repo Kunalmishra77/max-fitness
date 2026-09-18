@@ -19,7 +19,7 @@ const EXAMPLES = [
 export async function GET() {
   if ((await currentActor()) === null) return new Response(null, { status: 401 });
 
-  const body = `﻿${[IMPORT_COLUMNS.join(','), ...EXAMPLES].join('\r\n')}\r\n`;
+  const body = `FEFF${[IMPORT_COLUMNS.join(','), ...EXAMPLES].join('\r\n')}\r\n`;
   return new Response(body, {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',

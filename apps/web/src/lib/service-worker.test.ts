@@ -45,6 +45,8 @@ function load(options: { cached?: unknown; fetch?: ReturnType<typeof vi.fn> } = 
     fetch: fetchMock,
     location: { origin: 'http://localhost:3000' },
   };
+  // The worker is a plain script, not a module: run it with its globals handed in.
+  // eslint-disable-next-line @typescript-eslint/no-implied-eval, @typescript-eslint/no-unsafe-call
   new Function('self', 'caches', 'fetch', source)(self, caches, fetchMock);
   return { self, listeners, cache, caches, fetch: fetchMock };
 }
@@ -65,7 +67,7 @@ async function fetchEvent(loaded: ReturnType<typeof load>, req: ReturnType<typeo
     },
     waitUntil: (value: unknown) => value,
   });
-  return responded === undefined ? undefined : await responded;
+  return responded === undefined ? undefined : await Promise.resolve(responded);
 }
 
 describe('the CRM service worker', () => {

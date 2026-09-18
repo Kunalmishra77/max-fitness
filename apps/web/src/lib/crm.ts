@@ -10,6 +10,8 @@ import {
   PrismaElevationStore,
   PrismaLeadPipelineUnitOfWork,
   PrismaMemberImport,
+  PrismaVerificationQueue,
+  PrismaVerificationUnitOfWork,
   PrismaMemberPrivacy,
   PrismaOwnPinUnitOfWork,
   PrismaRegistrationUnitOfWork,
@@ -207,6 +209,12 @@ export function memberImport() {
   const container = getContainer();
   const importer = new PrismaMemberImport(container.prisma);
   return { clock: container.clock, uow: importer, reader: importer.reader };
+}
+
+/** Deciding QR submissions: the queue reads, approve and reject write in one transaction. */
+export function verificationDeps() {
+  const container = getContainer();
+  return { clock: container.clock, uow: new PrismaVerificationUnitOfWork(container.prisma), queue: new PrismaVerificationQueue(container.prisma) };
 }
 
 /** Managing staff logins; PINs are hashed with Argon2id (security-plan §3.1). */

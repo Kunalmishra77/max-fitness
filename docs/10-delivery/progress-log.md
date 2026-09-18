@@ -36,6 +36,24 @@ Blockers / questions for client:
 - Same as Phase 3: payment-failure wording, prices, minimum age, admission fee, PIN confirmation, photos, policy answers, grievance officer.
 - Demo staff logins are the seeded ones (owner 9000000001 / 2468, reception 9000000002 / 1357). Real PINs must be set before anyone uses this outside a demo.
 
+### 2026-09-18 — Phase 5 (second slice) — Existing members by QR, and the verify queue
+Done:
+- **Core (test-first):** `submitExistingMember` (date range, repeat sends reuse the pending request, register match on the server) and `approveVerification` / `rejectVerification` (membership update or declared membership, activation, member code, call closing, outbox, audit).
+- **Database:** existing-member and verification units of work, the pending queue (oldest first) and its count; integration test "takes an existing member through the QR and the verify queue" passes on Supabase.
+- **Website:** `/qr` choice page, `/qr/existing` 9-step wizard, `/qr/done/{code}`, `POST /api/v1/qr/existing`.
+- **CRM:** `/crm/verify` with photos by signed link and masked numbers; "QR वाले मेंबर जाँचें" on the More page with the waiting count; trainers see "not allowed".
+- **Verified:** typecheck 8/8, eslint clean (22 older errors fixed), unit tests **1110 passed**; E2E journey 7 (`e2e/qr.spec.ts`) added.
+
+Decisions (decision-log):
+- ADR-058.
+
+Pending / next:
+- Phase 5 slice 3: OTP (simulated provider behind `otpRequired`), `/qr/new` with pay at reception, the printable QR poster (needs a QR library — ask first).
+- Worker jobs for the 2-hour call task and the 7-day clean-up of rejected QR members (Phase 6).
+
+Blockers / questions for client:
+- Same as before: prices, minimum age, admission fee, policies, grievance officer, photo consent.
+
 ### 2026-09-17 (later) — Website — Real photos from the gym's Google profile
 Done:
 - Collected the business account's own uploads from its Google Maps contributor page (20 visible without sign-in); customer photos not used.

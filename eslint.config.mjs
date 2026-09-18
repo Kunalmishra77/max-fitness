@@ -164,6 +164,7 @@ export default tseslint.config(
       'packages/db/scripts/**/*.ts',
       'packages/config/scripts/**/*.ts',
       'apps/worker/**/*.ts',
+      'apps/web/scripts/**/*.mjs',
     ],
     rules: { 'no-console': 'off' },
   },
@@ -172,6 +173,12 @@ export default tseslint.config(
   {
     files: ['**/*.mjs', '**/*.js'],
     ...tseslint.configs.disableTypeChecked,
+  },
+
+  // ── The CRM service worker runs in a worker scope, not Node ─────────────
+  {
+    files: ['apps/web/public/sw.js'],
+    languageOptions: { globals: { ...globals.serviceworker } },
   },
 
   // ── Config files ─────────────────────────────────────────────────────────

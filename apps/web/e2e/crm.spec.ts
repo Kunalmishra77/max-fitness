@@ -328,7 +328,7 @@ test.describe('Max Register', () => {
     const downloading = page.waitForEvent('download');
     await page.getByRole('link', { name: 'टेम्पलेट डाउनलोड करें' }).click();
     const template = await readFile((await (await downloading).path()) ?? '', 'utf8');
-    expect(template.replace(/^﻿/, '').split(/\r?\n/)[0]).toBe('full_name,mobile,gender,dob,email,plan_months,month_end_date,last_amount,joined_on,notes');
+    expect(template.replace(/^FEFF/, '').split(/\r?\n/)[0]).toBe('full_name,mobile,gender,dob,email,plan_months,month_end_date,last_amount,joined_on,notes');
 
     // A fresh name and number each run, so a second run is not "already a member". Letters only.
     const tag = [...'कखगघचछजझञट'].sort(() => Math.random() - 0.5).slice(0, 3).join('');

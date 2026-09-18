@@ -49,3 +49,5 @@ export * from './crm/reminder-settings';
 export * from './crm/record-call-outcome';
 export * from './crm/void-payment';
 export * from './import/member-import';
+export * from './qr/existing-member';
+export * from './crm/verification';

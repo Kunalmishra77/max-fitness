@@ -1140,6 +1140,36 @@
       "failed": "That did not work. Please try again.",
       "rowsWrong": "Some lines still have mistakes. Choose the corrected file again.",
       "checkedTitle": "File check"
+    },
+    "verify": {
+      "title": "Check",
+      "link": "Check QR members",
+      "helper": "Members who sent their details by QR. Compare the code they show.",
+      "reference": "Code",
+      "plan": "{count, plural, one {Plan: # month} other {Plan: # months}}",
+      "planUnknown": "Plan: not known",
+      "declared": "Fees paid until (as told)",
+      "inRegister": "In the register",
+      "memberSaid": "Member said",
+      "lastAmount": "Last fee",
+      "correct": "Correct",
+      "changeDate": "Change date",
+      "dateLabel": "Fees paid until",
+      "approveWithDate": "Approve with this date",
+      "notRight": "Not right",
+      "reason": "Why?",
+      "reject": "Reject",
+      "cancel": "Cancel",
+      "approved": "Approved — the membership is on.",
+      "rejected": "Rejected.",
+      "empty": "Nothing to check right now.",
+      "noPhoto": "No photo",
+      "errors": {
+        "conflict": "Someone has already decided this one.",
+        "invalid": "That date is out of range.",
+        "notAllowed": "Trainers cannot approve this.",
+        "failed": "That did not work. Please try again."
+      }
     }
   },
   "photos": {
@@ -1151,5 +1181,76 @@
     "champions-team": "Medal winners from the gym with their trophies",
     "champion-trophies": "A member with his medals and a row of trophies",
     "champions-trio": "Three medal winners on the gym floor"
+  },
+  "qr": {
+    "metaTitle": "Max Fitness — reception QR",
+    "choice": {
+      "title": "Welcome to Max Fitness",
+      "existing": "I am already a member",
+      "existingHelper": "Send your details and the date your fees are paid until. Reception will check it.",
+      "new": "I am new here",
+      "newHelper": "Join now — pay online or at reception."
+    },
+    "existing": {
+      "title": "I am already a member",
+      "step": "Question {current} of {total}",
+      "next": "Next",
+      "back": "Back",
+      "mobileTitle": "Your mobile number",
+      "mobileLabel": "Mobile number",
+      "nameTitle": "Your full name",
+      "nameLabel": "Full name",
+      "genderTitle": "You are",
+      "MALE": "Man",
+      "FEMALE": "Woman",
+      "dobTitle": "Your date of birth",
+      "dobDay": "Day",
+      "dobMonth": "Month",
+      "dobYear": "Year",
+      "selfieTitle": "Your photo",
+      "selfieHelper": "So reception can recognise you.",
+      "selfieTake": "Take selfie",
+      "selfieRetake": "Retake",
+      "selfieDone": "Your photo",
+      "planTitle": "Your current plan",
+      "plan1": "1 month",
+      "plan3": "3 months",
+      "plan6": "6 months",
+      "plan12": "12 months",
+      "planUnsure": "Not sure",
+      "endTitle": "What is your month-end date?",
+      "endLabel": "Fees paid until",
+      "endHelper": "The last day your current fees cover. Reception will check it against the register.",
+      "amountTitle": "How much did you last pay?",
+      "amountLabel": "Amount in rupees (optional)",
+      "consentTitle": "Before you send",
+      "consentTerms": "I agree to the Terms of membership and Privacy policy.",
+      "consentWhatsapp": "Send my receipts and reminders on WhatsApp.",
+      "consentFace": "Use my face for automatic attendance at reception. Optional.",
+      "readTerms": "Read the terms",
+      "readPrivacy": "Read the privacy policy",
+      "send": "Send to reception",
+      "sending": "Sending…",
+      "errors": {
+        "mobile": "Enter a valid 10-digit mobile number.",
+        "fullName": "Enter your full name — letters only.",
+        "gender": "Choose one.",
+        "dob": "Enter a valid date of birth.",
+        "underAge": "Members must be at least {minAge} years old.",
+        "selfie": "That photo could not be used. Please take another selfie.",
+        "declaredPlanMonths": "Choose a plan.",
+        "declaredEndDate": "Choose a date from the last two months up to a year ahead.",
+        "declaredAmount": "Enter the amount in whole rupees.",
+        "terms": "Please agree to the terms to send.",
+        "rateLimited": "Too many tries. Please send again in a while, or tell reception.",
+        "generic": "That could not be sent. Please try again, or tell reception."
+      }
+    },
+    "done": {
+      "title": "Show this code at reception",
+      "helper": "Reception will check your details and switch your membership on.",
+      "codeLabel": "Your code",
+      "home": "Go to the home page"
+    }
   }
 }

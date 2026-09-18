@@ -15,12 +15,15 @@
  */
 import { randomBytes } from 'node:crypto';
 import { afterAll, beforeAll, expect, it } from 'vitest';
-import { RegistrationFieldsSchema, addDays, todayIST, type Clock } from '@mfp/shared';
+import { RegistrationFieldsSchema, addDays, istDate, todayIST, type Clock } from '@mfp/shared';
 import {
   addStaff,
   advanceLead,
   changeOwnPin,
+  approveVerification,
   commitMemberImport,
+  rejectVerification,
+  submitExistingMember,
   eraseMember,
   exportMemberData,
   sessionTokenHash,
@@ -55,6 +58,7 @@ import { PrismaSettingsUnitOfWork } from '../src/repositories/settings.repositor
 import { PrismaOwnPinUnitOfWork, PrismaStaffUnitOfWork } from '../src/repositories/staff.repository';
 import { ERASED_NAME, PrismaMemberPrivacy } from '../src/repositories/member-privacy.repository';
 import { PrismaMemberImport } from '../src/repositories/member-import.repository';
+import { PrismaExistingMemberUnitOfWork, PrismaVerificationQueue, PrismaVerificationUnitOfWork } from '../src/repositories/verification.repository';
 import { PrismaCallOutcomeUnitOfWork, PrismaVoidPaymentUnitOfWork } from '../src/repositories/crm-actions.repository';
 import { PrismaCrmReader } from '../src/repositories/crm-read.repository';
 import { PrismaDeskPaymentUnitOfWork } from '../src/repositories/desk-payment.repository';
@@ -141,6 +145,7 @@ suite('CRM fee desk against Postgres', () => {
     await prisma.outboxEvent.deleteMany({ where: { gymId } });
     await prisma.alert.deleteMany({ where: { gymId } });
     await prisma.consent.deleteMany({ where: { gymId } });
+    await prisma.verificationRequest.deleteMany({ where: { gymId } });
     await prisma.attendanceEvent.deleteMany({ where: { gymId } });
     await prisma.lead.deleteMany({ where: { gymId } });
     await prisma.callTask.deleteMany({ where: { gymId } });
@@ -732,6 +737,82 @@ suite('CRM fee desk against Postgres', () => {
     // The same file again changes nothing.
     await expect(commitMemberImport({ csv, deskConsent: true }, deps)).resolves.toMatchObject({ created: 0, skipped: 3 });
     expect(await prisma.member.count({ where: { gymId, source: 'IMPORT' } })).toBe(3);
+  });
+
+  it('takes an existing member through the QR and the verify queue: new, matched to the register, and rejected', async () => {
+    const clock = fakeClockAt('2026-09-12T11:30');
+    const actor = ownerActor(clock);
+    const qr = new PrismaExistingMemberUnitOfWork(prisma);
+    const queue = new PrismaVerificationQueue(prisma);
+    const decide = { actor, clock, uow: new PrismaVerificationUnitOfWork(prisma) };
+    const storage = new MemoryStorage();
+    const person = (fullName: string, mobile: string) =>
+      RegistrationFieldsSchema.parse({
+        fullName,
+        mobile,
+        dob: '1990-01-01',
+        gender: 'MALE',
+        language: 'hi',
+        consents: { terms: true, privacy: true, whatsappUpdates: true, faceAttendance: false },
+        noticeVersion: '1.0',
+      });
+    const submit = (fullName: string, mobile: string, declaredEndDate: string) =>
+      submitExistingMember(
+        { fields: person(fullName, mobile), selfie: { body: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]), width: 720, height: 720 }, declaredPlanMonths: 3, declaredEndDate: istDate(declaredEndDate), declaredAmountPaise: 400_000 },
+        { clock, uow: qr, storage, gymId, minAge: 16, ipHash: null, userAgent: 'vitest' },
+      );
+
+    // 1. Someone the system has never seen.
+    const fresh = await submit('Qr Fresh', '9000060001', '2026-09-30');
+    expect(fresh.referenceCode).toMatch(/^Q-\d{4}$/);
+    expect(fresh.matchedExisting).toBe(false);
+    // Scanning again is the same request.
+    await expect(submit('qr  fresh', '9000060001', '2026-09-30')).resolves.toEqual(fresh);
+    const freshMember = await prisma.member.findFirstOrThrow({ where: { gymId, mobile: '+919000060001' } });
+    expect(freshMember).toMatchObject({ status: 'PENDING_VERIFICATION', source: 'QR_EXISTING' });
+    expect(await prisma.verificationRequest.count({ where: { gymId, memberId: freshMember.id } })).toBe(1);
+    expect(await prisma.alert.count({ where: { gymId, memberId: freshMember.id, type: 'VERIFICATION_PENDING' } })).toBe(1);
+
+    const freshItem = (await queue.pending(gymId)).find((item) => item.referenceCode === fresh.referenceCode);
+    expect(freshItem).toMatchObject({ declaredEndDate: '2026-09-30', register: null, member: { fullName: 'Qr Fresh' } });
+    expect(freshItem?.member.photoKey).not.toBeNull();
+
+    const approved = await approveVerification({ verificationId: freshItem?.id ?? '', approvedEndDate: istDate('2026-09-28') }, decide);
+    expect(approved.memberCode).toMatch(/^MF-\d{4}$/);
+    const afterApprove = await prisma.member.findUniqueOrThrow({ where: { id: freshMember.id }, include: { memberships: true } });
+    expect(afterApprove.status).toBe('ACTIVE');
+    expect(afterApprove.memberships).toHaveLength(1);
+    expect(afterApprove.memberships[0]).toMatchObject({ status: 'CONFIRMED', source: 'QR_EXISTING', isDeclared: true, pricePaise: 400_000 });
+    expect(fromDbDate(afterApprove.memberships[0]?.endDate ?? new Date(0))).toBe('2026-09-28');
+    expect(fromDbDate(afterApprove.memberships[0]?.declaredEndDate ?? new Date(0))).toBe('2026-09-30');
+    expect(await prisma.verificationRequest.findUniqueOrThrow({ where: { id: freshItem?.id ?? '' } })).toMatchObject({ status: 'APPROVED', decidedById: ownerId });
+    expect(await prisma.outboxEvent.count({ where: { gymId, dedupeKey: 'verification-approved:' + (freshItem?.id ?? '') } })).toBe(1);
+    await expect(approveVerification({ verificationId: freshItem?.id ?? '' }, decide)).rejects.toMatchObject({ code: 'CONFLICT' });
+
+    // 2. Someone already in the paper register.
+    await commitMemberImport(
+      { csv: 'full_name,mobile,gender,month_end_date,plan_months\nVerify Match,9000060002,M,20-09-2026,1\n', deskConsent: false },
+      { actor, clock, uow: new PrismaMemberImport(prisma), noticeVersion: '1.0' },
+    );
+    const matched = await submit('verify match', '9000060002', '2026-09-25');
+    expect(matched.matchedExisting).toBe(true);
+    expect(await prisma.member.count({ where: { gymId, mobile: '+919000060002' } })).toBe(1);
+    const matchedItem = (await queue.pending(gymId)).find((item) => item.referenceCode === matched.referenceCode);
+    expect(matchedItem?.register).toMatchObject({ endDate: '2026-09-20', planMonths: 1 });
+
+    await approveVerification({ verificationId: matchedItem?.id ?? '', approvedEndDate: istDate('2026-09-20') }, decide);
+    const imported = await prisma.member.findFirstOrThrow({ where: { gymId, mobile: '+919000060002' }, include: { memberships: true } });
+    // Still one membership: the register's, now carrying the member's own confirmation.
+    expect(imported.memberships).toHaveLength(1);
+    expect(imported).toMatchObject({ status: 'ACTIVE', whatsappOptIn: true });
+
+    // 3. A submission staff cannot match.
+    const doubtful = await submit('Qr Doubtful', '9000060003', '2026-09-30');
+    const doubtfulItem = (await queue.pending(gymId)).find((item) => item.referenceCode === doubtful.referenceCode);
+    await rejectVerification({ verificationId: doubtfulItem?.id ?? '', reason: 'रजिस्टर में नहीं मिला' }, decide);
+    expect(await prisma.verificationRequest.findUniqueOrThrow({ where: { id: doubtfulItem?.id ?? '' } })).toMatchObject({ status: 'REJECTED', rejectReason: 'रजिस्टर में नहीं मिला' });
+    expect(await prisma.member.findFirstOrThrow({ where: { gymId, mobile: '+919000060003' } })).toMatchObject({ status: 'PENDING_VERIFICATION' });
+    expect(await queue.count(gymId)).toBe(0);
   });
 
   it('records a call outcome, snoozing the task to an IST date', async () => {

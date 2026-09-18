@@ -4,10 +4,12 @@ import { redirect } from 'next/navigation';
 import {
   addStaff,
   advanceLead,
+  approveVerification,
   can,
   commitMemberImport,
   eraseMember,
   previewMemberImport,
+  rejectVerification,
   updateReminderSettings,
   resetStaffPin,
   setStaffActive,
@@ -33,7 +35,7 @@ import type {
   StaffResult,
   UnlockResult,
 } from '@/lib/settings-types';
-import { RegistrationFieldsSchema, StaffCreateSchema, StaffPinSchema } from '@mfp/shared';
+import { PLAN_DURATIONS, RegistrationFieldsSchema, StaffCreateSchema, StaffPinSchema, istDate, type PlanDurationMonths } from '@mfp/shared';
 import type { AddMemberErrorCode, AddMemberFields, AddMemberResult } from '@/components/crm/add-member-flow';
 import type { MarkResult, UndoResult } from '@/components/crm/attendance-marker';
 import type { CallOutcomeChoice, OutcomeResult } from '@/components/crm/call-outcome';
@@ -42,6 +44,7 @@ import type { VoidResult } from '@/components/crm/void-payment';
 import { getContainer } from '@/lib/container';
 import { deskPhotoFromForm } from '@/lib/desk-photo';
 import { MAX_IMPORT_BYTES, type ImportCommitResult, type ImportPreviewResult } from '@/lib/import-types';
+import type { VerifyResult } from '@/components/crm/verify-queue';
 import { SelfieRejectedError, type ProcessedSelfie } from '@/lib/selfie-image';
 import {
   attendanceDeps,
@@ -53,6 +56,7 @@ import {
   memberImport,
   memberPrivacy,
   requireCrmContext,
+  verificationDeps,
   settingsDeps,
   signOut,
   staffDeps,
@@ -279,6 +283,55 @@ export async function commitImportAction(csv: string, deskConsent: boolean, pin:
     if (code === 'FORBIDDEN') return { ok: false, code: 'FORBIDDEN' };
     console.error(`[crm] import failed: ${code ?? (error instanceof Error ? error.name : 'Error')}`);
     return { ok: false, code: 'INTERNAL' };
+  }
+}
+
+/** What a verify decision answers, whichever way it went. */
+function verifyOutcome(error: unknown): VerifyResult {
+  const code = (error as { code?: string }).code;
+  if (code === 'CONFLICT') return { ok: false, code: 'CONFLICT' };
+  if (code === 'VALIDATION_FAILED' || code === 'NOT_FOUND') return { ok: false, code: 'VALIDATION_FAILED' };
+  if (code === 'FORBIDDEN') return { ok: false, code: 'FORBIDDEN' };
+  console.error(`[crm] verification failed: ${code ?? (error instanceof Error ? error.name : 'Error')}`);
+  return { ok: false, code: 'generic' };
+}
+
+/**
+ * Approve a QR submission (BR-13.1/13.2; ADR-058). The date staff chose — the register's,
+ * the member's, or one they typed — is checked as a date here and as a range in the domain.
+ */
+export async function approveVerificationAction(verificationId: string, change: { approvedEndDate?: string; planMonths?: number }): Promise<VerifyResult> {
+  const { actor } = await requireCrmContext();
+  const { clock, uow } = verificationDeps();
+  const date = change.approvedEndDate;
+  if (date !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(date)) return { ok: false, code: 'VALIDATION_FAILED' };
+  const months = change.planMonths;
+  if (months !== undefined && !(PLAN_DURATIONS as readonly number[]).includes(months)) return { ok: false, code: 'VALIDATION_FAILED' };
+
+  try {
+    await approveVerification(
+      {
+        verificationId,
+        ...(date === undefined ? {} : { approvedEndDate: istDate(date) }),
+        ...(months === undefined ? {} : { planMonths: months as PlanDurationMonths }),
+      },
+      { actor, clock, uow },
+    );
+    return { ok: true };
+  } catch (error) {
+    return verifyOutcome(error);
+  }
+}
+
+/** Reject a QR submission with a reason (BR-13.3). */
+export async function rejectVerificationAction(verificationId: string, reason: string): Promise<VerifyResult> {
+  const { actor } = await requireCrmContext();
+  const { clock, uow } = verificationDeps();
+  try {
+    await rejectVerification({ verificationId, reason }, { actor, clock, uow });
+    return { ok: true };
+  } catch (error) {
+    return verifyOutcome(error);
   }
 }
 

@@ -107,6 +107,6 @@ describe('ImportWizard', () => {
     await user.click(screen.getByRole('button', { name: 'Add 2 members' }));
 
     expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'That PIN is wrong.');
-    expect((screen.getByLabelText('Enter your PIN') as HTMLInputElement).value).toBe('');
+    expect(screen.getByLabelText<HTMLInputElement>('Enter your PIN').value).toBe('');
   });
 });
