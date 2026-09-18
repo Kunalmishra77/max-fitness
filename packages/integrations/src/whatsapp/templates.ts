@@ -17,7 +17,7 @@ type TemplateBodies = Readonly<Record<Language, string>>;
 
 interface TemplateDefinition {
   readonly name: WhatsAppTemplateName;
-  readonly category: 'UTILITY' | 'MARKETING';
+  readonly category: 'UTILITY' | 'MARKETING' | 'AUTHENTICATION';
   /** `{{1}}`-style placeholders, in order, so a caller can see what is required. */
   readonly variables: readonly string[];
   readonly body: TemplateBodies;
@@ -127,11 +127,27 @@ const PAYMENT_RECEIPT: TemplateDefinition = {
   footer: FOOTER,
 };
 
+/** T8 — Meta's fixed authentication format: the code, a security line, and the expiry as footer. */
+const LOGIN_CODE: TemplateDefinition = {
+  name: 'mf_login_code',
+  category: 'AUTHENTICATION',
+  variables: ['code'],
+  body: {
+    en: '{{1}} is your verification code. For your security, do not share this code.',
+    hi: '{{1}} आपका वेरिफिकेशन कोड है। अपनी सुरक्षा के लिए यह कोड किसी को न बताएँ।',
+  },
+  footer: {
+    en: 'This code expires in 10 minutes.',
+    hi: 'यह कोड 10 मिनट में खत्म हो जाएगा।',
+  },
+};
+
 export const TEMPLATES: Readonly<Record<WhatsAppTemplateName, TemplateDefinition>> = {
   mf_renewal_due: RENEWAL_DUE,
   mf_renewal_due_today: RENEWAL_DUE_TODAY,
   mf_membership_expired: MEMBERSHIP_EXPIRED,
   mf_payment_receipt: PAYMENT_RECEIPT,
+  mf_login_code: LOGIN_CODE,
 };
 
 export function templateDefinition(name: WhatsAppTemplateName): TemplateDefinition {

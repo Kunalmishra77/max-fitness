@@ -61,8 +61,13 @@ class FakeStore implements ExistingMemberStore {
   readonly requests: VerificationRequestRecord[] = [];
   readonly alerts: Array<{ memberId: string; params: Record<string, string> }> = [];
 
+  /** Register entries by id, each with its number: what a proven number may claim. */
+  byId = new Map<string, E164Mobile>();
   findImportedMember() {
     return Promise.resolve(this.imported);
+  }
+  findImportedMemberById(_gymId: string, mobile: E164Mobile, memberId: string) {
+    return Promise.resolve(this.byId.get(memberId) === mobile ? { id: memberId } : null);
   }
   findPendingRequest() {
     return Promise.resolve(this.pending);
@@ -110,7 +115,14 @@ describe('submitExistingMember', () => {
     digits = [4821, 1234];
   });
 
-  const submit = (declared: Partial<{ planMonths: 1 | 3 | 6 | 12 | null; endDate: string; amountPaise: number | null }> = {}) =>
+  const submit = (
+    declared: Partial<{
+      planMonths: 1 | 3 | 6 | 12 | null;
+      endDate: string;
+      amountPaise: number | null;
+      claimedMemberId: string;
+    }> = {},
+  ) =>
     submitExistingMember(
       {
         fields,
@@ -118,6 +130,7 @@ describe('submitExistingMember', () => {
         declaredPlanMonths: declared.planMonths === undefined ? 3 : declared.planMonths,
         declaredEndDate: istDate(declared.endDate ?? '2026-09-30'),
         declaredAmountPaise: declared.amountPaise === undefined ? 400_000 : declared.amountPaise,
+        ...(declared.claimedMemberId === undefined ? {} : { claimedMemberId: declared.claimedMemberId }),
       },
       {
         clock,
@@ -162,6 +175,25 @@ describe('submitExistingMember', () => {
     ]);
     // The alert names the reference, never the person.
     expect(store.alerts).toEqual([{ memberId: 'mem_new', params: { referenceCode: 'Q-4821' } }]);
+  });
+
+  it('with a number proven by OTP, joins the register entry the member picked, however the name is spelled', async () => {
+    store.byId.set('mem_register', fields.mobile);
+
+    const result = await submit({ claimedMemberId: 'mem_register' });
+
+    expect(result).toEqual({ referenceCode: 'Q-4821', matchedExisting: true });
+    expect(store.members).toEqual([]);
+    expect(store.requests[0]?.matchedImportMemberId).toBe('mem_register');
+  });
+
+  it('ignores a picked entry that belongs to another number', async () => {
+    store.byId.set('mem_someone_else', '+919811111111' as E164Mobile);
+
+    const result = await submit({ claimedMemberId: 'mem_someone_else' });
+
+    expect(result.matchedExisting).toBe(false);
+    expect(store.members).toHaveLength(1);
   });
 
   it('joins the register record when the same person was imported, instead of making a second member', async () => {

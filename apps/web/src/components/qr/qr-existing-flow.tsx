@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useId, useRef, useState, useTransition, type ComponentType } from 'react';
-import { addDays, addMonthsClamped, istDate } from '@mfp/shared';
+import { addDays, addMonthsClamped, formatISTDate, istDate, type ISTDate } from '@mfp/shared';
 import { SelfieCapture, type SelfieCaptureProps } from '@/components/join/selfie-capture';
 
 /**
@@ -14,14 +14,138 @@ import { SelfieCapture, type SelfieCaptureProps } from '@/components/join/selfie
  * answers and the selfie go in one request; the reference code comes back for the
  * member to show at reception. A field the server refuses brings the member back to
  * that question with the reason.
+ *
+ * With the gym's OTP switch on (ADR-060), the number is confirmed with a code first, and
+ * only then may the phone see the register entries on it and say "this is me".
  */
 
 export type QrSubmitResult =
   | { readonly ok: true; readonly referenceCode: string }
-  | { readonly ok: false; readonly code: 'VALIDATION_FAILED' | 'UNDER_MINIMUM_AGE' | 'SELFIE_REJECTED' | 'RATE_LIMITED' | 'generic'; readonly fields?: readonly string[] };
+  | {
+      readonly ok: false;
+      readonly code:
+        | 'VALIDATION_FAILED'
+        | 'UNDER_MINIMUM_AGE'
+        | 'SELFIE_REJECTED'
+        | 'RATE_LIMITED'
+        | 'OTP_REQUIRED'
+        | 'generic';
+      readonly fields?: readonly string[];
+    };
 
-const STEPS = ['mobile', 'name', 'gender', 'dob', 'selfie', 'plan', 'endDate', 'amount', 'consent'] as const;
-type Step = (typeof STEPS)[number];
+/** A register entry on a proven number, as `/qr/lookup` returns it. */
+export interface QrCandidateItem {
+  readonly memberId: string;
+  readonly firstName: string;
+  readonly lastInitial: string | null;
+  readonly planMonths: number | null;
+  readonly monthEnd: string | null;
+}
+
+export interface OtpApi {
+  send: (
+    mobile: string,
+    language: 'hi' | 'en',
+  ) => Promise<
+    { ok: true; demoCode?: string } | { ok: false; code: 'RATE_LIMITED' | 'VALIDATION_FAILED' | 'generic' }
+  >;
+  verify: (
+    mobile: string,
+    code: string,
+  ) => Promise<
+    | { ok: true; otpToken: string }
+    | { ok: false; code: 'OTP_INVALID' | 'OTP_EXPIRED' | 'OTP_LOCKED' | 'generic'; attemptsLeft?: number }
+  >;
+  lookup: (mobile: string, otpToken: string) => Promise<readonly QrCandidateItem[]>;
+}
+
+async function postJson(
+  path: string,
+  body: unknown,
+): Promise<{
+  ok: boolean;
+  data?: Record<string, unknown>;
+  error?: { code?: string; details?: Record<string, unknown> };
+}> {
+  try {
+    const response = await fetch(path, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const parsed = (await response.json().catch(() => ({}))) as {
+      data?: Record<string, unknown>;
+      error?: { code?: string; details?: Record<string, unknown> };
+    };
+    return { ok: response.ok, ...parsed };
+  } catch {
+    return { ok: false };
+  }
+}
+
+/** The OTP routes (api-specification §/otp, §/qr/lookup). */
+export const fetchOtpApi: OtpApi = {
+  async send(mobile, language) {
+    const result = await postJson('/api/v1/otp/send', { mobile, purpose: 'QR_EXISTING', language });
+    if (result.ok)
+      return typeof result.data?.['demoCode'] === 'string'
+        ? { ok: true, demoCode: result.data['demoCode'] }
+        : { ok: true };
+    const code = result.error?.code;
+    return {
+      ok: false,
+      code:
+        code === 'RATE_LIMITED' || code === 'OTP_RATE_LIMITED'
+          ? 'RATE_LIMITED'
+          : code === 'VALIDATION_FAILED'
+            ? 'VALIDATION_FAILED'
+            : 'generic',
+    };
+  },
+  async verify(mobile, code) {
+    const result = await postJson('/api/v1/otp/verify', { mobile, purpose: 'QR_EXISTING', code });
+    if (result.ok && typeof result.data?.['otpToken'] === 'string')
+      return { ok: true, otpToken: result.data['otpToken'] };
+    const failure = result.error?.code;
+    const left = result.error?.details?.['attemptsLeft'];
+    if (failure === 'OTP_INVALID')
+      return { ok: false, code: failure, ...(typeof left === 'number' ? { attemptsLeft: left } : {}) };
+    if (failure === 'OTP_EXPIRED' || failure === 'OTP_LOCKED') return { ok: false, code: failure };
+    if (failure === 'VALIDATION_FAILED') return { ok: false, code: 'OTP_INVALID' };
+    return { ok: false, code: 'generic' };
+  },
+  async lookup(mobile, otpToken) {
+    const result = await postJson('/api/v1/qr/lookup', { mobile, otpToken });
+    const candidates = result.data?.['candidates'];
+    return result.ok && Array.isArray(candidates) ? (candidates as QrCandidateItem[]) : [];
+  },
+};
+
+const BASE_STEPS = [
+  'mobile',
+  'name',
+  'gender',
+  'dob',
+  'selfie',
+  'plan',
+  'endDate',
+  'amount',
+  'consent',
+] as const;
+const OTP_STEPS = [
+  'mobile',
+  'code',
+  'match',
+  'name',
+  'gender',
+  'dob',
+  'selfie',
+  'plan',
+  'endDate',
+  'amount',
+  'consent',
+] as const;
+type Step = (typeof OTP_STEPS)[number];
 const PLANS = ['1', '3', '6', '12', 'unsure'] as const;
 
 /** Which question a refused field belongs to. */
@@ -50,8 +174,11 @@ export async function postQrExisting(form: FormData): Promise<QrSubmitResult> {
     };
     if (response.ok && typeof body.data?.referenceCode === 'string') return { ok: true, referenceCode: body.data.referenceCode };
     const code = body.error?.code;
-    const fields = [...Object.keys(body.error?.details?.fields ?? {}), ...(body.error?.details?.field === undefined ? [] : [body.error.details.field])];
-    if (code === 'RATE_LIMITED') return { ok: false, code };
+    const fields = [
+      ...Object.keys(body.error?.details?.fields ?? {}),
+      ...(body.error?.details?.field === undefined ? [] : [body.error.details.field]),
+    ];
+    if (code === 'RATE_LIMITED' || code === 'OTP_REQUIRED') return { ok: false, code };
     if (code === 'UNDER_MINIMUM_AGE') return { ok: false, code, fields: ['dob'] };
     if (code === 'SELFIE_REJECTED') return { ok: false, code, fields: ['selfie'] };
     if (code === 'VALIDATION_FAILED') return { ok: false, code, fields };
@@ -70,6 +197,8 @@ export function QrExistingFlow({
   submit = postQrExisting,
   onSubmitted,
   Camera = SelfieCapture,
+  otpRequired = false,
+  otpApi = fetchOtpApi,
 }: {
   today: string;
   minAge: number;
@@ -80,6 +209,10 @@ export function QrExistingFlow({
   onSubmitted: (referenceCode: string) => void;
   /** Injected in tests; the real sheet needs a camera. */
   Camera?: ComponentType<SelfieCaptureProps>;
+  /** The gym's `features.otpRequired` switch. */
+  otpRequired?: boolean;
+  /** Injected in tests. */
+  otpApi?: OtpApi;
 }) {
   const t = useTranslations('qr.existing');
   const locale = useLocale();
@@ -99,6 +232,12 @@ export function QrExistingFlow({
   const [face, setFace] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const [code, setCode] = useState('');
+  const [demoCode, setDemoCode] = useState<string | null>(null);
+  const [otpToken, setOtpToken] = useState<string | null>(null);
+  const [candidates, setCandidates] = useState<readonly QrCandidateItem[]>([]);
+  const [claimed, setClaimed] = useState<string | null>(null);
+  const [otpBusy, setOtpBusy] = useState(false);
   const photoUrl = useRef<string | null>(null);
 
   useEffect(
@@ -111,11 +250,18 @@ export function QrExistingFlow({
   const todayDate = istDate(today);
   const minEnd = addDays(todayDate, -60);
   const maxEnd = addMonthsClamped(todayDate, 13);
+  const STEPS: readonly Step[] = otpRequired ? OTP_STEPS : BASE_STEPS;
   const index = STEPS.indexOf(step);
-  const dobValue = dob.day === '' || dob.month === '' || dob.year.length !== 4 ? '' : `${dob.year}-${pad(dob.month)}-${pad(dob.day)}`;
+  const language = locale === 'hi' ? 'hi' : 'en';
+  const dobValue =
+    dob.day === '' || dob.month === '' || dob.year.length !== 4
+      ? ''
+      : `${dob.year}-${pad(dob.month)}-${pad(dob.day)}`;
 
   const canContinue: Record<Step, boolean> = {
     mobile: mobile.replace(/\D/g, '').length >= 10,
+    code: /^\d{6}$/.test(code),
+    match: claimed !== null,
     name: fullName.trim().length >= 2,
     gender: gender !== null,
     dob: dobValue !== '',
@@ -128,9 +274,76 @@ export function QrExistingFlow({
 
   const go = (delta: 1 | -1) => {
     setError(null);
-    const next = STEPS[index + delta];
+    let next = STEPS[index + delta];
+    // Nobody in the register on this number: there is no "is this you" to go back to.
+    if (next === 'match' && candidates.length === 0) next = STEPS[index + 2 * delta];
     if (next !== undefined) setStep(next);
   };
+
+  const changeMobile = (value: string) => {
+    setMobile(value);
+    // A token proves one number; a new number starts again.
+    setOtpToken(null);
+    setCandidates([]);
+    setClaimed(null);
+    setDemoCode(null);
+  };
+
+  const requestCode = async () => {
+    setError(null);
+    setOtpBusy(true);
+    const result = await otpApi.send(mobile, language);
+    setOtpBusy(false);
+    if (!result.ok) {
+      setError(
+        result.code === 'RATE_LIMITED'
+          ? t('otpErrors.rateLimited')
+          : result.code === 'VALIDATION_FAILED'
+            ? t('errors.mobile')
+            : t('errors.generic'),
+      );
+      return;
+    }
+    setCode('');
+    setDemoCode(result.demoCode ?? null);
+    setStep('code');
+  };
+
+  const checkCode = async () => {
+    setError(null);
+    setOtpBusy(true);
+    const result = await otpApi.verify(mobile, code);
+    if (!result.ok) {
+      setOtpBusy(false);
+      if (result.code === 'OTP_INVALID') setError(t('otpErrors.code', { left: result.attemptsLeft ?? 0 }));
+      else if (result.code === 'OTP_EXPIRED') setError(t('otpErrors.expired'));
+      else if (result.code === 'OTP_LOCKED') setError(t('otpErrors.locked'));
+      else setError(t('errors.generic'));
+      return;
+    }
+    setOtpToken(result.otpToken);
+    const found = await otpApi.lookup(mobile, result.otpToken);
+    setOtpBusy(false);
+    setCandidates(found);
+    setClaimed(null);
+    setStep(found.length > 0 ? 'match' : 'name');
+  };
+
+  const pick = (candidate: QrCandidateItem | null) => {
+    setClaimed(candidate === null ? 'none' : candidate.memberId);
+    if (candidate !== null && fullName.trim() === '') setFullName(candidate.firstName);
+  };
+
+  const candidateLabel = (candidate: QrCandidateItem) =>
+    t('matchOption', {
+      name:
+        candidate.lastInitial === null
+          ? candidate.firstName
+          : `${candidate.firstName} ${candidate.lastInitial}.`,
+      plan: candidate.planMonths === null ? t('matchPlanUnknown') : t(`plan${candidate.planMonths}` as never),
+      date:
+        candidate.monthEnd === null ? t('matchNoDate') : formatISTDate(candidate.monthEnd as ISTDate, locale),
+    });
 
   const keepPhoto = (blob: Blob) => {
     if (photoUrl.current !== null) URL.revokeObjectURL(photoUrl.current);
@@ -154,6 +367,8 @@ export function QrExistingFlow({
     form.set('declaredEndDate', endDate);
     form.set('declaredAmount', amount);
     form.set('selfie', photo.blob, 'selfie.jpg');
+    if (otpToken !== null) form.set('otpToken', otpToken);
+    if (claimed !== null && claimed !== 'none') form.set('claimedMemberId', claimed);
 
     start(async () => {
       const result = await submit(form);
@@ -167,6 +382,11 @@ export function QrExistingFlow({
         setError(t('errors.underAge', { minAge }));
       } else if (result.code === 'RATE_LIMITED') {
         setError(t('errors.rateLimited'));
+      } else if (result.code === 'OTP_REQUIRED') {
+        // The 15-minute token ran out while the member was answering.
+        setOtpToken(null);
+        setStep('mobile');
+        setError(t('otpErrors.required'));
       } else if (field !== undefined) {
         setStep(FIELD_STEP[field] ?? 'consent');
         setError(t(`errors.${field === 'privacy' ? 'terms' : field}` as never));
@@ -205,9 +425,70 @@ export function QrExistingFlow({
               maxLength={14}
               aria-label={t('mobileLabel')}
               value={mobile}
-              onChange={(event) => setMobile(event.target.value)}
+              onChange={(event) => changeMobile(event.target.value)}
               className={`${input} text-2xl tracking-widest`}
             />
+          </div>
+        ) : null}
+
+        {step === 'code' ? (
+          <div>
+            <h2 className={title}>{t('codeTitle')}</h2>
+            <p className="text-body text-brand-rubber-grey mt-2">{t('codeHelper', { mobile })}</p>
+            <label htmlFor={`${id}-code`} className="text-body mt-4 block font-semibold">
+              {t('codeLabel')}
+            </label>
+            <input
+              id={`${id}-code`}
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              value={code}
+              onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))}
+              className={`${input} text-center text-3xl tracking-[0.5em]`}
+            />
+            {demoCode === null ? null : (
+              <p className="rounded-input border-brand-wall-blue/50 text-body text-brand-wall-blue mt-3 border-2 border-dashed bg-white p-3 text-center font-semibold">
+                {t('demoCode', { code: demoCode })}
+              </p>
+            )}
+            <button
+              type="button"
+              disabled={otpBusy}
+              onClick={() => void requestCode()}
+              className="text-body text-brand-wall-blue mt-3 min-h-14 w-full font-semibold underline underline-offset-2"
+            >
+              {t('resend')}
+            </button>
+          </div>
+        ) : null}
+
+        {step === 'match' ? (
+          <div>
+            <h2 className={title}>{t('matchTitle')}</h2>
+            <p className="text-body text-brand-rubber-grey mt-2">{t('matchHelper')}</p>
+            <div className="mt-4 grid gap-3">
+              {candidates.map((candidate) => (
+                <button
+                  key={candidate.memberId}
+                  type="button"
+                  aria-pressed={claimed === candidate.memberId}
+                  onClick={() => pick(candidate)}
+                  className={`${choice(claimed === candidate.memberId)} px-4 text-left`}
+                >
+                  {candidateLabel(candidate)}
+                </button>
+              ))}
+              <button
+                type="button"
+                aria-pressed={claimed === 'none'}
+                onClick={() => pick(null)}
+                className={`${choice(claimed === 'none')} px-4 text-left`}
+              >
+                {t('matchNone')}
+              </button>
+            </div>
           </div>
         ) : null}
 
@@ -364,6 +645,24 @@ export function QrExistingFlow({
         {step === 'consent' ? (
           <button type="button" disabled={!canContinue.consent || pending} onClick={send} className={primary}>
             {pending ? t('sending') : t('send')}
+          </button>
+        ) : otpRequired && step === 'mobile' && otpToken === null ? (
+          <button
+            type="button"
+            disabled={!canContinue.mobile || otpBusy}
+            onClick={() => void requestCode()}
+            className={primary}
+          >
+            {otpBusy ? t('sendingCode') : t('sendCode')}
+          </button>
+        ) : step === 'code' && otpToken === null ? (
+          <button
+            type="button"
+            disabled={!canContinue.code || otpBusy}
+            onClick={() => void checkCode()}
+            className={primary}
+          >
+            {t('checkCode')}
           </button>
         ) : (
           <button type="button" disabled={!canContinue[step]} onClick={() => go(1)} className={primary}>

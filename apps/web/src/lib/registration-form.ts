@@ -1,5 +1,8 @@
 import { RegistrationFieldsSchema, type RegistrationFields } from '@mfp/shared';
 
+/** Where an online sign-up started. `WALK_IN` is the desk's own and never comes from a browser. */
+export type OnlineSignupSource = 'WEBSITE' | 'QR_NEW';
+
 /**
  * Reading the `POST /registrations` multipart body (api-specification.md §3).
  *
@@ -10,7 +13,12 @@ import { RegistrationFieldsSchema, type RegistrationFields } from '@mfp/shared';
  */
 
 export type RegistrationFormResult =
-  | { readonly ok: true; readonly fields: RegistrationFields; readonly selfie: Uint8Array }
+  | {
+      readonly ok: true;
+      readonly fields: RegistrationFields;
+      readonly selfie: Uint8Array;
+      readonly source: OnlineSignupSource;
+    }
   | { readonly ok: false; readonly fields: Record<string, string> };
 
 const TEXT_PARTS = ['fullName', 'mobile', 'email', 'dob', 'gender', 'language', 'noticeVersion'] as const;
@@ -50,5 +58,7 @@ export async function parseRegistrationForm(form: FormData): Promise<Registratio
   if (!parsed.success || Object.keys(fields).length > 0 || !(selfiePart instanceof Blob)) {
     return { ok: false, fields };
   }
-  return { ok: true, fields: parsed.data, selfie: new Uint8Array(await selfiePart.arrayBuffer()) };
+  // Only the reception QR is believed; anything else is the website (the source is for reports, never for rights).
+  const source: OnlineSignupSource = form.get('source') === 'QR_NEW' ? 'QR_NEW' : 'WEBSITE';
+  return { ok: true, fields: parsed.data, selfie: new Uint8Array(await selfiePart.arrayBuffer()), source };
 }

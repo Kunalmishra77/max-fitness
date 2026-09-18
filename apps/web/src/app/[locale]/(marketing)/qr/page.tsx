@@ -6,8 +6,8 @@ import { QrPage, qrMetadata } from '@/lib/qr-page';
 /**
  * `/qr` — what the reception poster opens (qr-onboarding-flow §1–2; ADR-058).
  *
- * Two big choices. New people go to the regular sign-up, which already offers paying at
- * reception; `/qr/new` with its own analytics follows with OTP (Phase 5, slice 3).
+ * Two big choices: members already training here send their details for the desk to
+ * check; new people sign up on `/qr/new`, where paying at reception is an equal choice.
  */
 
 export const dynamic = 'force-dynamic';
@@ -29,9 +29,12 @@ export default async function QrChoicePage({ params }: { params: Promise<{ local
           <span className="block font-display text-title font-bold">{t('existing')}</span>
           <span className="mt-2 block text-body text-white/85">{t('existingHelper')}</span>
         </a>
-        <a href={getPathname({ href: '/join', locale: ctx.locale })} className={`${card} bg-brand-signboard-red text-white`}>
-          <span className="block font-display text-title font-bold">{t('new')}</span>
-          <span className="mt-2 block text-body text-white/90">{t('newHelper')}</span>
+        <a
+          href={getPathname({ href: '/qr/new', locale: ctx.locale })}
+          className={`${card} bg-brand-signboard-red text-white`}
+        >
+          <span className="font-display text-title block font-bold">{t('new')}</span>
+          <span className="text-body mt-2 block text-white/90">{t('newHelper')}</span>
         </a>
       </div>
     </QrPage>

@@ -538,6 +538,41 @@ export function AutomaticMessagesForm({ paused, save, unlock }: { paused: boolea
   );
 }
 
+// ── Mobile check on the reception QR ────────────────────────────────────────
+
+export function QrOtpForm({
+  required,
+  save,
+  unlock,
+}: {
+  required: boolean;
+  save: (patch: SettingsPatchInput) => Promise<SettingsResult>;
+  unlock: Unlock;
+}) {
+  const t = useTranslations('crm.settings');
+  const [on, setOn] = useState(required);
+
+  return (
+    <Section
+      title={t('qrOtp')}
+      helper={t('qrOtpHelper')}
+      savedText={t('savedPlain')}
+      unlock={unlock}
+      save={() => save({ features: { otpRequired: on } })}
+    >
+      <label className="text-crm-body flex min-h-14 items-center gap-3">
+        <input
+          type="checkbox"
+          checked={on}
+          onChange={(event) => setOn(event.target.checked)}
+          className="accent-brand-signboard-red size-6"
+        />
+        {t('qrOtpOn')}
+      </label>
+    </Section>
+  );
+}
+
 // ── Language and voice ──────────────────────────────────────────────────────
 
 export function LanguageVoiceForm({

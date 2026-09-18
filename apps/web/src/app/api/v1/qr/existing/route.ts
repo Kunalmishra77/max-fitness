@@ -6,6 +6,7 @@ import { errorResponse } from '@/lib/api-errors';
 import { getContainer } from '@/lib/container';
 import { loadGym } from '@/lib/gym';
 import { parseQrExistingForm } from '@/lib/qr-existing-form';
+import { qrOtpGate } from '@/lib/qr-otp-gate';
 import { clientIp, limiterKey, registrationLimiters } from '@/lib/rate-limit';
 import { MAX_SELFIE_BYTES, processSelfie } from '@/lib/selfie-image';
 import { hashIp } from '@/lib/signup-access';
@@ -59,6 +60,21 @@ export async function POST(request: NextRequest) {
     const selfie = await processSelfie(parsed.selfie);
     const gym = await loadGym(container);
 
+    const text = (name: string) => {
+      const value = form.get(name);
+      return typeof value === 'string' && value.length > 0 && value.length <= 1_000 ? value : null;
+    };
+    const gate = qrOtpGate(
+      {
+        otpRequired: gym.settings.features.otpRequired,
+        mobile: parsed.fields.mobile,
+        otpToken: text('otpToken'),
+        claimedMemberId: text('claimedMemberId'),
+      },
+      { clock, secret: env.LINK_TOKEN_SECRET },
+    );
+    if (!gate.ok) return apiError(401, 'OTP_REQUIRED', 'Confirm the mobile number first', requestId);
+
     const result = await submitExistingMember(
       {
         fields: parsed.fields,
@@ -66,6 +82,7 @@ export async function POST(request: NextRequest) {
         declaredPlanMonths: parsed.declaredPlanMonths,
         declaredEndDate: parsed.declaredEndDate,
         declaredAmountPaise: parsed.declaredAmountPaise,
+        ...(gate.claimedMemberId === undefined ? {} : { claimedMemberId: gate.claimedMemberId }),
       },
       {
         clock,

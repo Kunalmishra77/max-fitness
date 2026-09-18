@@ -24,6 +24,10 @@ import {
   commitMemberImport,
   rejectVerification,
   submitExistingMember,
+  sendOtp,
+  verifyOtp,
+  checkOtpToken,
+  qrCandidateView,
   eraseMember,
   exportMemberData,
   sessionTokenHash,
@@ -58,8 +62,16 @@ import { PrismaSettingsUnitOfWork } from '../src/repositories/settings.repositor
 import { PrismaOwnPinUnitOfWork, PrismaStaffUnitOfWork } from '../src/repositories/staff.repository';
 import { ERASED_NAME, PrismaMemberPrivacy } from '../src/repositories/member-privacy.repository';
 import { PrismaMemberImport } from '../src/repositories/member-import.repository';
-import { PrismaExistingMemberUnitOfWork, PrismaVerificationQueue, PrismaVerificationUnitOfWork } from '../src/repositories/verification.repository';
-import { PrismaCallOutcomeUnitOfWork, PrismaVoidPaymentUnitOfWork } from '../src/repositories/crm-actions.repository';
+import { PrismaOtpStore, PrismaQrLookup } from '../src/repositories/otp.repository';
+import {
+  PrismaExistingMemberUnitOfWork,
+  PrismaVerificationQueue,
+  PrismaVerificationUnitOfWork,
+} from '../src/repositories/verification.repository';
+import {
+  PrismaCallOutcomeUnitOfWork,
+  PrismaVoidPaymentUnitOfWork,
+} from '../src/repositories/crm-actions.repository';
 import { PrismaCrmReader } from '../src/repositories/crm-read.repository';
 import { PrismaDeskPaymentUnitOfWork } from '../src/repositories/desk-payment.repository';
 import { PrismaRegistrationUnitOfWork } from '../src/repositories/registration.repository';
@@ -146,6 +158,7 @@ suite('CRM fee desk against Postgres', () => {
     await prisma.alert.deleteMany({ where: { gymId } });
     await prisma.consent.deleteMany({ where: { gymId } });
     await prisma.verificationRequest.deleteMany({ where: { gymId } });
+    await prisma.otpCode.deleteMany({ where: { gymId } });
     await prisma.attendanceEvent.deleteMany({ where: { gymId } });
     await prisma.lead.deleteMany({ where: { gymId } });
     await prisma.callTask.deleteMany({ where: { gymId } });
@@ -813,6 +826,65 @@ suite('CRM fee desk against Postgres', () => {
     expect(await prisma.verificationRequest.findUniqueOrThrow({ where: { id: doubtfulItem?.id ?? '' } })).toMatchObject({ status: 'REJECTED', rejectReason: 'रजिस्टर में नहीं मिला' });
     expect(await prisma.member.findFirstOrThrow({ where: { gymId, mobile: '+919000060003' } })).toMatchObject({ status: 'PENDING_VERIFICATION' });
     expect(await queue.count(gymId)).toBe(0);
+  });
+
+  it('sends a one-time code, takes it once, and then shows the register entries on that number', async () => {
+    const clock = fakeClockAt('2026-09-18T10:00');
+    const secret = 'i'.repeat(40);
+    const store = new PrismaOtpStore(prisma);
+    const sent: string[] = [];
+    const deps = {
+      clock,
+      store,
+      gymId,
+      secret,
+      sender: { send: (_to: unknown, code: string) => Promise.resolve(void sent.push(code)) },
+    };
+    const mobile = '+919000070001' as Parameters<typeof sendOtp>[0]['mobile'];
+
+    const first = await sendOtp({ mobile, purpose: 'QR_EXISTING', language: 'hi' }, deps);
+    expect(sent).toEqual([first.code]);
+    const row = await prisma.otpCode.findFirstOrThrow({ where: { gymId, mobile } });
+    expect(row.codeHash).not.toContain(first.code);
+
+    await expect(
+      verifyOtp(
+        { mobile, purpose: 'QR_EXISTING', code: first.code === '000000' ? '000001' : '000000' },
+        deps,
+      ),
+    ).rejects.toMatchObject({ code: 'OTP_INVALID' });
+    expect((await prisma.otpCode.findUniqueOrThrow({ where: { id: row.id } })).attempts).toBe(1);
+
+    const [a, b] = await Promise.allSettled([
+      verifyOtp({ mobile, purpose: 'QR_EXISTING', code: first.code }, deps),
+      verifyOtp({ mobile, purpose: 'QR_EXISTING', code: first.code }, deps),
+    ]);
+    // Two taps with the same right code: one token, not two.
+    expect([a.status, b.status].sort()).toEqual(['fulfilled', 'rejected']);
+    const token =
+      a.status === 'fulfilled' ? a.value.otpToken : b.status === 'fulfilled' ? b.value.otpToken : '';
+    expect(checkOtpToken(token, { mobile, purpose: 'QR_EXISTING' }, { clock, secret })).toBe(true);
+
+    await sendOtp({ mobile, purpose: 'QR_EXISTING', language: 'hi' }, deps);
+    await sendOtp({ mobile, purpose: 'QR_EXISTING', language: 'hi' }, deps);
+    await expect(sendOtp({ mobile, purpose: 'QR_EXISTING', language: 'hi' }, deps)).rejects.toMatchObject({
+      code: 'OTP_RATE_LIMITED',
+    });
+
+    // A family on one number: both register entries come back, oldest first.
+    await commitMemberImport(
+      {
+        csv: 'full_name,mobile,gender,month_end_date,plan_months\nOtp Father Singh,9000070001,M,28-09-2026,3\nOtp Daughter,9000070001,F,15-10-2026,1\n',
+        deskConsent: false,
+      },
+      { actor: ownerActor(clock), clock, uow: new PrismaMemberImport(prisma), noticeVersion: '1.0' },
+    );
+    const candidates = (await new PrismaQrLookup(prisma).candidates(gymId, mobile)).map(qrCandidateView);
+    expect(candidates.map(({ memberId: _id, ...rest }) => rest)).toEqual([
+      { firstName: 'Otp', lastInitial: 'S', planMonths: 3, monthEnd: '2026-09-28' },
+      { firstName: 'Otp', lastInitial: 'D', planMonths: 1, monthEnd: '2026-10-15' },
+    ]);
+    expect(await new PrismaQrLookup(prisma).candidates(gymId, '+919000070009' as typeof mobile)).toEqual([]);
   });
 
   it('records a call outcome, snoozing the task to an IST date', async () => {

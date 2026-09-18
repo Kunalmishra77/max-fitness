@@ -68,6 +68,9 @@ catalog:
   '@node-rs/argon2': 2.2.1
   # Supabase Storage through its S3-compatible endpoint (StorageDriver s3, TRD §4; ADR-055).
   '@aws-sdk/client-s3': 3.1133.0
+  # The reception QR poster (qr-onboarding-flow §1; ADR-060). Approved by the client 2026-09-18.
+  qrcode: 1.5.4
+  '@types/qrcode': 1.5.6
 
   # ── Web UI ────────────────────────────────────────────────────────────
   next-intl: 4.14.3

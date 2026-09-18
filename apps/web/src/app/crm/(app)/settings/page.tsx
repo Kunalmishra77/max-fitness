@@ -7,6 +7,7 @@ import {
   HoursForm,
   JoiningForm,
   LanguageVoiceForm,
+  QrOtpForm,
   PricesForm,
   PromoForm,
   RemindersForm,
@@ -65,7 +66,8 @@ export default async function CrmSettingsPage() {
     // In the order they reach a member: a week before, then the day, then after.
     prisma.reminderRule.findMany({ where: { gymId: gym.id }, select: { code: true, slots: true, isEnabled: true }, orderBy: { offsetDays: 'asc' } }),
   ]);
-  const { pricing, privacy, promo, trust, hours, reminders, attendance, defaultLanguage } = gym.settings;
+  const { pricing, privacy, promo, trust, hours, reminders, attendance, features, defaultLanguage } =
+    gym.settings;
 
   return (
     <>
@@ -87,8 +89,18 @@ export default async function CrmSettingsPage() {
           save={saveReminderSettingsAction}
           unlock={unlockSettingsAction}
         />
-        <AutomaticMessagesForm paused={reminders.automaticPaused} save={saveSettingsAction} unlock={unlockSettingsAction} />
-        <LanguageVoiceForm language={defaultLanguage} kioskVoice={attendance.kioskVoice} save={saveSettingsAction} unlock={unlockSettingsAction} />
+        <AutomaticMessagesForm
+          paused={reminders.automaticPaused}
+          save={saveSettingsAction}
+          unlock={unlockSettingsAction}
+        />
+        <QrOtpForm required={features.otpRequired} save={saveSettingsAction} unlock={unlockSettingsAction} />
+        <LanguageVoiceForm
+          language={defaultLanguage}
+          kioskVoice={attendance.kioskVoice}
+          save={saveSettingsAction}
+          unlock={unlockSettingsAction}
+        />
       </div>
       <BottomNav active="more" />
     </>

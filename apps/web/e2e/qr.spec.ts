@@ -82,3 +82,40 @@ test('an existing member sends their details by QR and reception approves them',
   await page.reload();
   await expect(page.getByRole('article', { name })).toHaveCount(0);
 });
+
+test('someone new joins from the QR and holds the plan to pay at the desk', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'Writes to the database; one project is enough.');
+  const mobile = `8${String(Math.floor(Math.random() * 1e9)).padStart(9, '0')}`;
+
+  await page.goto('/qr');
+  await page.getByRole('link', { name: /I am new here/ }).click();
+  await expect(page).toHaveURL(/\/qr\/new$/);
+
+  await page.getByLabel('Full name').fill('Qr Newcomer');
+  await page.getByLabel('Mobile number').fill(mobile);
+  const dob = page.getByRole('group', { name: 'Date of birth' });
+  await dob.getByLabel('Day').selectOption('15');
+  await dob.getByLabel('Month').selectOption('6');
+  await dob.getByLabel('Year').selectOption('1995');
+  await page.getByText('Male', { exact: true }).click();
+  await page.getByRole('button', { name: /Take selfie/ }).click();
+  const sheet = page.getByRole('dialog', { name: 'Take a selfie' });
+  await sheet.locator('input[type=file]').setInputFiles(FACE_PHOTO);
+  await sheet.getByRole('button', { name: 'Use this photo' }).click();
+  await page.getByRole('checkbox', { name: /I agree to the/ }).check();
+  await page.getByRole('button', { name: 'Continue to plans' }).click();
+
+  await expect(page).toHaveURL(/\/join\/plan$/);
+  await page.getByRole('radio').first().check();
+  await page.getByRole('button', { name: 'Continue to payment' }).click();
+
+  // At the desk, paying there is offered first and just as prominently as paying online.
+  await expect(page).toHaveURL(/\/join\/pay$/);
+  const reception = page.getByRole('button', { name: 'Pay at reception' });
+  const online = page.getByRole('button', { name: /^Pay ₹/ });
+  expect(await reception.getAttribute('class')).toBe(await online.getAttribute('class'));
+  await reception.click();
+
+  await expect(page).toHaveURL(/\/join\/done$/);
+  await expect(page.getByRole('heading', { name: 'Your plan is reserved, Qr.' })).toBeVisible();
+});

@@ -26,11 +26,13 @@
     "db:studio": "pnpm --filter @mfp/db run db:studio",
     "tokens": "pnpm --filter @mfp/config run tokens",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "qr:poster": "tsx infra/scripts/generate-qr-poster.ts"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
     "@types/node": "catalog:",
+    "@types/qrcode": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "cross-env": "catalog:",
     "eslint": "catalog:",
@@ -39,6 +41,7 @@
     "globals": "catalog:",
     "prettier": "catalog:",
     "prettier-plugin-tailwindcss": "catalog:",
+    "qrcode": "catalog:",
     "tsx": "catalog:",
     "turbo": "catalog:",
     "typescript": "catalog:",

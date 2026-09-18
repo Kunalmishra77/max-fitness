@@ -25,6 +25,8 @@ export interface JoinState {
   /** Set when the member chose to pay at reception. */
   readonly reservedUntil?: string;
   readonly reservedAmountPaise?: number;
+  /** Started from the reception QR: paying at the desk is offered as an equal choice. */
+  readonly fromQr?: boolean;
 }
 
 type Patch = { [K in keyof JoinState]?: JoinState[K] | undefined };
@@ -41,6 +43,7 @@ const CHECKS: { [K in keyof JoinState]-?: (value: unknown) => boolean } = {
   paymentId: (value) => isString(value) && value.length <= 64,
   reservedUntil: (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && !Number.isNaN(Date.parse(value)),
   reservedAmountPaise: (value) => typeof value === 'number' && Number.isSafeInteger(value) && value >= 0,
+  fromQr: (value) => typeof value === 'boolean',
 };
 
 function storage(): Storage | null {

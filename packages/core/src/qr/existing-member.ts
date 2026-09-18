@@ -71,7 +71,17 @@ export interface VerificationRequestRecord {
 
 export interface ExistingMemberStore {
   /** An imported, not-deleted member of this gym with this mobile and name (case and spacing ignored). */
-  findImportedMember(gymId: string, mobile: E164Mobile, fullName: string): Promise<{ readonly id: string } | null>;
+  findImportedMember(
+    gymId: string,
+    mobile: E164Mobile,
+    fullName: string,
+  ): Promise<{ readonly id: string } | null>;
+  /** The imported member with this id, only if it is on this mobile. */
+  findImportedMemberById(
+    gymId: string,
+    mobile: E164Mobile,
+    memberId: string,
+  ): Promise<{ readonly id: string } | null>;
   /** An open request for the same mobile and name. */
   findPendingRequest(gymId: string, mobile: E164Mobile, fullName: string): Promise<{ readonly referenceCode: string } | null>;
   referenceCodeTaken(gymId: string, code: string): Promise<boolean>;
@@ -103,6 +113,11 @@ export async function submitExistingMember(
     readonly declaredPlanMonths: PlanDurationMonths | null;
     readonly declaredEndDate: ISTDate;
     readonly declaredAmountPaise: number | null;
+    /**
+     * The register entry the member picked after proving the number by OTP (ADR-060).
+     * The caller passes it only with a valid OTP token for `fields.mobile`.
+     */
+    readonly claimedMemberId?: string;
   },
   deps: {
     readonly clock: Clock;
@@ -140,7 +155,12 @@ export async function submitExistingMember(
       const pending = await store.findPendingRequest(deps.gymId, fields.mobile, fields.fullName);
       if (pending !== null) return { referenceCode: pending.referenceCode, matchedExisting: false, keptPhoto: false };
 
-      const imported = await store.findImportedMember(deps.gymId, fields.mobile, fields.fullName);
+      const claimed =
+        input.claimedMemberId === undefined
+          ? null
+          : await store.findImportedMemberById(deps.gymId, fields.mobile, input.claimedMemberId);
+      const imported =
+        claimed ?? (await store.findImportedMember(deps.gymId, fields.mobile, fields.fullName));
       let memberId: string;
       if (imported === null) {
         memberId = await store.createMember({

@@ -21,3 +21,4 @@ export * from './repositories/staff.repository';
 export * from './repositories/member-privacy.repository';
 export * from './repositories/member-import.repository';
 export * from './repositories/verification.repository';
+export * from './repositories/otp.repository';

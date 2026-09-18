@@ -25,6 +25,7 @@ export default async function QrExistingPage({ params }: { params: Promise<{ loc
         noticeVersion={privacy.privacyNoticeVersion}
         termsHref={legalHref(ctx.locale, 'terms')}
         privacyHref={legalHref(ctx.locale, 'privacy')}
+        otpRequired={ctx.data.settings.features.otpRequired}
       />
     </QrPage>
   );

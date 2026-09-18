@@ -33,6 +33,13 @@ function existingMemberStore(tx: TransactionClient): ExistingMemberStore {
       return rows[0] ?? null;
     },
 
+    async findImportedMemberById(gymId: string, mobile: E164Mobile, memberId: string) {
+      return tx.member.findFirst({
+        where: { id: memberId, gymId, mobile, source: 'IMPORT', deletedAt: null },
+        select: { id: true },
+      });
+    },
+
     async findPendingRequest(gymId: string, mobile: E164Mobile, fullName: string) {
       const rows = await tx.$queryRaw<Array<{ referenceCode: string }>>`
         SELECT v."referenceCode" FROM "VerificationRequest" v

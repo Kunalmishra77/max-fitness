@@ -47,6 +47,8 @@ export interface DetailsStepProps {
   readonly termsHref: string;
   readonly privacyHref: string;
   readonly onRegistered: (state: RegisteredState) => void;
+  /** Set on `/qr/new`, so reports can tell the reception QR from the website. */
+  readonly source?: 'QR_NEW';
 }
 
 const FIELD_ORDER: readonly Field[] = ['fullName', 'mobile', 'email', 'dob', 'gender', 'selfie', 'terms'];
@@ -70,7 +72,15 @@ const SERVER_FIELDS: Record<string, Field> = {
 const loadSchema = () => import('@mfp/shared/schemas/registration');
 const pad = (n: string) => n.padStart(2, '0');
 
-export function DetailsStep({ today, minAge, noticeVersion, termsHref, privacyHref, onRegistered }: DetailsStepProps) {
+export function DetailsStep({
+  today,
+  minAge,
+  noticeVersion,
+  termsHref,
+  privacyHref,
+  onRegistered,
+  source,
+}: DetailsStepProps) {
   const t = useTranslations('signup');
   const locale = useLocale();
   const id = useId();
@@ -162,6 +172,7 @@ export function DetailsStep({ today, minAge, noticeVersion, termsHref, privacyHr
     form.append('consents', JSON.stringify({ terms, privacy: terms, whatsappUpdates: whatsapp, faceAttendance: minor ? false : face }));
     form.append('noticeVersion', noticeVersion);
     form.append('selfie', selfie.blob, 'selfie.jpg');
+    if (source !== undefined) form.append('source', source);
 
     let response: Response;
     try {

@@ -41,6 +41,14 @@ export default defineConfig({
       },
       {
         test: {
+          name: 'infra',
+          root: './infra',
+          environment: 'node',
+          include: ['scripts/**/*.test.ts'],
+        },
+      },
+      {
+        test: {
           name: 'db',
           root: './packages/db',
           environment: 'node',

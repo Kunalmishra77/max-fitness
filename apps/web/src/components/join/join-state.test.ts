@@ -57,6 +57,13 @@ describe('join state', () => {
     expect(readJoinState()).toEqual({});
   });
 
+  it('remembers that the sign-up started at the reception QR', () => {
+    updateJoinState({ fromQr: true });
+    expect(readJoinState()).toMatchObject({ fromQr: true });
+    window.sessionStorage.setItem(JOIN_STORAGE_KEY, JSON.stringify({ fromQr: 'yes' }));
+    expect(readJoinState()).toEqual({});
+  });
+
   it('removes a field when updated to undefined, and clears everything at the end', () => {
     updateJoinState({ planId: 'plan_1', startDate: '2026-09-11' });
     updateJoinState({ startDate: undefined });

@@ -50,7 +50,7 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         // Root-level TS config files belong to no package tsconfig.
-        projectService: { allowDefaultProject: ['vitest.config.ts'] },
+        projectService: { allowDefaultProject: ['vitest.config.ts', 'infra/scripts/*.ts'] },
         tsconfigRootDir: import.meta.dirname,
       },
       globals: { ...globals.node },
@@ -165,6 +165,7 @@ export default tseslint.config(
       'packages/config/scripts/**/*.ts',
       'apps/worker/**/*.ts',
       'apps/web/scripts/**/*.mjs',
+      'infra/scripts/**/*.ts',
     ],
     rules: { 'no-console': 'off' },
   },

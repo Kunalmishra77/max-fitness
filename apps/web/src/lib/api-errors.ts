@@ -18,6 +18,8 @@ const STATUS: Partial<Record<DomainErrorCode, number>> = {
   TOKEN_INVALID: 401,
   TOKEN_EXPIRED: 401,
   TOKEN_WRONG_PURPOSE: 401,
+  OTP_REQUIRED: 401,
+  OTP_RATE_LIMITED: 429,
   FORBIDDEN: 403,
   MEMBER_BLOCKED: 403,
   NOT_FOUND: 404,
@@ -44,6 +46,11 @@ const MESSAGES: Partial<Record<DomainErrorCode, string>> = {
   UNDER_MINIMUM_AGE: 'Below the minimum age to join',
   INVALID_PAYMENT_SIGNATURE: 'The payment could not be verified',
   CONFLICT: 'This has already been completed',
+  OTP_INVALID: 'That code is not right',
+  OTP_EXPIRED: 'That code has expired',
+  OTP_LOCKED: 'Too many wrong codes',
+  OTP_RATE_LIMITED: 'Too many codes for this number',
+  OTP_REQUIRED: 'Confirm the mobile number first',
 };
 
 export function errorResponse(error: unknown, requestId: string, scope: string): NextResponse {

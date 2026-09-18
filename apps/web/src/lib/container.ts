@@ -13,6 +13,8 @@ import type { MessageLogWriter, PaymentProvider, StorageDriver, WhatsAppProvider
 import { createStorageDriver } from '@mfp/integrations/storage';
 import { SimulatedPaymentProvider, RazorpayPaymentProvider } from '@mfp/integrations/payments';
 import { SimulatorWhatsAppProvider, MetaCloudWhatsAppProvider } from '@mfp/integrations/whatsapp';
+import { SimulatedOtpSender, WhatsAppOtpSender } from '@mfp/integrations/otp';
+import type { OtpSender } from '@mfp/core';
 
 /**
  * Dependency wiring for the web app.
@@ -29,6 +31,8 @@ export interface Container {
   readonly prisma: PrismaClient;
   readonly messageLog: MessageLogWriter;
   readonly whatsapp: WhatsAppProvider;
+  /** DEMO_MODE shows the code on screen instead of sending it (ADR-060). */
+  readonly otpSender: OtpSender;
   readonly payments: PaymentProvider;
   /** The same object as `payments` in DEMO_MODE, for the pay dialog; otherwise `null`. */
   readonly simulator: SimulatedPaymentProvider | null;
@@ -100,12 +104,15 @@ function build(): Container {
         })
       : realWhatsApp;
 
+  const otpSender: OtpSender = env.DEMO_MODE ? new SimulatedOtpSender() : new WhatsAppOtpSender(whatsapp);
+
   return {
     env,
     clock,
     prisma,
     messageLog,
     whatsapp,
+    otpSender,
     payments,
     simulator,
     storage,

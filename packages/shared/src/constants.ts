@@ -63,6 +63,7 @@ export const WHATSAPP_TEMPLATES = {
   renewalDueToday: 'mf_renewal_due_today',
   membershipExpired: 'mf_membership_expired',
   paymentReceipt: 'mf_payment_receipt',
+  loginCode: 'mf_login_code',
 } as const;
 export type WhatsAppTemplateName = (typeof WHATSAPP_TEMPLATES)[keyof typeof WHATSAPP_TEMPLATES];
 
@@ -143,7 +144,7 @@ export const LANGUAGES = ['hi', 'en'] as const;
 export type Language = (typeof LANGUAGES)[number];
 
 /** Purposes a signed link may carry. Tokens are bound to one (security-plan.md §3.1). */
-export const TOKEN_PURPOSES = ['renew', 'receipt', 'unsub', 'restart', 'registration'] as const;
+export const TOKEN_PURPOSES = ['renew', 'receipt', 'unsub', 'restart', 'registration', 'otp'] as const;
 export type TokenPurpose = (typeof TOKEN_PURPOSES)[number];
 
 /** Receipt number format: `MF/2026-27/000123` (BR-11.2). */

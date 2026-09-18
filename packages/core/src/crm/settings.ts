@@ -118,6 +118,8 @@ const MANAGED_FIELDS = {
   // which keeps the POST rule in step with them (ADR-015).
   reminders: ['automaticPaused'],
   attendance: ['kioskVoice'],
+  // The mobile check by one-time code on the reception QR (ADR-060).
+  features: ['otpRequired'],
   defaultLanguage: null,
 } as const;
 
@@ -140,6 +142,7 @@ export interface SettingsPatch {
   /** Stop or restart every automatic message. */
   readonly reminders?: { readonly automaticPaused?: boolean };
   readonly attendance?: { readonly kioskVoice?: boolean };
+  readonly features?: { readonly otpRequired?: boolean };
   /** The language new members and the kiosk start in. */
   readonly defaultLanguage?: 'hi' | 'en';
 }
@@ -184,6 +187,7 @@ export async function updateGymSettings(
       hours: patch.hours ?? current.hours,
       reminders: { ...current.reminders, ...patch.reminders },
       attendance: { ...current.attendance, ...patch.attendance },
+      features: { ...current.features, ...patch.features },
       defaultLanguage: patch.defaultLanguage ?? current.defaultLanguage,
     });
     if (!merged.success) {

@@ -66,8 +66,8 @@ export async function POST(request: NextRequest) {
       tokenSecret: env.LINK_TOKEN_SECRET,
       gymId: gym.id,
       minAge: gym.settings.privacy.minAge,
-      channel: 'web_signup',
-      source: 'WEBSITE',
+      channel: parsed.source === 'QR_NEW' ? 'qr' : 'web_signup',
+      source: parsed.source,
       ipHash: hashIp(ip, env.LINK_TOKEN_SECRET),
       userAgent: request.headers.get('user-agent')?.slice(0, MAX_USER_AGENT) ?? null,
     });

@@ -36,6 +36,23 @@ Blockers / questions for client:
 - Same as Phase 3: payment-failure wording, prices, minimum age, admission fee, PIN confirmation, photos, policy answers, grievance officer.
 - Demo staff logins are the seeded ones (owner 9000000001 / 2468, reception 9000000002 / 1357). Real PINs must be set before anyone uses this outside a demo.
 
+### 2026-09-18 (later) — Phase 5 (third slice) — OTP on the QR, /qr/new, printable poster
+Done:
+- **Client answers recorded (ADR-059):** photo consent confirmed; prices, age and policies stay at demo values (no price list published online); Razorpay/WhatsApp decided after the demo; the stray Vercel project "web" deleted.
+- **Core (test-first, mutation-checked):** `sendOtp` / `verifyOtp` / `checkOtpToken` (keyed hash, 10-minute code, 5 guesses, 3 sends per 15 minutes, 15-minute token bound to number and purpose); `qrCandidateView`; `submitExistingMember` honours a register entry claimed on a proven number; `features.otpRequired` is an owner setting.
+- **Database:** `PrismaOtpStore` (conditional consume) and `PrismaQrLookup`; integration test proves one token for two simultaneous right codes, the send limit and the family lookup on Supabase (23/23 in the CRM suite).
+- **Integrations:** `SimulatedOtpSender` (DEMO_MODE: nothing sent or stored) and `WhatsAppOtpSender` (T8 `mf_login_code`); the OTP sender is now a core port.
+- **Web:** `POST /api/v1/otp/send` (returns `demoCode` only in DEMO_MODE), `/otp/verify`, `/qr/lookup`; the QR wizard confirms the number and offers "Is this you?" when OTP is on; `/qr/new` with source QR_NEW and pay at reception first; CRM setting "QR पर मोबाइल जाँच".
+- **Poster:** `pnpm qr:poster` → A4/A5 SVG in `assets/reception-qr/`; demo pair generated for the live site.
+- **Verified:** typecheck 8/8, eslint clean, unit tests **1141 + 6 infra passed**.
+
+Decisions (decision-log):
+- ADR-059, ADR-060. New dev dependency `qrcode` 1.5.4 approved by the client.
+
+Pending / next:
+- Premium redesign of the website and CRM look (client request, 2026-09-18), and a moving hero from the gym's photos until the owner's video arrives.
+- Phase 6 WhatsApp engine (including the QR worker jobs), Phase 7 kiosk, Phase 8 hardening.
+
 ### 2026-09-18 — Phase 5 (second slice) — Existing members by QR, and the verify queue
 Done:
 - **Core (test-first):** `submitExistingMember` (date range, repeat sends reuse the pending request, register match on the server) and `approveVerification` / `rejectVerification` (membership update or declared membership, activation, member code, call closing, outbox, audit).

@@ -58,6 +58,13 @@ export const DOMAIN_ERROR_CODES = [
   'ACCOUNT_LOCKED',
   'SESSION_EXPIRED',
 
+  // One-time codes
+  'OTP_INVALID',
+  'OTP_EXPIRED',
+  'OTP_LOCKED',
+  'OTP_RATE_LIMITED',
+  'OTP_REQUIRED',
+
   // Generic
   'VALIDATION_FAILED',
   'NOT_FOUND',

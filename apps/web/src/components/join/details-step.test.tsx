@@ -36,11 +36,19 @@ beforeAll(() => {
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
-function renderStep() {
+function renderStep(extra: { source?: 'QR_NEW' } = {}) {
   const onRegistered = vi.fn();
   render(
     <WithIntl>
-      <DetailsStep today={istDate('2026-09-11')} minAge={16} noticeVersion="1.0" termsHref="/legal/terms" privacyHref="/legal/privacy" onRegistered={onRegistered} />
+      <DetailsStep
+        today={istDate('2026-09-11')}
+        minAge={16}
+        noticeVersion="1.0"
+        termsHref="/legal/terms"
+        privacyHref="/legal/privacy"
+        onRegistered={onRegistered}
+        {...extra}
+      />
     </WithIntl>,
   );
   return { onRegistered, user: userEvent.setup() };
@@ -145,6 +153,28 @@ describe('DetailsStep', () => {
       isMinor: false,
       whatsappUpdates: true,
     });
+  });
+
+  it('says the sign-up came from the reception QR when it did', async () => {
+    let received: FormData | null = null;
+    server.use(
+      http.post(REGISTRATIONS, async ({ request }) => {
+        received = await request.formData();
+        return HttpResponse.json(
+          {
+            data: { memberId: 'mem_1', registrationToken: 'tok_1', isMinor: false, possibleDuplicate: false },
+          },
+          { status: 201 },
+        );
+      }),
+    );
+    const { user, onRegistered } = renderStep({ source: 'QR_NEW' });
+
+    await fillValid(user);
+    await user.click(submit());
+
+    await vi.waitFor(() => expect(onRegistered).toHaveBeenCalled());
+    expect((received as unknown as FormData).get('source')).toBe('QR_NEW');
   });
 
   it('shows field errors and a refused photo from the server', async () => {

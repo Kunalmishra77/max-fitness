@@ -35,3 +35,4 @@ export * from './storage';
 export * from './outbox';
 export * from './message-log';
 export * from './auth';
+export * from './otp';

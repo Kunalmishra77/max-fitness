@@ -57,6 +57,7 @@ export interface SettingsPatchInput {
   readonly hours?: readonly HoursInput[];
   readonly reminders?: { readonly automaticPaused?: boolean };
   readonly attendance?: { readonly kioskVoice?: boolean };
+  readonly features?: { readonly otpRequired?: boolean };
   readonly defaultLanguage?: 'hi' | 'en';
 }
 

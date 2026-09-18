@@ -76,6 +76,8 @@ export interface PayStepProps {
   readonly phoneDisplay: string;
   readonly onPaid: (result: PaidResult) => void;
   readonly onReserved: (result: ReservedResult) => void;
+  /** Someone standing at the desk: paying there is as good a choice as paying online. */
+  readonly receptionFirst?: boolean;
   /** Injected in tests. */
   readonly loadRazorpay?: () => Promise<RazorpayConstructor>;
   readonly pollIntervalMs?: number;
@@ -126,6 +128,7 @@ export function PayStep({
   phoneDisplay,
   onPaid,
   onReserved,
+  receptionFirst = false,
   loadRazorpay = loadRazorpayScript,
   pollIntervalMs = 2_000,
 }: PayStepProps) {
@@ -294,18 +297,49 @@ export function PayStep({
 
   const busy = phase === 'creating' || phase === 'verifying' || phase === 'pending' || phase === 'demo';
 
-  const actions = (primaryLabel: string) => (
-    <div className="grid gap-3">
-      <button type="button" disabled={busy} onClick={() => void payOnline()} className={buttonVariants({ variant: 'primary', size: 'hero', full: true })}>
-        {primaryLabel}
-      </button>
-      <p className="text-center text-body text-brand-rubber-grey">{t('orReception')}</p>
-      <button type="button" disabled={busy} onClick={() => void payAtReception()} className={buttonVariants({ variant: 'outlineDark', full: true })}>
-        {t('payAtReception')}
-      </button>
-      <p className="text-center text-small text-brand-ink/80">{t('receptionHelper')}</p>
-    </div>
-  );
+  const actions = (primaryLabel: string) =>
+    receptionFirst ? (
+      <div className="grid gap-3">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void payAtReception()}
+          className={buttonVariants({ variant: 'primary', size: 'hero', full: true })}
+        >
+          {t('payAtReception')}
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void payOnline()}
+          className={buttonVariants({ variant: 'primary', size: 'hero', full: true })}
+        >
+          {primaryLabel}
+        </button>
+        <p className="text-small text-brand-ink/80 text-center">{t('receptionHelper')}</p>
+      </div>
+    ) : (
+      <div className="grid gap-3">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void payOnline()}
+          className={buttonVariants({ variant: 'primary', size: 'hero', full: true })}
+        >
+          {primaryLabel}
+        </button>
+        <p className="text-body text-brand-rubber-grey text-center">{t('orReception')}</p>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void payAtReception()}
+          className={buttonVariants({ variant: 'outlineDark', full: true })}
+        >
+          {t('payAtReception')}
+        </button>
+        <p className="text-small text-brand-ink/80 text-center">{t('receptionHelper')}</p>
+      </div>
+    );
 
   return (
     <div className="grid gap-6">

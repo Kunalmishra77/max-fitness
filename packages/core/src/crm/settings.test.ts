@@ -181,6 +181,15 @@ describe('updateGymSettings', () => {
     expect(store.saved[1]).toMatchObject({ defaultLanguage: 'en', attendance: { kioskVoice: false, checkInCooldownMinutes: 180 } });
   });
 
+  it('switches the mobile check by one-time code for the reception QR, and nothing else under features', async () => {
+    await expect(save({ features: { otpRequired: true } })).resolves.toEqual({ changedGroups: ['features'] });
+    expect(store.saved[0]?.features).toMatchObject({ otpRequired: true });
+    await expect(save({ features: { kioskShadowMode: false } } as never)).rejects.toMatchObject({
+      code: 'VALIDATION_FAILED',
+      meta: { field: 'features.kioskShadowMode' },
+    });
+  });
+
   it('refuses the days after expiry here, because they must change together with the POST rule', async () => {
     await expect(save({ reminders: { postExpiryMaxDays: 10 } } as never)).rejects.toMatchObject({
       code: 'VALIDATION_FAILED',

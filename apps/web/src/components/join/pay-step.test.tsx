@@ -110,6 +110,14 @@ describe('PayStep', () => {
     expect(screen.getByRole('button', { name: 'Pay at reception' })).toBeTruthy();
   });
 
+  it('offers paying at reception as an equal choice to someone at the desk', () => {
+    renderStep({ receptionFirst: true });
+    const online = screen.getByRole('button', { name: 'Pay ₹4,000' });
+    const reception = screen.getByRole('button', { name: 'Pay at reception' });
+    expect(reception.className).toBe(online.className);
+    expect(screen.queryByText('or')).toBeNull();
+  });
+
   it('reserves the plan when paying at reception', async () => {
     let body: unknown;
     server.use(

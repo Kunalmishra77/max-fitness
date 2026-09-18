@@ -78,15 +78,30 @@ export function JoinFrame({ step, children }: { step: 1 | 2 | 3 | null; children
   );
 }
 
-export function JoinDetails(props: { today: ISTDate; minAge: number; noticeVersion: string; termsHref: string; privacyHref: string; planCode: string | null }) {
+export function JoinDetails(props: {
+  today: ISTDate;
+  minAge: number;
+  noticeVersion: string;
+  termsHref: string;
+  privacyHref: string;
+  planCode: string | null;
+  fromQr?: boolean;
+}) {
   const router = useRouter();
-  const { planCode, ...stepProps } = props;
+  const { planCode, fromQr = false, ...stepProps } = props;
   return (
     <DetailsStep
       {...stepProps}
+      {...(fromQr ? { source: 'QR_NEW' as const } : {})}
       onRegistered={(registered) => {
         // A new registration starts a new purchase: forget any earlier order or reservation.
-        updateJoinState({ ...registered, paymentId: undefined, reservedUntil: undefined, reservedAmountPaise: undefined });
+        updateJoinState({
+          ...registered,
+          paymentId: undefined,
+          reservedUntil: undefined,
+          reservedAmountPaise: undefined,
+          fromQr: fromQr ? true : undefined,
+        });
         router.push(planCode === null ? '/join/plan' : { pathname: '/join/plan', query: { plan: planCode } });
       }}
     />
@@ -151,6 +166,7 @@ export function JoinPay(props: { prices: PriceLists; admissionPaise: number; pho
         admissionPaise: props.admissionPaise,
       }}
       phoneDisplay={props.phoneDisplay}
+      receptionFirst={state.fromQr === true}
       onPaid={(result) => {
         updateJoinState({ paymentId: result.paymentId, reservedUntil: undefined, reservedAmountPaise: undefined });
         router.push('/join/done');

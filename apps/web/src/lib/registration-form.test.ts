@@ -40,6 +40,7 @@ describe('parseRegistrationForm', () => {
         noticeVersion: '1.0',
       },
       selfie: jpegBytes,
+      source: 'WEBSITE',
     });
   });
 
@@ -48,6 +49,19 @@ describe('parseRegistrationForm', () => {
       form({ mobile: '12345', dob: '2026-02-30', consents: JSON.stringify({ terms: false, privacy: true }) }),
     );
     expect(result).toEqual({ ok: false, fields: { mobile: 'mobile', dob: 'dob', terms: 'terms' } });
+  });
+
+  it('tells a sign-up from the reception QR apart, and treats anything else as the website', async () => {
+    expect(await parseRegistrationForm(form({ source: 'QR_NEW' }))).toMatchObject({
+      ok: true,
+      source: 'QR_NEW',
+    });
+    expect(await parseRegistrationForm(form())).toMatchObject({ ok: true, source: 'WEBSITE' });
+    // A made-up source, or one only staff may use, is not believed.
+    expect(await parseRegistrationForm(form({ source: 'WALK_IN' }))).toMatchObject({
+      ok: true,
+      source: 'WEBSITE',
+    });
   });
 
   it('requires a selfie file part', async () => {
