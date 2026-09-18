@@ -33,12 +33,22 @@ type Reject = (id: string, reason: string) => Promise<VerifyResult>;
 
 export function VerifyQueue({ items, approve, reject }: { items: readonly VerifyItem[]; approve: Approve; reject: Reject }) {
   const t = useTranslations('crm.verify');
-  if (items.length === 0) {
+  // A decided request drops out of the server's list on the refresh that follows, but
+  // its card stays until the page is left, so staff see what they just did.
+  const [shown, setShown] = useState(items);
+  const [lastItems, setLastItems] = useState(items);
+  if (items !== lastItems) {
+    setLastItems(items);
+    const known = new Set(shown.map((item) => item.id));
+    setShown([...shown, ...items.filter((item) => !known.has(item.id))]);
+  }
+
+  if (shown.length === 0) {
     return <p className="m-4 rounded-panel bg-white p-6 text-center text-crm-body text-brand-rubber-grey">{t('empty')}</p>;
   }
   return (
     <ul className="grid gap-3 p-4 pb-24">
-      {items.map((item) => (
+      {shown.map((item) => (
         <li key={item.id}>
           <VerifyCard item={item} approve={approve} reject={reject} />
         </li>

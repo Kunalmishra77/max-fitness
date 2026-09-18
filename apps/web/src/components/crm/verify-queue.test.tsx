@@ -56,6 +56,26 @@ describe('VerifyQueue', () => {
     expect(await screen.findByText('Approved — the membership is on.')).toBeTruthy();
   });
 
+  it('keeps a decided card with its outcome when the refreshed list no longer has it', async () => {
+    const approve = vi.fn<(id: string, change: { approvedEndDate?: string }) => Promise<VerifyResult>>().mockResolvedValue({ ok: true });
+    const reject = vi.fn<(id: string, reason: string) => Promise<VerifyResult>>().mockResolvedValue({ ok: true });
+    const view = (items: VerifyItem[]) => (
+      <WithIntl>
+        <VerifyQueue items={items} approve={approve} reject={reject} />
+      </WithIntl>
+    );
+    const { rerender } = render(view([fresh, matched]));
+    const user = userEvent.setup();
+
+    await user.click(within(screen.getByRole('article', { name: 'Suresh Yadav' })).getByRole('button', { name: 'Correct' }));
+    await screen.findByText('Approved — the membership is on.');
+    // The server list after the refresh: the approved request is gone from it.
+    rerender(view([matched]));
+
+    expect(within(screen.getByRole('article', { name: 'Suresh Yadav' })).getByRole('status').textContent).toBe('Approved — the membership is on.');
+    expect(screen.getByRole('article', { name: 'Rekha Tomar' })).toBeTruthy();
+  });
+
   it('puts the register date beside the member’s, and chooses the register’s', async () => {
     const { approve, user } = renderQueue([matched]);
     const card = screen.getByRole('article', { name: 'Rekha Tomar' });
