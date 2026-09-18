@@ -36,7 +36,7 @@ test('an existing member sends their details by QR and reception approves them',
   await next();
   await page.getByLabel('Full name').fill(name);
   await next();
-  await page.getByRole('button', { name: 'Man' }).click();
+  await page.getByRole('button', { name: 'Man', exact: true }).click();
   await next();
   await page.getByLabel('Day').fill('14');
   await page.getByLabel('Month').fill('02');
