@@ -89,8 +89,8 @@ export function PlanStep({
         'rounded-panel flex cursor-pointer items-center gap-3 border-2 p-4',
         'has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2',
         planId === card.planId
-          ? 'border-brand-plate-navy bg-brand-plate-navy/[0.04]'
-          : 'border-brand-rubber-grey/30 bg-brand-white',
+          ? 'border-brand-obsidian bg-brand-obsidian/[0.04]'
+          : 'border-brand-stone/30 bg-brand-white',
       )}
     >
       <input
@@ -99,13 +99,13 @@ export function PlanStep({
         value={card.planId}
         checked={planId === card.planId}
         onChange={() => choose(card)}
-        className="accent-brand-plate-navy size-5 shrink-0"
+        className="accent-brand-obsidian size-5 shrink-0"
       />
       <span className="flex min-w-0 flex-1 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <span className="text-brand-ink font-semibold">{label(card)}</span>
         <span
           className={cn(
-            'font-display text-brand-signboard-red-text font-bold',
+            'font-display text-brand-accent-deep font-bold',
             large ? 'text-title' : 'text-body-l',
           )}
         >
@@ -115,7 +115,7 @@ export function PlanStep({
           <span className="text-small text-brand-ink/80 flex w-full items-center gap-2">
             {t('save', { amount: price(card.savingsPaise) })}
             {card.isBestValue ? (
-              <span className="rounded-button bg-brand-medal-gold text-small text-brand-plate-navy px-2 py-0.5 font-semibold">
+              <span className="rounded-button bg-brand-accent px-2 py-0.5 text-small font-semibold text-brand-white">
                 {t('bestValue')}
               </span>
             ) : null}
@@ -140,7 +140,7 @@ export function PlanStep({
     >
       {monthly === undefined ? null : (
         <fieldset className="grid gap-2">
-          <legend className="font-display text-title text-brand-plate-navy mb-2 font-bold">
+          <legend className="font-display text-title text-brand-obsidian mb-2 font-bold">
             {t('monthlyHeading')}
           </legend>
           {option(monthly, true)}
@@ -149,7 +149,7 @@ export function PlanStep({
 
       {packages.length === 0 ? null : (
         <fieldset className="grid gap-2">
-          <legend className="font-display text-title text-brand-plate-navy mb-2 font-bold">
+          <legend className="font-display text-title text-brand-obsidian mb-2 font-bold">
             {t('packagesHeading')}
           </legend>
           {packages.map((card) => option(card, false))}
@@ -174,7 +174,7 @@ export function PlanStep({
                 id={`${id}-start`}
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value as ISTDate)}
-                className="rounded-input border-brand-rubber-grey/40 bg-brand-white text-body text-brand-ink min-h-12 w-full appearance-none border px-3 pr-10"
+                className="rounded-input border-brand-stone/40 bg-brand-white text-body text-brand-ink min-h-12 w-full appearance-none border px-3 pr-10"
               >
                 {startOptions.map((date, index) => (
                   <option key={date} value={date}>
@@ -186,12 +186,12 @@ export function PlanStep({
               </select>
               <ChevronDownIcon
                 aria-hidden
-                className="text-brand-rubber-grey pointer-events-none absolute top-1/2 right-3 -translate-y-1/2"
+                className="text-brand-stone pointer-events-none absolute top-1/2 right-3 -translate-y-1/2"
               />
             </div>
           </>
         ) : null}
-        <p aria-live="polite" className="text-body text-brand-plate-navy mt-2 min-h-6 font-semibold">
+        <p aria-live="polite" className="text-body text-brand-obsidian mt-2 min-h-6 font-semibold">
           {chosen === undefined
             ? null
             : t('endsOn', {

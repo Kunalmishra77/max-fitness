@@ -14,10 +14,11 @@ export const POSTER_SIZES = {
 export type PosterSize = keyof typeof POSTER_SIZES;
 
 const QUIET_MODULES = 4;
-const NAVY = '#14213D';
-const RED = '#D62828';
-const CHALK = '#F2F3EF';
-const GREY = '#5C6272';
+// The logo's colours (ADR-061): black, logo red, a light paper ground and a neutral grey.
+const NAVY = '#0A0A0B';
+const RED = '#ED1021';
+const CHALK = '#F4F4F5';
+const GREY = '#66676B';
 
 export interface QrMatrix {
   readonly size: number;
@@ -47,7 +48,13 @@ function qrPath(qr: QrMatrix): string {
   return parts.join('');
 }
 
-export function buildPosterSvg(input: { qr: QrMatrix; size: PosterSize; demo: boolean; url: string }): string {
+export interface PosterLogo {
+  readonly dataUri: string;
+  /** Width divided by height. */
+  readonly aspect: number;
+}
+
+export function buildPosterSvg(input: { qr: QrMatrix; size: PosterSize; demo: boolean; url: string; logo?: PosterLogo }): string {
   const { width, height, qrMm } = POSTER_SIZES[input.size];
   // Everything is laid out on A4 and scaled, so the A5 card is the same poster, smaller.
   const k = width / 210;
@@ -55,7 +62,9 @@ export function buildPosterSvg(input: { qr: QrMatrix; size: PosterSize; demo: bo
   const modulesAcross = input.qr.size + 2 * QUIET_MODULES;
   const scale = Number((qrMm / modulesAcross).toFixed(4));
   const qrX = Number(((width - qrMm) / 2).toFixed(2));
-  const qrY = mm(92);
+  // With the logo on top, everything below it moves down to make room.
+  const drop = input.logo === undefined ? 0 : 18;
+  const qrY = mm(92 + drop);
   const below = qrY + qrMm;
   const text = (y: number, size: number, weight: number, fill: string, content: string, family = 'Khand, Arial, sans-serif') =>
     `<text x="${width / 2}" y="${y}" text-anchor="middle" font-family="${family}" font-size="${size}" font-weight="${weight}" fill="${fill}">${escape(content)}</text>`;
@@ -65,11 +74,15 @@ export function buildPosterSvg(input: { qr: QrMatrix; size: PosterSize; demo: bo
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}mm" height="${height}mm" viewBox="0 0 ${width} ${height}">`,
     `<rect width="${width}" height="${height}" fill="${CHALK}"/>`,
     `<rect width="${width}" height="${mm(8)}" fill="${RED}"/>`,
-    // The wordmark, until the owner's logo file arrives (assets/brand).
-    text(mm(34), mm(20), 700, NAVY, 'MAX FITNESS'),
-    text(mm(43), mm(6), 600, GREY, 'Indirapuram · Since 2000'),
-    text(mm(62), mm(11), 700, NAVY, 'Scan once. Train stress-free.'),
-    text(mm(77), mm(9), 700, NAVY, 'एक बार स्कैन करें।', hindi),
+    ...(input.logo === undefined
+      ? [text(mm(34), mm(20), 700, NAVY, 'MAX FITNESS'), text(mm(43), mm(6), 600, GREY, 'Indirapuram · Since 2000')]
+      : [
+          `<image href="${input.logo.dataUri}" x="${Number((width / 2 - (mm(38) * input.logo.aspect) / 2).toFixed(2))}" y="${mm(13)}" width="${Number((mm(38) * input.logo.aspect).toFixed(2))}" height="${mm(38)}"/>`,
+          text(mm(60), mm(9), 700, NAVY, 'MAX FITNESS GYM'),
+          text(mm(67), mm(4.6), 600, GREY, 'Indirapuram · Since 2000'),
+        ]),
+    text(mm(62 + drop), mm(11), 700, NAVY, 'Scan once. Train stress-free.'),
+    text(mm(77 + drop), mm(9), 700, NAVY, 'एक बार स्कैन करें।', hindi),
     // Under the code, never over it: a tint across the modules can stop a scan.
     input.demo
       ? `<text x="${width / 2}" y="${height / 2}" text-anchor="middle" font-family="Khand, Arial, sans-serif" font-size="${mm(60)}" font-weight="700" fill="${RED}" fill-opacity="0.18" transform="rotate(-35 ${width / 2} ${height / 2})">DEMO</text>`

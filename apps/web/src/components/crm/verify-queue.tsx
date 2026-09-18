@@ -44,7 +44,7 @@ export function VerifyQueue({ items, approve, reject }: { items: readonly Verify
   }
 
   if (shown.length === 0) {
-    return <p className="m-4 rounded-panel bg-white p-6 text-center text-crm-body text-brand-rubber-grey">{t('empty')}</p>;
+    return <p className="m-4 rounded-panel bg-white p-6 text-center text-crm-body text-brand-stone">{t('empty')}</p>;
   }
   return (
     <ul className="grid gap-3 p-4 pb-24">
@@ -98,18 +98,18 @@ function VerifyCard({ item, approve, reject }: { item: VerifyItem; approve: Appr
     <article aria-labelledby={`${id}-name`} className="rounded-panel bg-white p-4 shadow-sm">
       <div className="flex gap-4">
         {item.photoUrl === null ? (
-          <span className="flex size-24 shrink-0 items-center justify-center rounded-panel bg-tint-fee-none-bg text-small text-brand-rubber-grey">{t('noPhoto')}</span>
+          <span className="flex size-24 shrink-0 items-center justify-center rounded-panel bg-tint-fee-none-bg text-small text-brand-stone">{t('noPhoto')}</span>
         ) : (
           // A signed, short-lived URL to a private file: next/image would cache it.
           <img src={item.photoUrl} alt={item.fullName} width={96} height={96} className="size-24 shrink-0 rounded-panel object-cover" />
         )}
         <div className="min-w-0">
-          <h2 id={`${id}-name`} className="text-crm-body font-bold text-brand-plate-navy">
+          <h2 id={`${id}-name`} className="text-crm-body font-bold text-brand-obsidian">
             {item.fullName}
           </h2>
-          <p className="text-small text-brand-rubber-grey">{item.mobileMasked}</p>
+          <p className="text-small text-brand-stone">{item.mobileMasked}</p>
           <p className="mt-1 text-small">{item.planMonths === null ? t('planUnknown') : t('plan', { count: item.planMonths })}</p>
-          <p className="mt-2 inline-flex items-baseline gap-2 rounded-input bg-brand-plate-navy px-3 py-1 text-white">
+          <p className="mt-2 inline-flex items-baseline gap-2 rounded-input bg-brand-obsidian px-3 py-1 text-white">
             <span className="text-small">{t('reference')}</span>
             <span className="font-display text-title font-bold tracking-wider">{item.referenceCode}</span>
           </p>
@@ -124,8 +124,8 @@ function VerifyCard({ item, approve, reject }: { item: VerifyItem; approve: Appr
         <>
           {item.register === null ? (
             <div className="mt-4">
-              <p className="text-small font-semibold text-brand-rubber-grey">{t('declared')}</p>
-              <p className="mt-1 rounded-input border-2 border-brand-plate-navy px-4 py-3 text-center font-display text-display-m font-bold text-brand-plate-navy">
+              <p className="text-small font-semibold text-brand-stone">{t('declared')}</p>
+              <p className="mt-1 rounded-input border-2 border-brand-obsidian px-4 py-3 text-center font-display text-display-m font-bold text-brand-obsidian">
                 {show(item.declaredEndDate)}
               </p>
             </div>
@@ -140,9 +140,9 @@ function VerifyCard({ item, approve, reject }: { item: VerifyItem; approve: Appr
               ).map(([date, label]) => (
                 <label
                   key={label}
-                  className={`flex min-h-14 items-center gap-3 rounded-input border-2 px-4 text-crm-body ${chosen === date ? 'border-brand-plate-navy bg-tint-fee-none-bg font-bold' : 'border-brand-rubber-grey/30'}`}
+                  className={`flex min-h-14 items-center gap-3 rounded-input border-2 px-4 text-crm-body ${chosen === date ? 'border-brand-obsidian bg-tint-fee-none-bg font-bold' : 'border-brand-stone/30'}`}
                 >
-                  <input type="radio" name={`${id}-date`} checked={chosen === date} onChange={() => setChosen(date)} className="size-5 accent-brand-plate-navy" />
+                  <input type="radio" name={`${id}-date`} checked={chosen === date} onChange={() => setChosen(date)} className="size-5 accent-brand-obsidian" />
                   {`${label}: ${show(date)}`}
                 </label>
               ))}
@@ -172,7 +172,7 @@ function VerifyCard({ item, approve, reject }: { item: VerifyItem; approve: Appr
                   type="date"
                   value={customDate}
                   onChange={(event) => setCustomDate(event.target.value)}
-                  className="mt-1 min-h-14 w-full rounded-input border-2 border-brand-rubber-grey/40 bg-white px-4 text-crm-body"
+                  className="mt-1 min-h-14 w-full rounded-input border-2 border-brand-stone/40 bg-white px-4 text-crm-body"
                 />
               </div>
               <div className="flex gap-2">
@@ -184,7 +184,7 @@ function VerifyCard({ item, approve, reject }: { item: VerifyItem; approve: Appr
                 >
                   {t('approveWithDate')}
                 </button>
-                <button type="button" onClick={() => setMode('idle')} className={`${button} text-brand-rubber-grey`}>
+                <button type="button" onClick={() => setMode('idle')} className={`${button} text-brand-stone`}>
                   {t('cancel')}
                 </button>
               </div>
@@ -200,7 +200,7 @@ function VerifyCard({ item, approve, reject }: { item: VerifyItem; approve: Appr
                   type="text"
                   value={reason}
                   onChange={(event) => setReason(event.target.value)}
-                  className="mt-1 min-h-14 w-full rounded-input border-2 border-brand-rubber-grey/40 bg-white px-4 text-crm-body"
+                  className="mt-1 min-h-14 w-full rounded-input border-2 border-brand-stone/40 bg-white px-4 text-crm-body"
                 />
               </div>
               <div className="flex gap-2">
@@ -212,7 +212,7 @@ function VerifyCard({ item, approve, reject }: { item: VerifyItem; approve: Appr
                 >
                   {t('reject')}
                 </button>
-                <button type="button" onClick={() => setMode('idle')} className={`${button} text-brand-rubber-grey`}>
+                <button type="button" onClick={() => setMode('idle')} className={`${button} text-brand-stone`}>
                   {t('cancel')}
                 </button>
               </div>
@@ -233,7 +233,7 @@ function VerifyCard({ item, approve, reject }: { item: VerifyItem; approve: Appr
                   setCustomDate(chosen);
                   setMode('date');
                 }}
-                className={`${button} border-2 border-brand-plate-navy text-brand-plate-navy`}
+                className={`${button} border-2 border-brand-obsidian text-brand-obsidian`}
               >
                 {t('changeDate')}
               </button>

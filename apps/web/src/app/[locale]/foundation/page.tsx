@@ -60,16 +60,16 @@ export default async function FoundationCheckPage({ params }: { params: Promise<
   return (
     <main className="mx-auto max-w-[var(--size-content-max)] px-5 py-10 md:px-6 md:py-16">
       <header className="mb-10">
-        <p className="mb-2 text-[length:var(--text-small)] font-medium tracking-wide text-[var(--color-brand-rubber-grey)]">
+        <p className="mb-2 text-[length:var(--text-small)] font-medium tracking-wide text-[var(--color-brand-stone)]">
           {t('notForCustomers')}
         </p>
-        <h1 className="font-[var(--font-display)] text-[length:var(--text-display-l)] text-[var(--color-brand-plate-navy)]">
+        <h1 className="font-[var(--font-display)] text-[length:var(--text-display-l)] text-[var(--color-brand-obsidian)]">
           {tc('gymName')}
         </h1>
-        <p className="mt-1 font-[var(--font-display)] text-[length:var(--text-display-m)] text-[var(--color-brand-signboard-red)]">
+        <p className="mt-1 font-[var(--font-display)] text-[length:var(--text-display-m)] text-[var(--color-brand-accent)]">
           {t('title')}
         </p>
-        <p className="mt-3 max-w-[65ch] text-[length:var(--text-body)] text-[var(--color-brand-rubber-grey)]">
+        <p className="mt-3 max-w-[65ch] text-[length:var(--text-body)] text-[var(--color-brand-stone)]">
           {t('subtitle')}
         </p>
       </header>
@@ -84,7 +84,7 @@ export default async function FoundationCheckPage({ params }: { params: Promise<
             {t(data.error === 'config' ? 'configError' : 'dbError')}
           </p>
           {data.errorDetail !== null ? (
-            <p className="mt-2 font-mono text-[length:var(--text-small)] text-[var(--color-brand-rubber-grey)]">
+            <p className="mt-2 font-mono text-[length:var(--text-small)] text-[var(--color-brand-stone)]">
               {data.errorDetail}
             </p>
           ) : null}
@@ -103,15 +103,15 @@ export default async function FoundationCheckPage({ params }: { params: Promise<
           />
 
           <section className="mt-14">
-            <h2 className="font-[var(--font-display)] text-[length:var(--text-display-m)] text-[var(--color-brand-plate-navy)]">
+            <h2 className="font-[var(--font-display)] text-[length:var(--text-display-m)] text-[var(--color-brand-obsidian)]">
               {t('feeStatesHeading')}
             </h2>
-            <p className="mt-1 text-[length:var(--text-small)] text-[var(--color-brand-rubber-grey)]">
+            <p className="mt-1 text-[length:var(--text-small)] text-[var(--color-brand-stone)]">
               {t('feeStatesNote')} · {today}
             </p>
 
             {data.memberTotal === 0 ? (
-              <p className="mt-5 rounded-[var(--radius-panel)] border border-[var(--color-brand-rubber-grey)]/20 bg-white p-5">
+              <p className="mt-5 rounded-[var(--radius-panel)] border border-[var(--color-brand-stone)]/20 bg-white p-5">
                 {t('noMembers')}
               </p>
             ) : (
@@ -119,7 +119,7 @@ export default async function FoundationCheckPage({ params }: { params: Promise<
                 {data.feeStates.map(({ feeState, count }) => (
                   <li
                     key={feeState}
-                    className="rounded-[var(--radius-crm-tile)] border border-[var(--color-brand-rubber-grey)]/20 p-5"
+                    className="rounded-[var(--radius-crm-tile)] border border-[var(--color-brand-stone)]/20 p-5"
                     style={{ backgroundColor: tintFor(feeState) }}
                   >
                     <p
@@ -139,11 +139,11 @@ export default async function FoundationCheckPage({ params }: { params: Promise<
         </>
       )}
 
-      <section className="mt-14 border-t border-[var(--color-brand-rubber-grey)]/20 pt-6">
-        <h2 className="font-[var(--font-display)] text-[length:var(--text-title)] text-[var(--color-brand-plate-navy)]">
+      <section className="mt-14 border-t border-[var(--color-brand-stone)]/20 pt-6">
+        <h2 className="font-[var(--font-display)] text-[length:var(--text-title)] text-[var(--color-brand-obsidian)]">
           {t('stackHeading')}
         </h2>
-        <dl className="mt-3 grid gap-x-8 gap-y-1 text-[length:var(--text-small)] text-[var(--color-brand-rubber-grey)] md:grid-cols-2">
+        <dl className="mt-3 grid gap-x-8 gap-y-1 text-[length:var(--text-small)] text-[var(--color-brand-stone)] md:grid-cols-2">
           <StackRow label={t('stack.locale')} value={locale} />
           <StackRow label={t('stack.today')} value={today} />
           <StackRow label={t('stack.demoMode')} value={env === null ? '—' : String(env.DEMO_MODE)} />
@@ -158,7 +158,7 @@ export default async function FoundationCheckPage({ params }: { params: Promise<
 
 function StackRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between gap-4 border-b border-[var(--color-brand-rubber-grey)]/10 py-1">
+    <div className="flex justify-between gap-4 border-b border-[var(--color-brand-stone)]/10 py-1">
       <dt>{label}</dt>
       <dd className="min-w-0 text-right font-mono break-all text-[var(--color-brand-ink)]">{value}</dd>
     </div>
@@ -187,10 +187,10 @@ function PlanSection({
   if (plans.length === 0) {
     return (
       <section>
-        <h2 className="font-[var(--font-display)] text-[length:var(--text-display-m)] text-[var(--color-brand-plate-navy)]">
+        <h2 className="font-[var(--font-display)] text-[length:var(--text-display-m)] text-[var(--color-brand-obsidian)]">
           {heading}
         </h2>
-        <p className="mt-5 rounded-[var(--radius-panel)] border border-[var(--color-brand-rubber-grey)]/20 bg-white p-5">
+        <p className="mt-5 rounded-[var(--radius-panel)] border border-[var(--color-brand-stone)]/20 bg-white p-5">
           {emptyLabel}
         </p>
       </section>
@@ -212,10 +212,10 @@ function PlanSection({
 
   return (
     <section>
-      <h2 className="font-[var(--font-display)] text-[length:var(--text-display-m)] text-[var(--color-brand-plate-navy)]">
+      <h2 className="font-[var(--font-display)] text-[length:var(--text-display-m)] text-[var(--color-brand-obsidian)]">
         {heading}
       </h2>
-      <p className="mt-1 max-w-[65ch] text-[length:var(--text-small)] text-[var(--color-brand-rubber-grey)]">
+      <p className="mt-1 max-w-[65ch] text-[length:var(--text-small)] text-[var(--color-brand-stone)]">
         {note}
       </p>
 
@@ -229,18 +229,18 @@ function PlanSection({
                 className={
                   card.isBestValue
                     ? 'rounded-[var(--radius-panel)] border-2 border-[var(--color-brand-medal-gold)] bg-white p-5'
-                    : 'rounded-[var(--radius-panel)] border border-[var(--color-brand-rubber-grey)]/20 bg-white p-5'
+                    : 'rounded-[var(--radius-panel)] border border-[var(--color-brand-stone)]/20 bg-white p-5'
                 }
               >
                 {card.isBestValue ? (
-                  <p className="mb-2 inline-block rounded-[var(--radius-button)] bg-[var(--color-brand-medal-gold)]/15 px-2 py-0.5 text-[length:var(--text-small)] font-semibold text-[var(--color-brand-plate-navy)]">
+                  <p className="mb-2 inline-block rounded-[var(--radius-button)] bg-[var(--color-brand-medal-gold)]/15 px-2 py-0.5 text-[length:var(--text-small)] font-semibold text-[var(--color-brand-obsidian)]">
                     {labels.bestValue}
                   </p>
                 ) : null}
-                <p className="text-[length:var(--text-small)] font-medium text-[var(--color-brand-rubber-grey)]">
+                <p className="text-[length:var(--text-small)] font-medium text-[var(--color-brand-stone)]">
                   {renderMonths(card.durationMonths)}
                 </p>
-                <p className="tabular mt-1 font-[var(--font-display)] text-[length:var(--text-display-m)] leading-[var(--leading-tight)] text-[var(--color-brand-signboard-red)]">
+                <p className="tabular mt-1 font-[var(--font-display)] text-[length:var(--text-display-m)] leading-[var(--leading-tight)] text-[var(--color-brand-accent)]">
                   {formatINR(card.pricePaise)}
                 </p>
                 <p className="tabular mt-1 text-[length:var(--text-body)] text-[var(--color-brand-ink)]">

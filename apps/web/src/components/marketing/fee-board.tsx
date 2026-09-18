@@ -12,7 +12,7 @@ import { cn } from '@/lib/cn';
  *
  * Receives finished rows: per-month, savings and best value are computed by
  * packages/core on the server, so the client only chooses which set to draw.
- * A real table from `md` up, stacked rows on phones. Exactly one gold "Best value"
+ * A real table from `md` up, stacked rows on phones. Exactly one red "Best value"
  * marker per set (DESIGN-BLUEPRINT §3), and only that row gets the red button —
  * four red buttons would drown the one that matters.
  */
@@ -51,7 +51,7 @@ export function FeeBoard({ men, women }: { men: readonly FeeRow[]; women: readon
   );
 
   const bestValueBadge = (
-    <span className="inline-block rounded-button bg-brand-medal-gold px-2 py-0.5 text-small font-semibold text-brand-plate-navy">
+    <span className="inline-block rounded-button bg-brand-accent px-2 py-0.5 text-small font-semibold tracking-[0.08em] text-brand-white uppercase">
       {t('bestValue')}
     </span>
   );
@@ -66,16 +66,16 @@ export function FeeBoard({ men, women }: { men: readonly FeeRow[]; women: readon
           if (value === 'men' || value === 'women') setAudience(value);
         }}
         aria-label={t('toggleLabel')}
-        className="inline-flex rounded-button border-2 border-brand-plate-navy p-1"
+        className="inline-flex rounded-button border-2 border-brand-obsidian p-1"
       >
         {AUDIENCES.map((value) => (
           <ToggleGroup.Item
             key={value}
             value={value}
             className={cn(
-              'min-h-11 min-w-28 rounded-[4px] px-5 text-body font-semibold text-brand-plate-navy',
+              'min-h-11 min-w-28 rounded-[4px] px-5 text-body font-semibold text-brand-obsidian',
               'transition-colors duration-[var(--duration-fast)]',
-              'data-[state=on]:bg-brand-plate-navy data-[state=on]:text-brand-chalk',
+              'data-[state=on]:bg-brand-obsidian data-[state=on]:text-brand-paper',
             )}
           >
             {t(value)}
@@ -88,7 +88,7 @@ export function FeeBoard({ men, women }: { men: readonly FeeRow[]; women: readon
           {`${t('h2')}: ${t(audience)}`}
         </caption>
         <thead>
-          <tr className="border-b-2 border-brand-plate-navy text-left text-small text-brand-rubber-grey">
+          <tr className="border-b-2 border-brand-obsidian text-left text-small text-brand-stone">
             <th scope="col" className="py-3 pl-4 font-semibold">
               {t('colPlan')}
             </th>
@@ -111,22 +111,22 @@ export function FeeBoard({ men, women }: { men: readonly FeeRow[]; women: readon
             <tr
               key={row.code}
               className={cn(
-                'border-b border-brand-rubber-grey/20',
-                // A gold rule on the leading edge marks the one recommended plan.
-                row.bestValue && 'bg-brand-chalk shadow-[inset_4px_0_0_var(--color-brand-medal-gold)]',
+                'border-b border-brand-stone/20 transition-colors duration-300 hover:bg-brand-paper',
+                // A red rule on the leading edge marks the one recommended plan.
+                row.bestValue && 'bg-brand-paper shadow-[inset_4px_0_0_var(--color-brand-accent)]',
               )}
             >
               <th scope="row" className="py-5 pl-5 text-left align-middle">
-                <span className="block text-title font-semibold text-brand-plate-navy">{planName(row.months)}</span>
+                <span className="block font-display text-title font-bold tracking-[0.04em] text-brand-obsidian uppercase">{planName(row.months)}</span>
                 {row.bestValue ? <span className="mt-1 block">{bestValueBadge}</span> : null}
               </th>
-              <td className="tabular py-5 align-middle font-display text-display-m leading-none font-bold text-brand-signboard-red-text">
+              <td className="tabular py-5 align-middle font-display text-display-m leading-none font-bold text-brand-accent-deep">
                 {row.price}
               </td>
               <td className="tabular py-5 align-middle text-body">{row.perMonth}</td>
               <td className="tabular py-5 align-middle text-body font-semibold text-brand-ink">
                 {row.saving ?? (
-                  <span aria-label={t('noSavingLabel')} className="font-normal text-brand-rubber-grey">
+                  <span aria-label={t('noSavingLabel')} className="font-normal text-brand-stone">
                     —
                   </span>
                 )}
@@ -142,27 +142,27 @@ export function FeeBoard({ men, women }: { men: readonly FeeRow[]; women: readon
           <li
             key={row.code}
             className={cn(
-              'rounded-panel bg-brand-chalk p-5',
-              row.bestValue ? 'border-2 border-brand-medal-gold' : 'border border-brand-rubber-grey/20',
+              'card-lift rounded-panel bg-brand-paper p-5',
+              row.bestValue ? 'border-2 border-brand-accent' : 'border border-brand-stone/20',
             )}
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-title font-semibold text-brand-plate-navy">{planName(row.months)}</p>
+                <p className="text-title font-semibold text-brand-obsidian">{planName(row.months)}</p>
                 {row.bestValue ? <p className="mt-1">{bestValueBadge}</p> : null}
               </div>
-              <p className="tabular font-display text-display-m leading-none font-bold text-brand-signboard-red-text">
+              <p className="tabular font-display text-display-m leading-none font-bold text-brand-accent-deep">
                 {row.price}
               </p>
             </div>
             <dl className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-small">
               <div className="flex gap-1">
-                <dt className="text-brand-rubber-grey">{t('colPerMonth')}</dt>
+                <dt className="text-brand-stone">{t('colPerMonth')}</dt>
                 <dd className="tabular font-semibold">{row.perMonth}</dd>
               </div>
               {row.saving === null ? null : (
                 <div className="flex gap-1">
-                  <dt className="text-brand-rubber-grey">{t('colSave')}</dt>
+                  <dt className="text-brand-stone">{t('colSave')}</dt>
                   <dd className="tabular font-semibold text-brand-ink">{row.saving}</dd>
                 </div>
               )}

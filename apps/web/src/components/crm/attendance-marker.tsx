@@ -73,7 +73,7 @@ export function AttendanceMarker({
       </button>
 
       {state?.kind === 'already' ? (
-        <p role="status" className="mt-2 basis-full text-crm-body text-brand-rubber-grey">
+        <p role="status" className="mt-2 basis-full text-crm-body text-brand-stone">
           {t('alreadyMarked', { name })}
         </p>
       ) : null}
@@ -84,13 +84,13 @@ export function AttendanceMarker({
       ) : null}
 
       {state?.kind === 'marked' ? (
-        <div role="status" className="fixed inset-x-0 bottom-20 z-30 mx-4 flex items-center justify-between gap-3 rounded-panel bg-brand-plate-navy p-4 text-white shadow-[var(--shadow-overlay)]">
+        <div role="status" className="fixed inset-x-0 bottom-20 z-30 mx-4 flex items-center justify-between gap-3 rounded-panel bg-brand-obsidian p-4 text-white shadow-[var(--shadow-overlay)]">
           <span>
             <span className="block text-crm-body font-semibold">{t('marked', { name })}</span>
             {/* BR-9.3: the desk should know now, not tomorrow morning, that this one is worth a word. */}
             {state.callTaskRaised ? <span className="block text-small text-white/85">{t('callListed')}</span> : null}
           </span>
-          <button type="button" disabled={pending} onClick={() => onUndo(state.eventId)} className="min-h-12 shrink-0 rounded-button bg-white px-4 text-crm-body font-bold text-brand-plate-navy">
+          <button type="button" disabled={pending} onClick={() => onUndo(state.eventId)} className="min-h-12 shrink-0 rounded-button bg-white px-4 text-crm-body font-bold text-brand-obsidian">
             {t('undo')}
           </button>
         </div>

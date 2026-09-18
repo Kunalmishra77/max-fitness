@@ -30,15 +30,15 @@ export default async function QrDonePage({ params }: { params: Promise<{ locale:
         <p aria-hidden className="text-6xl">
           ✅
         </p>
-        <h1 className="mt-4 font-display text-display-m font-bold text-brand-plate-navy">{t('title')}</h1>
+        <h1 className="mt-4 font-display text-display-m font-bold text-brand-obsidian">{t('title')}</h1>
         <p className="mt-3 text-body-l leading-body">{t('helper')}</p>
-        <p className="mt-8 rounded-panel bg-brand-plate-navy px-6 py-8 text-white">
+        <p className="mt-8 rounded-panel bg-brand-obsidian px-6 py-8 text-white">
           <span className="block text-small tracking-wide uppercase">{t('codeLabel')}</span>
           <span className="mt-2 block font-display text-display-xl font-bold tracking-[0.15em]">{ref}</span>
         </p>
         <a
           href={getPathname({ href: '/', locale: ctx.locale })}
-          className="mt-8 inline-flex min-h-14 items-center justify-center rounded-panel border-2 border-brand-plate-navy px-6 text-body-l font-semibold text-brand-plate-navy"
+          className="mt-8 inline-flex min-h-14 items-center justify-center rounded-panel border-2 border-brand-obsidian px-6 text-body-l font-semibold text-brand-obsidian"
         >
           {t('home')}
         </a>

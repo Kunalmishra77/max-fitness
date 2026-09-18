@@ -27,7 +27,7 @@ export default async function CrmStaffPage() {
     return (
       <>
         <CrmHeader title={t('staff.title')} back="/crm/more" />
-        <p role="alert" className="m-4 rounded-panel bg-tint-fee-none-bg p-4 text-crm-body font-semibold text-brand-plate-navy">
+        <p role="alert" className="m-4 rounded-panel bg-tint-fee-none-bg p-4 text-crm-body font-semibold text-brand-obsidian">
           {t('settings.notAllowed')}
         </p>
         <BottomNav active="more" />
@@ -69,7 +69,7 @@ export default async function CrmStaffPage() {
         <AddStaffForm add={addStaffAction} unlock={unlockSettingsAction} />
         <Link href="/crm/more/pin" className="flex min-h-14 items-center justify-between rounded-panel bg-white px-4 text-crm-body font-semibold shadow-sm">
           🔑 {t('pin.link')}
-          <span aria-hidden className="text-xl text-brand-rubber-grey">
+          <span aria-hidden className="text-xl text-brand-stone">
             ›
           </span>
         </Link>

@@ -224,7 +224,7 @@ export function DetailsStep({
   const inputClass = (invalid: boolean) =>
     cn(
       'min-h-12 w-full rounded-input border bg-brand-white px-3 text-body text-brand-ink',
-      invalid ? 'border-2 border-semantic-fee-expired' : 'border-brand-rubber-grey/40',
+      invalid ? 'border-2 border-semantic-fee-expired' : 'border-brand-stone/40',
     );
 
   const errorText = (field: Field) => {
@@ -238,7 +238,7 @@ export function DetailsStep({
   const describedBy = (field: Field) => (errors[field] === undefined ? undefined : `${id}-${field}-error`);
 
   const link = (href: string) => (chunks: ReactNode) => (
-    <a href={href} target="_blank" rel="noopener" className="font-semibold text-brand-wall-blue underline underline-offset-2">
+    <a href={href} target="_blank" rel="noopener" className="font-semibold text-brand-link underline underline-offset-2">
       {chunks}
     </a>
   );
@@ -279,7 +279,7 @@ export function DetailsStep({
           {t('mobile')}
         </label>
         <div className="mt-1.5 flex">
-          <span aria-hidden className="inline-flex min-h-12 items-center rounded-l-input border border-r-0 border-brand-rubber-grey/40 bg-brand-chalk px-3 text-body text-brand-rubber-grey">
+          <span aria-hidden className="inline-flex min-h-12 items-center rounded-l-input border border-r-0 border-brand-stone/40 bg-brand-paper px-3 text-body text-brand-stone">
             {t('mobilePrefix')}
           </span>
           <input
@@ -303,7 +303,7 @@ export function DetailsStep({
 
       <div>
         <label htmlFor={`${id}-email`} className="block text-body font-semibold">
-          {t('email')} <span className="font-normal text-brand-rubber-grey">({t('optional')})</span>
+          {t('email')} <span className="font-normal text-brand-stone">({t('optional')})</span>
         </label>
         <input
           id={`${id}-email`}
@@ -356,7 +356,7 @@ export function DetailsStep({
                   </option>
                 ))}
               </select>
-              <ChevronDownIcon aria-hidden className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-brand-rubber-grey" />
+              <ChevronDownIcon aria-hidden className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-brand-stone" />
             </div>
           ))}
         </div>
@@ -374,7 +374,7 @@ export function DetailsStep({
               className={cn(
                 'flex min-h-12 cursor-pointer items-center justify-center rounded-input border-2 text-body font-semibold',
                 'has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2',
-                gender === value ? 'border-brand-plate-navy bg-brand-plate-navy text-brand-chalk' : 'border-brand-rubber-grey/40 bg-brand-white text-brand-ink',
+                gender === value ? 'border-brand-obsidian bg-brand-obsidian text-brand-paper' : 'border-brand-stone/40 bg-brand-white text-brand-ink',
               )}
             >
               <input
@@ -421,7 +421,7 @@ export function DetailsStep({
             )}
           >
             <span>{selfie === null ? t('takeSelfie') : t('retake')}</span>
-            {selfie === null ? <span className="text-small font-normal text-brand-rubber-grey">{t('selfieHelper')}</span> : null}
+            {selfie === null ? <span className="text-small font-normal text-brand-stone">{t('selfieHelper')}</span> : null}
           </button>
         </div>
         {errorText('selfie')}
@@ -446,17 +446,17 @@ export function DetailsStep({
             onChange={(e) => setTerms(e.target.checked)}
             aria-invalid={errors.terms !== undefined}
             aria-describedby={describedBy('terms')}
-            className="mt-1 size-5 shrink-0 accent-brand-plate-navy"
+            className="mt-1 size-5 shrink-0 accent-brand-obsidian"
           />
           <span>{t.rich('consentTerms', { terms: link(termsHref), privacy: link(privacyHref) })}</span>
         </label>
         {errorText('terms')}
 
         <label className="flex items-start gap-3 text-body leading-body">
-          <input type="checkbox" checked={whatsapp} onChange={(e) => setWhatsapp(e.target.checked)} className="mt-1 size-5 shrink-0 accent-brand-plate-navy" />
+          <input type="checkbox" checked={whatsapp} onChange={(e) => setWhatsapp(e.target.checked)} className="mt-1 size-5 shrink-0 accent-brand-obsidian" />
           <span>
             {t('consentWhatsapp')}
-            {whatsapp ? null : <span className="mt-0.5 block text-small text-brand-rubber-grey">{t('consentWhatsappOff')}</span>}
+            {whatsapp ? null : <span className="mt-0.5 block text-small text-brand-stone">{t('consentWhatsappOff')}</span>}
           </span>
         </label>
 
@@ -466,11 +466,11 @@ export function DetailsStep({
             checked={face}
             disabled={minor}
             onChange={(e) => setFace(e.target.checked)}
-            className="mt-1 size-5 shrink-0 accent-brand-plate-navy"
+            className="mt-1 size-5 shrink-0 accent-brand-obsidian"
           />
           <span>
             {t('consentFace')}
-            <span className="mt-0.5 block text-small text-brand-rubber-grey">{minor ? t('consentFaceMinor') : t('consentFaceHelper')}</span>
+            <span className="mt-0.5 block text-small text-brand-stone">{minor ? t('consentFaceMinor') : t('consentFaceHelper')}</span>
           </span>
         </label>
       </div>

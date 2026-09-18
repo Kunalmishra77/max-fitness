@@ -59,15 +59,15 @@ export function JoinFrame({ step, children }: { step: 1 | 2 | 3 | null; children
   const t = useTranslations('signup');
   const names = { 1: t('steps.details'), 2: t('steps.plan'), 3: t('steps.pay') } as const;
   return (
-    <div className="bg-brand-chalk">
+    <div className="bg-brand-paper">
       <div className="mx-auto max-w-xl px-5 py-10 md:py-16">
         {step === null ? null : (
           <>
-            <h1 className="font-display text-display-l leading-display font-bold text-brand-plate-navy">{t('title')}</h1>
-            <p className="mt-2 text-body font-semibold text-brand-rubber-grey">{t('stepper', { step, name: names[step] })}</p>
+            <h1 className="font-display text-display-l leading-display font-bold text-brand-obsidian">{t('title')}</h1>
+            <p className="mt-2 text-body font-semibold text-brand-stone">{t('stepper', { step, name: names[step] })}</p>
             <ol aria-hidden className="mt-3 grid grid-cols-3 gap-2">
               {[1, 2, 3].map((n) => (
-                <li key={n} className={n <= step ? 'h-1.5 rounded-full bg-brand-signboard-red' : 'h-1.5 rounded-full bg-brand-rubber-grey/30'} />
+                <li key={n} className={n <= step ? 'h-1.5 rounded-full bg-brand-accent' : 'h-1.5 rounded-full bg-brand-stone/30'} />
               ))}
             </ol>
           </>

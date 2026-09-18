@@ -56,7 +56,7 @@ export function GalleryLightbox({
             event.preventDefault();
             onCloseAutoFocus();
           }}
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 p-4 text-brand-chalk focus:outline-none md:p-10"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 p-4 text-brand-paper focus:outline-none md:p-10"
         >
           {current === undefined ? null : (
             <>
@@ -86,7 +86,7 @@ export function GalleryLightbox({
                   type="button"
                   onClick={() => step(-1)}
                   aria-label={t('previous')}
-                  className="inline-flex size-12 items-center justify-center rounded-full border-2 border-brand-chalk/60 text-[1.25rem]"
+                  className="inline-flex size-12 items-center justify-center rounded-full border-2 border-brand-paper/60 text-[1.25rem]"
                 >
                   <ChevronLeftIcon />
                 </button>
@@ -97,7 +97,7 @@ export function GalleryLightbox({
                   type="button"
                   onClick={() => step(1)}
                   aria-label={t('next')}
-                  className="inline-flex size-12 items-center justify-center rounded-full border-2 border-brand-chalk/60 text-[1.25rem]"
+                  className="inline-flex size-12 items-center justify-center rounded-full border-2 border-brand-paper/60 text-[1.25rem]"
                 >
                   <ChevronRightIcon />
                 </button>

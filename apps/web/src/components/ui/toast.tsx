@@ -34,7 +34,7 @@ const toastVariants = cva(
   {
     variants: {
       tone: {
-        neutral: 'bg-[var(--color-brand-plate-navy)] text-[var(--color-brand-chalk)]',
+        neutral: 'bg-[var(--color-brand-obsidian)] text-[var(--color-brand-paper)]',
         success:
           'bg-[var(--color-tint-fee-paid-bg)] text-[var(--color-brand-ink)] border border-[var(--color-semantic-fee-paid)]/30',
         warning:

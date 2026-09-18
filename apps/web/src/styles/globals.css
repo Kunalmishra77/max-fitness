@@ -28,7 +28,7 @@
   }
 
   body {
-    background-color: var(--color-brand-chalk);
+    background-color: var(--color-brand-paper);
     color: var(--color-brand-ink);
     margin: 0;
     min-height: 100dvh;
@@ -40,8 +40,13 @@
     font-family: var(--font-display), var(--font-body), system-ui, sans-serif;
     font-weight: 700;
     line-height: var(--leading-display);
-    /* DESIGN-BLUEPRINT §4: sentence case, never all-caps. */
+    /* Sentence case by default; the website's section headings opt into caps (ADR-061). */
     text-transform: none;
+  }
+
+  ::selection {
+    background: var(--color-brand-accent);
+    color: var(--color-brand-white);
   }
 
   /*
@@ -96,6 +101,34 @@
   animation-delay: 140ms;
 }
 
+/*
+ * The hero's photos drift like a slow camera move (ADR-061). Transform only, so it stays
+ * on the compositor; the reduced-motion rule above stops it.
+ */
+@keyframes hero-drift {
+  from {
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.16) translate3d(-2.5%, -1.5%, 0);
+  }
+}
+@keyframes hero-drift-alt {
+  from {
+    transform: scale(1.16) translate3d(2%, -1%, 0);
+  }
+  to {
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+}
+.hero-drift {
+  animation: hero-drift 9s var(--ease-standard) both;
+  will-change: transform;
+}
+.hero-drift-alt {
+  animation-name: hero-drift-alt;
+}
+
 /* Hero rep tally: the current mark fills over one slide's duration. */
 @keyframes tally-fill {
   from {
@@ -118,4 +151,158 @@
 .deferred-render {
   content-visibility: auto;
   contain-intrinsic-size: auto 900px;
+}
+
+/* ───────────────────────── Premium layer (ADR-061) ─────────────────────────
+ * Motion is transform and opacity only, so it stays on the compositor, and the
+ * reduced-motion rule in the base layer collapses every animation here.
+ */
+
+/* Sections rise into place as they scroll into view, where the browser can do it
+   without JavaScript. Elsewhere they are simply there. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal-up {
+      animation: reveal-up linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 38%;
+    }
+  }
+}
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 48px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* A light sweep across red buttons on hover. */
+.btn-shine::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.28) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 700ms var(--ease-standard);
+  pointer-events: none;
+}
+.btn-shine:hover::after {
+  transform: translateX(120%);
+}
+
+/* Navigation links: a red rule grows from the left on hover and for the current one. */
+.nav-link {
+  position: relative;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.45rem;
+  height: 2px;
+  background: var(--color-brand-accent-glow);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--duration-base) var(--ease-standard);
+}
+.nav-link:hover::after,
+.nav-link:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/* Photos lean in slightly under the pointer. */
+.photo-zoom {
+  overflow: hidden;
+}
+.photo-zoom img {
+  transition: transform 900ms var(--ease-standard);
+}
+.photo-zoom:hover img {
+  transform: scale(1.06);
+}
+
+/* Cards lift and pick up a red edge. */
+.card-lift {
+  transition:
+    transform var(--duration-base) var(--ease-standard),
+    box-shadow var(--duration-base) var(--ease-standard),
+    border-color var(--duration-base) var(--ease-standard);
+}
+.card-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px -18px rgb(0 0 0 / 0.45);
+  border-color: var(--color-brand-accent);
+}
+
+/* The words-in-motion band between sections. */
+@keyframes marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+.marquee-track {
+  animation: marquee 38s linear infinite;
+}
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* Outlined display type for big numbers and background words. */
+.text-outline {
+  color: transparent;
+  -webkit-text-stroke: 1.5px currentColor;
+}
+
+/* The first-visit preloader: the logo breathes while a red line fills, then it lifts away. */
+@keyframes preload-bar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes preload-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgb(237 16 33 / 0));
+  }
+  50% {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 28px rgb(237 16 33 / 0.55));
+  }
+}
+@keyframes preload-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-2%);
+  }
+}
+.preloader {
+  animation: preload-out 450ms var(--ease-standard) 1100ms forwards;
+}
+.preloader-logo {
+  animation: preload-pulse 1100ms var(--ease-standard) both;
+}
+.preloader-bar {
+  transform-origin: left;
+  animation: preload-bar 1000ms var(--ease-standard) both;
+}
+html.preloaded .preloader {
+  display: none;
+}
+
+/* Dark scrollbar with a red thumb, where the browser lets us style it. */
+html {
+  scrollbar-color: var(--color-brand-accent) var(--color-brand-obsidian);
 }

@@ -45,7 +45,7 @@ export function SitePhoto({
   const fallbackWidth = photo.widths.includes(PREFERRED_FALLBACK_WIDTH) ? PREFERRED_FALLBACK_WIDTH : (photo.widths.at(-1) ?? photo.width);
 
   return (
-    <div className={cn('relative w-full overflow-hidden bg-brand-plate-navy', aspect, className)}>
+    <div className={cn('relative w-full overflow-hidden bg-brand-obsidian', aspect, className)}>
       <picture>
         <source type="image/avif" srcSet={srcSet(photo, 'avif')} sizes={sizes} />
         <source type="image/webp" srcSet={srcSet(photo, 'webp')} sizes={sizes} />

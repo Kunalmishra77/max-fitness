@@ -36,6 +36,19 @@ Blockers / questions for client:
 - Same as Phase 3: payment-failure wording, prices, minimum age, admission fee, PIN confirmation, photos, policy answers, grievance officer.
 - Demo staff logins are the seeded ones (owner 9000000001 / 2468, reception 9000000002 / 1357). Real PINs must be set before anyone uses this outside a demo.
 
+### 2026-09-18 (evening) — Website and CRM — Real logo, black-red theme, premium layer
+Done:
+- **Logo everywhere (ADR-061):** nav, footer, favicon, Apple icon, CRM home-screen icons, share image, QR poster, all from `assets/brand/max-gym-logo.png` via `scripts/make-pwa-icons.mjs`.
+- **Theme from the logo:** tokens renamed and re-valued (obsidian, accent red, silver, paper…), contrast checked; applied across website, join flow, QR pages and Max Register.
+- **Hero:** gym photos graded and drifting (Ken Burns), eyebrow, capital headline, `01 / 03` counter; placeholder videos removed (3.2 MB → 0.9 MB); editor brief in `docs/04-content/hero-video-brief.md`.
+- **Premium layer:** first-visit preloader, scroll reveal, button shine/lift, nav underline, photo zoom, card lift, red marquee, redesigned facilities, about, start, fee board, owner, reviews, gallery, map, final CTA and footer.
+- Public page no longer shows "Needs confirmation" labels (only confirmed items).
+- **Verified:** typecheck 8/8, eslint clean, unit tests **1149 passed**.
+
+Pending / next:
+- Owner: portrait, boxing-corner photo, the hero film (brief ready), a real promo text.
+- Phase 6 WhatsApp engine, Phase 7 kiosk, Phase 8 hardening.
+
 ### 2026-09-18 (later) — Phase 5 (third slice) — OTP on the QR, /qr/new, printable poster
 Done:
 - **Client answers recorded (ADR-059):** photo consent confirmed; prices, age and policies stay at demo values (no price list published online); Razorpay/WhatsApp decided after the demo; the stray Vercel project "web" deleted.

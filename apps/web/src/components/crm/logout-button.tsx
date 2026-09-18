@@ -11,7 +11,7 @@ export function LogoutButton({ label }: { label: string }) {
       type="button"
       disabled={pending}
       onClick={() => start(() => void logoutAction())}
-      className="min-h-11 rounded-button px-3 text-small font-semibold text-brand-rubber-grey"
+      className="min-h-11 rounded-button px-3 text-small font-semibold text-brand-stone"
     >
       {label}
     </button>

@@ -29,7 +29,7 @@ export interface StaffRow {
 type Unlock = (pin: string) => Promise<UnlockResult>;
 type AnyResult = StaffResult | SettingsResult;
 
-const field = 'min-h-14 w-full rounded-input border-2 border-brand-rubber-grey/40 bg-white px-4 text-crm-body';
+const field = 'min-h-14 w-full rounded-input border-2 border-brand-stone/40 bg-white px-4 text-crm-body';
 const OWNER_ROLES = new Set(['OWNER', 'SUPER_ADMIN']);
 
 /** Runs an owner action, asking for the PIN in place if it lapsed, then trying again. */
@@ -91,11 +91,11 @@ export function ReceptionFeesToggle({ enabled, save, unlock }: { enabled: boolea
             setOn(next);
             action.run(() => save({ pricing: { receptionMayTakePayments: next } }), tSettings('saved'));
           }}
-          className="mt-1 size-6 accent-brand-plate-navy"
+          className="mt-1 size-6 accent-brand-obsidian"
         />
         <span>
           <span className="block font-semibold">{t('receptionFees')}</span>
-          <span className="block text-small text-brand-rubber-grey">{t('receptionFeesHelper')}</span>
+          <span className="block text-small text-brand-stone">{t('receptionFeesHelper')}</span>
         </span>
       </label>
       {action.retry === null ? null : (
@@ -130,11 +130,11 @@ export function StaffList({
   const t = useTranslations('crm.staff');
   return (
     <section aria-labelledby="staff-list-title" className="rounded-panel bg-white p-4 shadow-sm">
-      <h2 id="staff-list-title" className="text-crm-body font-bold text-brand-plate-navy">
+      <h2 id="staff-list-title" className="text-crm-body font-bold text-brand-obsidian">
         {t('title')}
       </h2>
-      <p className="text-small text-brand-rubber-grey">{t('helper')}</p>
-      <ul className="mt-3 divide-y divide-brand-rubber-grey/15">
+      <p className="text-small text-brand-stone">{t('helper')}</p>
+      <ul className="mt-3 divide-y divide-brand-stone/15">
         {rows.map((row) => (
           <StaffRowItem key={row.id} row={row} resetPin={resetPin} setActive={setActive} unlock={unlock} />
         ))}
@@ -165,17 +165,17 @@ function StaffRowItem({
     <li className="py-3">
       <div className="flex items-baseline justify-between gap-3">
         <span className="min-w-0">
-          <span className={`block truncate text-crm-body font-semibold ${row.isActive ? 'text-brand-ink' : 'text-brand-rubber-grey line-through'}`}>
+          <span className={`block truncate text-crm-body font-semibold ${row.isActive ? 'text-brand-ink' : 'text-brand-stone line-through'}`}>
             {row.name}
             {row.isYou ? ` (${t('you')})` : ''}
           </span>
-          <span className="block text-small text-brand-rubber-grey">
+          <span className="block text-small text-brand-stone">
             {row.mobile} · {row.lastLogin === null ? t('neverLoggedIn') : t('lastLogin', { date: row.lastLogin })}
           </span>
         </span>
         <span className="shrink-0 text-right text-small font-semibold">
-          <span className="block text-brand-plate-navy">{t(row.role as never)}</span>
-          <span className={`block ${row.isActive ? 'text-semantic-fee-paid' : 'text-brand-rubber-grey'}`}>{row.isActive ? t('active') : t('inactive')}</span>
+          <span className="block text-brand-obsidian">{t(row.role as never)}</span>
+          <span className={`block ${row.isActive ? 'text-semantic-fee-paid' : 'text-brand-stone'}`}>{row.isActive ? t('active') : t('inactive')}</span>
         </span>
       </div>
 
@@ -183,7 +183,7 @@ function StaffRowItem({
         <div className="mt-2 flex flex-wrap gap-2">
           {row.isActive ? (
             <>
-              <button type="button" onClick={() => setMode('pin')} className="min-h-11 rounded-button border-2 border-brand-plate-navy px-3 text-small font-semibold text-brand-plate-navy">
+              <button type="button" onClick={() => setMode('pin')} className="min-h-11 rounded-button border-2 border-brand-obsidian px-3 text-small font-semibold text-brand-obsidian">
                 {t('resetPin')}
               </button>
               <button type="button" onClick={() => setMode('confirm')} className="min-h-11 rounded-button border-2 border-semantic-fee-expired px-3 text-small font-semibold text-semantic-fee-expired">
@@ -195,7 +195,7 @@ function StaffRowItem({
               type="button"
               disabled={action.pending}
               onClick={() => action.run(() => setActive(row.id, true), t('activated'))}
-              className="min-h-11 rounded-button border-2 border-brand-plate-navy px-3 text-small font-semibold text-brand-plate-navy"
+              className="min-h-11 rounded-button border-2 border-brand-obsidian px-3 text-small font-semibold text-brand-obsidian"
             >
               {t('activate')}
             </button>
@@ -218,7 +218,7 @@ function StaffRowItem({
             onChange={(event) => setPin(event.target.value.replace(/\D/g, ''))}
             className={`${field} text-center text-2xl tracking-widest`}
           />
-          <p className="text-small text-brand-rubber-grey">{t('pinHelper')}</p>
+          <p className="text-small text-brand-stone">{t('pinHelper')}</p>
           <button
             type="button"
             disabled={action.pending || pin.length < 4}
@@ -232,11 +232,11 @@ function StaffRowItem({
                 },
               )
             }
-            className="min-h-14 rounded-panel bg-brand-plate-navy text-crm-body font-bold text-white disabled:opacity-50"
+            className="min-h-14 rounded-panel bg-brand-obsidian text-crm-body font-bold text-white disabled:opacity-50"
           >
             {action.pending ? t('saving') : t('resetSave')}
           </button>
-          <button type="button" onClick={() => setMode('idle')} className="min-h-11 text-crm-body font-semibold text-brand-rubber-grey">
+          <button type="button" onClick={() => setMode('idle')} className="min-h-11 text-crm-body font-semibold text-brand-stone">
             {t('cancel')}
           </button>
         </div>
@@ -253,7 +253,7 @@ function StaffRowItem({
           >
             {t('yes')}
           </button>
-          <button type="button" onClick={() => setMode('idle')} className="min-h-11 text-crm-body font-semibold text-brand-rubber-grey">
+          <button type="button" onClick={() => setMode('idle')} className="min-h-11 text-crm-body font-semibold text-brand-stone">
             {t('cancel')}
           </button>
         </div>
@@ -288,7 +288,7 @@ export function AddStaffForm({ add, unlock }: { add: (fields: StaffCreateFields)
 
   return (
     <section aria-labelledby={`${id}-title`} className="rounded-panel bg-white p-4 shadow-sm">
-      <h2 id={`${id}-title`} className="text-crm-body font-bold text-brand-plate-navy">
+      <h2 id={`${id}-title`} className="text-crm-body font-bold text-brand-obsidian">
         {t('add')}
       </h2>
       <div className="mt-3 grid gap-3">
@@ -312,7 +312,7 @@ export function AddStaffForm({ add, unlock }: { add: (fields: StaffCreateFields)
               role="radio"
               aria-checked={role === value}
               onClick={() => setRole(value)}
-              className={`min-h-14 rounded-panel border-2 text-crm-body font-semibold ${role === value ? 'border-brand-signboard-red bg-tint-fee-expired-bg text-brand-signboard-red' : 'border-brand-rubber-grey/40 bg-white'}`}
+              className={`min-h-14 rounded-panel border-2 text-crm-body font-semibold ${role === value ? 'border-brand-accent bg-tint-fee-expired-bg text-brand-accent' : 'border-brand-stone/40 bg-white'}`}
             >
               {t(value)}
             </button>
@@ -332,7 +332,7 @@ export function AddStaffForm({ add, unlock }: { add: (fields: StaffCreateFields)
             onChange={(event) => setPin(event.target.value.replace(/\D/g, ''))}
             className={`${field} mt-1 text-center text-2xl tracking-widest`}
           />
-          <p className="mt-1 text-small text-brand-rubber-grey">{t('pinHelper')}</p>
+          <p className="mt-1 text-small text-brand-stone">{t('pinHelper')}</p>
         </div>
       </div>
 
@@ -362,7 +362,7 @@ export function AddStaffForm({ add, unlock }: { add: (fields: StaffCreateFields)
             },
           )
         }
-        className="mt-3 min-h-14 w-full rounded-panel bg-brand-signboard-red text-crm-body font-bold text-white disabled:opacity-50"
+        className="mt-3 min-h-14 w-full rounded-panel bg-brand-accent text-crm-body font-bold text-brand-white disabled:opacity-50"
       >
         {action.pending ? t('saving') : t('addSave')}
       </button>

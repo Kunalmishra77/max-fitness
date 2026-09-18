@@ -55,10 +55,10 @@ export function SiteNav({
   }, [menuOpen]);
 
   return (
-    <header className="sticky top-0 z-40 bg-brand-plate-navy text-brand-chalk">
+    <header className="sticky top-0 z-40 bg-brand-obsidian text-brand-paper">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-4 focus:z-50 focus:rounded-button focus:bg-brand-chalk focus:px-4 focus:py-2 focus:text-brand-plate-navy"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-4 focus:z-50 focus:rounded-button focus:bg-brand-paper focus:px-4 focus:py-2 focus:text-brand-obsidian"
       >
         {t('skipToContent')}
       </a>
@@ -73,7 +73,7 @@ export function SiteNav({
               <li key={id}>
                 <a
                   href={anchorHref(id)}
-                  className="inline-flex min-h-11 items-center rounded-button px-3 text-body font-medium text-brand-chalk/85 hover:text-brand-chalk"
+                  className="nav-link inline-flex min-h-11 items-center rounded-button px-3 text-small font-semibold tracking-[0.14em] text-brand-paper/80 uppercase hover:text-brand-white"
                 >
                   {t(id)}
                 </a>
@@ -98,7 +98,7 @@ export function SiteNav({
             locale={otherLocale}
             lang={otherLocale}
             hrefLang={otherLocale}
-            className="inline-flex min-h-11 items-center rounded-button px-3 text-body font-semibold hover:bg-brand-chalk/10"
+            className="inline-flex min-h-11 items-center rounded-button px-3 text-body font-semibold hover:bg-brand-paper/10"
           >
             {t('switchTo')}
           </Link>

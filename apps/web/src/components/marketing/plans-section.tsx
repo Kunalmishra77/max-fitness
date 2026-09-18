@@ -48,14 +48,14 @@ export async function PlansSection({
 
   return (
     <Section id="plans" tone="white" labelledBy="plans-heading">
-      <SectionHeading id="plans-heading" className="text-brand-plate-navy">
+      <SectionHeading id="plans-heading" eyebrow={t('eyebrow')} className="text-brand-obsidian">
         {t('h2')}
       </SectionHeading>
 
       {available ? (
         <FeeBoard men={men} women={women} />
       ) : (
-        <div role="status" className="mt-8 max-w-2xl rounded-panel border border-brand-rubber-grey/20 bg-brand-chalk p-6">
+        <div role="status" className="mt-8 max-w-2xl rounded-panel border border-brand-stone/20 bg-brand-paper p-6">
           <p className="text-body-l leading-body">{t('unavailable')}</p>
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <a href={telHref} data-track="call_click" data-track-source="plans" className={buttonVariants({ variant: 'primary' })}>
@@ -77,7 +77,7 @@ export async function PlansSection({
         </div>
       )}
 
-      <p className="mt-6 max-w-[65ch] text-small leading-body text-brand-rubber-grey">{t('note')}</p>
+      <p className="mt-6 max-w-[65ch] text-small leading-body text-brand-stone">{t('note')}</p>
     </Section>
   );
 }

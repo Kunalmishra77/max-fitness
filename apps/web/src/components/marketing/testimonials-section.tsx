@@ -23,7 +23,7 @@ export async function TestimonialsSection({
 
   return (
     <Section id="reviews" tone="chalk" labelledBy="reviews-heading">
-      <SectionHeading id="reviews-heading" className="text-brand-plate-navy">
+      <SectionHeading id="reviews-heading" eyebrow={t('eyebrow')} className="text-brand-obsidian">
         {t('h2')}
       </SectionHeading>
 
@@ -36,15 +36,23 @@ export async function TestimonialsSection({
         {reviews.map((review) => (
           <li
             key={review.id}
-            className="flex w-[85%] shrink-0 snap-start flex-col rounded-panel border border-brand-rubber-grey/20 bg-brand-white p-6 md:w-auto"
+            className="card-lift relative flex w-[85%] shrink-0 snap-start flex-col overflow-hidden rounded-panel border border-brand-stone/20 bg-brand-white p-6 md:w-auto"
           >
+            <span aria-hidden className="absolute -top-6 right-4 font-display text-[7rem] leading-none font-bold text-brand-accent/10 select-none">
+              ”
+            </span>
             <div className="flex items-center justify-between gap-3">
               <Stars rating={review.rating} label={t('rating', { count: review.rating })} />
               {review.demo ? <ContentFlag tone="onChalk">{t('demoLabel')}</ContentFlag> : null}
             </div>
             <blockquote className="mt-4 flex-1 text-body leading-body">“{review.text}”</blockquote>
-            <p className="mt-5 text-small font-semibold text-brand-plate-navy">
-              {review.author} <span className="font-medium text-brand-rubber-grey">· {t('source')}</span>
+            <p className="mt-5 flex items-center gap-3 border-t border-brand-stone/15 pt-4 text-small font-semibold text-brand-obsidian">
+              <span aria-hidden className="flex size-9 items-center justify-center rounded-full bg-brand-obsidian font-display text-body font-bold text-brand-white">
+                {review.author.charAt(0)}
+              </span>
+              <span>
+                {review.author} <span className="font-medium text-brand-stone">· {t('source')}</span>
+              </span>
             </p>
           </li>
         ))}
@@ -55,7 +63,7 @@ export async function TestimonialsSection({
           href={googleReviewsUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-8 inline-flex min-h-11 items-center text-body font-semibold text-brand-wall-blue underline underline-offset-4 hover:no-underline"
+          className="mt-8 inline-flex min-h-11 items-center text-body font-semibold text-brand-link underline underline-offset-4 hover:no-underline"
         >
           {t('readAll')}
         </a>

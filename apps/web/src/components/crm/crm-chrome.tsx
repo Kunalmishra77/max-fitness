@@ -23,13 +23,13 @@ export const rupees = (paise: number) => formatINR(paise, { showPaise: false });
 
 export function CrmHeader({ title, right, back }: { title: string; right?: ReactNode; back?: string }) {
   return (
-    <header className="sticky top-0 z-10 flex min-h-16 items-center gap-3 border-b border-brand-rubber-grey/20 bg-white px-4">
+    <header className="sticky top-0 z-10 flex min-h-16 items-center gap-3 border-b border-brand-stone/20 bg-white px-4">
       {back === undefined ? null : (
-        <Link href={back} aria-label="back" className="-ml-2 flex size-12 items-center justify-center rounded-full text-2xl text-brand-plate-navy">
+        <Link href={back} aria-label="back" className="-ml-2 flex size-12 items-center justify-center rounded-full text-2xl text-brand-obsidian">
           ‹
         </Link>
       )}
-      <h1 className="flex-1 truncate font-display text-title font-bold text-brand-plate-navy">{title}</h1>
+      <h1 className="flex-1 truncate font-display text-title font-bold text-brand-obsidian">{title}</h1>
       {right}
     </header>
   );
@@ -46,7 +46,7 @@ const TABS = [
 export async function BottomNav({ active }: { active: 'home' | 'members' | 'fees' | 'attendance' | 'more' }) {
   const t = await getTranslations('crm.nav');
   return (
-    <nav aria-label="Max Register" className="fixed inset-x-0 bottom-0 z-20 border-t border-brand-rubber-grey/20 bg-white pb-[env(safe-area-inset-bottom)]">
+    <nav aria-label="Max Register" className="fixed inset-x-0 bottom-0 z-20 border-t border-brand-stone/20 bg-white pb-[env(safe-area-inset-bottom)]">
       <ul className="mx-auto flex max-w-xl">
         {TABS.map((tab) => (
           <li key={tab.key} className="flex-1">
@@ -55,7 +55,7 @@ export async function BottomNav({ active }: { active: 'home' | 'members' | 'fees
               aria-current={active === tab.key ? 'page' : undefined}
               className={cn(
                 'flex min-h-16 flex-col items-center justify-center gap-0.5 text-small font-semibold',
-                active === tab.key ? 'text-brand-signboard-red' : 'text-brand-rubber-grey',
+                active === tab.key ? 'text-brand-accent' : 'text-brand-stone',
               )}
             >
               <span aria-hidden className="text-xl leading-none">
@@ -98,16 +98,16 @@ export async function MemberRow({ member }: { member: MemberRowData }) {
             : t('feeState.overdue', { count: Math.abs(days) });
 
   return (
-    <Link href={`/crm/members/${member.id}`} className="flex min-h-16 items-stretch gap-3 border-b border-brand-rubber-grey/15 bg-white">
+    <Link href={`/crm/members/${member.id}`} className="flex min-h-16 items-stretch gap-3 border-b border-brand-stone/15 bg-white">
       <span aria-hidden className={cn('w-1.5 shrink-0', left ? FEE_TONE.NONE.band : FEE_TONE[member.feeState].band)} />
       <span className="flex flex-1 flex-col justify-center py-3">
         <span className="flex items-baseline justify-between gap-3">
           <span className="truncate text-crm-body font-semibold text-brand-ink">{member.fullName}</span>
           <span className={cn('shrink-0 text-small font-semibold', left ? FEE_TONE.NONE.text : FEE_TONE[member.feeState].text)}>{line}</span>
         </span>
-        <span className="text-small text-brand-rubber-grey">{member.memberCode ?? '—'}</span>
+        <span className="text-small text-brand-stone">{member.memberCode ?? '—'}</span>
       </span>
-      <span aria-hidden className="flex items-center pr-4 text-xl text-brand-rubber-grey">
+      <span aria-hidden className="flex items-center pr-4 text-xl text-brand-stone">
         ›
       </span>
     </Link>

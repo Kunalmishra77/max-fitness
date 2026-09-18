@@ -34,11 +34,11 @@ export async function SiteFooter({
   const tn = await getTranslations('nav');
 
   return (
-    <footer className="deferred-render border-t border-brand-chalk/10 bg-brand-plate-navy text-brand-chalk">
+    <footer className="deferred-render border-t-2 border-brand-accent bg-brand-obsidian text-brand-paper">
       <div className="mx-auto grid max-w-[var(--size-content-max)] gap-10 px-5 py-14 md:grid-cols-12 md:gap-6 md:px-6">
         <div className="md:col-span-5">
           <Wordmark />
-          <address className="mt-5 max-w-[34ch] text-body leading-body text-brand-chalk/85 not-italic">{address}</address>
+          <address className="mt-5 max-w-[34ch] text-body leading-body text-brand-paper/85 not-italic">{address}</address>
           <a
             href={telHref}
             data-track="call_click"
@@ -48,14 +48,14 @@ export async function SiteFooter({
             {phoneDisplay}
           </a>
           {hoursSummary === null ? null : (
-            <p className="mt-2 max-w-[40ch] text-small leading-body text-brand-chalk/75">
+            <p className="mt-2 max-w-[40ch] text-small leading-body text-brand-paper/75">
               <span className="font-semibold">{t('hours')}:</span> {hoursSummary}
             </p>
           )}
         </div>
 
         <nav aria-labelledby="footer-quick" className="md:col-span-3 md:col-start-7">
-          <h2 id="footer-quick" className="font-body text-small font-semibold text-brand-chalk/70">
+          <h2 id="footer-quick" className="font-body text-small font-semibold text-brand-paper/70">
             {t('quickLinks')}
           </h2>
           <ul className="mt-3 grid">
@@ -70,7 +70,7 @@ export async function SiteFooter({
         </nav>
 
         <nav aria-labelledby="footer-legal" className="md:col-span-3">
-          <h2 id="footer-legal" className="font-body text-small font-semibold text-brand-chalk/70">
+          <h2 id="footer-legal" className="font-body text-small font-semibold text-brand-paper/70">
             {t('legalLinks')}
           </h2>
           <ul className="mt-3 grid">
@@ -84,9 +84,9 @@ export async function SiteFooter({
           </ul>
         </nav>
       </div>
-      <div className="border-t border-brand-chalk/10">
+      <div className="border-t border-brand-paper/10">
         {/* Extra bottom padding on phones so the sticky action bar never covers the last line. */}
-        <p className="mx-auto max-w-[var(--size-content-max)] px-5 pt-5 pb-24 text-small text-brand-chalk/65 md:px-6 md:pb-5">
+        <p className="mx-auto max-w-[var(--size-content-max)] px-5 pt-5 pb-24 text-small text-brand-paper/65 md:px-6 md:pb-5">
           {t('copyright', { year })}
         </p>
       </div>

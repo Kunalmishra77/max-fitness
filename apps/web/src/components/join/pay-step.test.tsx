@@ -190,7 +190,7 @@ describe('PayStep', () => {
       order_id: 'order_sim_abc',
       name: 'Max Fitness Gym',
       prefill: { name: 'Priya Sharma', contact: '+919876543210' },
-      theme: { color: '#D62828' },
+      theme: { color: '#D90F1F' },
     });
   });
 

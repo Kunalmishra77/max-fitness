@@ -120,7 +120,7 @@ export function BusyHoursChart({
         type="button"
         onClick={() => setAsTable((value) => !value)}
         aria-controls={id}
-        className="mb-3 min-h-11 rounded-button px-3 text-small font-semibold text-brand-wall-blue underline"
+        className="mb-3 min-h-11 rounded-button px-3 text-small font-semibold text-brand-link underline"
       >
         {asTable ? showChart : showTable}
       </button>
@@ -185,7 +185,7 @@ function ColumnPanel({ title, rows, pick, max }: { title: string; rows: readonly
               <div
                 key={row.hour}
                 role="listitem"
-                className="flex h-full min-w-0 flex-1 cursor-default items-end justify-center outline-none focus-visible:ring-2 focus-visible:ring-brand-wall-blue"
+                className="flex h-full min-w-0 flex-1 cursor-default items-end justify-center outline-none focus-visible:ring-2 focus-visible:ring-brand-link"
                 {...bind(() => container, text, row.hourLabel)}
               >
                 <span
@@ -236,7 +236,7 @@ export function ShareBars({ rows }: { rows: readonly ShareBarRow[] }) {
         className="grid gap-3"
       >
         {rows.map((row) => (
-          <li key={row.key} className="outline-none focus-visible:ring-2 focus-visible:ring-brand-wall-blue" {...bind(() => container, row.valueText, row.label)}>
+          <li key={row.key} className="outline-none focus-visible:ring-2 focus-visible:ring-brand-link" {...bind(() => container, row.valueText, row.label)}>
             <span className="block text-small text-[color:var(--ink)]">{row.label}</span>
             <span className="mt-1 flex items-center gap-2">
               <span
@@ -280,7 +280,7 @@ export function SplitBar({ rows }: { rows: readonly SplitRow[] }) {
         {rows.map((row, index) => (
           <span
             key={row.key}
-            className={`block h-full outline-none focus-visible:ring-2 focus-visible:ring-brand-wall-blue ${index === 0 ? 'rounded-l-[4px]' : ''} ${index === rows.length - 1 ? 'rounded-r-[4px]' : ''}`}
+            className={`block h-full outline-none focus-visible:ring-2 focus-visible:ring-brand-link ${index === 0 ? 'rounded-l-[4px]' : ''} ${index === rows.length - 1 ? 'rounded-r-[4px]' : ''}`}
             style={{ width: `${row.share}%`, background: SLOTS[index] ?? SLOTS[2] }}
             {...bind(() => container, row.valueText, row.label)}
           />

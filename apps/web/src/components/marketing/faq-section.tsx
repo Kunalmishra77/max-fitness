@@ -63,16 +63,16 @@ export async function FaqSection({ showUnconfirmed, values }: { showUnconfirmed:
 
   return (
     <Section tone="white" labelledBy="faq-heading">
-      <SectionHeading id="faq-heading" className="text-brand-plate-navy">
+      <SectionHeading id="faq-heading" eyebrow={t('eyebrow')} className="text-brand-obsidian">
         {t('h2')}
       </SectionHeading>
 
-      <div className="mt-10 max-w-3xl border-t border-brand-rubber-grey/25">
+      <div className="mt-10 max-w-3xl border-t border-brand-stone/25">
         {items.map((item) => (
-          <details key={item.key} className="group border-b border-brand-rubber-grey/25">
+          <details key={item.key} className="group border-b border-brand-stone/25">
             <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-4 text-left [&::-webkit-details-marker]:hidden">
-              <h3 className="font-body text-title leading-ui font-semibold text-brand-plate-navy">{item.question}</h3>
-              <ChevronDownIcon className="shrink-0 text-[1.25rem] text-brand-plate-navy transition-transform duration-[var(--duration-base)] group-open:rotate-180" />
+              <h3 className="font-body text-title leading-ui font-semibold text-brand-obsidian">{item.question}</h3>
+              <ChevronDownIcon className="shrink-0 text-[1.25rem] text-brand-obsidian transition-transform duration-[var(--duration-base)] group-open:rotate-180" />
             </summary>
             <div className="pb-5">
               <p className="max-w-[65ch] text-body leading-body">{item.answer}</p>

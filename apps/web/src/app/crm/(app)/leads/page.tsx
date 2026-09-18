@@ -20,9 +20,9 @@ export const dynamic = 'force-dynamic';
 
 const TONE: Record<string, string> = {
   NEW: 'bg-tint-fee-due-soon-bg text-semantic-fee-due-soon',
-  CONTACTED: 'bg-tint-fee-none-bg text-brand-plate-navy',
-  TRIAL_BOOKED: 'bg-tint-fee-none-bg text-brand-plate-navy',
-  VISITED: 'bg-tint-fee-none-bg text-brand-plate-navy',
+  CONTACTED: 'bg-tint-fee-none-bg text-brand-obsidian',
+  TRIAL_BOOKED: 'bg-tint-fee-none-bg text-brand-obsidian',
+  VISITED: 'bg-tint-fee-none-bg text-brand-obsidian',
   CONVERTED: 'bg-tint-fee-paid-bg text-semantic-fee-paid',
   LOST: 'bg-tint-fee-expired-bg text-semantic-fee-expired',
 };
@@ -37,7 +37,7 @@ export default async function CrmLeadsPage({ searchParams }: { searchParams: Pro
   const mayWork = can(actor, 'member.edit', getContainer().clock.now());
 
   const tabClass = (active: boolean) =>
-    `inline-flex min-h-11 items-center rounded-button px-4 text-crm-body font-semibold ${active ? 'bg-brand-plate-navy text-white' : 'bg-white'}`;
+    `inline-flex min-h-11 items-center rounded-button px-4 text-crm-body font-semibold ${active ? 'bg-brand-obsidian text-white' : 'bg-white'}`;
 
   return (
     <>
@@ -52,12 +52,12 @@ export default async function CrmLeadsPage({ searchParams }: { searchParams: Pro
         </Link>
       </div>
 
-      <p className="px-4 pb-2 text-small text-brand-rubber-grey">{t('leads.count', { count: leads.length })}</p>
+      <p className="px-4 pb-2 text-small text-brand-stone">{t('leads.count', { count: leads.length })}</p>
 
       {leads.length === 0 ? (
-        <p className="px-4 py-8 text-center text-crm-body text-brand-rubber-grey">{t('leads.empty')}</p>
+        <p className="px-4 py-8 text-center text-crm-body text-brand-stone">{t('leads.empty')}</p>
       ) : (
-        <ul className="divide-y divide-brand-rubber-grey/15">
+        <ul className="divide-y divide-brand-stone/15">
           {leads.map((lead) => (
             <li key={lead.id} className="bg-white p-4">
               <div className="flex items-baseline justify-between gap-3">
@@ -66,16 +66,16 @@ export default async function CrmLeadsPage({ searchParams }: { searchParams: Pro
                   {t(`leads.${lead.status}` as never)}
                 </span>
               </div>
-              <p className="mt-1 text-small text-brand-rubber-grey">
+              <p className="mt-1 text-small text-brand-stone">
                 {t('leads.askedOn', { date: formatISTDate(toISTDate(lead.createdAt), actor.language) })}
                 {lead.goal === null ? '' : ` · ${t('leads.goal', { goal: lead.goal })}`}
               </p>
-              {lead.notes === null ? null : <p className="mt-2 text-small whitespace-pre-line text-brand-rubber-grey">{lead.notes}</p>}
+              {lead.notes === null ? null : <p className="mt-2 text-small whitespace-pre-line text-brand-stone">{lead.notes}</p>}
 
               <div className="mt-3 grid grid-cols-2 gap-3">
                 <a
                   href={`tel:${lead.mobile}`}
-                  className="flex min-h-14 items-center justify-center rounded-panel bg-brand-plate-navy text-crm-body font-semibold text-white"
+                  className="flex min-h-14 items-center justify-center rounded-panel bg-brand-obsidian text-crm-body font-semibold text-white"
                 >
                   📞 {t('profile.call')}
                 </a>
@@ -83,7 +83,7 @@ export default async function CrmLeadsPage({ searchParams }: { searchParams: Pro
                   href={`https://wa.me/${lead.mobile.replace(/\D/g, '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex min-h-14 items-center justify-center rounded-panel border-2 border-brand-plate-navy text-crm-body font-semibold text-brand-plate-navy"
+                  className="flex min-h-14 items-center justify-center rounded-panel border-2 border-brand-obsidian text-crm-body font-semibold text-brand-obsidian"
                 >
                   💬 {t('profile.whatsapp')}
                 </a>

@@ -396,18 +396,18 @@ export function QrExistingFlow({
     });
   };
 
-  const input = 'mt-3 min-h-16 w-full rounded-input border-2 border-brand-rubber-grey/40 bg-white px-4 text-body-l';
-  const title = 'font-display text-title font-bold text-brand-plate-navy';
+  const input = 'mt-3 min-h-16 w-full rounded-input border-2 border-brand-stone/40 bg-white px-4 text-body-l';
+  const title = 'font-display text-title font-bold text-brand-obsidian';
   const choice = (selected: boolean) =>
-    `min-h-16 w-full rounded-panel border-2 text-body-l font-semibold ${selected ? 'border-brand-signboard-red bg-tint-fee-expired-bg text-brand-signboard-red' : 'border-brand-rubber-grey/40 bg-white'}`;
-  const primary = 'min-h-16 w-full rounded-panel bg-brand-signboard-red text-body-l font-bold text-white disabled:opacity-50';
+    `min-h-16 w-full rounded-panel border-2 text-body-l font-semibold ${selected ? 'border-brand-accent bg-tint-fee-expired-bg text-brand-accent' : 'border-brand-stone/40 bg-white'}`;
+  const primary = 'min-h-16 w-full rounded-panel bg-brand-accent text-body-l font-bold text-brand-white disabled:opacity-50';
 
   return (
     <div className="mx-auto max-w-lg">
-      <p className="text-small text-brand-rubber-grey">{t('step', { current: index + 1, total: STEPS.length })}</p>
+      <p className="text-small text-brand-stone">{t('step', { current: index + 1, total: STEPS.length })}</p>
       <div aria-hidden className="mt-2 flex gap-1">
         {STEPS.map((name, i) => (
-          <span key={name} className={`h-1.5 flex-1 rounded-full ${i <= index ? 'bg-brand-signboard-red' : 'bg-brand-rubber-grey/25'}`} />
+          <span key={name} className={`h-1.5 flex-1 rounded-full ${i <= index ? 'bg-brand-accent' : 'bg-brand-stone/25'}`} />
         ))}
       </div>
 
@@ -434,7 +434,7 @@ export function QrExistingFlow({
         {step === 'code' ? (
           <div>
             <h2 className={title}>{t('codeTitle')}</h2>
-            <p className="text-body text-brand-rubber-grey mt-2">{t('codeHelper', { mobile })}</p>
+            <p className="text-body text-brand-stone mt-2">{t('codeHelper', { mobile })}</p>
             <label htmlFor={`${id}-code`} className="text-body mt-4 block font-semibold">
               {t('codeLabel')}
             </label>
@@ -449,7 +449,7 @@ export function QrExistingFlow({
               className={`${input} text-center text-3xl tracking-[0.5em]`}
             />
             {demoCode === null ? null : (
-              <p className="rounded-input border-brand-wall-blue/50 text-body text-brand-wall-blue mt-3 border-2 border-dashed bg-white p-3 text-center font-semibold">
+              <p className="rounded-input border-brand-link/50 text-body text-brand-link mt-3 border-2 border-dashed bg-white p-3 text-center font-semibold">
                 {t('demoCode', { code: demoCode })}
               </p>
             )}
@@ -457,7 +457,7 @@ export function QrExistingFlow({
               type="button"
               disabled={otpBusy}
               onClick={() => void requestCode()}
-              className="text-body text-brand-wall-blue mt-3 min-h-14 w-full font-semibold underline underline-offset-2"
+              className="text-body text-brand-link mt-3 min-h-14 w-full font-semibold underline underline-offset-2"
             >
               {t('resend')}
             </button>
@@ -467,7 +467,7 @@ export function QrExistingFlow({
         {step === 'match' ? (
           <div>
             <h2 className={title}>{t('matchTitle')}</h2>
-            <p className="text-body text-brand-rubber-grey mt-2">{t('matchHelper')}</p>
+            <p className="text-body text-brand-stone mt-2">{t('matchHelper')}</p>
             <div className="mt-4 grid gap-3">
               {candidates.map((candidate) => (
                 <button
@@ -526,7 +526,7 @@ export function QrExistingFlow({
                 ] as const
               ).map(([key, label, length]) => (
                 <span key={key}>
-                  <label htmlFor={`${id}-${key}`} className="block text-small font-semibold text-brand-rubber-grey">
+                  <label htmlFor={`${id}-${key}`} className="block text-small font-semibold text-brand-stone">
                     {label}
                   </label>
                   <input
@@ -547,7 +547,7 @@ export function QrExistingFlow({
         {step === 'selfie' ? (
           <div className="text-center">
             <h2 className={title}>{t('selfieTitle')}</h2>
-            <p className="mt-2 text-body text-brand-rubber-grey">{t('selfieHelper')}</p>
+            <p className="mt-2 text-body text-brand-stone">{t('selfieHelper')}</p>
             {photo === null ? null : (
               // A local object URL: next/image cannot optimise it and must not try.
               <img src={photo.url} alt={t('selfieDone')} className="mx-auto mt-4 size-48 rounded-full object-cover" />
@@ -585,7 +585,7 @@ export function QrExistingFlow({
               {t('endLabel')}
             </label>
             <input id={`${id}-end`} type="date" min={minEnd} max={maxEnd} value={endDate} onChange={(event) => setEndDate(event.target.value)} className={input} />
-            <p className="mt-2 text-body text-brand-rubber-grey">{t('endHelper')}</p>
+            <p className="mt-2 text-body text-brand-stone">{t('endHelper')}</p>
           </div>
         ) : null}
 
@@ -618,16 +618,16 @@ export function QrExistingFlow({
                 ] as const
               ).map(([checked, set, label]) => (
                 <label key={label} className="flex min-h-14 items-start gap-3 text-body">
-                  <input type="checkbox" checked={checked} onChange={(event) => set(event.target.checked)} className="mt-1 size-6 accent-brand-plate-navy" />
+                  <input type="checkbox" checked={checked} onChange={(event) => set(event.target.checked)} className="mt-1 size-6 accent-brand-obsidian" />
                   <span>{label}</span>
                 </label>
               ))}
             </div>
             <p className="mt-2 flex flex-wrap gap-x-4 text-small">
-              <a href={termsHref} target="_blank" rel="noopener" className="font-semibold text-brand-wall-blue underline underline-offset-2">
+              <a href={termsHref} target="_blank" rel="noopener" className="font-semibold text-brand-link underline underline-offset-2">
                 {t('readTerms')}
               </a>
-              <a href={privacyHref} target="_blank" rel="noopener" className="font-semibold text-brand-wall-blue underline underline-offset-2">
+              <a href={privacyHref} target="_blank" rel="noopener" className="font-semibold text-brand-link underline underline-offset-2">
                 {t('readPrivacy')}
               </a>
             </p>
@@ -670,7 +670,7 @@ export function QrExistingFlow({
           </button>
         )}
         {index === 0 ? null : (
-          <button type="button" onClick={() => go(-1)} className="min-h-14 w-full text-body font-semibold text-brand-rubber-grey">
+          <button type="button" onClick={() => go(-1)} className="min-h-14 w-full text-body font-semibold text-brand-stone">
             {t('back')}
           </button>
         )}

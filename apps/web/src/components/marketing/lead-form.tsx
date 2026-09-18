@@ -146,13 +146,13 @@ export function LeadForm() {
   const inputClass = (invalid: boolean) =>
     cn(
       'min-h-12 w-full rounded-input border bg-brand-white px-3 text-body text-brand-ink',
-      invalid ? 'border-2 border-semantic-fee-expired' : 'border-brand-rubber-grey/40',
+      invalid ? 'border-2 border-semantic-fee-expired' : 'border-brand-stone/40',
     );
 
   if (submitted) {
     return (
-      <div className="rounded-panel bg-brand-chalk p-6 text-brand-ink shadow-[var(--shadow-overlay)]">
-        <h2 className="font-display text-display-m leading-tight font-bold text-brand-plate-navy">{t('title')}</h2>
+      <div className="rounded-panel bg-brand-paper p-6 text-brand-ink shadow-[var(--shadow-overlay)]">
+        <h2 className="font-display text-display-m leading-tight font-bold text-brand-obsidian">{t('title')}</h2>
         <p role="status" className="mt-4 text-body-l leading-body">
           {t('success')}
         </p>
@@ -182,9 +182,9 @@ export function LeadForm() {
       // Start fetching the schema as soon as someone reaches the form.
       onFocusCapture={() => void loadSchema()}
       aria-labelledby={`${id}-title`}
-      className="rounded-panel bg-brand-chalk p-6 text-brand-ink shadow-[var(--shadow-overlay)]"
+      className="rounded-panel bg-brand-paper p-6 text-brand-ink shadow-[var(--shadow-overlay)]"
     >
-      <h2 id={`${id}-title`} className="font-display text-display-m leading-tight font-bold text-brand-plate-navy">
+      <h2 id={`${id}-title`} className="font-display text-display-m leading-tight font-bold text-brand-obsidian">
         {t('title')}
       </h2>
 
@@ -216,7 +216,7 @@ export function LeadForm() {
           <div className="mt-1.5 flex">
             <span
               aria-hidden
-              className="inline-flex min-h-12 items-center rounded-l-input border border-r-0 border-brand-rubber-grey/40 bg-brand-chalk px-3 text-body text-brand-rubber-grey"
+              className="inline-flex min-h-12 items-center rounded-l-input border border-r-0 border-brand-stone/40 bg-brand-paper px-3 text-body text-brand-stone"
             >
               {t('mobilePrefix')}
             </span>
@@ -262,7 +262,7 @@ export function LeadForm() {
             </select>
             <ChevronDownIcon
               aria-hidden
-              className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[1.1rem] text-brand-rubber-grey"
+              className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[1.1rem] text-brand-stone"
             />
           </div>
           {goalError === null ? null : (
@@ -292,7 +292,7 @@ export function LeadForm() {
       >
         {isSubmitting ? t('submitting') : t('submit')}
       </button>
-      <p className="mt-3 text-small leading-body text-brand-rubber-grey">{t('consent')}</p>
+      <p className="mt-3 text-small leading-body text-brand-stone">{t('consent')}</p>
     </form>
   );
 }

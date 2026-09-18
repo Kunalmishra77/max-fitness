@@ -50,7 +50,7 @@ export function MobileMenu({
     >
       <SheetContent
         aria-describedby={undefined}
-        className="bg-brand-plate-navy text-brand-chalk"
+        className="bg-brand-obsidian text-brand-paper"
         onCloseAutoFocus={(event) => {
           event.preventDefault();
           onCloseAutoFocus();
@@ -65,7 +65,7 @@ export function MobileMenu({
         <nav aria-label={t('primary')}>
           <ul className="mt-2 grid">
             {sections.map((id) => (
-              <li key={id} className="border-b border-brand-chalk/10">
+              <li key={id} className="border-b border-brand-paper/10">
                 <a href={hrefFor(id)} onClick={(event) => onLink(event, id)} className="flex min-h-14 items-center text-body-l font-medium">
                   {t(id)}
                 </a>

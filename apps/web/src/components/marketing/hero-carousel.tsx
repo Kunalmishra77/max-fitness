@@ -8,6 +8,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/lib/cn';
 import { ChatIcon, PauseIcon, PlayIcon } from './icons';
+import { Eyebrow } from './section';
 
 /**
  * Hero slider (PRD LP-03, DESIGN-BLUEPRINT §6.1).
@@ -23,6 +24,9 @@ import { ChatIcon, PauseIcon, PlayIcon } from './icons';
  *   never with reduced motion or Save-Data. Server render assumes both, so nothing
  *   heavy loads before the client knows.
  * - Reduced motion also turns auto-advance off.
+ * - Until the owner's film exists, each slide is one of the gym's own photos drifting
+ *   slowly (Ken Burns), restarted with every slide, so the hero moves without a video
+ *   download (ADR-061). Set HERO_HAS_VIDEO once real clips are in public/media/hero/.
  * - The headline reveal runs once, on the first slide's first paint.
  */
 
@@ -33,6 +37,9 @@ export interface HeroSlide {
   readonly title: string;
   readonly sub: string;
 }
+
+/** The placeholder clips are gone; the hero is photos until the edited film arrives. */
+const HERO_HAS_VIDEO = false;
 
 const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
 const PORTRAIT = '(orientation: portrait)';
@@ -108,7 +115,7 @@ export function HeroCarousel({ slides, whatsappHref }: { slides: readonly HeroSl
   const saveData = useSaveData();
   const settled = useSyncExternalStore(subscribePageSettled, () => pageSettled, () => false);
 
-  const videoAllowed = settled && !reducedMotion && !saveData;
+  const videoAllowed = HERO_HAS_VIDEO && settled && !reducedMotion && !saveData;
   const advancing = !reducedMotion && !paused && !hovered && !keyboardFocus;
 
   // Emitted into <head> during the server render; each is fetched only when its media query matches.
@@ -138,7 +145,7 @@ export function HeroCarousel({ slides, whatsappHref }: { slides: readonly HeroSl
     <section
       aria-roledescription="carousel"
       aria-label={t('carouselLabel')}
-      className="relative bg-brand-plate-navy text-brand-chalk"
+      className="relative bg-brand-obsidian text-brand-paper"
       onPointerEnter={(event) => {
         if (event.pointerType === 'mouse') setHovered(true);
       }}
@@ -161,24 +168,34 @@ export function HeroCarousel({ slides, whatsappHref }: { slides: readonly HeroSl
               role="group"
               aria-roledescription="slide"
               aria-label={t('slideLabel', { n: i + 1, total: slides.length })}
-              className="relative flex min-h-[40rem] min-w-0 flex-[0_0_100%] md:min-h-[42rem] lg:min-h-[44rem]"
+              className="relative flex min-h-[40rem] min-w-0 flex-[0_0_100%] md:min-h-[42rem] lg:min-h-[max(44rem,calc(100svh-4rem))]"
             >
-              <SlideMedia n={slide.media} priority={i === 0} portrait={portrait} playVideo={videoAllowed && i === index} />
+              <SlideMedia
+                key={i === index ? `on-${cycle}` : 'off'}
+                n={slide.media}
+                priority={i === 0}
+                portrait={portrait}
+                drifting={i === index}
+                playVideo={videoAllowed && i === index}
+              />
               {/* Legibility scrim over footage, not decoration. */}
               <div
                 aria-hidden
-                className="absolute inset-0 bg-brand-plate-navy/60 lg:bg-transparent lg:bg-[linear-gradient(90deg,rgb(20_33_61/0.92)_0%,rgb(20_33_61/0.7)_50%,rgb(20_33_61/0.35)_100%)]"
+                className="absolute inset-0 bg-[linear-gradient(180deg,rgb(10_10_11/0.45)_0%,rgb(10_10_11/0.55)_45%,rgb(10_10_11/0.92)_100%)] lg:bg-[linear-gradient(90deg,rgb(10_10_11/0.94)_0%,rgb(10_10_11/0.72)_45%,rgb(10_10_11/0.25)_100%)]"
               />
               <div className="relative mx-auto flex w-full max-w-[var(--size-content-max)] flex-col justify-end px-5 pt-16 pb-64 md:px-6 md:pb-48 lg:justify-center lg:pb-36">
                 <div className="max-w-[36rem] lg:max-w-[calc(100%-26rem)]">
+                  <div className={cn('mb-5', i === 0 && 'hero-reveal')}>
+                    <Eyebrow onDark>{t('eyebrow')}</Eyebrow>
+                  </div>
                   {i === 0 ? (
-                    <h1 className="hero-reveal font-display text-display-xl leading-display font-bold">{slide.title}</h1>
+                    <h1 className="hero-reveal font-display text-display-xl leading-display font-bold tracking-[0.01em] uppercase">{slide.title}</h1>
                   ) : (
-                    <p className="font-display text-display-xl leading-display font-bold">{slide.title}</p>
+                    <p className="font-display text-display-xl leading-display font-bold tracking-[0.01em] uppercase">{slide.title}</p>
                   )}
                   <p
                     className={cn(
-                      'mt-5 max-w-[46ch] text-body-l leading-body text-brand-chalk/90',
+                      'mt-5 max-w-[46ch] text-body-l leading-body text-brand-paper/90',
                       i === 0 && 'hero-reveal hero-reveal-late',
                     )}
                   >
@@ -226,12 +243,12 @@ export function HeroCarousel({ slides, whatsappHref }: { slides: readonly HeroSl
                 aria-current={i === index ? 'true' : undefined}
                 className="flex size-11 items-center justify-center rounded-button"
               >
-                <span className="relative block h-7 w-1.5 overflow-hidden rounded-full bg-brand-chalk/30">
+                <span className="relative block h-7 w-1.5 overflow-hidden rounded-full bg-brand-paper/30">
                   {i === index ? (
                     <span
                       key={cycle}
                       aria-hidden
-                      className={cn('absolute inset-0 origin-bottom rounded-full bg-brand-chalk', !reducedMotion && 'tally-fill')}
+                      className={cn('absolute inset-0 origin-bottom rounded-full bg-brand-accent-glow', !reducedMotion && 'tally-fill')}
                       style={reducedMotion ? undefined : { animationPlayState: advancing ? 'running' : 'paused' }}
                       onAnimationEnd={next}
                     />
@@ -239,11 +256,15 @@ export function HeroCarousel({ slides, whatsappHref }: { slides: readonly HeroSl
                 </span>
               </button>
             ))}
+            <span aria-hidden className="mr-1 ml-2 font-display text-title font-bold tracking-[0.12em] text-brand-white tabular">
+              {String(index + 1).padStart(2, '0')}
+              <span className="text-brand-mist"> / {String(slides.length).padStart(2, '0')}</span>
+            </span>
             <button
               type="button"
               onClick={() => setPaused((value) => !value)}
               aria-label={paused ? t('play') : t('pause')}
-              className="ml-2 inline-flex size-11 items-center justify-center rounded-full border-2 border-brand-chalk/60 text-[0.9rem] hover:border-brand-chalk"
+              className="ml-2 inline-flex size-11 items-center justify-center rounded-full border-2 border-brand-paper/60 text-[0.9rem] hover:border-brand-paper"
             >
               {paused ? <PlayIcon /> : <PauseIcon />}
             </button>
@@ -258,16 +279,19 @@ function SlideMedia({
   n,
   priority,
   portrait,
+  drifting,
   playVideo,
 }: {
   n: number;
   priority: boolean;
   portrait: boolean;
+  /** The current slide drifts; the others rest, ready to start from the beginning. */
+  drifting: boolean;
   playVideo: boolean;
 }) {
   const base = `/media/hero/hero${n}`;
   return (
-    <>
+    <div className="absolute inset-0 overflow-hidden">
       <picture>
         <source media={PORTRAIT} type="image/avif" srcSet={`${base}-mobile-poster.avif`} />
         <source media={PORTRAIT} type="image/webp" srcSet={`${base}-mobile-poster.webp`} />
@@ -281,7 +305,7 @@ function SlideMedia({
           decoding={priority ? 'sync' : 'async'}
           loading={priority ? 'eager' : 'lazy'}
           fetchPriority={priority ? 'high' : 'auto'}
-          className="absolute inset-0 size-full object-cover"
+          className={cn('absolute inset-0 size-full object-cover', drifting && (n % 2 === 0 ? 'hero-drift hero-drift-alt' : 'hero-drift'))}
         />
       </picture>
       {playVideo ? (
@@ -310,6 +334,6 @@ function SlideMedia({
           )}
         </video>
       ) : null}
-    </>
+    </div>
   );
 }

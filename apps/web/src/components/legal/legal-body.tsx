@@ -4,7 +4,7 @@ import { parseInline, type LegalBlock } from '@/lib/legal-markdown';
 
 /** Renders parsed legal Markdown as React elements — no raw HTML path exists. */
 
-const linkClass = 'font-semibold text-brand-wall-blue underline underline-offset-4 hover:no-underline';
+const linkClass = 'font-semibold text-brand-link underline underline-offset-4 hover:no-underline';
 
 function Inline({ text }: { text: string }) {
   return (
@@ -41,13 +41,13 @@ export function LegalBody({ blocks, lang }: { blocks: readonly LegalBlock[]; lan
         switch (block.type) {
           case 'h2':
             return (
-              <h2 key={i} className="mt-6 font-display text-display-m leading-tight font-bold text-brand-plate-navy">
+              <h2 key={i} className="mt-6 font-display text-display-m leading-tight font-bold text-brand-obsidian">
                 <Inline text={block.text} />
               </h2>
             );
           case 'h3':
             return (
-              <h3 key={i} className="mt-2 text-title font-semibold text-brand-plate-navy">
+              <h3 key={i} className="mt-2 text-title font-semibold text-brand-obsidian">
                 <Inline text={block.text} />
               </h3>
             );

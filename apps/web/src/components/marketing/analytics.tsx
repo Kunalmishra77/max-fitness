@@ -60,10 +60,10 @@ function ConsentBanner() {
     <div
       role="region"
       aria-label={t('label')}
-      className="fixed inset-x-3 bottom-[4.75rem] z-50 rounded-panel border border-brand-rubber-grey/20 bg-brand-white p-5 text-brand-ink shadow-[var(--shadow-overlay)] md:right-auto md:bottom-6 md:left-6 md:max-w-md"
+      className="fixed inset-x-3 bottom-[4.75rem] z-50 rounded-panel border border-brand-stone/20 bg-brand-white p-5 text-brand-ink shadow-[var(--shadow-overlay)] md:right-auto md:bottom-6 md:left-6 md:max-w-md"
     >
       <p className="text-body leading-body">{t('body')}</p>
-      <Link href="/legal/privacy" className="mt-1 inline-flex min-h-11 items-center text-small font-semibold text-brand-wall-blue underline underline-offset-4">
+      <Link href="/legal/privacy" className="mt-1 inline-flex min-h-11 items-center text-small font-semibold text-brand-link underline underline-offset-4">
         {t('policy')}
       </Link>
       {/* Equal weight for both answers: declining must be as easy as agreeing. */}

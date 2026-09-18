@@ -26,9 +26,9 @@ export default async function CrmCallsPage() {
     <>
       <CrmHeader title={t('calls.title')} back="/crm" />
       {tasks.length === 0 ? (
-        <p className="px-4 py-10 text-center text-crm-body text-brand-rubber-grey">{t('calls.empty')}</p>
+        <p className="px-4 py-10 text-center text-crm-body text-brand-stone">{t('calls.empty')}</p>
       ) : (
-        <ul className="divide-y divide-brand-rubber-grey/15">
+        <ul className="divide-y divide-brand-stone/15">
           {tasks.map((task) => (
             <li key={task.id} className="bg-white p-4">
               <div className="flex items-baseline justify-between gap-3">
@@ -39,14 +39,14 @@ export default async function CrmCallsPage() {
               </div>
               {task.member === null ? null : (
                 <div className="mt-3 grid grid-cols-2 gap-3">
-                  <a href={`tel:${task.member.mobile}`} className="flex min-h-14 items-center justify-center rounded-panel bg-brand-plate-navy text-crm-body font-semibold text-white">
+                  <a href={`tel:${task.member.mobile}`} className="flex min-h-14 items-center justify-center rounded-panel bg-brand-obsidian text-crm-body font-semibold text-white">
                     📞 {t('profile.call')}
                   </a>
                   <a
                     href={`https://wa.me/${task.member.mobile.replace(/\D/g, '')}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex min-h-14 items-center justify-center rounded-panel border-2 border-brand-plate-navy text-crm-body font-semibold text-brand-plate-navy"
+                    className="flex min-h-14 items-center justify-center rounded-panel border-2 border-brand-obsidian text-crm-body font-semibold text-brand-obsidian"
                   >
                     💬 {t('profile.whatsapp')}
                   </a>

@@ -99,7 +99,8 @@
         "title": "Coached by the owner. Since 2000.",
         "sub": "Ajay Kuliyal and a team of trainers plan your workouts and diet. Rated {rating} from {count} Google reviews."
       }
-    }
+    },
+    "eyebrow": "Indirapuram · Since 2000"
   },
   "lead": {
     "title": "Get a call back",
@@ -152,7 +153,9 @@
     "beginners": "Beginners guided from the first session",
     "openTill": "Open till {time}",
     "photoMain": "Wide view of the training floor",
-    "photoInset": "A trainer guiding a member's form"
+    "photoInset": "A trainer guiding a member's form",
+    "eyebrow": "Our story",
+    "yearsBadge": "Years in Indirapuram"
   },
   "facilities": {
     "h2": "Everything you need, nothing you don't.",
@@ -182,7 +185,8 @@
       "parking": "Parking nearby",
       "airConditioned": "Air-conditioned",
       "dietPlans": "Diet plans"
-    }
+    },
+    "eyebrow": "The floor"
   },
   "start": {
     "h2": "Starting is simple.",
@@ -204,7 +208,8 @@
         "title": "Start with a trainer",
         "body": "Your first workouts are planned for your level."
       }
-    }
+    },
+    "eyebrow": "How to start"
   },
   "plans": {
     "h2": "Membership fees",
@@ -222,14 +227,16 @@
     "chooseLabel": "Choose {plan} for {price}",
     "noSavingLabel": "No saving",
     "note": "Pay online by UPI or card, or pay at reception. Prices are for gym floor access with trainer guidance.",
-    "unavailable": "Today's fees are being updated. Call or WhatsApp us and we'll tell you straight away."
+    "unavailable": "Today's fees are being updated. Call or WhatsApp us and we'll tell you straight away.",
+    "eyebrow": "Membership"
   },
   "reviews": {
     "h2": "What members say",
     "readAll": "Read all reviews on Google",
     "demoLabel": "Demo review",
     "rating": "{count} out of 5 stars",
-    "source": "Google review"
+    "source": "Google review",
+    "eyebrow": "Members speak"
   },
   "gallery": {
     "h2": "Inside the gym",
@@ -238,7 +245,8 @@
     "next": "Next photo",
     "previous": "Previous photo",
     "counter": "{n} of {total}",
-    "placeholder": "Photo coming soon"
+    "placeholder": "Photo coming soon",
+    "eyebrow": "Inside Max"
   },
   "visit": {
     "h2": "Visit us",
@@ -262,7 +270,8 @@
       "4": "Thursday",
       "5": "Friday",
       "6": "Saturday"
-    }
+    },
+    "eyebrow": "Find us"
   },
   "faq": {
     "h2": "Questions people ask",
@@ -317,11 +326,13 @@
         "q": "What's the minimum age?",
         "a": "{minAge} years. Members under 18 need a parent or guardian to sign at reception."
       }
-    }
+    },
+    "eyebrow": "Good to know"
   },
   "finalCta": {
     "h2": "Come and see the floor before you join.",
-    "sub": "Walk in, meet the trainers, then decide."
+    "sub": "Walk in, meet the trainers, then decide.",
+    "eyebrow": "Your first session"
   },
   "contact": {
     "h2": "Contact",
@@ -396,7 +407,8 @@
       }
     },
     "cta": "Train with Ajay",
-    "portraitAlt": "Ajay Kuliyal, owner of Max Fitness Gym (photo coming soon)"
+    "portraitAlt": "Ajay Kuliyal, owner of Max Fitness Gym (photo coming soon)",
+    "eyebrow": "Meet the coach"
   },
   "signup": {
     "title": "Sign up",

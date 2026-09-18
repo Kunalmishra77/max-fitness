@@ -9,7 +9,7 @@ import { extendTailwindMerge } from 'tailwind-merge';
  *
  * tailwind-merge must know the design-token scales from tokens.css. Otherwise it
  * reads an unknown `text-display-l` as a colour, decides it conflicts with
- * `text-brand-plate-navy`, and silently drops one of them — headings lost their size
+ * `text-brand-obsidian`, and silently drops one of them — headings lost their size
  * and red buttons lost their white text before this was configured.
  */
 const twMerge = extendTailwindMerge({

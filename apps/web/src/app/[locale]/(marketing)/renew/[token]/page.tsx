@@ -40,7 +40,7 @@ export default async function RenewPage({ params }: { params: Promise<{ locale: 
 
   return (
     <JoinPage ctx={ctx}>
-      <div className="bg-brand-chalk">
+      <div className="bg-brand-paper">
         <div className="mx-auto max-w-xl px-5 py-10 md:py-16">
           {typeof offer === 'string' ? (
             <div className="grid gap-5">

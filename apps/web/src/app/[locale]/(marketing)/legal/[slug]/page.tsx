@@ -62,18 +62,18 @@ export default async function LegalPage({ params }: { params: Params }) {
 
   return (
     <MarketingShell ctx={ctx} onHome={false}>
-      <div className="bg-brand-chalk">
+      <div className="bg-brand-paper">
         <article className="mx-auto max-w-3xl px-5 py-12 md:py-16">
           {ctx.showUnconfirmed ? (
             <p className="mb-8 rounded-panel border-2 border-semantic-fee-due-soon bg-tint-fee-due-soon-bg p-4 text-body font-semibold">
               {t('draft')}
             </p>
           ) : null}
-          {locale === 'hi' ? <p className="mb-6 text-body leading-body text-brand-rubber-grey">{t('hiPending')}</p> : null}
+          {locale === 'hi' ? <p className="mb-6 text-body leading-body text-brand-stone">{t('hiPending')}</p> : null}
 
-          <h1 className="font-display text-display-l leading-display font-bold text-brand-plate-navy">{t(`titles.${slug}`)}</h1>
+          <h1 className="font-display text-display-l leading-display font-bold text-brand-obsidian">{t(`titles.${slug}`)}</h1>
           {doc.updated === null ? null : (
-            <p className="mt-3 text-small text-brand-rubber-grey">
+            <p className="mt-3 text-small text-brand-stone">
               {t('updated', { date: format.dateTime(new Date(`${doc.updated}T00:00:00+05:30`), 'short') })}
             </p>
           )}

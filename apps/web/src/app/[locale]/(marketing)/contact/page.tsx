@@ -25,9 +25,9 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
 
   return (
     <MarketingShell ctx={ctx} onHome={false}>
-      <div className="bg-brand-chalk">
+      <div className="bg-brand-paper">
         <div className="mx-auto max-w-[var(--size-content-max)] px-5 pt-12 md:px-6 md:pt-16">
-          <h1 className="font-display text-display-l leading-display font-bold text-brand-plate-navy">{tl('titles.contact')}</h1>
+          <h1 className="font-display text-display-l leading-display font-bold text-brand-obsidian">{tl('titles.contact')}</h1>
           <p className="mt-4 max-w-[60ch] text-body-l leading-body">{t('intro')}</p>
         </div>
       </div>
@@ -42,7 +42,7 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
       />
       <div className="bg-brand-white">
         <div className="mx-auto max-w-[var(--size-content-max)] px-5 py-12 md:px-6">
-          <h2 className="font-display text-display-m leading-tight font-bold text-brand-plate-navy">{t('grievanceHeading')}</h2>
+          <h2 className="font-display text-display-m leading-tight font-bold text-brand-obsidian">{t('grievanceHeading')}</h2>
           <p className="mt-3 max-w-[65ch] text-body leading-body">{t('grievanceBody')}</p>
         </div>
       </div>

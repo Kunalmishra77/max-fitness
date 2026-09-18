@@ -255,7 +255,7 @@ export function PayStep({
           contact: current.prefill.contact,
           ...(current.prefill.email === null ? {} : { email: current.prefill.email }),
         },
-        theme: { color: '#D62828' },
+        theme: { color: '#D90F1F' },
         handler: (callback) => void verify(current, callback),
         modal: { ondismiss: () => mounted.current && setPhase((p) => (p === 'creating' ? 'failed' : p)) },
       });
@@ -328,7 +328,7 @@ export function PayStep({
         >
           {primaryLabel}
         </button>
-        <p className="text-body text-brand-rubber-grey text-center">{t('orReception')}</p>
+        <p className="text-body text-brand-stone text-center">{t('orReception')}</p>
         <button
           type="button"
           disabled={busy}
@@ -343,8 +343,8 @@ export function PayStep({
 
   return (
     <div className="grid gap-6">
-      <div className="rounded-panel border border-brand-rubber-grey/30 bg-brand-white p-5">
-        <p className="text-body font-semibold text-brand-plate-navy">
+      <div className="rounded-panel border border-brand-stone/30 bg-brand-white p-5">
+        <p className="text-body font-semibold text-brand-obsidian">
           {t('summary', {
             name: summary.firstName,
             plan: summary.planLabel,
@@ -361,8 +361,8 @@ export function PayStep({
               <dd className="text-right">{price(summary.admissionPaise)}</dd>
             </>
           ) : null}
-          <dt className="border-t border-brand-rubber-grey/30 pt-2 font-semibold">{t('total')}</dt>
-          <dd className="border-t border-brand-rubber-grey/30 pt-2 text-right font-display text-title font-bold text-brand-signboard-red-text">
+          <dt className="border-t border-brand-stone/30 pt-2 font-semibold">{t('total')}</dt>
+          <dd className="border-t border-brand-stone/30 pt-2 text-right font-display text-title font-bold text-brand-accent-deep">
             {price(total)}
           </dd>
         </dl>
@@ -377,14 +377,14 @@ export function PayStep({
 
       {phase === 'review' ? (
         <div role="status" className="rounded-panel bg-tint-fee-due-soon-bg p-5">
-          <p className="font-semibold text-brand-plate-navy">{t('reviewTitle')}</p>
+          <p className="font-semibold text-brand-obsidian">{t('reviewTitle')}</p>
           <p className="mt-2 text-body leading-body">{t('reviewBody', { phone: phoneDisplay })}</p>
         </div>
       ) : null}
 
       {phase === 'pending' ? (
         <div role="status" aria-live="polite" className="rounded-panel bg-tint-fee-due-soon-bg p-5">
-          <p className="font-semibold text-brand-plate-navy">{t('pendingTitle')}</p>
+          <p className="font-semibold text-brand-obsidian">{t('pendingTitle')}</p>
           <p className="mt-2 text-body leading-body">{t('pendingBody')}</p>
         </div>
       ) : null}
@@ -403,13 +403,13 @@ export function PayStep({
 
       {phase === 'review' || phase === 'pending' || phase === 'expired' ? null : actions(phase === 'failed' ? t('tryAgain') : t('payNow', { amount: price(total) }))}
 
-      <p className={cn('text-center text-small text-brand-rubber-grey')}>{t('secure')}</p>
+      <p className={cn('text-center text-small text-brand-stone')}>{t('secure')}</p>
 
       <Dialog open={phase === 'demo'} onOpenChange={(open) => (open ? undefined : setPhase('idle'))}>
         <DialogContent>
-          <DialogTitle className="font-display text-title font-bold text-brand-plate-navy">{t('simulatedTitle')}</DialogTitle>
+          <DialogTitle className="font-display text-title font-bold text-brand-obsidian">{t('simulatedTitle')}</DialogTitle>
           <DialogDescription className="mt-2 text-body leading-body">{t('simulatedBody')}</DialogDescription>
-          <p className="mt-3 font-display text-title font-bold text-brand-signboard-red-text">{order === null ? null : price(order.amountPaise)}</p>
+          <p className="mt-3 font-display text-title font-bold text-brand-accent-deep">{order === null ? null : price(order.amountPaise)}</p>
           <div className="mt-5 grid gap-3">
             <button type="button" onClick={() => void simulate('success')} className={buttonVariants({ variant: 'primary', full: true })}>
               {t('simulateSuccess')}

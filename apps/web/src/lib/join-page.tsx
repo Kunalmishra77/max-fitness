@@ -63,7 +63,7 @@ export async function PlansUnavailable({ ctx }: { ctx: SiteContext }) {
   return (
     <p role="alert" className="rounded-panel bg-tint-fee-due-soon-bg p-5 text-body leading-body">
       {t('unavailable')}{' '}
-      <a href={ctx.contact.telHref} className="font-semibold text-brand-wall-blue underline underline-offset-2">
+      <a href={ctx.contact.telHref} className="font-semibold text-brand-link underline underline-offset-2">
         {ctx.contact.phoneDisplay}
       </a>
     </p>

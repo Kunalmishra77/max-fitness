@@ -140,9 +140,9 @@ export function AddMemberFlow({
     });
   };
 
-  const field = 'mt-3 min-h-16 w-full rounded-input border-2 border-brand-rubber-grey/40 bg-white px-4 text-crm-body';
-  const primary = 'min-h-16 w-full rounded-panel bg-brand-signboard-red text-crm-body font-bold text-white disabled:opacity-50';
-  const secondary = 'min-h-16 w-full rounded-panel border-2 border-brand-plate-navy text-crm-body font-bold text-brand-plate-navy';
+  const field = 'mt-3 min-h-16 w-full rounded-input border-2 border-brand-stone/40 bg-white px-4 text-crm-body';
+  const primary = 'min-h-16 w-full rounded-panel bg-brand-accent text-crm-body font-bold text-brand-white disabled:opacity-50';
+  const secondary = 'min-h-16 w-full rounded-panel border-2 border-brand-obsidian text-crm-body font-bold text-brand-obsidian';
 
   if (done !== null) {
     return (
@@ -150,7 +150,7 @@ export function AddMemberFlow({
         <p aria-hidden className="text-6xl">
           ✅
         </p>
-        <h2 className="font-display text-display-m font-bold text-brand-plate-navy">{t('done')}</h2>
+        <h2 className="font-display text-display-m font-bold text-brand-obsidian">{t('done')}</h2>
         <p className="text-crm-body">{fullName.trim()}</p>
         {done.possibleDuplicate ? (
           <p role="alert" className="rounded-input bg-tint-fee-due-soon-bg p-3 text-crm-body font-medium text-semantic-fee-due-soon">
@@ -160,7 +160,7 @@ export function AddMemberFlow({
         <a href={`/crm/members/${done.memberId}/renew`} className={`flex items-center justify-center ${primary}`}>
           {t('takeFees')}
         </a>
-        <a href={`/crm/members/${done.memberId}`} className="flex min-h-14 items-center justify-center text-crm-body font-semibold text-brand-rubber-grey">
+        <a href={`/crm/members/${done.memberId}`} className="flex min-h-14 items-center justify-center text-crm-body font-semibold text-brand-stone">
           {t('later')}
         </a>
       </div>
@@ -169,17 +169,17 @@ export function AddMemberFlow({
 
   return (
     <div className="p-4">
-      <p className="text-small text-brand-rubber-grey">{t('step', { current: index + 1, total: STEPS.length })}</p>
+      <p className="text-small text-brand-stone">{t('step', { current: index + 1, total: STEPS.length })}</p>
       <div aria-hidden className="mt-2 flex gap-1.5">
         {STEPS.map((name, i) => (
-          <span key={name} className={`h-1.5 flex-1 rounded-full ${i <= index ? 'bg-brand-signboard-red' : 'bg-brand-rubber-grey/25'}`} />
+          <span key={name} className={`h-1.5 flex-1 rounded-full ${i <= index ? 'bg-brand-accent' : 'bg-brand-stone/25'}`} />
         ))}
       </div>
 
       <div className="mt-6">
         {step === 'photo' ? (
           <div className="text-center">
-            <h2 className="font-display text-title font-bold text-brand-plate-navy">{t('photoTitle')}</h2>
+            <h2 className="font-display text-title font-bold text-brand-obsidian">{t('photoTitle')}</h2>
             {photo === null ? (
               <>
                 <p aria-hidden className="mt-6 text-6xl">
@@ -188,7 +188,7 @@ export function AddMemberFlow({
                 <button type="button" onClick={() => setCameraOpen(true)} className={`mt-6 ${secondary}`}>
                   {t('photoTake')}
                 </button>
-                <p className="mt-4 text-crm-body text-brand-rubber-grey">{t('photoHelper')}</p>
+                <p className="mt-4 text-crm-body text-brand-stone">{t('photoHelper')}</p>
               </>
             ) : (
               <>
@@ -205,7 +205,7 @@ export function AddMemberFlow({
 
         {step === 'name' ? (
           <div>
-            <label htmlFor={`${id}-name`} className="font-display text-title font-bold text-brand-plate-navy">
+            <label htmlFor={`${id}-name`} className="font-display text-title font-bold text-brand-obsidian">
               {t('nameTitle')}
             </label>
             <input id={`${id}-name`} type="text" autoComplete="off" value={fullName} onChange={(e) => setFullName(e.target.value)} className={field} aria-label={t('nameLabel')} />
@@ -214,7 +214,7 @@ export function AddMemberFlow({
 
         {step === 'mobile' ? (
           <div>
-            <label htmlFor={`${id}-mobile`} className="font-display text-title font-bold text-brand-plate-navy">
+            <label htmlFor={`${id}-mobile`} className="font-display text-title font-bold text-brand-obsidian">
               {t('mobileTitle')}
             </label>
             <input
@@ -227,13 +227,13 @@ export function AddMemberFlow({
               className={`${field} text-2xl tracking-widest`}
               aria-label={t('mobileLabel')}
             />
-            <p className="mt-2 text-small text-brand-rubber-grey">{t('mobileHelper')}</p>
+            <p className="mt-2 text-small text-brand-stone">{t('mobileHelper')}</p>
           </div>
         ) : null}
 
         {step === 'gender' ? (
           <div>
-            <h2 className="font-display text-title font-bold text-brand-plate-navy">{t('genderTitle')}</h2>
+            <h2 className="font-display text-title font-bold text-brand-obsidian">{t('genderTitle')}</h2>
             <div className="mt-4 grid gap-3">
               {GENDERS.map((value) => (
                 <button
@@ -242,7 +242,7 @@ export function AddMemberFlow({
                   aria-pressed={gender === value}
                   onClick={() => setGender(value)}
                   className={`min-h-16 w-full rounded-panel border-2 text-crm-body font-semibold ${
-                    gender === value ? 'border-brand-signboard-red bg-tint-fee-expired-bg text-brand-signboard-red' : 'border-brand-rubber-grey/40 bg-white'
+                    gender === value ? 'border-brand-accent bg-tint-fee-expired-bg text-brand-accent' : 'border-brand-stone/40 bg-white'
                   }`}
                 >
                   {t(value)}
@@ -254,7 +254,7 @@ export function AddMemberFlow({
 
         {step === 'dob' ? (
           <div>
-            <h2 className="font-display text-title font-bold text-brand-plate-navy">{t('dobTitle')}</h2>
+            <h2 className="font-display text-title font-bold text-brand-obsidian">{t('dobTitle')}</h2>
             <div className="mt-3 grid grid-cols-3 gap-3">
               {(
                 [
@@ -264,7 +264,7 @@ export function AddMemberFlow({
                 ] as const
               ).map(([key, label, length]) => (
                 <span key={key}>
-                  <label htmlFor={`${id}-${key}`} className="block text-small font-semibold text-brand-rubber-grey">
+                  <label htmlFor={`${id}-${key}`} className="block text-small font-semibold text-brand-stone">
                     {label}
                   </label>
                   <input
@@ -284,7 +284,7 @@ export function AddMemberFlow({
 
         {step === 'consent' ? (
           <div>
-            <h2 className="font-display text-title font-bold text-brand-plate-navy">{t('consentTitle')}</h2>
+            <h2 className="font-display text-title font-bold text-brand-obsidian">{t('consentTitle')}</h2>
             <div className="mt-4 grid gap-4">
               {(
                 [
@@ -294,12 +294,12 @@ export function AddMemberFlow({
                 ] as const
               ).map(([checked, set, label]) => (
                 <label key={label} className="flex min-h-14 items-start gap-3 text-crm-body">
-                  <input type="checkbox" checked={checked} onChange={(e) => set(e.target.checked)} className="mt-1 size-6 accent-brand-plate-navy" />
+                  <input type="checkbox" checked={checked} onChange={(e) => set(e.target.checked)} className="mt-1 size-6 accent-brand-obsidian" />
                   <span>{label}</span>
                 </label>
               ))}
             </div>
-            <p className="mt-2 text-small text-brand-rubber-grey">{t('consentFaceMinor')}</p>
+            <p className="mt-2 text-small text-brand-stone">{t('consentFaceMinor')}</p>
           </div>
         ) : null}
       </div>
@@ -321,7 +321,7 @@ export function AddMemberFlow({
           </button>
         )}
         {index === 0 ? null : (
-          <button type="button" onClick={() => go(-1)} className="min-h-14 w-full text-crm-body font-semibold text-brand-rubber-grey">
+          <button type="button" onClick={() => go(-1)} className="min-h-14 w-full text-crm-body font-semibold text-brand-stone">
             {t('back')}
           </button>
         )}

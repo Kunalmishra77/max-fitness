@@ -52,7 +52,7 @@ export default async function CrmHomePage() {
         right={
           <div className="flex items-center gap-2">
             {counts.unreadAlerts > 0 ? (
-              <span className="rounded-full bg-brand-signboard-red px-2 py-1 text-small font-bold text-white">🔔 {counts.unreadAlerts}</span>
+              <span className="rounded-full bg-semantic-fee-expired px-2 py-1 text-small font-bold text-white">🔔 {counts.unreadAlerts}</span>
             ) : null}
             <LogoutButton label={t('login.logout')} />
           </div>
@@ -76,15 +76,15 @@ export default async function CrmHomePage() {
 
       <section className="mt-2">
         <div className="flex items-center justify-between px-4 py-2">
-          <h2 className="text-crm-body font-bold text-brand-plate-navy">
+          <h2 className="text-crm-body font-bold text-brand-obsidian">
             📞 {t('home.calls')} ({counts.callsToday})
           </h2>
-          <Link href="/crm/calls" className="min-h-11 text-crm-body font-semibold text-brand-wall-blue">
+          <Link href="/crm/calls" className="min-h-11 text-crm-body font-semibold text-brand-link">
             {t('home.seeAll')}
           </Link>
         </div>
         {calls.length === 0 ? (
-          <p className="px-4 pb-3 text-crm-body text-brand-rubber-grey">{t('home.noCalls')}</p>
+          <p className="px-4 pb-3 text-crm-body text-brand-stone">{t('home.noCalls')}</p>
         ) : (
           <ul>
             {calls.map((task) =>
@@ -108,23 +108,23 @@ export default async function CrmHomePage() {
       </section>
 
       <section className="mt-4 px-4">
-        <h2 className="text-crm-body font-bold text-brand-plate-navy">
+        <h2 className="text-crm-body font-bold text-brand-obsidian">
           🎂 {t('home.birthdays')} ({counts.birthdaysToday})
         </h2>
-        {counts.birthdaysToday === 0 ? <p className="mt-1 text-crm-body text-brand-rubber-grey">{t('home.noBirthdays')}</p> : null}
+        {counts.birthdaysToday === 0 ? <p className="mt-1 text-crm-body text-brand-stone">{t('home.noBirthdays')}</p> : null}
       </section>
 
       {showMoney ? (
         <section className="mt-4 px-4">
-          <h2 className="text-crm-body font-bold text-brand-plate-navy">₹ {t('home.thisMonth')}</h2>
-          <p className="mt-1 font-display text-display-m font-bold text-brand-plate-navy">{rupees(counts.collectedThisMonthPaise)}</p>
-          <p className="text-crm-body text-brand-rubber-grey">{t('home.lastMonth', { amount: rupees(counts.collectedLastMonthPaise) })}</p>
+          <h2 className="text-crm-body font-bold text-brand-obsidian">₹ {t('home.thisMonth')}</h2>
+          <p className="mt-1 font-display text-display-m font-bold text-brand-obsidian">{rupees(counts.collectedThisMonthPaise)}</p>
+          <p className="text-crm-body text-brand-stone">{t('home.lastMonth', { amount: rupees(counts.collectedLastMonthPaise) })}</p>
         </section>
       ) : null}
 
       <Link
         href="/crm/members/new"
-        className="fixed right-5 bottom-24 z-20 flex size-16 items-center justify-center rounded-full bg-brand-signboard-red text-3xl text-white shadow-[var(--shadow-overlay)]"
+        className="fixed right-5 bottom-24 z-20 flex size-16 items-center justify-center rounded-full bg-brand-accent text-3xl text-brand-white shadow-[var(--shadow-overlay)]"
         aria-label={t('home.addMember')}
       >
         ＋

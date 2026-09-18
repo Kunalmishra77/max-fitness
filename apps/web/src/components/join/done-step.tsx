@@ -48,7 +48,7 @@ export function DoneStep(props: DoneStepProps) {
   if (props.kind === 'reserved') {
     return (
       <div className="grid gap-5 text-center">
-        <h1 className="font-display text-display-m leading-tight font-bold text-brand-plate-navy">{t('reservedTitle', { name: props.firstName })}</h1>
+        <h1 className="font-display text-display-m leading-tight font-bold text-brand-obsidian">{t('reservedTitle', { name: props.firstName })}</h1>
         <p className="text-body-l font-semibold">{period}</p>
         <p className="text-body-l leading-body">
           {t('reservedBody', { amount, until: formatISTDateTime(new Date(props.reservedUntil), locale) })}
@@ -65,7 +65,7 @@ export function DoneStep(props: DoneStepProps) {
         <circle cx="32" cy="32" r="30" fill="none" stroke="currentColor" strokeWidth="4" />
         <path d="M19 33l9 9 17-19" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      <h1 className="font-display text-display-m leading-tight font-bold text-brand-plate-navy">{t('title', { name: props.firstName })}</h1>
+      <h1 className="font-display text-display-m leading-tight font-bold text-brand-obsidian">{t('title', { name: props.firstName })}</h1>
       <div className="grid gap-1 text-body-l">
         {props.memberCode === null ? null : <p className="font-semibold">{t('memberCode', { code: props.memberCode })}</p>}
         <p>{period}</p>

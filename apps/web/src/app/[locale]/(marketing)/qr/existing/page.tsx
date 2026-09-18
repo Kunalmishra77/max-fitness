@@ -18,7 +18,7 @@ export default async function QrExistingPage({ params }: { params: Promise<{ loc
 
   return (
     <QrPage ctx={ctx}>
-      <h1 className="mb-6 font-display text-display-m font-bold text-brand-plate-navy">{t('title')}</h1>
+      <h1 className="mb-6 font-display text-display-m font-bold text-brand-obsidian">{t('title')}</h1>
       <QrExistingPageFlow
         today={ctx.today}
         minAge={privacy.minAge}

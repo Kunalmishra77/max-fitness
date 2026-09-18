@@ -30,7 +30,7 @@ export default async function CrmMembersPage({ searchParams }: { searchParams: P
   });
 
   const chip = (label: string, href: string, active: boolean, tone = 'bg-white') =>
-    `inline-flex min-h-11 items-center rounded-button px-4 text-crm-body font-semibold ${active ? 'bg-brand-plate-navy text-white' : tone}`;
+    `inline-flex min-h-11 items-center rounded-button px-4 text-crm-body font-semibold ${active ? 'bg-brand-obsidian text-white' : tone}`;
 
   return (
     <>
@@ -49,9 +49,9 @@ export default async function CrmMembersPage({ searchParams }: { searchParams: P
         </div>
       </div>
 
-      <p className="px-4 py-2 text-small text-brand-rubber-grey">{t('members.count', { count: members.length })}</p>
+      <p className="px-4 py-2 text-small text-brand-stone">{t('members.count', { count: members.length })}</p>
       {members.length === 0 ? (
-        <p className="px-4 py-8 text-center text-crm-body text-brand-rubber-grey">{t('members.empty')}</p>
+        <p className="px-4 py-8 text-center text-crm-body text-brand-stone">{t('members.empty')}</p>
       ) : (
         <ul>
           {members.map((member) => (
@@ -64,7 +64,7 @@ export default async function CrmMembersPage({ searchParams }: { searchParams: P
 
       <Link
         href="/crm/members/new"
-        className="fixed right-5 bottom-24 z-20 flex size-16 items-center justify-center rounded-full bg-brand-signboard-red text-3xl text-white shadow-[var(--shadow-overlay)]"
+        className="fixed right-5 bottom-24 z-20 flex size-16 items-center justify-center rounded-full bg-brand-accent text-3xl text-brand-white shadow-[var(--shadow-overlay)]"
         aria-label={t('home.addMember')}
       >
         ＋

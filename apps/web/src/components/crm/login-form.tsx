@@ -49,7 +49,7 @@ export function LoginForm({ action }: { action: (values: { mobile: string; pin: 
     }
   };
 
-  const field = 'min-h-16 w-full rounded-input border-2 border-brand-rubber-grey/40 bg-white px-4 text-crm-body tracking-widest';
+  const field = 'min-h-16 w-full rounded-input border-2 border-brand-stone/40 bg-white px-4 text-crm-body tracking-widest';
 
   return (
     <form onSubmit={(event) => void onSubmit(event)} className="mt-8 grid gap-5">
@@ -83,14 +83,14 @@ export function LoginForm({ action }: { action: (values: { mobile: string; pin: 
           onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
           className={cn('mt-2 text-center text-2xl', field)}
         />
-        <p className="mt-1 text-small text-brand-rubber-grey">{t('pinHelper')}</p>
+        <p className="mt-1 text-small text-brand-stone">{t('pinHelper')}</p>
       </div>
 
       <label className="flex items-start gap-3 text-crm-body">
-        <input type="checkbox" checked={trusted} onChange={(e) => setTrusted(e.target.checked)} className="mt-1 size-6 accent-brand-plate-navy" />
+        <input type="checkbox" checked={trusted} onChange={(e) => setTrusted(e.target.checked)} className="mt-1 size-6 accent-brand-obsidian" />
         <span>
           {t('trusted')}
-          <span className="mt-0.5 block text-small text-brand-rubber-grey">{t('trustedHelper')}</span>
+          <span className="mt-0.5 block text-small text-brand-stone">{t('trustedHelper')}</span>
         </span>
       </label>
 

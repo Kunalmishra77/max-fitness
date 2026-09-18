@@ -25,7 +25,7 @@ export default async function CrmVerifyPage() {
     return (
       <>
         <CrmHeader title={t('title')} back="/crm/more" />
-        <p role="alert" className="m-4 rounded-panel bg-tint-fee-none-bg p-4 text-crm-body font-semibold text-brand-plate-navy">
+        <p role="alert" className="m-4 rounded-panel bg-tint-fee-none-bg p-4 text-crm-body font-semibold text-brand-obsidian">
           {t('errors.notAllowed')}
         </p>
         <BottomNav active="more" />
@@ -51,7 +51,7 @@ export default async function CrmVerifyPage() {
   return (
     <>
       <CrmHeader title={t('title')} back="/crm/more" />
-      <p className="px-4 pt-4 text-small text-brand-rubber-grey">{t('helper')}</p>
+      <p className="px-4 pt-4 text-small text-brand-stone">{t('helper')}</p>
       <VerifyQueue items={items} approve={approveVerificationAction} reject={rejectVerificationAction} />
       <BottomNav active="more" />
     </>

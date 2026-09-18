@@ -40,7 +40,7 @@ export function PromoBar({ text, whatsappHref }: { text: string; whatsappHref: s
   };
 
   return (
-    <div className="bg-brand-signboard-red-text text-brand-white">
+    <div className="bg-brand-accent-deep text-brand-white">
       <div className="mx-auto flex max-w-[var(--size-content-max)] items-center gap-2 px-5 md:px-6">
         <p className="flex-1 py-2 text-small font-medium md:text-center">
           <a

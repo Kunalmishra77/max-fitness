@@ -22,8 +22,8 @@ describe('crmManifest', () => {
   });
 
   it('wears the brand colours and opens in Hindi, portrait', () => {
-    expect(m.theme_color).toBe('#14213D');
-    expect(m.background_color).toBe('#14213D');
+    expect(m.theme_color).toBe('#0A0A0B');
+    expect(m.background_color).toBe('#0A0A0B');
     expect(m.lang).toBe('hi');
     expect(m.orientation).toBe('portrait');
   });

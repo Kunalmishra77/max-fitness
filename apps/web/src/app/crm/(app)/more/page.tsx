@@ -28,11 +28,11 @@ export default async function CrmMorePage() {
   return (
     <>
       <CrmHeader title={t('nav.more')} back="/crm" />
-      <ul className="divide-y divide-brand-rubber-grey/15">
+      <ul className="divide-y divide-brand-stone/15">
         <li>
           <Link href="/crm/more/pin" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
             🔑 {t('pin.link')}
-            <span aria-hidden className="text-xl text-brand-rubber-grey">
+            <span aria-hidden className="text-xl text-brand-stone">
               ›
             </span>
           </Link>
@@ -40,7 +40,7 @@ export default async function CrmMorePage() {
         <li>
           <Link href="/crm/calls" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
             📞 {t('calls.title')}
-            <span aria-hidden className="text-xl text-brand-rubber-grey">
+            <span aria-hidden className="text-xl text-brand-stone">
               ›
             </span>
           </Link>
@@ -49,7 +49,7 @@ export default async function CrmMorePage() {
           <li>
             <Link href="/crm/settings/staff" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
               👥 {t('staff.title')}
-              <span aria-hidden className="text-xl text-brand-rubber-grey">
+              <span aria-hidden className="text-xl text-brand-stone">
                 ›
               </span>
             </Link>
@@ -59,7 +59,7 @@ export default async function CrmMorePage() {
           <li>
             <Link href="/crm/settings" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
               ⚙️ {t('settings.title')}
-              <span aria-hidden className="text-xl text-brand-rubber-grey">
+              <span aria-hidden className="text-xl text-brand-stone">
                 ›
               </span>
             </Link>
@@ -70,9 +70,9 @@ export default async function CrmMorePage() {
             <Link href="/crm/verify" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
               <span>
                 ✅ {t('verify.link')}
-                {waiting > 0 ? <span className="ml-2 rounded-full bg-brand-signboard-red px-2 py-0.5 text-small text-white">{waiting}</span> : null}
+                {waiting > 0 ? <span className="ml-2 rounded-full bg-brand-accent px-2 py-0.5 text-small text-brand-white">{waiting}</span> : null}
               </span>
-              <span aria-hidden className="text-xl text-brand-rubber-grey">
+              <span aria-hidden className="text-xl text-brand-stone">
                 ›
               </span>
             </Link>
@@ -82,7 +82,7 @@ export default async function CrmMorePage() {
           <li>
             <Link href="/crm/import" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
               📥 {t('import.title')}
-              <span aria-hidden className="text-xl text-brand-rubber-grey">
+              <span aria-hidden className="text-xl text-brand-stone">
                 ›
               </span>
             </Link>
@@ -92,7 +92,7 @@ export default async function CrmMorePage() {
           <li>
             <Link href="/crm/reports" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
               📊 {t('reports.title')}
-              <span aria-hidden className="text-xl text-brand-rubber-grey">
+              <span aria-hidden className="text-xl text-brand-stone">
                 ›
               </span>
             </Link>
@@ -101,15 +101,15 @@ export default async function CrmMorePage() {
         <li>
           <Link href="/crm/leads" className="flex min-h-16 items-center justify-between bg-white px-4 text-crm-body font-semibold">
             🔵 {t('leads.title')}
-            <span aria-hidden className="text-xl text-brand-rubber-grey">
+            <span aria-hidden className="text-xl text-brand-stone">
               ›
             </span>
           </Link>
         </li>
       </ul>
       <div className="p-6 text-center">
-        <h2 className="font-display text-title font-bold text-brand-plate-navy">{t('soon.title')}</h2>
-        <p className="mt-2 text-crm-body text-brand-rubber-grey">{t('soon.body')}</p>
+        <h2 className="font-display text-title font-bold text-brand-obsidian">{t('soon.title')}</h2>
+        <p className="mt-2 text-crm-body text-brand-stone">{t('soon.body')}</p>
       </div>
       <BottomNav active="more" />
     </>

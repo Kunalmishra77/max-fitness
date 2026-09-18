@@ -92,7 +92,7 @@ export function RenewFlow(props: RenewFlowProps) {
           <img src={props.photoUrl} alt={t('photoAlt')} width={64} height={64} className="size-16 shrink-0 rounded-full object-cover" />
         )}
         <div>
-        <h1 className="font-display text-display-l leading-display font-bold text-brand-plate-navy">{t('title', { name: props.firstName })}</h1>
+        <h1 className="font-display text-display-l leading-display font-bold text-brand-obsidian">{t('title', { name: props.firstName })}</h1>
         <p className="mt-3 text-body-l leading-body">
           {props.currentEndDate === null
             ? t('startsOn', { newStart })

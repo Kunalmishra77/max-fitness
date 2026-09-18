@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { yearsOperating } from '@mfp/core';
 import { AboutSection } from '@/components/marketing/about-section';
 import { FacilitiesSection } from '@/components/marketing/facilities-section';
+import { MarqueeBand } from '@/components/marketing/marquee-band';
 import { FaqSection } from '@/components/marketing/faq-section';
 import { FinalCta } from '@/components/marketing/final-cta';
 import { Gallery } from '@/components/marketing/gallery';
@@ -59,7 +60,9 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       />
       <TrustStrip trust={data.settings.trust} hoursLine={ctx.hours.line} />
       <AboutSection years={yearsOperating(data.settings.trust.establishedYear, ctx.today)} hoursLine={ctx.hours.line} />
-      <FacilitiesSection showUnconfirmed={ctx.showUnconfirmed} />
+      <MarqueeBand />
+      {/* The public page lists only confirmed facilities and answers, demo or not (ADR-061). */}
+      <FacilitiesSection showUnconfirmed={false} />
       <StartSection phoneDisplay={contact.phoneDisplay} />
       <PlansSection
         plans={data.plans}
@@ -87,7 +90,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         mapSrc={contact.mapSrc}
       />
       <FaqSection
-        showUnconfirmed={ctx.showUnconfirmed}
+        showUnconfirmed={false}
         values={{
           hours: ctx.hours.summary,
           phoneDisplay: contact.phoneDisplay,

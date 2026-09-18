@@ -59,7 +59,7 @@ export function VoidPaymentButton({
     );
   }
 
-  const field = 'mt-2 min-h-14 w-full rounded-input border-2 border-brand-rubber-grey/40 bg-white px-4 text-crm-body';
+  const field = 'mt-2 min-h-14 w-full rounded-input border-2 border-brand-stone/40 bg-white px-4 text-crm-body';
 
   return (
     <div role="group" aria-label={t('title')} className="mt-3 rounded-panel bg-tint-fee-expired-bg p-4">
@@ -70,7 +70,7 @@ export function VoidPaymentButton({
         {t('reason')}
       </label>
       <input id={`${id}-reason`} type="text" value={reason} onChange={(e) => setReason(e.target.value)} className={field} />
-      <p className="mt-1 text-small text-brand-rubber-grey">{t('reasonHelper')}</p>
+      <p className="mt-1 text-small text-brand-stone">{t('reasonHelper')}</p>
 
       <label htmlFor={`${id}-pin`} className="mt-4 block text-crm-body font-semibold">
         {t('pin')}
@@ -85,7 +85,7 @@ export function VoidPaymentButton({
         onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
         className={`${field} text-center text-2xl tracking-widest`}
       />
-      <p className="mt-1 text-small text-brand-rubber-grey">{t('pinHelper')}</p>
+      <p className="mt-1 text-small text-brand-stone">{t('pinHelper')}</p>
 
       {error === null ? null : (
         <p role="alert" className="mt-3 rounded-input bg-white p-3 text-crm-body font-medium text-semantic-fee-expired">
@@ -101,7 +101,7 @@ export function VoidPaymentButton({
       >
         {t('confirm')}
       </button>
-      <button type="button" onClick={() => setOpen(false)} className="mt-2 min-h-14 w-full text-crm-body font-semibold text-brand-rubber-grey">
+      <button type="button" onClick={() => setOpen(false)} className="mt-2 min-h-14 w-full text-crm-body font-semibold text-brand-stone">
         {t('cancel')}
       </button>
     </div>

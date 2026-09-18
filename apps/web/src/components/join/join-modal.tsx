@@ -33,10 +33,10 @@ export function JoinModal({ step, children }: { step?: 1 | 2 | 3; children: Reac
         <div className="flex items-start justify-between gap-4">
           <div>
             {/* The confirmation brings its own heading, so the sheet only needs a label. */}
-            <DialogTitle className={step === undefined ? 'sr-only' : 'font-display text-display-m leading-tight font-bold text-brand-plate-navy'}>
+            <DialogTitle className={step === undefined ? 'sr-only' : 'font-display text-display-m leading-tight font-bold text-brand-obsidian'}>
               {t('title')}
             </DialogTitle>
-            {step === undefined ? null : <p className="mt-1 text-body font-semibold text-brand-rubber-grey">{t('stepper', { step, name: names[step] })}</p>}
+            {step === undefined ? null : <p className="mt-1 text-body font-semibold text-brand-stone">{t('stepper', { step, name: names[step] })}</p>}
           </div>
           <DialogClose className={buttonVariants({ variant: 'ghost', size: 'icon' })} aria-label={t('camera.close')}>
             <span aria-hidden className="text-2xl leading-none">
@@ -47,7 +47,7 @@ export function JoinModal({ step, children }: { step?: 1 | 2 | 3; children: Reac
         {step === undefined ? null : (
           <ol aria-hidden className="mt-3 grid grid-cols-3 gap-2">
             {[1, 2, 3].map((n) => (
-              <li key={n} className={n <= step ? 'h-1.5 rounded-full bg-brand-signboard-red' : 'h-1.5 rounded-full bg-brand-rubber-grey/30'} />
+              <li key={n} className={n <= step ? 'h-1.5 rounded-full bg-brand-accent' : 'h-1.5 rounded-full bg-brand-stone/30'} />
             ))}
           </ol>
         )}

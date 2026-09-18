@@ -37,22 +37,22 @@ export async function VisitSection({
 
   return (
     <Section id="contact" tone="chalk" labelledBy="visit-heading">
-      <SectionHeading id="visit-heading" className="text-brand-plate-navy">
+      <SectionHeading id="visit-heading" eyebrow={t('eyebrow')} className="text-brand-obsidian">
         {t('h2')}
       </SectionHeading>
 
       <div className="mt-10 grid gap-12 md:grid-cols-2">
         <div>
-          <h3 className="text-title font-semibold text-brand-plate-navy">{t('hoursHeading')}</h3>
+          <h3 className="text-title font-semibold text-brand-obsidian">{t('hoursHeading')}</h3>
           {rows.length === 0 ? (
             <p className="mt-4 text-body leading-body">{t('hoursUnknown')}</p>
           ) : (
             <HoursTable rows={rows} todayLabel={t('today')} closedLabel={t('closed')} />
           )}
 
-          <h3 className="mt-10 text-title font-semibold text-brand-plate-navy">{t('findingUs')}</h3>
+          <h3 className="mt-10 text-title font-semibold text-brand-obsidian">{t('findingUs')}</h3>
           <p className="mt-4 flex gap-3 text-body-l leading-body">
-            <MapPinIcon className="mt-1.5 shrink-0 text-brand-signboard-red-text" />
+            <MapPinIcon className="mt-1.5 shrink-0 text-brand-accent-deep" />
             {/* The address line already names the landmark (opposite Sai Mandir). */}
             <span>{address}</span>
           </p>

@@ -32,7 +32,7 @@ export function MemberSearch({ placeholder, initial, basePath = '/crm/members' }
       onChange={(event) => setValue(event.target.value)}
       placeholder={placeholder}
       aria-label={placeholder}
-      className="min-h-14 w-full rounded-input border-2 border-brand-rubber-grey/30 bg-semantic-surface-crm-alt px-4 text-crm-body"
+      className="min-h-14 w-full rounded-input border-2 border-brand-stone/30 bg-semantic-surface-crm-alt px-4 text-crm-body"
     />
   );
 }

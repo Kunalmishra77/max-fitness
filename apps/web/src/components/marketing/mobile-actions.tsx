@@ -16,7 +16,7 @@ export async function MobileStickyBar({ telHref, whatsappHref }: { telHref: stri
   return (
     <nav
       aria-label={t('label')}
-      className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-3 border-t border-brand-chalk/15 bg-brand-plate-navy pb-[env(safe-area-inset-bottom)] text-brand-chalk md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-3 border-t border-brand-paper/15 bg-brand-obsidian pb-[env(safe-area-inset-bottom)] text-brand-paper md:hidden"
     >
       <a href={telHref} data-track="call_click" data-track-source="sticky_bar" className={item}>
         <PhoneIcon className="text-[1.15rem]" />
@@ -37,7 +37,7 @@ export async function MobileStickyBar({ telHref, whatsappHref }: { telHref: stri
         href="/join"
         data-track="signup_started"
         data-track-source="sticky_bar"
-        className={`${item} bg-brand-signboard-red text-body text-brand-white`}
+        className={`${item} bg-brand-accent text-body text-brand-white`}
       >
         {t('signUp')}
       </Link>
@@ -56,7 +56,7 @@ export async function WhatsAppFloat({ whatsappHref }: { whatsappHref: string }) 
       aria-label={t('whatsapp')}
       data-track="whatsapp_click"
       data-track-source="float"
-      className="fixed right-6 bottom-6 z-40 hidden size-14 items-center justify-center rounded-full border-2 border-brand-chalk/70 bg-brand-plate-navy text-[1.5rem] text-brand-chalk shadow-[var(--shadow-overlay)] hover:border-brand-chalk md:flex"
+      className="fixed right-6 bottom-6 z-40 hidden size-14 items-center justify-center rounded-full border-2 border-brand-paper/70 bg-brand-obsidian text-[1.5rem] text-brand-paper shadow-[var(--shadow-overlay)] hover:border-brand-paper md:flex"
     >
       <ChatIcon />
     </a>

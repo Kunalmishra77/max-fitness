@@ -50,7 +50,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ locale
   if (receipt === null) {
     return (
       <main id="main" className="mx-auto grid max-w-xl gap-6 px-5 py-16">
-        <h1 className="font-display text-display-m font-bold text-brand-plate-navy">{t('title')}</h1>
+        <h1 className="font-display text-display-m font-bold text-brand-obsidian">{t('title')}</h1>
         <p role="alert" className="text-body-l leading-body">
           {t('expired')}
         </p>
@@ -85,25 +85,25 @@ export default async function ReceiptPage({ params }: { params: Promise<{ locale
 
   return (
     <main id="main" className="mx-auto max-w-2xl px-5 py-10 print:max-w-none print:p-0">
-      <article className="rounded-panel border border-brand-rubber-grey/30 bg-brand-white p-6 md:p-10 print:border-0">
-        <header className="border-b border-brand-rubber-grey/30 pb-5">
-          <p className="font-display text-title font-bold text-brand-plate-navy">{gym.name}</p>
+      <article className="rounded-panel border border-brand-stone/30 bg-brand-white p-6 md:p-10 print:border-0">
+        <header className="border-b border-brand-stone/30 pb-5">
+          <p className="font-display text-title font-bold text-brand-obsidian">{gym.name}</p>
           <p className="mt-1 text-small leading-body text-brand-ink/80">
             {gym.addressLine}, {gym.city}, {gym.state} {gym.pincode} · {gym.phone}
           </p>
-          <h1 className="mt-5 font-display text-display-m font-bold text-brand-plate-navy">{t('title')}</h1>
+          <h1 className="mt-5 font-display text-display-m font-bold text-brand-obsidian">{t('title')}</h1>
         </header>
 
         <dl className="mt-5 grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-body">
           {rows.map(([label, value]) => (
             <div key={label} className="contents">
-              <dt className="text-brand-rubber-grey">{label}</dt>
+              <dt className="text-brand-stone">{label}</dt>
               <dd className="font-semibold">{value}</dd>
             </div>
           ))}
         </dl>
 
-        <dl className="mt-6 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 border-t border-brand-rubber-grey/30 pt-5 text-body">
+        <dl className="mt-6 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 border-t border-brand-stone/30 pt-5 text-body">
           {membership === null ? null : (
             <>
               <dt>{t('planLine')}</dt>
@@ -116,15 +116,15 @@ export default async function ReceiptPage({ params }: { params: Promise<{ locale
               ) : null}
             </>
           )}
-          <dt className="border-t border-brand-rubber-grey/30 pt-2 font-semibold">{t('total')}</dt>
-          <dd className="border-t border-brand-rubber-grey/30 pt-2 text-right font-display text-title font-bold text-brand-plate-navy">
+          <dt className="border-t border-brand-stone/30 pt-2 font-semibold">{t('total')}</dt>
+          <dd className="border-t border-brand-stone/30 pt-2 text-right font-display text-title font-bold text-brand-obsidian">
             {rupees(receipt.amountPaise)}
           </dd>
         </dl>
         <p className="mt-3 text-small text-brand-ink/80">
           {t('inWords')}: {amountInWordsINR(receipt.amountPaise)}
         </p>
-        <p className="mt-6 text-small text-brand-rubber-grey">{t('computerGenerated')}</p>
+        <p className="mt-6 text-small text-brand-stone">{t('computerGenerated')}</p>
       </article>
 
       <div className="mt-6 flex flex-wrap gap-3 print:hidden">

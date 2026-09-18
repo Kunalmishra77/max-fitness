@@ -48,7 +48,7 @@ export function CallOutcomeButtons({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-3 min-h-14 w-full rounded-panel border-2 border-brand-rubber-grey/40 text-crm-body font-semibold text-brand-plate-navy"
+        className="mt-3 min-h-14 w-full rounded-panel border-2 border-brand-stone/40 text-crm-body font-semibold text-brand-obsidian"
       >
         {t('title')}
       </button>
@@ -57,7 +57,7 @@ export function CallOutcomeButtons({
 
   return (
     <div className="mt-3 rounded-panel bg-tint-fee-none-bg p-3">
-      <p className="text-crm-body font-bold text-brand-plate-navy">{t('title')}</p>
+      <p className="text-crm-body font-bold text-brand-obsidian">{t('title')}</p>
       <div className="mt-3 grid gap-2">
         {CALL_OUTCOMES.map((outcome) => (
           <button
@@ -76,7 +76,7 @@ export function CallOutcomeButtons({
           {t('failed')}
         </p>
       ) : null}
-      <button type="button" onClick={() => setOpen(false)} className="mt-3 min-h-14 w-full text-crm-body font-semibold text-brand-rubber-grey">
+      <button type="button" onClick={() => setOpen(false)} className="mt-3 min-h-14 w-full text-crm-body font-semibold text-brand-stone">
         {t('cancel')}
       </button>
     </div>

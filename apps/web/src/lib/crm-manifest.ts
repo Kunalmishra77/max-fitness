@@ -24,8 +24,8 @@ export function crmManifest(): MetadataRoute.Manifest {
     lang: 'hi',
     dir: 'ltr',
     // The plate navy behind the splash screen, so opening it does not flash white.
-    theme_color: '#14213D',
-    background_color: '#14213D',
+    theme_color: '#0A0A0B',
+    background_color: '#0A0A0B',
     icons: [
       { src: '/icons/max-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
       { src: '/icons/max-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },

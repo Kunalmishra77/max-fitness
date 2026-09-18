@@ -103,7 +103,8 @@ export default async function LocaleLayout({
   const clientMessages = Object.fromEntries(CLIENT_NAMESPACES.map((namespace) => [namespace, messages[namespace]]));
 
   return (
-    <html lang={locale}>
+    // The preloader marks <html> before hydration once it has been seen this session.
+    <html lang={locale} suppressHydrationWarning>
       <body>
         <NextIntlClientProvider messages={clientMessages}>
           {children}

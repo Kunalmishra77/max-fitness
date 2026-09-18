@@ -47,6 +47,13 @@ describe('buildPosterSvg', () => {
     expect(buildPosterSvg({ qr: QR, size: 'A4', demo: true, url: 'https://x.vercel.app/qr' })).toContain('>DEMO<');
   });
 
+  it('puts the gym logo at the top when one is given, and the name as text either way', () => {
+    const withLogo = buildPosterSvg({ qr: QR, size: 'A4', demo: false, url: 'https://x.in/qr', logo: { dataUri: 'data:image/png;base64,AAAA', aspect: 1.03 } });
+    expect(withLogo).toContain('<image href="data:image/png;base64,AAAA"');
+    expect(withLogo).toContain('MAX FITNESS');
+    expect(buildPosterSvg({ qr: QR, size: 'A4', demo: false, url: 'https://x.in/qr' })).not.toContain('<image');
+  });
+
   it('escapes the printed link', () => {
     expect(buildPosterSvg({ qr: QR, size: 'A4', demo: false, url: 'https://x.in/qr?a=1&b=2' })).toContain('a=1&amp;b=2');
   });

@@ -1,9 +1,10 @@
 import { ImageResponse } from 'next/og';
 import { getTranslations } from 'next-intl/server';
+import { OG_LOGO_SRC } from '@/content/og-logo.generated';
 
 /**
- * Social share image (content strategy §3). Brand colours and the wordmark only — no
- * photo until the shoot. English for both locales: the image renderer's built-in font
+ * Social share image (content strategy §3). The gym's logo on black with the tagline
+ * and a red rule (ADR-061). English for both locales: the image renderer's built-in font
  * has no Devanagari glyphs, and a card of empty boxes would be worse than English.
  */
 
@@ -28,18 +29,21 @@ export default async function OpenGraphImage() {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          background: '#14213D',
-          color: '#F2F3EF',
+          background: '#0A0A0B',
+          color: '#F4F4F5',
           padding: '72px 80px',
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ fontSize: 132, fontWeight: 700, color: '#D62828', lineHeight: 1 }}>MAX</div>
-          <div style={{ fontSize: 40, letterSpacing: 10 }}>FITNESS GYM</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+          <img src={OG_LOGO_SRC} width={206} height={200} alt="" />
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ fontSize: 76, fontWeight: 700, lineHeight: 1, letterSpacing: 2 }}>MAX FITNESS</div>
+            <div style={{ fontSize: 30, letterSpacing: 12, color: '#C3C5C8', marginTop: 10 }}>GYM · INDIRAPURAM</div>
+          </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ fontSize: 68, fontWeight: 700, lineHeight: 1.05, maxWidth: 900 }}>{tagline}</div>
-          <div style={{ display: 'flex', marginTop: 28, height: 6, width: 140, background: '#E3A92B' }} />
+          <div style={{ display: 'flex', marginTop: 28, height: 6, width: 140, background: '#ED1021' }} />
         </div>
       </div>
     ),

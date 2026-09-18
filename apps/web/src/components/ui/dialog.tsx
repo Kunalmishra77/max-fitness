@@ -27,7 +27,7 @@ function Overlay({ className, ...props }: ComponentPropsWithoutRef<typeof Dialog
   return (
     <DialogPrimitive.Overlay
       className={cn(
-        'fixed inset-0 z-50 bg-[var(--color-brand-plate-navy)]/50',
+        'fixed inset-0 z-50 bg-[var(--color-brand-obsidian)]/50',
         'data-[state=open]:animate-in data-[state=open]:fade-in-0',
         'data-[state=closed]:animate-out data-[state=closed]:fade-out-0',
         className,
@@ -83,7 +83,7 @@ export function SheetContent({
       >
         <div
           aria-hidden
-          className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--color-brand-rubber-grey)]/30"
+          className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--color-brand-stone)]/30"
         />
         {children}
       </DialogPrimitive.Content>

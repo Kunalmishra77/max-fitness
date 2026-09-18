@@ -21,27 +21,32 @@ import { cn } from '@/lib/cn';
  */
 const buttonVariants = cva(
   cn(
-    'inline-flex items-center justify-center gap-2 rounded-button text-center',
+    'relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-button text-center',
     'font-body font-semibold whitespace-nowrap',
-    'transition-colors duration-[var(--duration-fast)] ease-standard',
+    'transition-[color,background-color,border-color,transform,box-shadow] duration-[var(--duration-base)] ease-standard',
+    'active:translate-y-0',
     'disabled:pointer-events-none disabled:opacity-50',
     'focus-visible:outline-offset-2',
   ),
   {
     variants: {
       variant: {
-        primary: 'bg-brand-signboard-red text-brand-white hover:bg-brand-signboard-red-text',
-        secondary: 'bg-brand-plate-navy text-brand-chalk hover:bg-brand-ink',
-        /** 2px Chalk border, for Plate Navy and video backgrounds. */
-        outlineLight: 'border-2 border-brand-chalk bg-transparent text-brand-chalk hover:bg-brand-chalk/10',
-        /** 2px Plate Navy border, for Chalk and White backgrounds. */
-        outlineDark: 'border-2 border-brand-plate-navy bg-transparent text-brand-plate-navy hover:bg-brand-plate-navy/[0.06]',
-        outline: cn(
-          'border border-brand-rubber-grey/40 bg-transparent',
-          'text-brand-ink hover:bg-brand-rubber-grey/10',
+        // ADR-061: red lifts, glows and catches a light sweep on hover.
+        primary: cn(
+          'btn-shine bg-brand-accent text-brand-white shadow-[0_10px_28px_-14px_rgb(217_15_31/0.9)]',
+          'hover:-translate-y-0.5 hover:bg-brand-accent-deep hover:shadow-[0_16px_34px_-14px_rgb(217_15_31/0.95)]',
         ),
-        ghost: 'bg-transparent text-brand-ink hover:bg-brand-rubber-grey/10',
-        link: 'bg-transparent text-brand-wall-blue underline underline-offset-4 hover:no-underline',
+        secondary: 'bg-brand-obsidian text-brand-paper hover:bg-brand-ink',
+        /** 2px Chalk border, for Plate Navy and video backgrounds. */
+        outlineLight: 'border-2 border-brand-paper/80 bg-transparent text-brand-paper hover:-translate-y-0.5 hover:border-brand-white hover:bg-brand-white hover:text-brand-obsidian',
+        /** 2px Plate Navy border, for Chalk and White backgrounds. */
+        outlineDark: 'border-2 border-brand-obsidian bg-transparent text-brand-obsidian hover:-translate-y-0.5 hover:bg-brand-obsidian hover:text-brand-white',
+        outline: cn(
+          'border border-brand-stone/40 bg-transparent',
+          'text-brand-ink hover:bg-brand-stone/10',
+        ),
+        ghost: 'bg-transparent text-brand-ink hover:bg-brand-stone/10',
+        link: 'bg-transparent text-brand-link underline underline-offset-4 hover:no-underline',
       },
       size: {
         web: 'min-h-12 px-5 text-body',

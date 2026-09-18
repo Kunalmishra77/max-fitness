@@ -6,23 +6,27 @@ import { DumbbellIcon, StarIcon } from './icons';
  */
 
 /**
- * Wordmark.
+ * The gym's logo with its name beside it (ADR-061).
  *
- * assets/brand/README.md: with no vector logo from the gym yet, a clean wordmark
- * inspired by the signboard — bold "MAX" in Signboard Red with "FITNESS GYM" beneath,
- * in Khand 700. Placeholder until the owner approves a logo.
+ * The logo (assets/brand/max-gym-logo.png) says "MAX GYM"; the name beside it keeps the
+ * full "Max Fitness Gym" for people and search engines. The image is decorative: the
+ * words next to it, or the link around it, carry the name.
  */
 export function Wordmark({ tone = 'light', className }: { tone?: 'light' | 'dark'; className?: string }) {
   return (
-    <span className={cn('inline-flex flex-col font-display leading-none font-bold', className)}>
-      <span className="text-[1.75rem] tracking-tight text-brand-signboard-red">MAX</span>
-      <span
-        className={cn(
-          'text-[0.7rem] tracking-[0.18em]',
-          tone === 'light' ? 'text-brand-chalk' : 'text-brand-plate-navy',
-        )}
-      >
-        FITNESS GYM
+    <span className={cn('inline-flex items-center gap-3', className)}>
+      <img
+        src="/brand/logo-96.webp"
+        srcSet="/brand/logo-96.webp 1x, /brand/logo-192.webp 2x"
+        alt=""
+        width={99}
+        height={96}
+        decoding="async"
+        className="h-12 w-auto"
+      />
+      <span className="flex flex-col font-display leading-none font-bold uppercase">
+        <span className={cn('text-[1.35rem] tracking-[0.04em]', tone === 'light' ? 'text-brand-white' : 'text-brand-obsidian')}>Max Fitness</span>
+        <span className={cn('mt-1 text-[0.68rem] tracking-[0.32em]', tone === 'light' ? 'text-brand-silver' : 'text-brand-stone')}>Gym · Indirapuram</span>
       </span>
     </span>
   );
@@ -57,14 +61,16 @@ export function PhotoPlaceholder({
         'relative flex w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-photo',
         aspect,
         // Caption opacity stays at 80%: lighter fails WCAG AA contrast on the tinted block.
+        // ADR-061: a dark plate with a red glow in the corner, not an empty grey box.
         tone === 'onNavy'
-          ? 'bg-brand-chalk/[0.07] text-brand-chalk/80'
-          : 'bg-brand-plate-navy/[0.07] text-brand-plate-navy/80',
+          ? 'border border-brand-paper/10 bg-[radial-gradient(circle_at_85%_15%,rgb(217_15_31/0.35),transparent_55%),linear-gradient(160deg,#1c1c21,#0a0a0b)] text-brand-paper/85'
+          : 'border border-brand-obsidian/10 bg-[radial-gradient(circle_at_85%_15%,rgb(217_15_31/0.18),transparent_55%),linear-gradient(160deg,#ffffff,#ececee)] text-brand-obsidian/80',
         className,
       )}
     >
-      <DumbbellIcon className="text-[2.5rem]" />
-      <span className="px-4 text-center text-small font-medium">{caption}</span>
+      <DumbbellIcon className="text-[3rem] text-brand-accent-glow" />
+      <span className="px-4 text-center font-display text-title font-bold tracking-[0.06em] uppercase">{label}</span>
+      <span className="px-4 text-center text-small font-medium tracking-[0.2em] uppercase opacity-70">{caption}</span>
     </div>
   );
 }
@@ -87,7 +93,7 @@ export function ContentFlag({ children, tone }: { children: string; tone: 'onNav
     <span
       className={cn(
         'inline-block rounded-button border px-2 py-0.5 text-small font-semibold',
-        tone === 'onNavy' ? 'border-brand-chalk/40 text-brand-chalk' : 'border-brand-rubber-grey/40 text-brand-rubber-grey',
+        tone === 'onNavy' ? 'border-brand-paper/40 text-brand-paper' : 'border-brand-stone/40 text-brand-stone',
       )}
     >
       {children}

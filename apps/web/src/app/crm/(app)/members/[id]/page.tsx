@@ -60,8 +60,8 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
           // A signed, short-lived URL to a private file: next/image would cache it.
           <img src={photoUrl} alt={t('profile.photoAlt', { name: member.fullName })} width={96} height={96} className="mx-auto mb-3 size-24 rounded-full object-cover" />
         )}
-        <p className="font-display text-display-m font-bold text-brand-plate-navy">{member.fullName}</p>
-        <p className="text-crm-body text-brand-rubber-grey">{member.memberCode ?? '—'}</p>
+        <p className="font-display text-display-m font-bold text-brand-obsidian">{member.fullName}</p>
+        <p className="text-crm-body text-brand-stone">{member.memberCode ?? '—'}</p>
 
         <div className={`mt-4 rounded-panel p-4 text-left ${FEE_TONE[member.feeState].chip}`}>
           <p className="text-crm-body font-bold">
@@ -72,7 +72,7 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-2">
-          <a href={`tel:${member.mobile}`} className="flex min-h-16 flex-col items-center justify-center rounded-panel bg-brand-plate-navy text-small font-semibold text-white">
+          <a href={`tel:${member.mobile}`} className="flex min-h-16 flex-col items-center justify-center rounded-panel bg-brand-obsidian text-small font-semibold text-white">
             <span aria-hidden className="text-xl">
               📞
             </span>
@@ -82,7 +82,7 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
             href={`https://wa.me/${member.mobile.replace(/\D/g, '')}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex min-h-16 flex-col items-center justify-center rounded-panel border-2 border-brand-plate-navy text-small font-semibold text-brand-plate-navy"
+            className="flex min-h-16 flex-col items-center justify-center rounded-panel border-2 border-brand-obsidian text-small font-semibold text-brand-obsidian"
           >
             <span aria-hidden className="text-xl">
               💬
@@ -92,7 +92,7 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
           {mayTakeFees ? (
             <Link
               href={`/crm/members/${member.id}/renew`}
-              className="flex min-h-16 flex-col items-center justify-center rounded-panel bg-brand-signboard-red text-small font-semibold text-white"
+              className="flex min-h-16 flex-col items-center justify-center rounded-panel bg-brand-accent text-small font-semibold text-brand-white"
             >
               <span aria-hidden className="text-xl">
                 ₹
@@ -104,13 +104,13 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
       </div>
 
       <section className="mt-3 bg-white px-4 py-4">
-        <h2 className="text-crm-body font-bold text-brand-plate-navy">{t('profile.attendanceMonth')}</h2>
+        <h2 className="text-crm-body font-bold text-brand-obsidian">{t('profile.attendanceMonth')}</h2>
         <div className="mt-3 grid grid-cols-7 gap-2" aria-hidden>
           {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => (
             <span
               key={day}
               className={`flex size-8 items-center justify-center rounded-full text-small ${
-                attended.has(day) ? 'bg-semantic-fee-paid text-white' : 'bg-tint-fee-none-bg text-brand-rubber-grey'
+                attended.has(day) ? 'bg-semantic-fee-paid text-white' : 'bg-tint-fee-none-bg text-brand-stone'
               }`}
             >
               {day}
@@ -121,24 +121,24 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
       </section>
 
       <section className="mt-3 bg-white px-4 py-4">
-        <h2 className="text-crm-body font-bold text-brand-plate-navy">{t('profile.plansAndMoney')}</h2>
+        <h2 className="text-crm-body font-bold text-brand-obsidian">{t('profile.plansAndMoney')}</h2>
         {member.payments.length === 0 ? (
-          <p className="mt-2 text-crm-body text-brand-rubber-grey">{t('profile.noPayments')}</p>
+          <p className="mt-2 text-crm-body text-brand-stone">{t('profile.noPayments')}</p>
         ) : (
-          <ul className="mt-2 divide-y divide-brand-rubber-grey/15">
+          <ul className="mt-2 divide-y divide-brand-stone/15">
             {member.payments.map((payment) => (
               <li key={payment.id} className="py-3">
                 <div className="flex items-baseline justify-between gap-3">
                   <span>
-                    <span className={`block text-crm-body font-semibold ${payment.status === 'VOIDED' ? 'text-brand-rubber-grey line-through' : ''}`}>
+                    <span className={`block text-crm-body font-semibold ${payment.status === 'VOIDED' ? 'text-brand-stone line-through' : ''}`}>
                       {rupees(payment.amountPaise)}
                     </span>
-                    <span className="block text-small text-brand-rubber-grey">
+                    <span className="block text-small text-brand-stone">
                       {payment.receiptNo === null ? payment.status : t('profile.receipt', { receiptNo: payment.receiptNo })}
                       {payment.status === 'VOIDED' ? ` — ${t('void.voided')}` : ''}
                     </span>
                   </span>
-                  <span className="text-small text-brand-rubber-grey">{payment.method}</span>
+                  <span className="text-small text-brand-stone">{payment.method}</span>
                 </div>
                 {mayVoid && payment.status === 'PAID' && payment.receiptNo !== null ? (
                   <VoidPaymentButton
@@ -152,7 +152,7 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
             ))}
           </ul>
         )}
-        <ul className="mt-4 divide-y divide-brand-rubber-grey/15">
+        <ul className="mt-4 divide-y divide-brand-stone/15">
           {member.memberships.map((membership) => (
             <li key={membership.id} className="flex items-baseline justify-between gap-3 py-3 text-crm-body">
               <span>
@@ -162,7 +162,7 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
                     ? t('profile.monthly')
                     : t('profile.months', { count: membership.durationMonths })}
               </span>
-              <span className="text-small text-brand-rubber-grey">
+              <span className="text-small text-brand-stone">
                 {membership.startDate === null ? '' : `${formatISTDate(membership.startDate, locale)} – `}
                 {formatISTDate(membership.endDate, locale)}
               </span>

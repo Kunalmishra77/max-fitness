@@ -96,7 +96,7 @@ export function ImportWizard({
     });
   };
 
-  const field = 'mt-1 min-h-14 w-full rounded-input border-2 border-brand-rubber-grey/40 bg-white px-4 text-crm-body';
+  const field = 'mt-1 min-h-14 w-full rounded-input border-2 border-brand-stone/40 bg-white px-4 text-crm-body';
 
   if (done !== null) {
     return (
@@ -104,12 +104,12 @@ export function ImportWizard({
         <p aria-hidden className="text-6xl">
           ✅
         </p>
-        <h2 className="font-display text-display-m font-bold text-brand-plate-navy">{t('done', { count: done.created })}</h2>
-        {done.skipped > 0 ? <p className="text-crm-body text-brand-rubber-grey">{t('doneSkipped', { count: done.skipped })}</p> : null}
-        <a href="/crm/members" className="flex min-h-16 items-center justify-center rounded-panel bg-brand-signboard-red text-crm-body font-bold text-white">
+        <h2 className="font-display text-display-m font-bold text-brand-obsidian">{t('done', { count: done.created })}</h2>
+        {done.skipped > 0 ? <p className="text-crm-body text-brand-stone">{t('doneSkipped', { count: done.skipped })}</p> : null}
+        <a href="/crm/members" className="flex min-h-16 items-center justify-center rounded-panel bg-brand-accent text-crm-body font-bold text-brand-white">
           {t('toMembers')}
         </a>
-        <button type="button" onClick={reset} className="min-h-14 text-crm-body font-semibold text-brand-rubber-grey">
+        <button type="button" onClick={reset} className="min-h-14 text-crm-body font-semibold text-brand-stone">
           {t('another')}
         </button>
       </div>
@@ -120,11 +120,11 @@ export function ImportWizard({
 
   return (
     <div className="grid gap-4 p-4 pb-24">
-      <p className="text-crm-body text-brand-rubber-grey">{t('helper')}</p>
+      <p className="text-crm-body text-brand-stone">{t('helper')}</p>
       <a
         href="/crm/import/template"
         download
-        className="flex min-h-14 items-center justify-center rounded-panel border-2 border-brand-plate-navy text-crm-body font-semibold text-brand-plate-navy"
+        className="flex min-h-14 items-center justify-center rounded-panel border-2 border-brand-obsidian text-crm-body font-semibold text-brand-obsidian"
       >
         {t('template')}
       </a>
@@ -138,7 +138,7 @@ export function ImportWizard({
           type="file"
           accept=".csv,text/csv"
           onChange={choose}
-          className="mt-1 block min-h-14 w-full rounded-input border-2 border-dashed border-brand-rubber-grey/40 bg-white p-3 text-crm-body"
+          className="mt-1 block min-h-14 w-full rounded-input border-2 border-dashed border-brand-stone/40 bg-white p-3 text-crm-body"
         />
       </div>
 
@@ -160,7 +160,7 @@ export function ImportWizard({
           </h2>
           <ul className="grid gap-2 min-[480px]:grid-cols-3">
             <li className="rounded-panel bg-tint-fee-paid-bg p-3 text-crm-body font-semibold text-semantic-fee-paid">{t('summary.ready', { count: summary.ready })}</li>
-            <li className="rounded-panel bg-tint-fee-none-bg p-3 text-crm-body font-semibold text-brand-plate-navy">{t('summary.skipped', { count: summary.skipped })}</li>
+            <li className="rounded-panel bg-tint-fee-none-bg p-3 text-crm-body font-semibold text-brand-obsidian">{t('summary.skipped', { count: summary.skipped })}</li>
             {summary.withErrors > 0 ? (
               <li className="rounded-panel bg-tint-fee-expired-bg p-3 text-crm-body font-semibold text-semantic-fee-expired">
                 {t('summary.withErrors', { count: summary.withErrors })}
@@ -170,40 +170,40 @@ export function ImportWizard({
 
           {checked.problems.length === 0 ? null : (
             <div className="rounded-panel bg-white p-3">
-              <h3 className="text-crm-body font-bold text-brand-plate-navy">{t('problemsTitle')}</h3>
-              <ul className="mt-2 divide-y divide-brand-rubber-grey/15">
+              <h3 className="text-crm-body font-bold text-brand-obsidian">{t('problemsTitle')}</h3>
+              <ul className="mt-2 divide-y divide-brand-stone/15">
                 {checked.problems.map((problem) => (
                   <li key={problem.line} className="grid gap-1 py-2">
                     <span className="flex flex-wrap items-baseline gap-x-2">
                       <span className="text-crm-body font-semibold">{t('line', { line: problem.line })}</span>
-                      {problem.name === null ? null : <span className="text-small text-brand-rubber-grey">{problem.name}</span>}
+                      {problem.name === null ? null : <span className="text-small text-brand-stone">{problem.name}</span>}
                     </span>
                     {problem.errors.length === 0 ? null : (
                       <span className="text-crm-body font-medium text-semantic-fee-expired">{problem.errors.map((code) => t(`fields.${code}` as never)).join(', ')}</span>
                     )}
                     {problem.warnings.map((code) => (
-                      <span key={code} className="text-small font-medium text-brand-plate-navy">
+                      <span key={code} className="text-small font-medium text-brand-obsidian">
                         {t(`warnings.${code}` as never)}
                       </span>
                     ))}
                   </li>
                 ))}
               </ul>
-              {checked.hiddenProblems > 0 ? <p className="mt-2 text-small text-brand-rubber-grey">{t('moreProblems', { count: checked.hiddenProblems })}</p> : null}
+              {checked.hiddenProblems > 0 ? <p className="mt-2 text-small text-brand-stone">{t('moreProblems', { count: checked.hiddenProblems })}</p> : null}
             </div>
           )}
 
           {summary.withErrors > 0 ? (
             <p className="rounded-input bg-tint-fee-expired-bg p-3 text-crm-body font-semibold text-semantic-fee-expired">{t('fixFirst')}</p>
           ) : summary.ready === 0 ? (
-            <p className="rounded-input bg-tint-fee-none-bg p-3 text-crm-body font-semibold text-brand-plate-navy">{t('nothingNew')}</p>
+            <p className="rounded-input bg-tint-fee-none-bg p-3 text-crm-body font-semibold text-brand-obsidian">{t('nothingNew')}</p>
           ) : (
             <div className="grid gap-3 rounded-panel bg-white p-4">
               <label className="flex min-h-14 items-start gap-3 text-crm-body">
-                <input type="checkbox" checked={deskConsent} onChange={(event) => setDeskConsent(event.target.checked)} className="mt-1 size-6 accent-brand-plate-navy" />
+                <input type="checkbox" checked={deskConsent} onChange={(event) => setDeskConsent(event.target.checked)} className="mt-1 size-6 accent-brand-obsidian" />
                 <span>{t('deskConsent')}</span>
               </label>
-              <p className="-mt-2 text-small text-brand-rubber-grey">{t('deskConsentHelper')}</p>
+              <p className="-mt-2 text-small text-brand-stone">{t('deskConsentHelper')}</p>
               <div>
                 <label htmlFor={`${id}-pin`} className="block text-crm-body font-semibold">
                   {t('pin')}
@@ -228,7 +228,7 @@ export function ImportWizard({
                 type="button"
                 disabled={saving || pin.length < 4}
                 onClick={add}
-                className="min-h-16 w-full rounded-panel bg-brand-signboard-red text-crm-body font-bold text-white disabled:opacity-50"
+                className="min-h-16 w-full rounded-panel bg-brand-accent text-crm-body font-bold text-brand-white disabled:opacity-50"
               >
                 {saving ? t('committing') : t('commit', { count: summary.ready })}
               </button>

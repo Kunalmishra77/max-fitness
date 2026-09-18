@@ -38,7 +38,7 @@ export default async function CrmAttendancePage({ searchParams }: { searchParams
     new Intl.DateTimeFormat(actor.language === 'hi' ? 'hi-IN' : 'en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit' }).format(at);
 
   const tabClass = (active: boolean) =>
-    `inline-flex min-h-11 items-center rounded-button px-4 text-crm-body font-semibold ${active ? 'bg-brand-plate-navy text-white' : 'bg-white'}`;
+    `inline-flex min-h-11 items-center rounded-button px-4 text-crm-body font-semibold ${active ? 'bg-brand-obsidian text-white' : 'bg-white'}`;
 
   return (
     <>
@@ -48,14 +48,14 @@ export default async function CrmAttendancePage({ searchParams }: { searchParams
         <div className="bg-white px-4 pt-3 pb-4">
           <MemberSearch placeholder={t('attendance.search')} initial={search} basePath="/crm/attendance" />
           {matches.length === 0 ? null : (
-            <ul className="mt-3 divide-y divide-brand-rubber-grey/15">
+            <ul className="mt-3 divide-y divide-brand-stone/15">
               {matches.map((member) => (
                 <li key={member.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                   <span className="min-w-0">
                     <Link href={`/crm/members/${member.id}`} className="block truncate text-crm-body font-semibold text-brand-ink">
                       {member.fullName}
                     </Link>
-                    <span className="block text-small text-brand-rubber-grey">{member.memberCode ?? '—'}</span>
+                    <span className="block text-small text-brand-stone">{member.memberCode ?? '—'}</span>
                   </span>
                   <AttendanceMarker memberId={member.id} name={member.fullName} mark={markAttendanceAction} undo={undoAttendanceAction} />
                 </li>
@@ -76,9 +76,9 @@ export default async function CrmAttendancePage({ searchParams }: { searchParams
 
       {absent ? (
         absentMembers.length === 0 ? (
-          <p className="px-4 py-8 text-center text-crm-body text-brand-rubber-grey">{t('attendance.absentEmpty')}</p>
+          <p className="px-4 py-8 text-center text-crm-body text-brand-stone">{t('attendance.absentEmpty')}</p>
         ) : (
-          <ul className="divide-y divide-brand-rubber-grey/15">
+          <ul className="divide-y divide-brand-stone/15">
             {absentMembers.map((member) => (
               <li key={member.id} className="flex flex-wrap items-center justify-between gap-3 bg-white p-4">
                 <span className="min-w-0">
@@ -91,7 +91,7 @@ export default async function CrmAttendancePage({ searchParams }: { searchParams
                 </span>
                 <a
                   href={`tel:${member.mobile}`}
-                  className="flex min-h-14 shrink-0 items-center justify-center rounded-panel bg-brand-plate-navy px-4 text-crm-body font-semibold text-white"
+                  className="flex min-h-14 shrink-0 items-center justify-center rounded-panel bg-brand-obsidian px-4 text-crm-body font-semibold text-white"
                 >
                   📞 {t('profile.call')}
                 </a>
@@ -101,20 +101,20 @@ export default async function CrmAttendancePage({ searchParams }: { searchParams
         )
       ) : (
         <>
-          <p className="px-4 pb-2 text-crm-body font-bold text-brand-plate-navy">{t('attendance.todayCount', { count: events.length })}</p>
+          <p className="px-4 pb-2 text-crm-body font-bold text-brand-obsidian">{t('attendance.todayCount', { count: events.length })}</p>
           {events.length === 0 ? (
-            <p className="px-4 py-8 text-center text-crm-body text-brand-rubber-grey">{t('attendance.empty')}</p>
+            <p className="px-4 py-8 text-center text-crm-body text-brand-stone">{t('attendance.empty')}</p>
           ) : (
-            <ul className="divide-y divide-brand-rubber-grey/15">
+            <ul className="divide-y divide-brand-stone/15">
               {events.map((event) => (
                 <li key={event.id} className="flex items-baseline justify-between gap-3 bg-white p-4">
                   <span className="min-w-0">
                     <Link href={`/crm/members/${event.memberId}`} className="block truncate text-crm-body font-semibold text-brand-ink">
                       {event.fullName}
                     </Link>
-                    <span className="block text-small text-brand-rubber-grey">{event.memberCode ?? '—'}</span>
+                    <span className="block text-small text-brand-stone">{event.memberCode ?? '—'}</span>
                   </span>
-                  <span className="shrink-0 text-small text-brand-rubber-grey">
+                  <span className="shrink-0 text-small text-brand-stone">
                     {time(event.capturedAt)} · {t(`attendance.method${event.method}` as never)}
                   </span>
                 </li>

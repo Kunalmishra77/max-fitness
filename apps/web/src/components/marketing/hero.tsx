@@ -39,7 +39,7 @@ export async function Hero({
   ];
 
   return (
-    <div className="relative bg-brand-plate-navy">
+    <div className="relative bg-brand-obsidian">
       <HeroCarousel slides={slides} whatsappHref={whatsappHref} />
       <div className="lg:pointer-events-none lg:absolute lg:inset-0">
         {/* Below `lg` the form sits under the slider, aligned with the headline; from `lg` it moves beside it. */}

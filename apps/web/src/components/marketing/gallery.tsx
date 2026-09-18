@@ -27,7 +27,9 @@ export function Gallery() {
 
   return (
     <Section tone="navy" labelledBy="gallery-heading">
-      <SectionHeading id="gallery-heading">{t('h2')}</SectionHeading>
+      <SectionHeading id="gallery-heading" eyebrow={t('eyebrow')} onDark>
+        {t('h2')}
+      </SectionHeading>
 
       <ul className="mt-10 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         {GALLERY_PHOTOS.slice(0, 5).map((id, i) => (
@@ -42,7 +44,7 @@ export function Gallery() {
               aria-haspopup="dialog"
               // The large tile takes its height from the two grid rows it spans; the photo
               // inside is absolutely placed and gives the button no height of its own.
-              className={cn('block w-full rounded-photo', i === 0 && 'md:h-full')}
+              className={cn('photo-zoom group relative block w-full rounded-photo', i === 0 && 'md:h-full')}
             >
               <SitePhoto
                 photo={SITE_PHOTOS[id]}
@@ -51,6 +53,13 @@ export function Gallery() {
                 aspect={i === 0 ? 'aspect-[4/3] md:aspect-auto md:h-full' : 'aspect-[4/3]'}
                 className={cn('rounded-photo', i === 0 && 'md:min-h-full')}
               />
+              {/* On hover the photo darkens toward red and a plus invites the lightbox (ADR-061). */}
+              <span
+                aria-hidden
+                className="absolute inset-0 flex items-center justify-center rounded-photo bg-gradient-to-t from-brand-accent/70 via-brand-obsidian/30 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+              >
+                <span className="flex size-12 items-center justify-center rounded-full border-2 border-brand-white font-display text-display-m leading-none text-brand-white">+</span>
+              </span>
             </button>
           </li>
         ))}

@@ -12,14 +12,19 @@
 
 @theme {
   /* ── Brand and semantic colour (DESIGN-BLUEPRINT §3) ───────────── */
-  --color-brand-plate-navy:          #14213D; /* Dark sections, footer, text on light */
-  --color-brand-signboard-red:       #D62828; /* Primary actions and prices only */
-  --color-brand-signboard-red-text:  #C1121F; /* Use when white text contrast on red is marginal */
-  --color-brand-chalk:               #F2F3EF; /* Light sections, form panels */
-  --color-brand-medal-gold:          #E3A92B; /* Champion section + single best-value marker */
-  --color-brand-wall-blue:           #2F5DAA; /* Links, focus, info */
-  --color-brand-rubber-grey:         #5C6272; /* Secondary text, borders at 20-24% */
-  --color-brand-ink:                 #0F1729; /* Body text on light */
+  --color-brand-obsidian:            #0A0A0B; /* Dark sections, footer, the nav */
+  --color-brand-graphite:            #16161A; /* Raised panels and cards on obsidian */
+  --color-brand-accent:              #D90F1F; /* Red actions: buttons with white text (5.2:1). One per section */
+  --color-brand-accent-deep:         #B00D1A; /* Hover and pressed red; red text on paper/white (6.5:1) */
+  --color-brand-accent-glow:         #FF3B47; /* Red text and eyebrows on obsidian (5.6:1) */
+  --color-brand-logo-red:            #ED1021; /* The logo red, for large marks and stripes, not for small text */
+  --color-brand-silver:              #C3C5C8; /* Logo silver: highlights, dividers and secondary emphasis on obsidian */
+  --color-brand-paper:               #F4F4F5; /* Light sections, form panels */
+  --color-brand-medal-gold:          #E3B34C; /* Rating stars only */
+  --color-brand-link:                #B00D1A; /* Links on light surfaces */
+  --color-brand-stone:               #66676B; /* Secondary text on light, borders at 20-30% */
+  --color-brand-mist:                #A3A5A9; /* Secondary text on obsidian (8:1) */
+  --color-brand-ink:                 #121212; /* Body text on light */
   --color-brand-white:               #FFFFFF;
   --color-semantic-fee-paid:         #1F8A4C; /* Green: fees paid */
   --color-semantic-fee-due-soon:     #B7791F; /* Amber: due within 7 days */
@@ -29,7 +34,7 @@
   --color-semantic-birthday:         #C2185B;
   --color-semantic-surface-crm:      #FFFFFF;
   --color-semantic-surface-crm-alt:  #F5F6F8;
-  --color-semantic-focus-ring:       #2F5DAA;
+  --color-semantic-focus-ring:       #D90F1F;
   --color-tint-fee-paid-bg:          #E6F4EC;
   --color-tint-fee-due-soon-bg:      #FDF3E1;
   --color-tint-fee-expired-bg:       #FCE8E8;
@@ -97,8 +102,8 @@
 
   /* ── Shadows ───────────────────────────────────────────────────── */
   /* Elevated overlays only; cards on Chalk use a 1px border instead. */
-  --shadow-overlay:     0 12px 40px rgba(20,33,61,0.28);
-  --shadow-sticky-nav:  0 2px 12px rgba(20,33,61,0.20);
+  --shadow-overlay:     0 12px 40px rgba(0,0,0,0.28);
+  --shadow-sticky-nav:  0 2px 12px rgba(0,0,0,0.20);
 
   /* ── Motion ────────────────────────────────────────────────────── */
   /* Respect prefers-reduced-motion at the call site. */

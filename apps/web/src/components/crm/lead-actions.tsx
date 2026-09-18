@@ -56,7 +56,7 @@ export function LeadActions({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-3 min-h-14 w-full rounded-panel border-2 border-brand-rubber-grey/40 text-crm-body font-semibold text-brand-plate-navy"
+        className="mt-3 min-h-14 w-full rounded-panel border-2 border-brand-stone/40 text-crm-body font-semibold text-brand-obsidian"
       >
         {t('action')}
       </button>
@@ -65,9 +65,9 @@ export function LeadActions({
 
   return (
     <div className="mt-3 rounded-panel bg-tint-fee-none-bg p-3">
-      <p className="text-crm-body font-bold text-brand-plate-navy">{t('moveTo')}</p>
+      <p className="text-crm-body font-bold text-brand-obsidian">{t('moveTo')}</p>
 
-      <label htmlFor={`${id}-note`} className="mt-3 block text-small font-semibold text-brand-rubber-grey">
+      <label htmlFor={`${id}-note`} className="mt-3 block text-small font-semibold text-brand-stone">
         {t('note')}
       </label>
       <input
@@ -75,7 +75,7 @@ export function LeadActions({
         type="text"
         value={note}
         onChange={(event) => setNote(event.target.value)}
-        className="mt-1 min-h-14 w-full rounded-input border-2 border-brand-rubber-grey/40 bg-white px-4 text-crm-body"
+        className="mt-1 min-h-14 w-full rounded-input border-2 border-brand-stone/40 bg-white px-4 text-crm-body"
       />
 
       <div className="mt-3 grid gap-2">
@@ -98,7 +98,7 @@ export function LeadActions({
         </p>
       )}
 
-      <button type="button" onClick={() => setOpen(false)} className="mt-3 min-h-14 w-full text-crm-body font-semibold text-brand-rubber-grey">
+      <button type="button" onClick={() => setOpen(false)} className="mt-3 min-h-14 w-full text-crm-body font-semibold text-brand-stone">
         {t('cancel')}
       </button>
     </div>

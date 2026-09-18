@@ -19,10 +19,10 @@ export default async function CrmOfflinePage() {
       <span aria-hidden className="text-5xl">
         📶
       </span>
-      <h1 className="font-display text-display-m font-bold text-brand-plate-navy">{t('title')}</h1>
-      <p className="text-crm-body text-brand-rubber-grey">{t('body')}</p>
+      <h1 className="font-display text-display-m font-bold text-brand-obsidian">{t('title')}</h1>
+      <p className="text-crm-body text-brand-stone">{t('body')}</p>
       {/* A plain link, not a button: it must work with no JavaScript running. */}
-      <Link href="/crm" className="mt-2 flex min-h-14 w-full max-w-xs items-center justify-center rounded-panel bg-brand-plate-navy text-crm-body font-bold text-white">
+      <Link href="/crm" className="mt-2 flex min-h-14 w-full max-w-xs items-center justify-center rounded-panel bg-brand-obsidian text-crm-body font-bold text-white">
         {t('retry')}
       </Link>
     </main>

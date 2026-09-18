@@ -13,7 +13,7 @@ import type { OwnPinOutcome } from '@/lib/settings-types';
  * checks everything again.
  */
 
-const field = 'mt-1 min-h-14 w-full rounded-input border-2 border-brand-rubber-grey/40 bg-white px-4 text-center text-2xl tracking-widest';
+const field = 'mt-1 min-h-14 w-full rounded-input border-2 border-brand-stone/40 bg-white px-4 text-center text-2xl tracking-widest';
 const digits = (value: string) => value.replace(/\D/g, '').slice(0, 6);
 
 export function OwnPinForm({ action }: { action: (currentPin: string, newPin: string) => Promise<OwnPinOutcome> }) {
@@ -69,7 +69,7 @@ export function OwnPinForm({ action }: { action: (currentPin: string, newPin: st
       }}
       className="grid gap-4 rounded-panel bg-white p-4 shadow-sm"
     >
-      <p className="text-small text-brand-rubber-grey">{t('helper')}</p>
+      <p className="text-small text-brand-stone">{t('helper')}</p>
       {inputs.map(([key, label, value, setValue, autoComplete]) => (
         <div key={key}>
           <label htmlFor={`${id}-${key}`} className="block text-crm-body font-semibold">
@@ -101,7 +101,7 @@ export function OwnPinForm({ action }: { action: (currentPin: string, newPin: st
       <button
         type="submit"
         disabled={pending || current.length < 4 || next.length < 4 || confirm.length < 4}
-        className="min-h-16 w-full rounded-panel bg-brand-plate-navy text-crm-body font-bold text-white disabled:opacity-50"
+        className="min-h-16 w-full rounded-panel bg-brand-obsidian text-crm-body font-bold text-white disabled:opacity-50"
       >
         {pending ? t('saving') : t('save')}
       </button>

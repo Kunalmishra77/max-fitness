@@ -27,8 +27,8 @@ const PLAN_MIX_DAYS = 90;
 function Card({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
     <section className="rounded-panel bg-white p-4 shadow-sm">
-      <h2 className="text-crm-body font-bold text-brand-plate-navy">{title}</h2>
-      {subtitle === undefined ? null : <p className="text-small text-brand-rubber-grey">{subtitle}</p>}
+      <h2 className="text-crm-body font-bold text-brand-obsidian">{title}</h2>
+      {subtitle === undefined ? null : <p className="text-small text-brand-stone">{subtitle}</p>}
       <div className="mt-3">{children}</div>
     </section>
   );
@@ -42,7 +42,7 @@ export default async function CrmReportsPage() {
     return (
       <>
         <CrmHeader title={t('reports.title')} back="/crm/more" />
-        <p role="alert" className="m-4 rounded-panel bg-tint-fee-none-bg p-4 text-crm-body font-semibold text-brand-plate-navy">
+        <p role="alert" className="m-4 rounded-panel bg-tint-fee-none-bg p-4 text-crm-body font-semibold text-brand-obsidian">
           {t('reports.ownerOnly')}
         </p>
         <BottomNav active="more" />
@@ -92,7 +92,7 @@ export default async function CrmReportsPage() {
         <Card title={t('reports.money')}>
           {/* The hero figure: the one number this screen leads with, in the body sans. */}
           <p className="text-[44px] leading-none font-semibold text-brand-ink">{rupees(money.totalPaise)}</p>
-          <p className="mt-2 text-small text-brand-rubber-grey">{deltaLine}</p>
+          <p className="mt-2 text-small text-brand-stone">{deltaLine}</p>
           {money.byMethod.length === 0 ? null : (
             <div className="mt-4">
               <ShareBars
@@ -105,7 +105,7 @@ export default async function CrmReportsPage() {
               />
             </div>
           )}
-          {money.demoPaise > 0 ? <p className="mt-3 text-small text-brand-rubber-grey">{t('reports.demoNote', { amount: rupees(money.demoPaise) })}</p> : null}
+          {money.demoPaise > 0 ? <p className="mt-3 text-small text-brand-stone">{t('reports.demoNote', { amount: rupees(money.demoPaise) })}</p> : null}
         </Card>
 
         <div className="grid grid-cols-2 gap-3">
@@ -119,14 +119,14 @@ export default async function CrmReportsPage() {
 
         <Card title={t('reports.renewalRate')}>
           {flow.renewalRate.percent === null ? (
-            <p className="text-crm-body text-brand-rubber-grey">{t('reports.renewalRateNone')}</p>
+            <p className="text-crm-body text-brand-stone">{t('reports.renewalRateNone')}</p>
           ) : (
             <>
               <p className="text-[36px] leading-none font-semibold text-brand-ink">{flow.renewalRate.percent}%</p>
               <div className="mt-3">
                 <Meter percent={flow.renewalRate.percent} label={t('reports.renewalRate')} />
               </div>
-              <p className="mt-2 text-small text-brand-rubber-grey">
+              <p className="mt-2 text-small text-brand-stone">
                 {t('reports.renewalRateDetail', { renewed: flow.renewalRate.renewed, due: flow.renewalRate.due })}
               </p>
             </>
@@ -135,7 +135,7 @@ export default async function CrmReportsPage() {
 
         <Card title={t('reports.left')} subtitle={t('reports.thisMonth')}>
           {leftTotal === 0 ? (
-            <p className="text-crm-body text-brand-rubber-grey">{t('reports.leftNone')}</p>
+            <p className="text-crm-body text-brand-stone">{t('reports.leftNone')}</p>
           ) : (
             <>
               <p className="text-[36px] leading-none font-semibold text-brand-ink">{leftTotal}</p>
@@ -153,7 +153,7 @@ export default async function CrmReportsPage() {
 
         <Card title={t('reports.busyHours')} subtitle={t('reports.busySubtitle')}>
           {hours.length === 0 ? (
-            <p className="text-crm-body text-brand-rubber-grey">{t('reports.busyNone')}</p>
+            <p className="text-crm-body text-brand-stone">{t('reports.busyNone')}</p>
           ) : (
             <>
               {busiest === null ? null : (
@@ -180,7 +180,7 @@ export default async function CrmReportsPage() {
 
         <Card title={t('reports.planMix')} subtitle={t('reports.planMixSubtitle')}>
           {inputs.planMix.length === 0 ? (
-            <p className="text-crm-body text-brand-rubber-grey">{t('reports.planMixNone')}</p>
+            <p className="text-crm-body text-brand-stone">{t('reports.planMixNone')}</p>
           ) : (
             <ShareBars
               rows={inputs.planMix.map((row, index) => ({
@@ -206,7 +206,7 @@ export default async function CrmReportsPage() {
 
         <Card title={t('reports.kiosk')} subtitle={t('reports.kioskDetail')}>
           {kiosk === null ? (
-            <p className="text-crm-body text-brand-rubber-grey">{t('reports.kioskNone')}</p>
+            <p className="text-crm-body text-brand-stone">{t('reports.kioskNone')}</p>
           ) : (
             <>
               <p className="text-[36px] leading-none font-semibold text-brand-ink">{kiosk}%</p>
@@ -218,7 +218,7 @@ export default async function CrmReportsPage() {
         </Card>
 
         <Card title={t('reports.reminderImpact')}>
-          <p className="text-crm-body text-brand-rubber-grey">{t('reports.reminderLater')}</p>
+          <p className="text-crm-body text-brand-stone">{t('reports.reminderLater')}</p>
         </Card>
       </div>
 

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { getPathname } from '@/i18n/navigation';
 import type { SiteContext } from '@/lib/site-context';
 import { MobileStickyBar, WhatsAppFloat } from './mobile-actions';
+import { Preloader } from './preloader';
 import { PromoBar } from './promo-bar';
 import { SiteFooter } from './site-footer';
 import { SiteNav } from './site-nav';
@@ -12,6 +13,7 @@ export function MarketingShell({ ctx, onHome, children }: { ctx: SiteContext; on
 
   return (
     <>
+      <Preloader />
       {ctx.promo.bar === null ? null : <PromoBar text={ctx.promo.bar} whatsappHref={ctx.promo.whatsappHref} />}
       <SiteNav sections={ctx.navSections} telHref={contact.telHref} phoneDisplay={contact.phoneDisplay} onHome={onHome} />
       <main id="main" tabIndex={-1} className="focus:outline-none">

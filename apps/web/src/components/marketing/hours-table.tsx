@@ -48,12 +48,12 @@ export function HoursTable({
             <tr
               key={row.day}
               aria-current={isToday ? 'date' : undefined}
-              className={cn('border-b border-brand-rubber-grey/20', isToday && 'bg-brand-white font-semibold')}
+              className={cn('border-b border-brand-stone/20', isToday && 'bg-brand-white font-semibold')}
             >
               <th scope="row" className="py-3 pl-3 text-left font-medium whitespace-nowrap">
                 {row.label}
                 {isToday ? (
-                  <span className="ml-2 rounded-button bg-brand-plate-navy px-2 py-0.5 text-small text-brand-chalk">
+                  <span className="ml-2 rounded-button bg-brand-obsidian px-2 py-0.5 text-small text-brand-paper">
                     {todayLabel}
                   </span>
                 ) : null}

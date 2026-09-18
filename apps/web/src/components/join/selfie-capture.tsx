@@ -263,7 +263,7 @@ export function SelfieCapture({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <SheetContent className="mx-auto max-h-[95dvh] max-w-lg md:bottom-auto md:top-1/2 md:-translate-y-1/2 md:rounded-[var(--radius-modal)]">
         <div className="flex items-center justify-between gap-4">
-          <DialogTitle className="font-display text-title font-bold text-brand-plate-navy">{t('title')}</DialogTitle>
+          <DialogTitle className="font-display text-title font-bold text-brand-obsidian">{t('title')}</DialogTitle>
           <DialogClose className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), atDesk && 'size-14')} aria-label={t('close')}>
             <span aria-hidden className="text-2xl leading-none">×</span>
           </DialogClose>
@@ -300,7 +300,7 @@ export function SelfieCapture({
 
         {phase === 'live' ? (
           <div className="mt-4 grid gap-3">
-            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-panel bg-brand-plate-navy">
+            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-panel bg-brand-obsidian">
               <video ref={videoRef} playsInline muted autoPlay className={cn('size-full object-cover', facing === 'user' && '-scale-x-100')} />
               {/* The oval guide: a transparent ellipse with the rest of the frame dimmed. */}
               <div

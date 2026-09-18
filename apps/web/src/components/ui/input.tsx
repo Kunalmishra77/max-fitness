@@ -17,7 +17,7 @@ export function Input({ className, ...props }: InputProps) {
       className={cn(
         'block w-full rounded-[var(--radius-input)] border bg-white px-4',
         'min-h-[var(--size-input-height)] text-[length:var(--text-body)] text-[var(--color-brand-ink)]',
-        'border-[var(--color-brand-rubber-grey)]/40 placeholder:text-[var(--color-brand-rubber-grey)]/70',
+        'border-[var(--color-brand-stone)]/40 placeholder:text-[var(--color-brand-stone)]/70',
         'transition-colors duration-[var(--duration-fast)]',
         'disabled:cursor-not-allowed disabled:opacity-60',
         'aria-[invalid=true]:border-[var(--color-semantic-fee-expired)]',

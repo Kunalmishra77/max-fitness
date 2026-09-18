@@ -39,7 +39,7 @@ export default async function CrmSettingsPage() {
     return (
       <>
         <CrmHeader title={t('settings.title')} back="/crm/more" />
-        <p role="alert" className="m-4 rounded-panel bg-tint-fee-none-bg p-4 text-crm-body font-semibold text-brand-plate-navy">
+        <p role="alert" className="m-4 rounded-panel bg-tint-fee-none-bg p-4 text-crm-body font-semibold text-brand-obsidian">
           {t('settings.notAllowed')}
         </p>
         <BottomNav active="more" />

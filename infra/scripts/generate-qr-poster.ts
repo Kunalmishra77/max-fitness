@@ -8,7 +8,7 @@
  * The code is error correction Q, so a scratch or a fold still scans. Output goes to
  * assets/reception-qr/, one pair of files per origin and source.
  */
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import QRCode from 'qrcode';
@@ -35,13 +35,16 @@ async function main() {
   const modules = Array.from({ length: size * size }, (_, i) => code.modules.get(Math.floor(i / size), i % size) === 1);
 
   const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+  // The logo, written by apps/web/scripts/make-pwa-icons.mjs; its size is in the PNG header.
+  const png = await readFile(join(root, 'assets', 'brand', 'max-gym-logo-print.png'));
+  const logo = { dataUri: `data:image/png;base64,${png.toString('base64')}`, aspect: png.readUInt32BE(16) / png.readUInt32BE(20) };
   const outDir = join(root, 'assets', 'reception-qr');
   await mkdir(outDir, { recursive: true });
   const host = new URL(origin).hostname.replace(/[^a-z0-9.-]/gi, '');
 
   for (const paper of ['A4', 'A5'] as PosterSize[]) {
     const file = join(outDir, `qr-${source}-${paper.toLowerCase()}${demo ? '-demo' : ''}-${host}.svg`);
-    await writeFile(file, buildPosterSvg({ qr: { size, modules }, size: paper, demo, url }), 'utf8');
+    await writeFile(file, buildPosterSvg({ qr: { size, modules }, size: paper, demo, url, logo }), 'utf8');
     console.log(`wrote ${file}`);
   }
   console.log(`link: ${url}`);

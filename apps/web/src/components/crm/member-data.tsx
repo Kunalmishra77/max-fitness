@@ -15,7 +15,7 @@ import type { EraseResult, UnlockResult } from '@/lib/settings-types';
  * the PIN in the same place as the button that does it.
  */
 
-const field = 'mt-1 min-h-14 w-full rounded-input border-2 border-brand-rubber-grey/40 bg-white px-4 text-crm-body';
+const field = 'mt-1 min-h-14 w-full rounded-input border-2 border-brand-stone/40 bg-white px-4 text-crm-body';
 
 export function MemberDataSection({
   memberId,
@@ -65,14 +65,14 @@ export function MemberDataSection({
 
   return (
     <section aria-labelledby={`${id}-title`} className="mt-3 bg-white px-4 py-4">
-      <h2 id={`${id}-title`} className="text-crm-body font-bold text-brand-plate-navy">
+      <h2 id={`${id}-title`} className="text-crm-body font-bold text-brand-obsidian">
         {t('title')}
       </h2>
-      <p className="text-small text-brand-rubber-grey">{t('helper')}</p>
+      <p className="text-small text-brand-stone">{t('helper')}</p>
 
       <div className="mt-3">
         {exportReady ? (
-          <a href={`/crm/members/${memberId}/export`} download className={`${button} border-brand-plate-navy text-brand-plate-navy`}>
+          <a href={`/crm/members/${memberId}/export`} download className={`${button} border-brand-obsidian text-brand-obsidian`}>
             {t('export')}
           </a>
         ) : unlocking ? (
@@ -86,11 +86,11 @@ export function MemberDataSection({
             }}
           />
         ) : (
-          <button type="button" onClick={() => setUnlocking(true)} className={`${button} border-brand-plate-navy text-brand-plate-navy`}>
+          <button type="button" onClick={() => setUnlocking(true)} className={`${button} border-brand-obsidian text-brand-obsidian`}>
             {t('export')}
           </button>
         )}
-        <p className="mt-1 text-small text-brand-rubber-grey">{t('exportHelper')}</p>
+        <p className="mt-1 text-small text-brand-stone">{t('exportHelper')}</p>
       </div>
 
       {confirming ? (
@@ -102,7 +102,7 @@ export function MemberDataSection({
               {t('reason')}
             </label>
             <input id={`${id}-reason`} type="text" value={reason} onChange={(event) => setReason(event.target.value)} className={field} />
-            <p className="mt-1 text-small text-brand-rubber-grey">{t('reasonHelper')}</p>
+            <p className="mt-1 text-small text-brand-stone">{t('reasonHelper')}</p>
           </div>
           <div>
             <label htmlFor={`${id}-pin`} className="block text-crm-body font-semibold">
@@ -132,7 +132,7 @@ export function MemberDataSection({
           >
             {pending ? t('erasing') : t('confirm')}
           </button>
-          <button type="button" onClick={() => setConfirming(false)} className="min-h-14 text-crm-body font-semibold text-brand-rubber-grey">
+          <button type="button" onClick={() => setConfirming(false)} className="min-h-14 text-crm-body font-semibold text-brand-stone">
             {t('cancel')}
           </button>
         </div>

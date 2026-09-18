@@ -62,9 +62,9 @@ export function RenewFlow({
         </p>
         <h2 className="font-display text-display-m font-bold text-semantic-fee-paid">{t('done')}</h2>
         <p className="text-crm-body">{formatINR(amount, { showPaise: false })}</p>
-        <p className="text-crm-body text-brand-rubber-grey">{t('receiptSent')}</p>
+        <p className="text-crm-body text-brand-stone">{t('receiptSent')}</p>
         <p className="text-crm-body">{t('memberCode', { code })}</p>
-        <p className="text-small text-brand-rubber-grey">{receipt}</p>
+        <p className="text-small text-brand-stone">{receipt}</p>
         <Link href="/crm/members" className={buttonVariants({ variant: 'primary', size: 'crmPrimary', full: true })}>
           {t('backToMember')}
         </Link>
@@ -76,7 +76,7 @@ export function RenewFlow({
 
   return (
     <div className="p-4">
-      <p className="text-crm-body font-semibold text-brand-plate-navy">{memberName}</p>
+      <p className="text-crm-body font-semibold text-brand-obsidian">{memberName}</p>
 
       <h2 className="mt-4 text-crm-body font-bold">{t('step1')}</h2>
       <div className="mt-2 grid grid-cols-2 gap-3">
@@ -90,20 +90,20 @@ export function RenewFlow({
               setFailed(false);
             }}
             className={`min-h-24 rounded-panel border-2 p-3 text-left ${
-              plan?.planId === option.planId ? 'border-brand-plate-navy bg-brand-plate-navy/[0.06]' : 'border-brand-rubber-grey/30 bg-white'
+              plan?.planId === option.planId ? 'border-brand-obsidian bg-brand-obsidian/[0.06]' : 'border-brand-stone/30 bg-white'
             }`}
           >
             <span className="block text-crm-body font-semibold">
               {option.durationMonths === 1 ? tp('monthly') : tp('months', { count: option.durationMonths })}
             </span>
-            <span className="mt-1 block font-display text-title font-bold text-brand-signboard-red-text">{money(option.pricePaise)}</span>
+            <span className="mt-1 block font-display text-title font-bold text-brand-accent-deep">{money(option.pricePaise)}</span>
           </button>
         ))}
       </div>
 
       {plan === null ? null : (
         <>
-          <p className="mt-3 text-crm-body text-brand-rubber-grey">
+          <p className="mt-3 text-crm-body text-brand-stone">
             {t('newPlan', { start: formatISTDate(startDate as ISTDate, locale), end: formatISTDate(plan.endDate as ISTDate, locale) })}
           </p>
 
@@ -115,7 +115,7 @@ export function RenewFlow({
                 type="button"
                 onClick={() => setMethod(option.method)}
                 className={`flex min-h-24 flex-col items-center justify-center gap-1 rounded-panel border-2 text-crm-body font-semibold ${
-                  method === option.method ? 'border-brand-plate-navy bg-brand-plate-navy/[0.06]' : 'border-brand-rubber-grey/30 bg-white'
+                  method === option.method ? 'border-brand-obsidian bg-brand-obsidian/[0.06]' : 'border-brand-stone/30 bg-white'
                 }`}
               >
                 <span aria-hidden className="text-2xl">

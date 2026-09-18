@@ -24,7 +24,7 @@ import type {
 
 type Unlock = (pin: string) => Promise<UnlockResult>;
 
-const field = 'min-h-14 w-full rounded-input border-2 border-brand-rubber-grey/40 bg-white px-4 text-crm-body';
+const field = 'min-h-14 w-full rounded-input border-2 border-brand-stone/40 bg-white px-4 text-crm-body';
 const inr = (rupees: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(rupees);
 
 // ── PIN ─────────────────────────────────────────────────────────────────────
@@ -48,8 +48,8 @@ export function PinGate({ unlock, onUnlocked, compact = false, title }: { unlock
 
   return (
     <div className={compact ? 'mt-3 rounded-panel bg-tint-fee-none-bg p-3' : 'p-6'}>
-      <p className="text-crm-body font-bold text-brand-plate-navy">{title ?? (compact ? t('pinExpired') : t('pinTitle'))}</p>
-      {compact ? null : <p className="mt-1 text-small text-brand-rubber-grey">{t('pinHelper')}</p>}
+      <p className="text-crm-body font-bold text-brand-obsidian">{title ?? (compact ? t('pinExpired') : t('pinTitle'))}</p>
+      {compact ? null : <p className="mt-1 text-small text-brand-stone">{t('pinHelper')}</p>}
       <label htmlFor={`${id}-pin`} className="mt-3 block text-small font-semibold">
         {t('pin')}
       </label>
@@ -72,7 +72,7 @@ export function PinGate({ unlock, onUnlocked, compact = false, title }: { unlock
         type="button"
         disabled={pending || pin.length < 4}
         onClick={submit}
-        className="mt-3 min-h-14 w-full rounded-panel bg-brand-plate-navy text-crm-body font-bold text-white disabled:opacity-50"
+        className="mt-3 min-h-14 w-full rounded-panel bg-brand-obsidian text-crm-body font-bold text-white disabled:opacity-50"
       >
         {t('unlock')}
       </button>
@@ -126,10 +126,10 @@ function Section({
 
   return (
     <section aria-labelledby={`${id}-title`} className="rounded-panel bg-white p-4 shadow-sm">
-      <h2 id={`${id}-title`} className="text-crm-body font-bold text-brand-plate-navy">
+      <h2 id={`${id}-title`} className="text-crm-body font-bold text-brand-obsidian">
         {title}
       </h2>
-      {helper === undefined ? null : <p className="mt-1 text-small text-brand-rubber-grey">{helper}</p>}
+      {helper === undefined ? null : <p className="mt-1 text-small text-brand-stone">{helper}</p>}
       <div className="mt-3 grid gap-3">{children}</div>
 
       {needsPin ? (
@@ -152,7 +152,7 @@ function Section({
         type="button"
         disabled={pending}
         onClick={run}
-        className="mt-3 min-h-14 w-full rounded-panel bg-brand-signboard-red text-crm-body font-bold text-white disabled:opacity-50"
+        className="mt-3 min-h-14 w-full rounded-panel bg-brand-accent text-crm-body font-bold text-brand-white disabled:opacity-50"
       >
         {pending ? t('saving') : t('save')}
       </button>
@@ -183,7 +183,7 @@ export function PricesForm({ plans, save, unlock }: { plans: readonly PlanPrice[
     >
       {(['MALE', 'FEMALE'] as const).map((gender) => (
         <div key={gender}>
-          <p className="text-small font-semibold text-brand-rubber-grey">{t(gender)}</p>
+          <p className="text-small font-semibold text-brand-stone">{t(gender)}</p>
           {/*
             One tile per row on a phone: two columns at 360px left the price field 30px wide.
             An explicit width, not `sm:` — this project's `sm` breakpoint sits at phone width.
@@ -195,7 +195,7 @@ export function PricesForm({ plans, save, unlock }: { plans: readonly PlanPrice[
                 const value = rupees[plan.code] ?? 0;
                 const label = `${t(gender)} · ${t('months', { count: plan.durationMonths })}`;
                 return (
-                  <div key={plan.code} className="rounded-panel border border-brand-rubber-grey/20 p-2">
+                  <div key={plan.code} className="rounded-panel border border-brand-stone/20 p-2">
                     <p className="text-small font-semibold">{t('months', { count: plan.durationMonths })}</p>
                     <div className="mt-1 flex items-center gap-1">
                       <button type="button" aria-label={`${label}: ${t('minus')}`} onClick={() => set(plan.code, value - 100)} className="size-11 shrink-0 rounded-button bg-tint-fee-none-bg text-xl font-bold">
@@ -209,13 +209,13 @@ export function PricesForm({ plans, save, unlock }: { plans: readonly PlanPrice[
                         aria-label={label}
                         value={value}
                         onChange={(event) => set(plan.code, Number(event.target.value))}
-                        className="min-h-11 w-full min-w-0 rounded-input border-2 border-brand-rubber-grey/40 px-1 text-center text-crm-body tabular-nums"
+                        className="min-h-11 w-full min-w-0 rounded-input border-2 border-brand-stone/40 px-1 text-center text-crm-body tabular-nums"
                       />
                       <button type="button" aria-label={`${label}: ${t('plus')}`} onClick={() => set(plan.code, value + 100)} className="size-11 shrink-0 rounded-button bg-tint-fee-none-bg text-xl font-bold">
                         +
                       </button>
                     </div>
-                    <p className="mt-1 text-small text-brand-rubber-grey">{t('perMonth', { amount: inr(Math.round(value / plan.durationMonths / 10) * 10) })}</p>
+                    <p className="mt-1 text-small text-brand-stone">{t('perMonth', { amount: inr(Math.round(value / plan.durationMonths / 10) * 10) })}</p>
                   </div>
                 );
               })}
@@ -286,7 +286,7 @@ export function PromoForm({
   return (
     <Section title={t('promo')} unlock={unlock} save={() => save({ promo: { enabled: on, textHi: hi.trim(), textEn: en.trim() } })}>
       <label className="flex min-h-11 items-center gap-3 text-crm-body">
-        <input type="checkbox" checked={on} onChange={(event) => setOn(event.target.checked)} className="size-6 accent-brand-plate-navy" />
+        <input type="checkbox" checked={on} onChange={(event) => setOn(event.target.checked)} className="size-6 accent-brand-obsidian" />
         {t('promoEnabled')}
       </label>
       {(
@@ -305,9 +305,9 @@ export function PromoForm({
             rows={2}
             value={value}
             onChange={(event) => setValue(event.target.value)}
-            className="mt-1 w-full rounded-input border-2 border-brand-rubber-grey/40 bg-white p-3 text-crm-body"
+            className="mt-1 w-full rounded-input border-2 border-brand-stone/40 bg-white p-3 text-crm-body"
           />
-          <p className="text-right text-small text-brand-rubber-grey tabular-nums">{t('chars', { count: value.length })}</p>
+          <p className="text-right text-small text-brand-stone tabular-nums">{t('chars', { count: value.length })}</p>
         </div>
       ))}
     </Section>
@@ -377,10 +377,10 @@ export function HoursForm({ hours, save, unlock }: { hours: readonly HoursInput[
       {rows.map((row) => {
         const dayName = t(`days.${row.day}` as never);
         return (
-          <div key={row.day} className="grid grid-cols-[1fr_auto] items-center gap-2 border-b border-brand-rubber-grey/15 pb-2">
+          <div key={row.day} className="grid grid-cols-[1fr_auto] items-center gap-2 border-b border-brand-stone/15 pb-2">
             <span className="text-crm-body font-semibold">{dayName}</span>
             <label className="flex items-center gap-2 text-small">
-              <input type="checkbox" checked={row.closed} onChange={(event) => update(row.day, { closed: event.target.checked })} className="size-5 accent-brand-plate-navy" />
+              <input type="checkbox" checked={row.closed} onChange={(event) => update(row.day, { closed: event.target.checked })} className="size-5 accent-brand-obsidian" />
               {t('closedDay')}
             </label>
             {row.closed ? null : (
@@ -432,7 +432,7 @@ export function RemindersForm({
       {rows.map((row) => {
         const name = t(`ruleNames.${row.code}` as never);
         return (
-          <div key={row.code} className="grid gap-2 border-b border-brand-rubber-grey/15 pb-3">
+          <div key={row.code} className="grid gap-2 border-b border-brand-stone/15 pb-3">
             <div className="flex min-h-14 items-center justify-between gap-3">
               <span className="text-crm-body font-semibold">{name}</span>
               {/* The whole label is the tap target, 56px tall like every CRM control. */}
@@ -442,7 +442,7 @@ export function RemindersForm({
                   aria-label={`${name}: ${t('ruleOn')}`}
                   checked={row.isEnabled}
                   onChange={(event) => update(row.code, (current) => ({ ...current, isEnabled: event.target.checked }))}
-                  className="size-6 accent-brand-plate-navy"
+                  className="size-6 accent-brand-obsidian"
                 />
                 {t('ruleOn')}
               </label>
@@ -474,7 +474,7 @@ export function RemindersForm({
                   <button
                     type="button"
                     onClick={() => update(row.code, (current) => ({ ...current, slots: [...current.slots, '12:00'] }))}
-                    className="min-h-14 rounded-button border-2 border-dashed border-brand-rubber-grey/40 text-crm-body font-semibold text-brand-plate-navy"
+                    className="min-h-14 rounded-button border-2 border-dashed border-brand-stone/40 text-crm-body font-semibold text-brand-obsidian"
                   >
                     {t('addTime')}
                   </button>
@@ -499,7 +499,7 @@ export function RemindersForm({
           className={`${field} mt-1`}
         />
         {/* BR-5.2: a long tail keeps messaging people who left, and Meta downgrades the number. */}
-        <p className={`mt-1 text-small ${days > 14 ? 'font-semibold text-semantic-fee-expired' : 'text-brand-rubber-grey'}`}>
+        <p className={`mt-1 text-small ${days > 14 ? 'font-semibold text-semantic-fee-expired' : 'text-brand-stone'}`}>
           {days > 14 ? t('postDaysWarning') : t('postDaysHelper')}
         </p>
       </div>
@@ -527,11 +527,11 @@ export function AutomaticMessagesForm({ paused, save, unlock }: { paused: boolea
         return result;
       }}
     >
-      <p className={`rounded-panel p-3 text-crm-body font-semibold ${paused ? 'bg-tint-fee-expired-bg text-semantic-fee-expired' : 'bg-tint-fee-none-bg text-brand-plate-navy'}`}>
+      <p className={`rounded-panel p-3 text-crm-body font-semibold ${paused ? 'bg-tint-fee-expired-bg text-semantic-fee-expired' : 'bg-tint-fee-none-bg text-brand-obsidian'}`}>
         {paused ? t('automaticStopped') : t('automaticRunning')}
       </p>
       <label className="flex min-h-14 items-center gap-3 text-crm-body">
-        <input type="checkbox" checked={stop} onChange={(event) => setStop(event.target.checked)} className="size-6 accent-brand-signboard-red" />
+        <input type="checkbox" checked={stop} onChange={(event) => setStop(event.target.checked)} className="size-6 accent-brand-accent" />
         {t('automaticStop')}
       </label>
     </Section>
@@ -565,7 +565,7 @@ export function QrOtpForm({
           type="checkbox"
           checked={on}
           onChange={(event) => setOn(event.target.checked)}
-          className="accent-brand-signboard-red size-6"
+          className="accent-brand-accent size-6"
         />
         {t('qrOtpOn')}
       </label>
@@ -599,16 +599,16 @@ export function LanguageVoiceForm({
           {(['hi', 'en'] as const).map((code) => (
             <label
               key={code}
-              className={`flex min-h-14 items-center justify-center gap-2 rounded-panel border-2 text-crm-body font-semibold ${lang === code ? 'border-brand-plate-navy bg-tint-fee-none-bg' : 'border-brand-rubber-grey/30'}`}
+              className={`flex min-h-14 items-center justify-center gap-2 rounded-panel border-2 text-crm-body font-semibold ${lang === code ? 'border-brand-obsidian bg-tint-fee-none-bg' : 'border-brand-stone/30'}`}
             >
-              <input type="radio" name={`${id}-language`} checked={lang === code} onChange={() => setLang(code)} className="size-5 accent-brand-plate-navy" />
+              <input type="radio" name={`${id}-language`} checked={lang === code} onChange={() => setLang(code)} className="size-5 accent-brand-obsidian" />
               {code === 'hi' ? t('hindi') : t('english')}
             </label>
           ))}
         </div>
       </fieldset>
       <label className="flex min-h-14 items-center gap-3 text-crm-body">
-        <input type="checkbox" checked={voice} onChange={(event) => setVoice(event.target.checked)} className="size-6 accent-brand-plate-navy" />
+        <input type="checkbox" checked={voice} onChange={(event) => setVoice(event.target.checked)} className="size-6 accent-brand-obsidian" />
         {t('kioskVoice')}
       </label>
     </Section>
