@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
+import { waitForHydration } from './hydration';
 
 /** A drawn face, never a photo of a person (scripts/make-face-fixture.mjs). */
 const FACE_PHOTO = fileURLToPath(new URL('./fixtures/face.jpg', import.meta.url));
@@ -20,6 +21,7 @@ const RECEPTION = { mobile: '9000000002', pin: '1357' };
 
 async function login(page: Page, who: { mobile: string; pin: string }) {
   await page.goto('/crm/login');
+  await waitForHydration(page);
   await page.getByLabel('मोबाइल नंबर').fill(who.mobile);
   await page.getByLabel('PIN').fill(who.pin);
   await page.getByRole('button', { name: 'लॉगिन करें' }).click();
@@ -29,6 +31,7 @@ async function login(page: Page, who: { mobile: string; pin: string }) {
 test.describe('Max Register', () => {
   test('refuses a wrong PIN and counts the attempts left', async ({ page }) => {
     await page.goto('/crm/login');
+  await waitForHydration(page);
     await page.getByLabel('मोबाइल नंबर').fill(OWNER.mobile);
     await page.getByLabel('PIN').fill('9999');
     await page.getByRole('button', { name: 'लॉगिन करें' }).click();
@@ -54,7 +57,7 @@ test.describe('Max Register', () => {
       ['/crm/members?fee=DUE_SOON', 'इस हफ्ते फीस'],
       ['/crm/members?fee=EXPIRED', 'फीस बाकी'],
     ]) {
-      await expect(page.getByRole('main').locator(`a[href="${href}"]`).first()).toContainText(label ?? '');
+      await expect(page.getByRole('main').locator(`a[href="${href}"]`).filter({ hasText: label ?? '' }).first()).toBeVisible();
     }
     await expect(page.getByRole('heading', { name: /आज के कॉल/ })).toBeVisible();
     // Money is owner-only (crm-module-spec §3).
@@ -157,6 +160,15 @@ test.describe('Max Register', () => {
     // ...and the new PIN is the one that works.
     await login(other, { mobile: RECEPTION.mobile, pin: newPin });
     await otherPhone.close();
+
+    // Put the demo PIN back, so the reception tests that run after this one can log in.
+    await page.goto('/crm/more/pin');
+    const again = page.getByRole('form', { name: 'मेरा PIN बदलें' });
+    await again.getByLabel('अभी वाला PIN').fill(newPin);
+    await again.getByLabel('नया PIN (4 से 6 अंक)').fill(RECEPTION.pin);
+    await again.getByLabel('नया PIN दोबारा').fill(RECEPTION.pin);
+    await again.getByRole('button', { name: 'PIN बदलें' }).click();
+    await expect(again.getByRole('status')).toBeVisible({ timeout: 30_000 });
   });
 
   test("exports a member's data, then erases it for good", async ({ page }, testInfo) => {
@@ -393,7 +405,7 @@ test.describe('Max Register', () => {
     await firstRow.click();
 
     await expect(page).toHaveURL(/\/crm\/members\/[\w-]+$/);
-    await expect(page.getByText(/फीस (जमा है|बाकी|इस हफ्ते)|कोई प्लान नहीं/).first()).toBeVisible();
+    await expect(page.getByRole('main').getByText(/फीस (जमा है|बाकी|इस हफ्ते)|कोई प्लान नहीं/).first()).toBeVisible();
     await expect(page.getByRole('link', { name: /फीस लें/ })).toBeVisible();
     expect(name.length).toBeGreaterThan(0);
   });

@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
+import { waitForHydration } from './hydration';
 
 /**
  * Journey 7 (testing-strategy §3; qr-onboarding-flow §3; ADR-058): an existing member
@@ -30,6 +31,7 @@ test('an existing member sends their details by QR and reception approves them',
   await page.goto('/qr');
   await page.getByRole('link', { name: /I am already a member/ }).click();
   await expect(page.getByText('Question 1 of 9')).toBeVisible();
+  await waitForHydration(page);
 
   const next = () => page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Mobile number').fill(mobile);
@@ -64,6 +66,7 @@ test('an existing member sends their details by QR and reception approves them',
 
   // The desk: reception finds the code in the queue and approves the date the member gave.
   await page.goto('/crm/login');
+  await waitForHydration(page);
   await page.getByLabel('मोबाइल नंबर').fill(RECEPTION.mobile);
   await page.getByLabel('PIN').fill(RECEPTION.pin);
   await page.getByRole('button', { name: 'लॉगिन करें' }).click();
@@ -90,6 +93,7 @@ test('someone new joins from the QR and holds the plan to pay at the desk', asyn
   await page.goto('/qr');
   await page.getByRole('link', { name: /I am new here/ }).click();
   await expect(page).toHaveURL(/\/qr\/new$/);
+  await waitForHydration(page);
 
   await page.getByLabel('Full name').fill('Qr Newcomer');
   await page.getByLabel('Mobile number').fill(mobile);

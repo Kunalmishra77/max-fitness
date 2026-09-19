@@ -57,7 +57,7 @@ export function CrmSidebar({
 
       <nav aria-label={appName} className="flex-1 overflow-y-auto px-3 py-4">
         {groups.map((group) => (
-          <div key={group.title} className="mb-5">
+          <div key={group.title} className="mb-3">
             <p className="px-3 pb-2 text-[0.7rem] font-semibold tracking-[0.22em] text-brand-mist uppercase">{group.title}</p>
             <ul className="grid gap-1">
               {group.items.map((item) => {
@@ -68,7 +68,7 @@ export function CrmSidebar({
                       href={item.href}
                       aria-current={active ? 'page' : undefined}
                       className={cn(
-                        'group relative flex min-h-11 items-center gap-3 rounded-button px-3 text-body font-medium transition-colors',
+                        'group relative flex min-h-10 items-center gap-3 rounded-button px-3 text-body font-medium transition-colors',
                         active ? 'bg-brand-accent text-brand-white' : 'text-brand-paper/80 hover:bg-brand-white/[0.06] hover:text-brand-white',
                       )}
                     >
@@ -88,7 +88,7 @@ export function CrmSidebar({
         ))}
       </nav>
 
-      <div className="grid gap-3 border-t border-brand-white/10 px-6 py-5">
+      <div className="grid gap-2 border-t border-brand-white/10 px-6 py-4">
         <p className="text-small text-brand-mist">
           {signedInAs}
           <span className="block text-body font-semibold text-brand-white">{name}</span>

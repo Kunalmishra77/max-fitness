@@ -306,3 +306,9 @@ html.preloaded .preloader {
 html {
   scrollbar-color: var(--color-brand-accent) var(--color-brand-obsidian);
 }
+
+/* Devanagari joins its letters along the headline bar: letter-spacing breaks the words
+   apart, so spaced-out labels keep normal spacing in Hindi (ADR-062). */
+:lang(hi) [class*='tracking-'] {
+  letter-spacing: normal;
+}

@@ -36,6 +36,19 @@ Blockers / questions for client:
 - Same as Phase 3: payment-failure wording, prices, minimum age, admission fee, PIN confirmation, photos, policy answers, grievance officer.
 - Demo staff logins are the seeded ones (owner 9000000001 / 2468, reception 9000000002 / 1357). Real PINs must be set before anyone uses this outside a demo.
 
+### 2026-09-19 — CRM — Max Register redesign, language switch, computer layout
+Done:
+- Hindi/English switch saved per staff member (ADR-062); login screen switch.
+- Computer layout with an obsidian sidebar; phone bars and bottom nav with SVG icons.
+- One permission-aware menu (sidebar and More) with a line explaining each place; "coming soon" removed.
+- Home: quick actions, explained tiles, calls, birthdays, month's money; login page with logo and gym photo.
+- Website: the small line under the logo name removed; Hindi labels no longer letter-spaced.
+- E2E hardened (hydration wait, main-scoped clicks, demo PIN restored). Unit tests 1155 passed; CRM and QR E2E green on production (desktop).
+
+Pending / next:
+- Premium pass on the inner CRM screens (member profile, take fees, reports, settings forms).
+- Phase 6 WhatsApp engine, Phase 7 kiosk, Phase 8 hardening.
+
 ### 2026-09-18 (evening) — Website and CRM — Real logo, black-red theme, premium layer
 Done:
 - **Logo everywhere (ADR-061):** nav, footer, favicon, Apple icon, CRM home-screen icons, share image, QR poster, all from `assets/brand/max-gym-logo.png` via `scripts/make-pwa-icons.mjs`.

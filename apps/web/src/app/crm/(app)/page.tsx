@@ -6,7 +6,6 @@ import { setCrmLanguageAction } from '@/app/crm/actions';
 import { BottomNav, CrmHeader, FEE_TONE, MemberRow, rupees } from '@/components/crm/crm-chrome';
 import { CrmIcon, type CrmIconName } from '@/components/crm/crm-icons';
 import { LanguageSwitch } from '@/components/crm/language-switch';
-import { LogoutButton } from '@/components/crm/logout-button';
 import { getContainer } from '@/lib/container';
 import { requireCrmContext, verificationDeps } from '@/lib/crm';
 import { cn } from '@/lib/cn';
@@ -82,19 +81,13 @@ export default async function CrmHomePage() {
                 <span aria-hidden>{counts.unreadAlerts}</span>
               </span>
             ) : null}
-            <span className="hidden sm:block lg:hidden">
-              <LanguageSwitch current={locale} change={setCrmLanguageAction} />
-            </span>
-            <span className="lg:hidden">
-              <LogoutButton label={t('shell.logout')} className="text-brand-mist hover:text-brand-white" />
-            </span>
           </div>
         }
       />
 
       <div className="grid gap-6 p-4 lg:p-0">
-        {/* The language switch lives in the top bar on wider phones and in the sidebar on computers. */}
-        <div className="sm:hidden">
+        {/* On a phone the language switch sits under the top bar; on a computer it is in the sidebar. */}
+        <div className="flex justify-end lg:hidden">
           <LanguageSwitch current={locale} change={setCrmLanguageAction} tone="light" />
         </div>
 
@@ -102,7 +95,7 @@ export default async function CrmHomePage() {
           <h2 id="quick-heading" className="sr-only">
             {t('home.quickTitle')}
           </h2>
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <ul className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {quick.map((item) => (
               <li key={item.key}>
                 <Link
