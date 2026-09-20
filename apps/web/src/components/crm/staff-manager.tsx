@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useId, useState, useTransition } from 'react';
 import { PinGate } from '@/components/crm/settings-forms';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/cn';
 import type { SettingsPatchInput, SettingsResult, StaffCreateFields, StaffResult, UnlockResult } from '@/lib/settings-types';
 
 /**
@@ -362,7 +364,7 @@ export function AddStaffForm({ add, unlock }: { add: (fields: StaffCreateFields)
             },
           )
         }
-        className="mt-3 min-h-14 w-full rounded-panel bg-brand-accent text-crm-body font-bold text-brand-white disabled:opacity-50"
+        className={cn(buttonVariants({ variant: 'primary', size: 'crmPrimary', full: true }), 'mt-3')}
       >
         {action.pending ? t('saving') : t('addSave')}
       </button>

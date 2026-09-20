@@ -3,7 +3,8 @@ import { getTranslations } from 'next-intl/server';
 import { can } from '@mfp/core';
 import { markAttendanceAction, undoAttendanceAction } from '@/app/crm/actions';
 import { AttendanceMarker } from '@/components/crm/attendance-marker';
-import { BottomNav, CrmHeader, FEE_TONE } from '@/components/crm/crm-chrome';
+import { BottomNav, CrmHeader, FEE_TONE, CRM_CARD, pillClass } from '@/components/crm/crm-chrome';
+import { cn } from '@/lib/cn';
 import { MemberSearch } from '@/components/crm/member-search';
 import { getContainer } from '@/lib/container';
 import { requireCrmContext } from '@/lib/crm';
@@ -38,14 +39,14 @@ export default async function CrmAttendancePage({ searchParams }: { searchParams
     new Intl.DateTimeFormat(actor.language === 'hi' ? 'hi-IN' : 'en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit' }).format(at);
 
   const tabClass = (active: boolean) =>
-    `inline-flex min-h-11 items-center rounded-full px-5 text-crm-body font-semibold transition-colors ${active ? 'bg-brand-obsidian text-white' : 'bg-white text-brand-stone hover:text-brand-obsidian'}`;
+    pillClass(active);
 
   return (
     <>
       <CrmHeader title={t('attendance.title')} subtitle={t('menu.attendance.desc')} back="/crm" />
 
       {mayMark ? (
-        <div className="bg-white px-4 pt-3 pb-4 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:shadow-sm">
+        <div className={cn(CRM_CARD, 'px-4 pt-3 pb-4')}>
           <MemberSearch placeholder={t('attendance.search')} initial={search} basePath="/crm/attendance" />
           {matches.length === 0 ? null : (
             <ul className="mt-3 divide-y divide-brand-stone/15">
@@ -80,7 +81,7 @@ export default async function CrmAttendancePage({ searchParams }: { searchParams
         ) : (
           <ul className="divide-y divide-brand-stone/15">
             {absentMembers.map((member) => (
-              <li key={member.id} className="flex flex-wrap items-center justify-between gap-3 bg-white p-4">
+              <li key={member.id} className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 transition-colors hover:bg-brand-paper">
                 <span className="min-w-0">
                   <Link href={`/crm/members/${member.id}`} className="block truncate text-crm-body font-semibold text-brand-ink">
                     {member.fullName}

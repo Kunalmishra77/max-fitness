@@ -26,7 +26,7 @@ const PLAN_MIX_DAYS = 90;
 
 function Card({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-panel bg-white p-4 shadow-sm">
+    <section className="rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm lg:p-6">
       <h2 className="text-crm-body font-bold text-brand-obsidian">{title}</h2>
       {subtitle === undefined ? null : <p className="text-small text-brand-stone">{subtitle}</p>}
       <div className="mt-3">{children}</div>
@@ -88,10 +88,10 @@ export default async function CrmReportsPage() {
     <>
       <CrmHeader title={t('reports.title')} subtitle={t('menu.reports.desc')} back="/crm/more" />
 
-      <div className="grid gap-3 p-4 pb-24">
+      <div className="grid gap-3 p-4 pb-24 lg:grid-cols-2 lg:gap-4 lg:p-0">
         <Card title={t('reports.money')}>
           {/* The hero figure: the one number this screen leads with, in the body sans. */}
-          <p className="text-[44px] leading-none font-semibold text-brand-ink">{rupees(money.totalPaise)}</p>
+          <p className="font-display text-[2.75rem] leading-none font-bold text-brand-obsidian tabular">{rupees(money.totalPaise)}</p>
           <p className="mt-2 text-small text-brand-stone">{deltaLine}</p>
           {money.byMethod.length === 0 ? null : (
             <div className="mt-4">
@@ -110,10 +110,10 @@ export default async function CrmReportsPage() {
 
         <div className="grid grid-cols-2 gap-3">
           <Card title={t('reports.newMembers')} subtitle={t('reports.thisMonth')}>
-            <p className="text-[36px] leading-none font-semibold text-brand-ink">{flow.newMembers}</p>
+            <p className="font-display text-[2.25rem] leading-none font-bold text-brand-obsidian tabular">{flow.newMembers}</p>
           </Card>
           <Card title={t('reports.renewals')} subtitle={t('reports.thisMonth')}>
-            <p className="text-[36px] leading-none font-semibold text-brand-ink">{flow.renewals}</p>
+            <p className="font-display text-[2.25rem] leading-none font-bold text-brand-obsidian tabular">{flow.renewals}</p>
           </Card>
         </div>
 
@@ -122,7 +122,7 @@ export default async function CrmReportsPage() {
             <p className="text-crm-body text-brand-stone">{t('reports.renewalRateNone')}</p>
           ) : (
             <>
-              <p className="text-[36px] leading-none font-semibold text-brand-ink">{flow.renewalRate.percent}%</p>
+              <p className="font-display text-[2.25rem] leading-none font-bold text-brand-obsidian tabular">{flow.renewalRate.percent}%</p>
               <div className="mt-3">
                 <Meter percent={flow.renewalRate.percent} label={t('reports.renewalRate')} />
               </div>
@@ -138,7 +138,7 @@ export default async function CrmReportsPage() {
             <p className="text-crm-body text-brand-stone">{t('reports.leftNone')}</p>
           ) : (
             <>
-              <p className="text-[36px] leading-none font-semibold text-brand-ink">{leftTotal}</p>
+              <p className="font-display text-[2.25rem] leading-none font-bold text-brand-obsidian tabular">{leftTotal}</p>
               <ul className="mt-3 grid gap-1">
                 {inputs.leftByReason.map((row) => (
                   <li key={row.reason} className="flex justify-between text-small text-brand-ink">
@@ -209,7 +209,7 @@ export default async function CrmReportsPage() {
             <p className="text-crm-body text-brand-stone">{t('reports.kioskNone')}</p>
           ) : (
             <>
-              <p className="text-[36px] leading-none font-semibold text-brand-ink">{kiosk}%</p>
+              <p className="font-display text-[2.25rem] leading-none font-bold text-brand-obsidian tabular">{kiosk}%</p>
               <div className="mt-3">
                 <Meter percent={kiosk} label={t('reports.kiosk')} />
               </div>

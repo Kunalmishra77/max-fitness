@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useState, useTransition } from 'react';
 import type { DeskPaymentMethod } from '@mfp/core';
 import { formatINR, formatISTDate, type ISTDate } from '@mfp/shared';
+import { CrmIcon } from '@/components/crm/crm-icons';
 import { buttonVariants } from '@/components/ui/button';
 
 /**
@@ -56,10 +57,10 @@ export function RenewFlow({
     const code = params.get('code') ?? '';
     const amount = Number(params.get('amount') ?? '0');
     return (
-      <div className="grid gap-5 p-6 text-center">
-        <p aria-hidden className="text-6xl">
-          ✅
-        </p>
+      <div className="m-4 grid gap-5 rounded-panel border border-brand-stone/15 bg-white p-6 text-center shadow-sm lg:m-0">
+        <span aria-hidden className="mx-auto flex size-16 items-center justify-center rounded-full bg-tint-fee-paid-bg text-semantic-fee-paid">
+          <CrmIcon name="attendance" className="size-9" />
+        </span>
         <h2 className="font-display text-display-m font-bold text-semantic-fee-paid">{t('done')}</h2>
         <p className="text-crm-body">{formatINR(amount, { showPaise: false })}</p>
         <p className="text-crm-body text-brand-stone">{t('receiptSent')}</p>
@@ -75,7 +76,7 @@ export function RenewFlow({
   const money = (paise: number) => formatINR(paise, { showPaise: false });
 
   return (
-    <div className="p-4">
+    <div className="m-4 rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm lg:m-0 lg:p-6">
       <p className="text-crm-body font-semibold text-brand-obsidian">{memberName}</p>
 
       <h2 className="mt-4 text-crm-body font-bold">{t('step1')}</h2>
@@ -90,7 +91,7 @@ export function RenewFlow({
               setFailed(false);
             }}
             className={`min-h-24 rounded-panel border-2 p-3 text-left ${
-              plan?.planId === option.planId ? 'border-brand-obsidian bg-brand-obsidian/[0.06]' : 'border-brand-stone/30 bg-white'
+              plan?.planId === option.planId ? 'border-brand-accent bg-brand-accent/[0.07]' : 'border-brand-stone/30 bg-white hover:border-brand-obsidian'
             }`}
           >
             <span className="block text-crm-body font-semibold">
@@ -115,7 +116,7 @@ export function RenewFlow({
                 type="button"
                 onClick={() => setMethod(option.method)}
                 className={`flex min-h-24 flex-col items-center justify-center gap-1 rounded-panel border-2 text-crm-body font-semibold ${
-                  method === option.method ? 'border-brand-obsidian bg-brand-obsidian/[0.06]' : 'border-brand-stone/30 bg-white'
+                  method === option.method ? 'border-brand-accent bg-brand-accent/[0.07]' : 'border-brand-stone/30 bg-white hover:border-brand-obsidian'
                 }`}
               >
                 <span aria-hidden className="text-2xl">
@@ -129,7 +130,7 @@ export function RenewFlow({
       )}
 
       {plan !== null && method !== null ? (
-        <div className="mt-6 rounded-panel bg-white p-4">
+        <div className="mt-6 rounded-panel bg-brand-paper p-4">
           <p className="text-crm-body font-semibold">{t('confirmQuestion', { amount: money(plan.pricePaise), method: t(`methods.${method}`) })}</p>
           <button
             type="button"

@@ -159,3 +159,17 @@ export function initials(name: string): string {
   const last = parts.length > 1 ? (parts.at(-1)?.charAt(0) ?? '') : '';
   return (first + last).toUpperCase();
 }
+
+/**
+ * A white panel: edge to edge on a phone, a card with a border on a computer (ADR-062).
+ * Lists and forms share it so no two screens invent their own surface.
+ */
+export const CRM_CARD = 'bg-white lg:rounded-panel lg:border lg:border-brand-stone/15 lg:shadow-sm';
+
+/** A filter or tab pill; the chosen one is obsidian, or its own fee tint. */
+export function pillClass(active: boolean, tone = 'bg-white text-brand-stone hover:text-brand-obsidian'): string {
+  return cn(
+    'inline-flex min-h-11 items-center rounded-full px-5 text-crm-body font-semibold transition-colors',
+    active ? 'bg-brand-obsidian text-white' : tone,
+  );
+}

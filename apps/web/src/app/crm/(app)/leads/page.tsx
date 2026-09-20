@@ -3,7 +3,9 @@ import { getTranslations } from 'next-intl/server';
 import { can, type LeadStatus } from '@mfp/core';
 import { formatISTDate, toISTDate } from '@mfp/shared';
 import { advanceLeadAction } from '@/app/crm/actions';
-import { BottomNav, CrmHeader } from '@/components/crm/crm-chrome';
+import { BottomNav, CrmHeader, CRM_CARD, pillClass } from '@/components/crm/crm-chrome';
+import { CrmIcon } from '@/components/crm/crm-icons';
+import { cn } from '@/lib/cn';
 import { LeadActions } from '@/components/crm/lead-actions';
 import { getContainer } from '@/lib/container';
 import { requireCrmContext } from '@/lib/crm';
@@ -37,7 +39,7 @@ export default async function CrmLeadsPage({ searchParams }: { searchParams: Pro
   const mayWork = can(actor, 'member.edit', getContainer().clock.now());
 
   const tabClass = (active: boolean) =>
-    `inline-flex min-h-11 items-center rounded-button px-4 text-crm-body font-semibold ${active ? 'bg-brand-obsidian text-white' : 'bg-white'}`;
+    pillClass(active);
 
   return (
     <>
@@ -59,7 +61,7 @@ export default async function CrmLeadsPage({ searchParams }: { searchParams: Pro
       ) : (
         <ul className="divide-y divide-brand-stone/15">
           {leads.map((lead) => (
-            <li key={lead.id} className="bg-white p-4">
+            <li key={lead.id} className={cn(CRM_CARD, 'p-4 lg:mb-3')}>
               <div className="flex items-baseline justify-between gap-3">
                 <span className="truncate text-crm-body font-semibold text-brand-ink">{lead.name}</span>
                 <span className={`shrink-0 rounded-button px-2 py-1 text-small font-semibold ${TONE[lead.status] ?? TONE['NEW'] ?? ''}`}>
@@ -75,17 +77,19 @@ export default async function CrmLeadsPage({ searchParams }: { searchParams: Pro
               <div className="mt-3 grid grid-cols-2 gap-3">
                 <a
                   href={`tel:${lead.mobile}`}
-                  className="flex min-h-14 items-center justify-center rounded-panel bg-brand-obsidian text-crm-body font-semibold text-white"
+                  className="flex min-h-14 items-center justify-center gap-2 rounded-panel bg-brand-obsidian text-crm-body font-semibold text-white transition-transform hover:-translate-y-0.5"
                 >
-                  📞 {t('profile.call')}
+                  <CrmIcon name="calls" className="size-5" />
+                  {t('profile.call')}
                 </a>
                 <a
                   href={`https://wa.me/${lead.mobile.replace(/\D/g, '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex min-h-14 items-center justify-center rounded-panel border-2 border-brand-obsidian text-crm-body font-semibold text-brand-obsidian"
+                  className="flex min-h-14 items-center justify-center gap-2 rounded-panel border-2 border-brand-obsidian text-crm-body font-semibold text-brand-obsidian transition-colors hover:bg-brand-obsidian hover:text-brand-white"
                 >
-                  💬 {t('profile.whatsapp')}
+                  <CrmIcon name="whatsapp" className="size-5" />
+                  {t('profile.whatsapp')}
                 </a>
               </div>
 

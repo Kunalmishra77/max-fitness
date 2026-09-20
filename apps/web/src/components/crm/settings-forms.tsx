@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useId, useState, useTransition, type ReactNode } from 'react';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/cn';
 import type {
   HoursInput,
   PriceInput,
@@ -125,7 +127,7 @@ function Section({
   };
 
   return (
-    <section aria-labelledby={`${id}-title`} className="rounded-panel bg-white p-4 shadow-sm">
+    <section aria-labelledby={`${id}-title`} className="rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm lg:p-6">
       <h2 id={`${id}-title`} className="text-crm-body font-bold text-brand-obsidian">
         {title}
       </h2>
@@ -152,7 +154,7 @@ function Section({
         type="button"
         disabled={pending}
         onClick={run}
-        className="mt-3 min-h-14 w-full rounded-panel bg-brand-accent text-crm-body font-bold text-brand-white disabled:opacity-50"
+        className={cn(buttonVariants({ variant: 'primary', size: 'crmPrimary', full: true }), 'mt-3')}
       >
         {pending ? t('saving') : t('save')}
       </button>
