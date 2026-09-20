@@ -24,14 +24,16 @@ import { useId, useState, type CSSProperties, type FocusEvent, type PointerEvent
  */
 
 const VIZ: CSSProperties = {
-  // Reference palette (dataviz palette.md): categorical slots 1–2 and the blue ramp.
-  ['--series-1' as string]: '#2a78d6',
-  ['--series-2' as string]: '#eb6834',
-  ['--track' as string]: '#cde2fb',
+  // The brand's own two categorical slots (ADR-062): deep red and the medal gold, checked
+  // with the dataviz validator — lightness, chroma, CVD separation (ΔE 14.4 deutan) and
+  // contrast all pass, so the two series stay apart for colour-blind readers too.
+  ['--series-1' as string]: '#B00D1A',
+  ['--series-2' as string]: '#A8842F',
+  ['--track' as string]: '#F6DDE0',
   // CRM design tokens: hairline grid one step off white, muted and primary ink.
   ['--grid' as string]: '#EEF0F2',
-  ['--muted' as string]: '#5C6272',
-  ['--ink' as string]: '#0F1729',
+  ['--muted' as string]: '#66676B',
+  ['--ink' as string]: '#121212',
 };
 
 // ── Tooltip ─────────────────────────────────────────────────────────────────
