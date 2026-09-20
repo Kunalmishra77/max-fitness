@@ -38,14 +38,14 @@ export default async function CrmAttendancePage({ searchParams }: { searchParams
     new Intl.DateTimeFormat(actor.language === 'hi' ? 'hi-IN' : 'en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit' }).format(at);
 
   const tabClass = (active: boolean) =>
-    `inline-flex min-h-11 items-center rounded-button px-4 text-crm-body font-semibold ${active ? 'bg-brand-obsidian text-white' : 'bg-white'}`;
+    `inline-flex min-h-11 items-center rounded-full px-5 text-crm-body font-semibold transition-colors ${active ? 'bg-brand-obsidian text-white' : 'bg-white text-brand-stone hover:text-brand-obsidian'}`;
 
   return (
     <>
       <CrmHeader title={t('attendance.title')} subtitle={t('menu.attendance.desc')} back="/crm" />
 
       {mayMark ? (
-        <div className="bg-white px-4 pt-3 pb-4">
+        <div className="bg-white px-4 pt-3 pb-4 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:shadow-sm">
           <MemberSearch placeholder={t('attendance.search')} initial={search} basePath="/crm/attendance" />
           {matches.length === 0 ? null : (
             <ul className="mt-3 divide-y divide-brand-stone/15">

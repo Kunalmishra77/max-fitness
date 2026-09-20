@@ -4,7 +4,9 @@ import { getTranslations } from 'next-intl/server';
 import { can, mayAfterPinEntry } from '@mfp/core';
 import { formatISTDate } from '@mfp/shared';
 import { eraseMemberAction, unlockMemberDataAction, voidPaymentAction } from '@/app/crm/actions';
-import { BottomNav, CrmHeader, FEE_TONE, rupees } from '@/components/crm/crm-chrome';
+import { BottomNav, CrmHeader, FEE_TONE, rupees, initials } from '@/components/crm/crm-chrome';
+import { CrmIcon } from '@/components/crm/crm-icons';
+import { cn } from '@/lib/cn';
 import { MemberDataSection } from '@/components/crm/member-data';
 import { VoidPaymentButton } from '@/components/crm/void-payment';
 import { getContainer } from '@/lib/container';
@@ -55,13 +57,30 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
     <>
       <CrmHeader title={member.fullName} back="/crm/members" />
 
-      <div className="bg-white px-4 pt-4 pb-5 text-center">
-        {photoUrl === null ? null : (
-          // A signed, short-lived URL to a private file: next/image would cache it.
-          <img src={photoUrl} alt={t('profile.photoAlt', { name: member.fullName })} width={96} height={96} className="mx-auto mb-3 size-24 rounded-full object-cover" />
-        )}
-        <p className="font-display text-display-m font-bold text-brand-obsidian">{member.fullName}</p>
-        <p className="text-crm-body text-brand-stone">{member.memberCode ?? '—'}</p>
+      <div className="bg-white px-4 pt-4 pb-5 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:p-6 lg:shadow-sm">
+        <div className="flex items-center gap-4">
+          {photoUrl === null ? (
+            <span
+              aria-hidden
+              className={cn('flex size-20 shrink-0 items-center justify-center rounded-full font-display text-display-m font-bold text-brand-white', FEE_TONE[member.feeState].band)}
+            >
+              {initials(member.fullName)}
+            </span>
+          ) : (
+            // A signed, short-lived URL to a private file: next/image would cache it.
+            <img
+              src={photoUrl}
+              alt={t('profile.photoAlt', { name: member.fullName })}
+              width={96}
+              height={96}
+              className="size-20 shrink-0 rounded-full object-cover ring-2 ring-brand-accent/30"
+            />
+          )}
+          <div className="min-w-0">
+            <p className="truncate font-display text-display-m leading-tight font-bold text-brand-obsidian">{member.fullName}</p>
+            <p className="text-crm-body text-brand-stone">{member.memberCode ?? '—'}</p>
+          </div>
+        </div>
 
         <div className={`mt-4 rounded-panel p-4 text-left ${FEE_TONE[member.feeState].chip}`}>
           <p className="text-crm-body font-bold">
@@ -72,38 +91,35 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-2">
-          <a href={`tel:${member.mobile}`} className="flex min-h-16 flex-col items-center justify-center rounded-panel bg-brand-obsidian text-small font-semibold text-white">
-            <span aria-hidden className="text-xl">
-              📞
-            </span>
+          <a
+            href={`tel:${member.mobile}`}
+            className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-panel bg-brand-obsidian text-small font-semibold text-white transition-transform hover:-translate-y-0.5"
+          >
+            <CrmIcon name="calls" className="size-5" />
             {t('profile.call')}
           </a>
           <a
             href={`https://wa.me/${member.mobile.replace(/\D/g, '')}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex min-h-16 flex-col items-center justify-center rounded-panel border-2 border-brand-obsidian text-small font-semibold text-brand-obsidian"
+            className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-panel border-2 border-brand-obsidian text-small font-semibold text-brand-obsidian transition-colors hover:bg-brand-obsidian hover:text-brand-white"
           >
-            <span aria-hidden className="text-xl">
-              💬
-            </span>
+            <CrmIcon name="whatsapp" className="size-5" />
             {t('profile.whatsapp')}
           </a>
           {mayTakeFees ? (
             <Link
               href={`/crm/members/${member.id}/renew`}
-              className="flex min-h-16 flex-col items-center justify-center rounded-panel bg-brand-accent text-small font-semibold text-brand-white"
+              className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-panel bg-brand-accent text-small font-semibold text-brand-white transition-transform hover:-translate-y-0.5"
             >
-              <span aria-hidden className="text-xl">
-                ₹
-              </span>
+              <CrmIcon name="fees" className="size-5" />
               {t('profile.takeFees')}
             </Link>
           ) : null}
         </div>
       </div>
 
-      <section className="mt-3 bg-white px-4 py-4">
+      <section className="mt-3 bg-white px-4 py-4 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:px-6 lg:shadow-sm">
         <h2 className="text-crm-body font-bold text-brand-obsidian">{t('profile.attendanceMonth')}</h2>
         <div className="mt-3 grid grid-cols-7 gap-2" aria-hidden>
           {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => (
@@ -120,7 +136,7 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
         <p className="mt-3 text-crm-body">{t('profile.attendanceDays', { count: member.attendanceDays.length })}</p>
       </section>
 
-      <section className="mt-3 bg-white px-4 py-4">
+      <section className="mt-3 bg-white px-4 py-4 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:px-6 lg:shadow-sm">
         <h2 className="text-crm-body font-bold text-brand-obsidian">{t('profile.plansAndMoney')}</h2>
         {member.payments.length === 0 ? (
           <p className="mt-2 text-crm-body text-brand-stone">{t('profile.noPayments')}</p>
