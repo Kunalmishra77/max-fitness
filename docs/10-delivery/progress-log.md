@@ -36,6 +36,16 @@ Blockers / questions for client:
 - Same as Phase 3: payment-failure wording, prices, minimum age, admission fee, PIN confirmation, photos, policy answers, grievance officer.
 - Demo staff logins are the seeded ones (owner 9000000001 / 2468, reception 9000000002 / 1357). Real PINs must be set before anyone uses this outside a demo.
 
+### 2026-09-21 — CRM — Inner screens premium pass
+Done:
+- One shared surface (`CRM_CARD`) and filter pill (`pillClass`) across members, enquiries, attendance, settings, reports, import and take-fees; cards on computers, edge-to-edge on phones.
+- Every red action button is the shared primary button (lift, glow, light sweep); emoji replaced with the SVG icon set; take-fees shows chosen plan and method with a red edge and a green tick on success.
+- Report charts use the brand's red and medal gold, checked with the dataviz validator (lightness, chroma, colour-blind separation ΔE 14.4, contrast).
+- Verified: typecheck and lint clean, web unit tests 208 passed; deployed.
+
+Pending / next:
+- Phase 6 WhatsApp engine, Phase 7 kiosk, Phase 8 hardening.
+
 ### 2026-09-19 — CRM — Max Register redesign, language switch, computer layout
 Done:
 - Hindi/English switch saved per staff member (ADR-062); login screen switch.
