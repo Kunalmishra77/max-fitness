@@ -15,6 +15,23 @@ Blockers / questions for client:
 - …
 ```
 
+### 2026-09-23 (night) — Phase 6 — The Message Simulator's 30-day plan
+Done:
+- **Core (test-first, 8 tests, three mutations proved):** `projectReminders` walks the next thirty dates through the *same* `planSlot` the worker runs, so the forecast cannot drift from the engine. A paused member wakes up mid-forecast; someone who left, opted out, unsubscribed or already renewed never appears; the per-number cap is counted across the day's slots rather than inside each one.
+- **Database:** `PrismaReminderProjection.members` — one query off `member_fee_at(today)`, deliberately *without* the live query's eligibility filters, so the screen can tell "nobody" from "four people who cannot be messaged".
+- **Screen `/crm/messages/simulator`:** the month's total, a plain statement that it is a forecast, then every day with its messages; tapping one opens the WhatsApp bubble rendered from the same template the send uses (5 component tests).
+- **Verified:** lint clean, typecheck 8/8, unit tests **1273 passed / 64 skipped**; checked live against the demo data.
+
+Decisions: ADR-067.
+
+**Finding for the client:** the plan comes to **2,806 messages in 30 days**. The `POST` rule fires at all three of its slots every day of its seven-day window, so one member whose fee ran out gets 21 messages. That is what BR-5.1 and the cost estimate describe, so nothing was changed — but it is a WhatsApp quality risk. Asked whether POST should fire once a day (7 messages) instead.
+
+Pending / next (rest of Phase 6):
+- Safeguards: auto-pause of the POST rule on a quality signal; slot failure guard above 20%.
+- Reminder settings UI (slot times, per-number cap, per-rule toggles).
+- "Advance time" with a fake clock — deliberately deferred (ADR-067 §5); needs the worker running and mutates demo data.
+- E2E journey 8; live-send checklist and template approval status.
+
 ### 2026-09-23 (evening) — Phase 6 — Birthday wishes, sent by a tap
 Done:
 - **Core (test-first, 11 tests, three mutations proved):** `sendBirthdayWish` — capability, gym, "is it really today" by BR-8.1 (leap-day case included), ACTIVE + opted in + not unsubscribed + has a number, and one wish a year keyed `birthday:<memberId>:<year>`.
