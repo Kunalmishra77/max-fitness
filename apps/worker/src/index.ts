@@ -3,7 +3,11 @@ import { PgBoss } from 'pg-boss';
 import { parseEnv, systemClock, WORKER_HEARTBEAT_STALE_SECONDS } from '@mfp/shared';
 import { createPrismaClient } from '@mfp/db';
 import { createStorageDriver } from '@mfp/integrations/storage';
+import { issueToken } from '@mfp/core';
+import { MetaCloudWhatsAppProvider, SimulatorWhatsAppProvider } from '@mfp/integrations/whatsapp';
+import { PrismaMessageLogWriter } from '@mfp/db';
 import { nightlyCallTasksHandler, registerReceiptPdfWorker, RECEIPT_PDF_QUEUE, startOutboxPoller, type Phase3Deps } from './jobs/phase3-jobs';
+import { catchUpMissedSlots, registerReminderJobs, reminderSlots, slotHandlers, WHATSAPP_SEND_QUEUE, type Phase6Deps } from './jobs/phase6-jobs';
 import { createLogger, type Logger } from './logger';
 import { EVENT_QUEUES, IST_TZ, SCHEDULES, type ScheduleDefinition } from './schedules';
 
@@ -88,10 +92,56 @@ async function main(): Promise<void> {
     gymSlug: env.GYM_SLUG,
   };
 
-  await registerSchedules(boss, log, { 'nightly-call-tasks': nightlyCallTasksHandler(phase3) });
-  await registerEventQueues(boss, log, new Set([RECEIPT_PDF_QUEUE]));
+  // CLAUDE.md §2.7: in demo mode every send goes to the in-app simulator, except for the
+  // few numbers on the allowlist, which get the real thing.
+  const realWhatsApp =
+    env.WHATSAPP_PROVIDER === 'meta_cloud'
+      ? new MetaCloudWhatsAppProvider({
+          phoneNumberId: env.WHATSAPP_PHONE_NUMBER_ID,
+          accessToken: env.WHATSAPP_ACCESS_TOKEN,
+          graphApiVersion: env.WHATSAPP_GRAPH_API_VERSION,
+          appSecret: env.WHATSAPP_APP_SECRET,
+        })
+      : undefined;
+  const whatsapp =
+    env.DEMO_MODE || realWhatsApp === undefined
+      ? new SimulatorWhatsAppProvider({
+          gymId: env.GYM_SLUG,
+          log: new PrismaMessageLogWriter(prisma),
+          allowlist: env.WHATSAPP_ALLOWLIST,
+          ...(realWhatsApp === undefined ? {} : { realProvider: realWhatsApp }),
+        })
+      : realWhatsApp;
+
+  const phase6: Phase6Deps = {
+    boss,
+    prisma,
+    clock: systemClock,
+    log,
+    gymSlug: env.GYM_SLUG,
+    whatsapp,
+    // A renew link lives as long as the post-expiry window plus a margin (BR-5.1, BR-6.4).
+    renewUrl: (memberId) =>
+      `${env.APP_URL}/r/${issueToken({ purpose: 'renew', subject: memberId, ttlSeconds: 30 * 86_400, secret: env.LINK_TOKEN_SECRET, clock: systemClock })}`,
+    unsubscribePayload: (memberId) =>
+      `UNSUB.${issueToken({ purpose: 'unsub', subject: memberId, ttlSeconds: 60 * 86_400, secret: env.LINK_TOKEN_SECRET, clock: systemClock })}`,
+  };
+
+  // Reminder slots come from the gym's own rules, so a slot time changed in Settings
+  // takes effect on the next restart (whatsapp-automation-engine §4).
+  const slots = await reminderSlots(phase6);
+  const handlers = slotHandlers(phase6, slots);
+
+  await registerSchedules(boss, log, { 'nightly-call-tasks': nightlyCallTasksHandler(phase3), ...handlers });
+  await registerEventQueues(boss, log, new Set([RECEIPT_PDF_QUEUE, WHATSAPP_SEND_QUEUE]));
   await registerReceiptPdfWorker(phase3);
   const stopOutbox = startOutboxPoller(phase3);
+
+  await registerReminderJobs(phase6, slots, new Set(SCHEDULES.map((schedule) => schedule.name)));
+  log.info({ slots }, 'reminder slots registered');
+  // Anything that should have run earlier today runs now; a slot already claimed is a no-op.
+  const caughtUp = await catchUpMissedSlots(phase6, slots, nowISTTime(systemClock.now()));
+  if (caughtUp.length > 0) log.info({ slots: caughtUp }, 'caught up on slots missed while the worker was down');
 
   // The heartbeat starts only once every schedule and queue is registered. It is
   // what /api/v1/health reads, so a beat must mean "fully booted" — a worker that
@@ -260,3 +310,8 @@ main().catch((error: unknown) => {
   console.error('worker failed to start:', error instanceof Error ? error.message : error);
   process.exit(1);
 });
+
+/** "HH:mm" in IST, for deciding which of today's slots are already due. */
+function nowISTTime(now: Date): string {
+  return new Date(now.getTime() + 5.5 * 3_600_000).toISOString().slice(11, 16);
+}

@@ -10,6 +10,7 @@ export * from './membership/fee-state';
 
 export * from './reminders/rules';
 export * from './reminders/eligibility';
+export * from './reminders/engine';
 
 export * from './calls/call-task.rules';
 export * from './members/birthdays';
