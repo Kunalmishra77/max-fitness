@@ -47,7 +47,7 @@ describe('the BR-5.1 default schedule', () => {
   });
 
   it('R3 — endDate = T+5 gives nothing at any slot', () => {
-    for (const slot of ['09:30', '10:00', '14:00', '19:00']) {
+    for (const slot of ['10:00', '19:00']) {
       expect(firing(5, slot), slot).toEqual([]);
     }
   });
@@ -62,30 +62,29 @@ describe('the BR-5.1 default schedule', () => {
     expect(firing(0, '10:00')).toEqual(['DUE_TODAY']);
   });
 
-  it('R6 — endDate = T−1 fires POST at all three slots', () => {
-    expect(firing(-1, '09:30')).toEqual(['POST']);
-    expect(firing(-1, '14:00')).toEqual(['POST']);
+  it('R6 — endDate = T−1 fires POST once, in the evening (ADR-068)', () => {
     expect(firing(-1, '19:00')).toEqual(['POST']);
-    // ...and not at 10:00, which belongs to the pre-expiry rules.
+    // ...and not at 10:00, which belongs to the pre-expiry rules, nor at the two
+    // slots POST used to share: three a day is 21 messages to one lapsed member.
     expect(firing(-1, '10:00')).toEqual([]);
+    expect(firing(-1, '09:30')).toEqual([]);
+    expect(firing(-1, '14:00')).toEqual([]);
   });
 
   it('R7 — endDate = T−8 with a cap of 7 gives nothing', () => {
-    expect(firing(-8, '09:30')).toEqual([]);
+    expect(firing(-8, '19:00')).toEqual([]);
     expect(isBeyondPostExpiryCap(T, addDays(T, -8), 7)).toBe(true);
   });
 
-  it('fires POST on every day up to and including the cap', () => {
+  it('fires POST once on every day up to and including the cap', () => {
     for (let day = 1; day <= 7; day += 1) {
-      expect(firing(-day, '14:00'), `day +${day}`).toEqual(['POST']);
+      expect(firing(-day, '19:00'), `day +${day}`).toEqual(['POST']);
     }
-    expect(firing(-8, '14:00')).toEqual([]);
+    expect(firing(-8, '19:00')).toEqual([]);
   });
 
   it('R8 — an uncapped POST rule still fires 40 days later', () => {
     const uncapped = buildDefaultReminderRules(null);
-    expect(firing(-40, '09:30', uncapped)).toEqual(['POST']);
-    expect(firing(-40, '14:00', uncapped)).toEqual(['POST']);
     expect(firing(-40, '19:00', uncapped)).toEqual(['POST']);
     expect(isBeyondPostExpiryCap(T, addDays(T, -40), null)).toBe(false);
   });
@@ -139,7 +138,7 @@ describe('candidateEndDates — what the slot query looks for', () => {
       exactOffsets: [-7, -3, -2, -1, 0],
       ranges: [],
     });
-    expect(candidateEndDates(RULES, T, '09:30')).toEqual({
+    expect(candidateEndDates(RULES, T, '19:00')).toEqual({
       exactOffsets: [],
       ranges: [{ from: 1, to: 7 }],
     });
@@ -157,7 +156,7 @@ describe('candidateEndDates — what the slot query looks for', () => {
 
 describe('distinctSlots — the cron times the worker registers', () => {
   it('lists each slot once, sorted', () => {
-    expect(distinctSlots(RULES)).toEqual(['09:30', '10:00', '14:00', '19:00']);
+    expect(distinctSlots(RULES)).toEqual(['10:00', '19:00']);
   });
 });
 

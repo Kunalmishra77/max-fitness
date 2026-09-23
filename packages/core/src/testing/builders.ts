@@ -123,7 +123,7 @@ export function buildDefaultReminderRules(postExpiryMaxDays: number | null = 7):
       code: 'POST',
       offsetDays: 1,
       offsetDaysTo: postExpiryMaxDays,
-      slots: ['09:30', '14:00', '19:00'],
+      slots: ['19:00'],
       templateName: 'mf_membership_expired',
     }),
   ];

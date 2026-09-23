@@ -29,7 +29,7 @@ describe('worker schedules', () => {
 
   it('schedules one reminder evaluation per BR-5.1 slot, at that IST time', () => {
     const reminders = SCHEDULES.filter((s) => s.name.startsWith('reminder-slot-'));
-    expect(reminders.map((s) => s.cron)).toEqual(['30 9 * * *', '0 10 * * *', '0 14 * * *', '0 19 * * *']);
+    expect(reminders.map((s) => s.cron)).toEqual(['0 10 * * *', '0 19 * * *']);
     // The worker's slots must be exactly the slots the default rules use.
     expect([...REMINDER_SLOTS]).toEqual([...ALL_REMINDER_SLOTS]);
   });

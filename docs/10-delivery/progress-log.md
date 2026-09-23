@@ -15,6 +15,19 @@ Blockers / questions for client:
 - …
 ```
 
+### 2026-09-23 (night, later) — Phase 6 — POST reminders once a day (client decision)
+Done:
+- **ADR-068, acting on what the simulator found.** The `POST` rule fired at 09:30, 14:00 and 19:00 every day of its seven-day window — 21 messages to one member whose fee ran out, and 2,806 messages in the demo's 30-day plan. The client chose **one a day, at 19:00**: 7 messages instead of 21.
+- Changed in `REMINDER_RULE_DEFAULTS`, the BR-5.1 table, the worker's `REMINDER_SLOTS` and `SLOT_RULE_CODES` (the 09:30 and 14:00 crons are gone — no rule uses them), the test builders, and the demo gym's stored `ReminderRule` row.
+- The rule tests now assert POST fires at 19:00 **and not** at the two slots it used to share, so a revert cannot pass quietly. The cost estimate in the engine doc drops from ≈650 to ≈500 utility messages a month.
+- **Verified:** lint clean, typecheck 8/8, unit tests **1273 passed / 64 skipped**.
+
+Pending / next (rest of Phase 6):
+- Safeguards: auto-pause of the POST rule on a quality signal; slot failure guard above 20%.
+- Reminder settings UI — and it should *warn* when a rule is given several slots a day, because that is how the 21-message shape could come back.
+- "Advance time" with a fake clock — deliberately deferred (ADR-067 §5).
+- E2E journey 8; live-send checklist and template approval status.
+
 ### 2026-09-23 (night) — Phase 6 — The Message Simulator's 30-day plan
 Done:
 - **Core (test-first, 8 tests, three mutations proved):** `projectReminders` walks the next thirty dates through the *same* `planSlot` the worker runs, so the forecast cannot drift from the engine. A paused member wakes up mid-forecast; someone who left, opted out, unsubscribed or already renewed never appears; the per-number cap is counted across the day's slots rather than inside each one.

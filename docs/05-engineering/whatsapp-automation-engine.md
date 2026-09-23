@@ -173,11 +173,11 @@ COMMIT
 - "Advance time" (non-production only) moves the fake clock by N days, executes slots, and renders sent messages in WhatsApp-style bubbles, including tappable **Renew now** and **Unsubscribe** buttons that call the real handlers with simulated inbound events. This lets the client watch the full journey in minutes.
 
 ## 11. Cost estimate (illustrative, verify current rate card)
-Assume 250 active members, ~70 memberships ending per month (mix of monthly and packages), 75% renew before expiry (avg 2.5 reminders each), 25% don't (5 pre-expiry + 21 post-expiry with 7-day cap; half unsubscribe or renew by day +3 → avg 12).
-- Reminders: 52×2.5 + 18×(5+12) ≈ 436 utility messages
+Assume 250 active members, ~70 memberships ending per month (mix of monthly and packages), 75% renew before expiry (avg 2.5 reminders each), 25% don't (5 pre-expiry + 7 post-expiry — one a day for the 7-day cap, ADR-068; half unsubscribe or renew by day +3 → avg 4).
+- Reminders: 52×2.5 + 18×(5+4) ≈ 292 utility messages
 - Receipts + welcome + verification: ≈ 110
 - Owner digest + alerts: ≈ 90
-- Total ≈ 650 utility messages/month → at roughly ₹0.12 each, **well under ₹150/month plus GST** in Meta fees (BSP platform fees extra if a BSP is used). Birthday marketing messages add a small amount.
+- Total ≈ 500 utility messages/month → at roughly ₹0.12 each, **well under ₹150/month plus GST** in Meta fees (BSP platform fees extra if a BSP is used). Birthday marketing messages add a small amount.
 
 ## 12. Tests (must exist before enabling live sends)
 See `docs/08-quality/testing-strategy.md` §4 matrix: offsets incl. month-end and leap years, renewal mid-sequence, unsubscribe mid-day between slots, shared phone numbers, pause-until, quiet hours, catch-up after downtime, idempotent duplicate cron fire, cap null vs 7, language selection, token tampering.

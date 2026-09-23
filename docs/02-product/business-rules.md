@@ -75,7 +75,7 @@ All rules here are implemented in `packages/core` as pure functions with unit te
 | `PRE_2` | −2 | 10:00 | `mf_renewal_due` |
 | `PRE_1` | −1 | 10:00 | `mf_renewal_due` |
 | `DUE_TODAY` | 0 | 10:00 | `mf_renewal_due_today` |
-| `POST` | +1 … +`postExpiryMaxDays` | 09:30, 14:00, 19:00 | `mf_membership_expired` |
+| `POST` | +1 … +`postExpiryMaxDays` | 19:00 | `mf_membership_expired` |
 
 - BR-5.2 ⚙ `postExpiryMaxDays = 7` (range 1–60 or `null` = no limit, which shows a warning).
 - BR-5.3 Eligibility, checked **at send time**:

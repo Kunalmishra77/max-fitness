@@ -94,7 +94,9 @@ export const DEFAULT_REMINDER_RULES: readonly ReminderRuleDefault[] = [
     offsetDays: 1,
     // Seeded from settings.postExpiryMaxDays; offsetDaysTo is authoritative (ADR-015).
     offsetDaysTo: 7,
-    slots: ['09:30', '14:00', '19:00'],
+    // ADR-068: once a day, in the evening. Three a day for seven days is 21 messages
+    // to one person whose fee ran out, which costs the gym its WhatsApp quality.
+    slots: ['19:00'],
     templateName: 'mf_membership_expired',
   },
 ];

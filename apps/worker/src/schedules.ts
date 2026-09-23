@@ -33,7 +33,7 @@ export interface ScheduleDefinition {
  * send. The slots here are the BR-5.1 defaults; Phase 6 reads them from
  * `ReminderRule` so the owner can change them.
  */
-export const REMINDER_SLOTS: readonly string[] = ['09:30', '10:00', '14:00', '19:00'];
+export const REMINDER_SLOTS: readonly string[] = ['10:00', '19:00'];
 
 function slotCron(slot: string): string {
   const [hh, mm] = slot.split(':');
@@ -121,8 +121,6 @@ export function runKeyFor(businessDate: string, slot?: string): string {
 
 /** Which rule codes a slot can possibly fire, for logging what a run was for. */
 export const SLOT_RULE_CODES: Readonly<Record<string, readonly ReminderRuleCode[]>> = {
-  '09:30': ['POST'],
   '10:00': ['PRE_7', 'PRE_3', 'PRE_2', 'PRE_1', 'DUE_TODAY'],
-  '14:00': ['POST'],
   '19:00': ['POST'],
 };
