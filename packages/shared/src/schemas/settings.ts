@@ -135,6 +135,22 @@ export const AttendanceSettingsSchema = z.object({
   kioskOfflineAlertMinutes: z.number().int().min(5).max(720).default(30),
   /** The kiosk speaks its greeting (api-specification §7 pairing `settings.voice`). */
   kioskVoice: z.boolean().default(true),
+  /**
+   * Face-match thresholds, pushed to the kiosk (attendance spec §6).
+   *
+   * The starting values are placeholders: the real ones come from the chosen engine's
+   * ROC curve at FAR ≤ 0.1% and are calibrated during shadow mode, so they live in
+   * settings rather than in the app. Owner and vendor only.
+   */
+  acceptThreshold: z.number().min(0).max(1).default(0.72),
+  /** How far below `acceptThreshold` still asks the member to confirm rather than greeting. */
+  confirmBand: z.number().min(0).max(0.5).default(0.08),
+  /** The gap the best match needs over the runner-up, so siblings are not confused. */
+  matchMargin: z.number().min(0).max(0.5).default(0.06),
+  /** Frames that must agree before the kiosk decides anything. */
+  framesToAgree: z.number().int().min(1).max(10).default(3),
+  /** How many face templates one member may have (1–2 selfie, 3–5 assisted, rest adaptive). */
+  maxTemplatesPerMember: z.number().int().min(1).max(20).default(8),
 });
 export type AttendanceSettings = z.infer<typeof AttendanceSettingsSchema>;
 

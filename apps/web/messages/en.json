@@ -1341,6 +1341,31 @@
       "count": "{count} messages",
       "quiet": "Nothing to send",
       "open": "Message plan"
+    },
+    "kiosk": {
+      "title": "Attendance phone",
+      "helper": "The phone at reception that marks members in by face",
+      "none": "No attendance phone yet",
+      "noneHelp": "Pair the phone at reception and it will start marking members in.",
+      "pair": "Pair a phone",
+      "pairAgain": "Pair again",
+      "codeHelp": "Type this code into the phone, in Max Haazri",
+      "codeExpires": "It works for 10 minutes.",
+      "working": "Working",
+      "offline": "Not responding",
+      "notPaired": "Waiting to be paired",
+      "lastSeen": "Last seen {when}",
+      "battery": "Battery {percent}% · {charging}",
+      "charging": "charging",
+      "onBattery": "on battery",
+      "temperature": "Temperature {degrees}°C",
+      "queue": "{count} check-ins still to reach the server",
+      "cameraBroken": "Camera not working",
+      "shadow": "Watching only — it marks attendance but greets nobody",
+      "startGreeting": "Let it greet members",
+      "watchOnly": "Watch only",
+      "revoke": "Remove this phone",
+      "revokeConfirm": "Yes, remove it"
     }
   },
   "photos": {

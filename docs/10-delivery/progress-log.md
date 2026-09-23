@@ -15,6 +15,27 @@ Blockers / questions for client:
 - …
 ```
 
+### 2026-09-24 (night) — Phase 7 (server side) — Pairing the attendance phone
+**Scope note first:** the Phase 7 prompt's precondition is not met — the face-recognition POC has never been run and no licensed FaceEngine has been chosen (ADR-003 still says "after POC"). An Android app also cannot be built here: no SDK, no device, no vendor SDK. So Phase 7 is split (ADR-071): the server side is built now, the Android app is **blocked** on the client's engine licence and a build environment.
+
+Done:
+- **Core (test-first, 17 tests, seven mutations proved):** `issuePairingCode` (six digits, leading zeros kept, ten minutes), `hashPairingCode`/`hashDeviceToken` (peppered HMAC, so hashes lifted from one deployment are useless in another), `pairKioskDevice` (wrong code, expired code and revoked phone all answer the same way), `recordHeartbeat` (records even for a revoked phone, and tells it to wipe), `kioskIsOffline` (the window itself still counts as fine).
+- **Database:** `PrismaKioskDevices` — pair, revoke, shadow mode, lookup by token hash, and `offlineCandidates`, which reads "when was the owner last told" from the alerts themselves, because the alert *is* that record. `completePairing` is conditional on the code still being there, so two phones racing on one code cannot both pair.
+- **API:** `POST /api/v1/kiosk/pair` (the only kiosk endpoint without a bearer token, because it is where the token comes from) and `POST /api/v1/kiosk/heartbeat`. Both validated with Zod schemas in `@mfp/shared`, bounded field by field — an old build will still be talking to this server months from now.
+- **Settings:** face-match thresholds (`acceptThreshold`, `confirmBand`, `matchMargin`, `framesToAgree`, `maxTemplatesPerMember`) now live in gym settings and are pushed to the phone at pairing, so the engine can be swapped without a server change.
+- **Screen `/crm/settings/kiosk`** (owner, behind the PIN): whether the phone is working, when it was last seen in words, battery, temperature, an un-drained queue, and a dead camera called out on its own — a phone with a dead camera looks exactly like a phone that is fine. Pairing code shown once, big enough to read across a desk (7 component tests).
+- **Worker:** the `kiosk-offline-check` schedule now has a real handler (6 tests, three mutations proved). It tells the owner once, and again only after the phone has been heard from since.
+- **Verified:** lint clean, typecheck 8/8, unit tests **1327 passed / 67 skipped**. The full E2E suite ran green against production earlier the same day: **46 passed, 25 skipped**.
+
+Decisions: ADR-071.
+
+Pending / next (server side of Phase 7):
+- Gallery sync: encrypted face templates, delta cursor, eligibility filter.
+- Attendance batch ingest (idempotent, cooldown, fee state, EXPIRED alert and call task).
+- Enrolment jobs, template upload with eviction, keypad lookup.
+
+**Blocked, for the client:** choose and licence a face engine (ADR-003, attendance spec §4), then the POC, then the Android app.
+
 ### 2026-09-24 (evening) — Phase 6 complete — Journey 8, without a fake clock
 Done:
 - **E2E journey 8, rewritten for what it was really for** (ADR-070). The original wording leaned on the simulator's "Advance time", which is deliberately not built (ADR-067), and on the three-messages-a-day shape that ADR-068 removed. What it exists to prove — a tap on Unsubscribe stops the messages — is now checked by reading the 30-day plan before and after the tap.

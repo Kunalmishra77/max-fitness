@@ -13,6 +13,8 @@ import type { Container } from './container';
 
 export interface GymContext {
   readonly id: string;
+  /** Shown to a phone as it pairs, so the person holding it can see it joined the right gym. */
+  readonly name: string;
   readonly settings: GymSettings;
 }
 
@@ -24,13 +26,13 @@ export class GymNotConfiguredError extends Error {
 }
 
 export async function loadGym({ prisma, env }: Pick<Container, 'prisma' | 'env'>): Promise<GymContext> {
-  const gym = await prisma.gym.findUnique({ where: { slug: env.GYM_SLUG }, select: { id: true, settings: true } });
+  const gym = await prisma.gym.findUnique({ where: { slug: env.GYM_SLUG }, select: { id: true, name: true, settings: true } });
   if (gym === null) throw new GymNotConfiguredError('no gym for GYM_SLUG');
 
   const settings = GymSettingsSchema.safeParse(gym.settings);
   if (!settings.success) throw new GymNotConfiguredError('settings failed validation');
 
-  return { id: gym.id, settings: settings.data };
+  return { id: gym.id, name: gym.name, settings: settings.data };
 }
 
 export function checkoutSettingsOf(settings: GymSettings): CheckoutSettings {

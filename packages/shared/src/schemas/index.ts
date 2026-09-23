@@ -4,3 +4,4 @@ export * from './registration';
 export * from './checkout';
 export * from './staff';
 export * from './otp';
+export * from './kiosk';

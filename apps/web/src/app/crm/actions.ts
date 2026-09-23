@@ -18,6 +18,8 @@ import {
   markAttendance,
   mayAfterPinEntry,
   recordCallOutcome,
+  hashPairingCode,
+  issuePairingCode,
   registerAtDesk,
   sendBirthdayWish,
   undoAttendance,
@@ -26,7 +28,7 @@ import {
   voidPayment,
   type LeadStatus,
 } from '@mfp/core';
-import { PrismaBirthdays } from '@mfp/db';
+import { PrismaBirthdays, PrismaKioskDevices } from '@mfp/db';
 import { revalidateLandingContent } from '@/lib/revalidate-landing';
 import type {
   EraseResult,
@@ -43,6 +45,7 @@ import { PLAN_DURATIONS, RegistrationFieldsSchema, StaffCreateSchema, StaffPinSc
 import type { AddMemberErrorCode, AddMemberFields, AddMemberResult } from '@/components/crm/add-member-flow';
 import type { MarkResult, UndoResult } from '@/components/crm/attendance-marker';
 import type { BirthdayWishResult } from '@/components/crm/birthday-list';
+import type { KioskActionResult } from '@/components/crm/kiosk-devices';
 import type { CallOutcomeChoice, OutcomeResult } from '@/components/crm/call-outcome';
 import type { LeadResult } from '@/components/crm/lead-actions';
 import type { VoidResult } from '@/components/crm/void-payment';
@@ -180,6 +183,65 @@ export async function markAttendanceAction(memberId: string, clientEventId: stri
     if (code === 'NOT_FOUND') return { ok: false, code: 'NOT_FOUND' };
     console.error(`[crm] mark attendance failed: ${code ?? (error instanceof Error ? error.name : 'Error')}`);
     return { ok: false, code: 'generic' };
+  }
+}
+
+/**
+ * Pairing, revoking and shadow mode for the attendance phone (Phase 7).
+ *
+ * All three need `settings.manage`, which means the owner's PIN in the last five
+ * minutes: a pairing code is the phone's way in, and revoking stops a working phone
+ * dead. The code is shown once, here, and stored only as a peppered hash.
+ */
+export async function pairKioskAction(deviceId: string | null): Promise<KioskActionResult> {
+  const { actor, gym } = await requireCrmContext();
+  const { clock, env, prisma } = getContainer();
+  if (!can(actor, 'settings.manage', clock.now())) return { ok: false };
+
+  try {
+    const issued = issuePairingCode({ clock });
+    await new PrismaKioskDevices(prisma).setPairingCode(
+      gym.id,
+      deviceId,
+      'Reception phone',
+      hashPairingCode(issued.code, env.KIOSK_TOKEN_PEPPER),
+      issued.expiresAt,
+    );
+    revalidatePath('/crm/settings/kiosk');
+    return { ok: true, code: issued.code };
+  } catch (error) {
+    console.error(`[crm] kiosk pairing failed: ${error instanceof Error ? error.name : 'Error'}`);
+    return { ok: false };
+  }
+}
+
+export async function revokeKioskAction(deviceId: string): Promise<KioskActionResult> {
+  const { actor, gym } = await requireCrmContext();
+  const { clock, prisma } = getContainer();
+  if (!can(actor, 'settings.manage', clock.now())) return { ok: false };
+
+  try {
+    await new PrismaKioskDevices(prisma).revoke(gym.id, deviceId);
+    revalidatePath('/crm/settings/kiosk');
+    return { ok: true };
+  } catch (error) {
+    console.error(`[crm] kiosk revoke failed: ${error instanceof Error ? error.name : 'Error'}`);
+    return { ok: false };
+  }
+}
+
+export async function setKioskShadowModeAction(deviceId: string, shadowMode: boolean): Promise<KioskActionResult> {
+  const { actor, gym } = await requireCrmContext();
+  const { clock, prisma } = getContainer();
+  if (!can(actor, 'settings.manage', clock.now())) return { ok: false };
+
+  try {
+    await new PrismaKioskDevices(prisma).setShadowMode(gym.id, deviceId, shadowMode);
+    revalidatePath('/crm/settings/kiosk');
+    return { ok: true };
+  } catch (error) {
+    console.error(`[crm] kiosk shadow mode failed: ${error instanceof Error ? error.name : 'Error'}`);
+    return { ok: false };
   }
 }
 

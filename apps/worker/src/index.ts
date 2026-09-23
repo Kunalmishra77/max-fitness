@@ -8,6 +8,7 @@ import { MetaCloudWhatsAppProvider, SimulatorWhatsAppProvider } from '@mfp/integ
 import { PrismaMessageLogWriter } from '@mfp/db';
 import { nightlyCallTasksHandler, registerReceiptPdfWorker, RECEIPT_PDF_QUEUE, startOutboxPoller, type Phase3Deps } from './jobs/phase3-jobs';
 import { messageOutboxHandlers, type MessageJobDeps } from './jobs/message-jobs';
+import { kioskOfflineHandler } from './jobs/kiosk-wiring';
 import { catchUpMissedSlots, ownerJobHandlers, registerReminderJobs, reminderSlots, slotHandlers, WHATSAPP_SEND_QUEUE, type Phase6Deps } from './jobs/phase6-jobs';
 import { createLogger, type Logger } from './logger';
 import { EVENT_QUEUES, IST_TZ, SCHEDULES, type ScheduleDefinition } from './schedules';
@@ -150,6 +151,7 @@ async function main(): Promise<void> {
 
   await registerSchedules(boss, log, {
     'nightly-call-tasks': nightlyCallTasksHandler(phase3),
+    'kiosk-offline-check': kioskOfflineHandler({ prisma, clock: systemClock, log, gymSlug: env.GYM_SLUG }),
     ...ownerJobHandlers(phase6, messageDeps),
     ...handlers,
   });
