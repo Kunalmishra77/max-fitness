@@ -61,7 +61,7 @@ export class PrismaMessageData {
     return {
       memberId: payment.member.id,
       firstName: firstNameOf(payment.member.fullName),
-      language: payment.member.language as Language,
+      language: payment.member.language,
       mobile: payment.member.mobile as E164Mobile,
       amountPaise: payment.amountPaise,
       durationMonths: payment.membership.durationMonths,
@@ -90,7 +90,7 @@ export class PrismaMessageData {
     return {
       memberId: member.id,
       firstName: firstNameOf(member.fullName),
-      language: member.language as Language,
+      language: member.language,
       mobile: member.mobile as E164Mobile,
       memberCode: member.memberCode,
       endDate: member.memberships[0] === undefined ? null : fromDbDate(member.memberships[0].endDate),

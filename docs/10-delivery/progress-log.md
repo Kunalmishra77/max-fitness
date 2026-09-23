@@ -15,6 +15,20 @@ Blockers / questions for client:
 - …
 ```
 
+### 2026-09-23 — Phase 6 — Message log in Max Register
+Done:
+- **Read model:** `PrismaMessageLogReader.list()` (newest first, optional member and status filters, member name joined) and `.countsToday()` grouped by status, so the page does one round trip per question rather than one per row.
+- **Screen `/crm/messages` — "मैसेज":** every WhatsApp message with the member, why it was sent, how far it got, and the body as the member saw it. Two filters: "सब" and "नहीं गए" (the second folds SKIPPED and FAILED together — the owner does not care which layer refused). Today's counts sit above the list. Gated on `member.view`, so a trainer cannot read who was chased for money.
+- **Reasons in words, not codes:** `NUMBER_CAP` reads "इस नंबर पर आज के मैसेज पूरे हो चुके थे"; a code we have no words for is shown as it is rather than guessed at. Simulated sends carry "डेमो — सच में नहीं भेजा" so a demo is never mistaken for a real send.
+- **Menu:** `messages` added to `crmNavItems` (business group, WhatsApp icon) — the desktop sidebar and the phone's "More" screen both pick it up.
+- **Verified:** lint clean, typecheck clean, unit tests **1213 passed / 52 skipped**.
+
+Pending / next (rest of Phase 6):
+- Owner digest at 08:30 and owner alerts with bundling; birthday wishes.
+- Safeguards: auto-pause of the POST rule on a quality drop; slot failure guard above 20%.
+- Reminder settings UI (slot times, per-number cap, per-rule toggles) and the Message Simulator with a 30-day projected timeline and "Advance time".
+- E2E journey 8; live-send checklist and template approval status.
+
 ### 2026-09-12 (evening) — Phase 4 (partial) — Max Register: login, Today, members, take fees
 Done:
 - **Core (test-first, 77 tests):** the permission matrix for every capability × role (`can`/`assertCan`, with PIN elevation and the reception-payments setting); PIN login with five attempts, a 15-minute lockout, and the same answer for an unknown mobile as for a wrong PIN; `recordDeskPayment` — cash/UPI/card at the desk, the same receipt counter, membership confirmation, member code, activation, call-task closing and outbox as an online payment, with discounts needing permission, a reason and a ceiling.

@@ -9,7 +9,6 @@ import {
 } from '@mfp/core';
 import type { MessagePurpose, WhatsAppProvider } from '@mfp/core/ports';
 import { PrismaMessageData, PrismaMessageLogWriter, PrismaMessageLogUpdates, type PrismaClient } from '@mfp/db';
-import type { Language } from '@mfp/shared';
 import type { Logger } from '../logger';
 
 /**
@@ -103,7 +102,7 @@ async function sendConfirmation(deps: MessageJobDeps, event: ClaimedOutboxEvent,
   const purpose: MessagePurpose = kind === 'UNSUBSCRIBED' ? 'UNSUBSCRIBE_CONFIRM' : 'RESTART_CONFIRM';
   const outcome = await deps.whatsapp.sendText({
     to: member.mobile,
-    body: confirmationText(kind, member.language as Language),
+    body: confirmationText(kind, member.language),
     idempotencyKey: event.dedupeKey,
     purpose,
     memberId,

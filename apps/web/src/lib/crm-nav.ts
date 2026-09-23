@@ -16,6 +16,7 @@ export type CrmNavKey =
   | 'fees'
   | 'attendance'
   | 'calls'
+  | 'messages'
   | 'leads'
   | 'verify'
   | 'reports'
@@ -44,6 +45,7 @@ export function crmNavItems(actor: CrmActor, now: Date, waitingVerifications: nu
     { key: 'attendance', href: '/crm/attendance', icon: 'attendance', group: 'today' },
     { key: 'calls', href: '/crm/calls', icon: 'calls', group: 'today' },
     { key: 'leads', href: '/crm/leads', icon: 'leads', group: 'people' },
+    { key: 'messages', href: '/crm/messages', icon: 'whatsapp', group: 'business' },
     may('verification.approve') && {
       key: 'verify',
       href: '/crm/verify',

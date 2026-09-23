@@ -17,14 +17,14 @@ describe('crmNavItems', () => {
   it('gives the owner every place, grouped for the day, the members and the business', () => {
     const items = crmNavItems(actor('OWNER'), now, 3);
     expect(items.map((item) => item.key)).toEqual([
-      'home', 'members', 'fees', 'attendance', 'calls', 'leads', 'verify', 'reports', 'import', 'staff', 'settings', 'pin',
+      'home', 'members', 'fees', 'attendance', 'calls', 'leads', 'messages', 'verify', 'reports', 'import', 'staff', 'settings', 'pin',
     ]);
     expect(items.find((item) => item.key === 'verify')?.badge).toBe(3);
     expect(new Set(items.map((item) => item.group))).toEqual(new Set(['today', 'people', 'business', 'account']));
   });
 
   it('keeps money, settings, staff and the register import from reception', () => {
-    expect(keys('RECEPTION')).toEqual(['home', 'members', 'fees', 'attendance', 'calls', 'leads', 'verify', 'pin']);
+    expect(keys('RECEPTION')).toEqual(['home', 'members', 'fees', 'attendance', 'calls', 'leads', 'messages', 'verify', 'pin']);
   });
 
   it('keeps the verify queue from a trainer as well', () => {

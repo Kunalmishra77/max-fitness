@@ -1259,6 +1259,10 @@
         "people": "Members",
         "business": "Business",
         "account": "My account"
+      },
+      "messages": {
+        "label": "Messages",
+        "desc": "What WhatsApp messages went out, and what happened"
       }
     },
     "shell": {
@@ -1269,6 +1273,50 @@
       "logout": "Log out",
       "menu": "Menu",
       "back": "Back"
+    },
+    "messages": {
+      "title": "Messages",
+      "helper": "What the gym sent on WhatsApp, and what happened to it",
+      "empty": "No messages yet.",
+      "today": "Today: {sent} sent · {skipped} not sent",
+      "filterAll": "All",
+      "filterFailed": "Not sent",
+      "demo": "Demo — not really sent",
+      "purpose": {
+        "REMINDER": "Renewal reminder",
+        "RECEIPT": "Payment receipt",
+        "WELCOME": "Welcome",
+        "VERIFICATION": "Details confirmed",
+        "OTP": "Login code",
+        "OWNER_DIGEST": "Owner's digest",
+        "OWNER_ALERT": "Owner alert",
+        "BIRTHDAY": "Birthday wish",
+        "UNSUBSCRIBE_CONFIRM": "Unsubscribe confirmed",
+        "RESTART_CONFIRM": "Reminders restarted",
+        "OTHER": "Message"
+      },
+      "status": {
+        "QUEUED": "Queued",
+        "SENT": "Sent",
+        "DELIVERED": "Delivered",
+        "READ": "Read",
+        "FAILED": "Not sent",
+        "SKIPPED": "Not sent",
+        "SIMULATED": "Demo"
+      },
+      "reason": {
+        "NUMBER_CAP": "This number already had its messages for the day",
+        "SUPERSEDED_BY_NEWER_MEMBERSHIP": "They had already renewed",
+        "UNSUBSCRIBED": "They had unsubscribed",
+        "NOT_ACTIVE": "They are not an active member",
+        "NO_WHATSAPP_CONSENT": "They did not agree to WhatsApp messages",
+        "PAUSED": "Their reminders were paused",
+        "AUTOMATIC_MESSAGES_STOPPED": "Automatic messages are stopped",
+        "OUTSIDE_QUIET_HOURS": "It was outside the allowed hours",
+        "NO_MOBILE": "No mobile number on file",
+        "ALREADY_SENT": "It had already been sent",
+        "DUPLICATE_IDEMPOTENCY_KEY": "It had already been sent"
+      }
     }
   },
   "photos": {

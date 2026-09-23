@@ -1259,6 +1259,10 @@
         "people": "मेंबर",
         "business": "बिज़नेस",
         "account": "मेरा अकाउंट"
+      },
+      "messages": {
+        "label": "मैसेज",
+        "desc": "कौन से WhatsApp मैसेज गए, और उनका क्या हुआ"
       }
     },
     "shell": {
@@ -1269,6 +1273,50 @@
       "logout": "लॉगआउट",
       "menu": "मेन्यू",
       "back": "वापस"
+    },
+    "messages": {
+      "title": "मैसेज",
+      "helper": "जिम ने WhatsApp पर क्या भेजा, और उसका क्या हुआ",
+      "empty": "अभी कोई मैसेज नहीं।",
+      "today": "आज: {sent} भेजे · {skipped} नहीं गए",
+      "filterAll": "सब",
+      "filterFailed": "नहीं गए",
+      "demo": "डेमो — सच में नहीं भेजा",
+      "purpose": {
+        "REMINDER": "फीस का रिमाइंडर",
+        "RECEIPT": "पेमेंट की रसीद",
+        "WELCOME": "स्वागत",
+        "VERIFICATION": "जानकारी पक्की हुई",
+        "OTP": "लॉगिन कोड",
+        "OWNER_DIGEST": "मालिक का हिसाब",
+        "OWNER_ALERT": "मालिक को अलर्ट",
+        "BIRTHDAY": "जन्मदिन की बधाई",
+        "UNSUBSCRIBE_CONFIRM": "रिमाइंडर बंद होने की पुष्टि",
+        "RESTART_CONFIRM": "रिमाइंडर फिर चालू",
+        "OTHER": "मैसेज"
+      },
+      "status": {
+        "QUEUED": "कतार में",
+        "SENT": "भेजा",
+        "DELIVERED": "पहुँचा",
+        "READ": "पढ़ा",
+        "FAILED": "नहीं गया",
+        "SKIPPED": "नहीं गया",
+        "SIMULATED": "डेमो"
+      },
+      "reason": {
+        "NUMBER_CAP": "इस नंबर पर आज के मैसेज पूरे हो चुके थे",
+        "SUPERSEDED_BY_NEWER_MEMBERSHIP": "वे पहले ही रिन्यू कर चुके थे",
+        "UNSUBSCRIBED": "उन्होंने रिमाइंडर बंद करवा रखे हैं",
+        "NOT_ACTIVE": "वे अभी चालू मेंबर नहीं हैं",
+        "NO_WHATSAPP_CONSENT": "उन्होंने WhatsApp मैसेज की अनुमति नहीं दी",
+        "PAUSED": "उनके रिमाइंडर रोके हुए थे",
+        "AUTOMATIC_MESSAGES_STOPPED": "अपने आप जाने वाले मैसेज बंद हैं",
+        "OUTSIDE_QUIET_HOURS": "यह तय समय के बाहर था",
+        "NO_MOBILE": "नंबर दर्ज नहीं है",
+        "ALREADY_SENT": "यह पहले ही भेजा जा चुका था",
+        "DUPLICATE_IDEMPOTENCY_KEY": "यह पहले ही भेजा जा चुका था"
+      }
     }
   },
   "photos": {
