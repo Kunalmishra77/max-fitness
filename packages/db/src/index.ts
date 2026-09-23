@@ -1,5 +1,6 @@
 export * from './client';
 export * from './dates';
+export * from './repositories/unsubscribe.repository';
 export * from './repositories/reminder-runtime.repository';
 export * from './repositories/reminders.repository';
 export * from './repositories/message-log.repository';

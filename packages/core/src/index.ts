@@ -11,6 +11,8 @@ export * from './membership/fee-state';
 export * from './reminders/rules';
 export * from './reminders/eligibility';
 export * from './reminders/engine';
+export * from './reminders/unsubscribe';
+export * from './reminders/inbound';
 
 export * from './calls/call-task.rules';
 export * from './members/birthdays';
