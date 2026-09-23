@@ -1469,5 +1469,27 @@
       "codeLabel": "Your code",
       "home": "Go to the home page"
     }
+  },
+  "checkin": {
+    "title": "Mark yourself in",
+    "typeNumber": "Type your mobile number",
+    "mobileLabel": "Mobile number",
+    "delete": "Delete",
+    "find": "Find me",
+    "whichOne": "Who is checking in?",
+    "back": "Back",
+    "next": "Next person",
+    "welcome": "Welcome, {name}",
+    "welcomeDueSoon": "Welcome, {name} — your fees end in {days} days",
+    "seeReception": "Please see reception",
+    "marked": "Marked in, {name}",
+    "alreadyIn": "You are already marked in today",
+    "notFound": "We could not find that number. Please see reception.",
+    "tryAgain": "Something went wrong. Please see reception.",
+    "pairTitle": "Connect this tablet",
+    "pairHelp": "Ask the owner for the code in Max Register, then type it here.",
+    "pairCode": "Pairing code",
+    "pairButton": "Connect",
+    "pairFailed": "That code did not work. Ask for a new one."
   }
 }

@@ -14,6 +14,7 @@ export * from './reminders/engine';
 export * from './reminders/unsubscribe';
 export * from './reminders/inbound';
 export * from './reminders/transactional';
+export * from './kiosk/check-in';
 export * from './kiosk/face-engine';
 export * from './kiosk/matcher';
 export * from './kiosk/pairing';

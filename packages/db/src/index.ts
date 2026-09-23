@@ -2,6 +2,7 @@ export * from './client';
 export * from './dates';
 export * from './repositories/message-log-read.repository';
 export * from './repositories/birthday.repository';
+export * from './repositories/check-in.repository';
 export * from './repositories/kiosk.repository';
 export * from './repositories/owner.repository';
 export * from './repositories/projection.repository';

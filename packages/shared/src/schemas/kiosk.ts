@@ -33,3 +33,30 @@ export const KioskHeartbeatSchema = z.object({
   fps: z.number().min(0).max(240),
 });
 export type KioskHeartbeat = z.infer<typeof KioskHeartbeatSchema>;
+
+/**
+ * The reception tablet's check-in requests (BR-9.4).
+ *
+ * A lookup takes a whole mobile or a whole member code and nothing else: a prefix is
+ * not a lookup, it is somebody fishing for names, so the schema refuses it before the
+ * query is ever built.
+ */
+export const CheckInLookupSchema = z
+  .object({
+    mobile: z
+      .string()
+      .trim()
+      .regex(/^\+91\d{10}$/, { message: 'mobile' })
+      .optional(),
+    memberCode: z.string().trim().min(3, { message: 'memberCode' }).max(20, { message: 'memberCode' }).optional(),
+  })
+  .refine((value) => value.mobile !== undefined || value.memberCode !== undefined, { message: 'mobile' });
+export type CheckInLookup = z.infer<typeof CheckInLookupSchema>;
+
+export const CheckInAttendanceSchema = z.object({
+  memberId: z.string().trim().min(1).max(40),
+  /** Made by the screen, so a double tap is one visit rather than two. */
+  clientEventId: z.string().trim().min(8).max(64),
+  method: z.enum(['KEYPAD', 'FACE', 'FACE_CONFIRMED']),
+});
+export type CheckInAttendance = z.infer<typeof CheckInAttendanceSchema>;

@@ -15,6 +15,21 @@ Blockers / questions for client:
 - …
 ```
 
+### 2026-09-24 (very late) — The reception check-in page and its keypad
+Done:
+- **The tablet pairs before it can look anybody up.** `/checkin` uses the same six-digit pairing a kiosk uses (ADR-071) and keeps its device token in `localStorage`. This is not ceremony: without it, a member's name and photo would be available to anyone who could reach the URL and guess a number — the same mistake the QR flow avoided with OTP (ADR-060). A token revoked in Max Register drops the tablet back to the pairing screen rather than failing silently.
+- **Core (test-first, 17 tests, four mutations proved):** `checkInCandidates` answers only a *whole* mobile or a *whole* member code — a prefix is not a lookup, it is somebody fishing for names — and offers every member on a shared family number rather than guessing; `selfCheckIn` applies the same BR-9.1 cooldown the desk uses, records how the member was recognised (KEYPAD / FACE / FACE_CONFIRMED) so accuracy can be reviewed later, raises the `EXPIRED_BUT_VISITING` call task, and greets nobody in shadow mode while still recording the visit.
+- **It never says what anybody owes.** An expired member is sent to the desk; the amount is discussed there, not on a screen the next person in the queue is reading over their shoulder (BR-9.3). A test pins that the response carries no figure at all.
+- **Database:** `PrismaCheckIn` — lookup by exact match only, never a prefix, so the query cannot be turned into a way of listing the gym's members; and the check-in unit of work, which also keeps `lastAttendanceAt` current, because that is what the next cooldown reads.
+- **API:** `POST /api/v1/checkin/lookup` and `POST /api/v1/checkin/attendance`, both behind the tablet's bearer token, both validated with Zod schemas in `@mfp/shared`.
+- **Screen (7 component tests):** big keys for someone standing up in a queue; "Find me" stays disabled until ten digits are in; a family number offers every name with photos; and "already marked in today" is said **out loud**, because a button that appears to do nothing is a button people press again.
+- **Verified:** lint clean, typecheck 8/8, unit tests **1374 passed / 67 skipped**.
+
+Pending / next:
+- The gallery the page will match faces against, and enrolment from the selfies members already gave at sign-up.
+- The FaceX integration slice, with the POC's measurements recorded against ADR-003.
+- The keypad already works without any of that, which is the point: attendance does not depend on the camera.
+
 ### 2026-09-24 (late) — Attendance in the browser — the engine-independent half
 **Client decisions today:** no Android app for now, web app only; attendance by face recognition in the browser (the spec's option C, whose limits were put to the client first); and **FaceX** as the engine (ADR-072).
 
