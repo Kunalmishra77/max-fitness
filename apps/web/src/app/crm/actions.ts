@@ -196,7 +196,9 @@ export async function markAttendanceAction(memberId: string, clientEventId: stri
 export async function pairKioskAction(deviceId: string | null): Promise<KioskActionResult> {
   const { actor, gym } = await requireCrmContext();
   const { clock, env, prisma } = getContainer();
-  if (!can(actor, 'settings.manage', clock.now())) return { ok: false };
+  if (!mayAfterPinEntry(actor, 'settings.manage', clock.now())) return { ok: false, code: 'FORBIDDEN' };
+  // The PIN lapses five minutes after it was entered; the screen asks again and retries.
+  if (!can(actor, 'settings.manage', clock.now())) return { ok: false, code: 'PIN_REQUIRED' };
 
   try {
     const issued = issuePairingCode({ clock });
@@ -211,14 +213,16 @@ export async function pairKioskAction(deviceId: string | null): Promise<KioskAct
     return { ok: true, code: issued.code };
   } catch (error) {
     console.error(`[crm] kiosk pairing failed: ${error instanceof Error ? error.name : 'Error'}`);
-    return { ok: false };
+    return { ok: false, code: 'generic' };
   }
 }
 
 export async function revokeKioskAction(deviceId: string): Promise<KioskActionResult> {
   const { actor, gym } = await requireCrmContext();
   const { clock, prisma } = getContainer();
-  if (!can(actor, 'settings.manage', clock.now())) return { ok: false };
+  if (!mayAfterPinEntry(actor, 'settings.manage', clock.now())) return { ok: false, code: 'FORBIDDEN' };
+  // The PIN lapses five minutes after it was entered; the screen asks again and retries.
+  if (!can(actor, 'settings.manage', clock.now())) return { ok: false, code: 'PIN_REQUIRED' };
 
   try {
     await new PrismaKioskDevices(prisma).revoke(gym.id, deviceId);
@@ -226,14 +230,16 @@ export async function revokeKioskAction(deviceId: string): Promise<KioskActionRe
     return { ok: true };
   } catch (error) {
     console.error(`[crm] kiosk revoke failed: ${error instanceof Error ? error.name : 'Error'}`);
-    return { ok: false };
+    return { ok: false, code: 'generic' };
   }
 }
 
 export async function setKioskShadowModeAction(deviceId: string, shadowMode: boolean): Promise<KioskActionResult> {
   const { actor, gym } = await requireCrmContext();
   const { clock, prisma } = getContainer();
-  if (!can(actor, 'settings.manage', clock.now())) return { ok: false };
+  if (!mayAfterPinEntry(actor, 'settings.manage', clock.now())) return { ok: false, code: 'FORBIDDEN' };
+  // The PIN lapses five minutes after it was entered; the screen asks again and retries.
+  if (!can(actor, 'settings.manage', clock.now())) return { ok: false, code: 'PIN_REQUIRED' };
 
   try {
     await new PrismaKioskDevices(prisma).setShadowMode(gym.id, deviceId, shadowMode);
@@ -241,7 +247,7 @@ export async function setKioskShadowModeAction(deviceId: string, shadowMode: boo
     return { ok: true };
   } catch (error) {
     console.error(`[crm] kiosk shadow mode failed: ${error instanceof Error ? error.name : 'Error'}`);
-    return { ok: false };
+    return { ok: false, code: 'generic' };
   }
 }
 

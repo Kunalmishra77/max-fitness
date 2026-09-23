@@ -36,32 +36,106 @@ export interface KioskDeviceItem {
   readonly pairingCode: string | null;
 }
 
-export type KioskActionResult = { ok: true; code?: string } | { ok: false };
+export type KioskActionResult = { ok: true; code?: string } | { ok: false; code?: 'PIN_REQUIRED' | 'FORBIDDEN' | 'generic' };
+export type KioskUnlockResult = { ok: true } | { ok: false };
 
 export function KioskDevices({
   devices,
   pair,
   revoke,
   setShadowMode,
+  unlock,
 }: {
   readonly devices: readonly KioskDeviceItem[];
   readonly pair: (deviceId: string | null) => Promise<KioskActionResult>;
   readonly revoke: (deviceId: string) => Promise<KioskActionResult>;
   readonly setShadowMode: (deviceId: string, shadowMode: boolean) => Promise<KioskActionResult>;
+  /** Settings need a PIN entered in the last five minutes (security-plan §3.1). */
+  readonly unlock: (pin: string) => Promise<KioskUnlockResult>;
 }) {
   const t = useTranslations('crm.kiosk');
   const [code, setCode] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  // The work the owner asked for, held while they type the PIN, then done.
+  const [held, setHeld] = useState<(() => Promise<KioskActionResult>) | null>(null);
+  const [pin, setPin] = useState('');
   const [pending, startTransition] = useTransition();
+
+  const apply = (result: KioskActionResult, work: () => Promise<KioskActionResult>): boolean => {
+    if (result.ok) {
+      if (result.code !== undefined) setCode(result.code);
+      return true;
+    }
+    // A button that does nothing is a button people press again. Say which it is.
+    if (result.code === 'PIN_REQUIRED') {
+      setHeld(() => work);
+      return false;
+    }
+    setError(t('failed'));
+    return false;
+  };
 
   const run = (work: () => Promise<KioskActionResult>) =>
     startTransition(async () => {
-      const result = await work();
-      if (result.ok && result.code !== undefined) setCode(result.code);
+      setError(null);
+      apply(await work(), work);
     });
+
+  const submitPin = () =>
+    startTransition(async () => {
+      setError(null);
+      const unlocked = await unlock(pin);
+      setPin('');
+      if (!unlocked.ok) {
+        setError(t('wrongPin'));
+        return;
+      }
+      const work = held;
+      setHeld(null);
+      // Carry on with what they were doing, rather than making them find it again.
+      if (work !== null) apply(await work(), work);
+    });
+
+  if (held !== null) {
+    return (
+      <div className="grid gap-3 rounded-panel border border-brand-stone/15 bg-white p-5">
+        <p className="text-crm-body font-semibold text-brand-obsidian">{t('pinTitle')}</p>
+        <label className="grid gap-1">
+          <span className="text-small text-brand-stone">{t('pinLabel')}</span>
+          <input
+            type="password"
+            inputMode="numeric"
+            autoComplete="off"
+            value={pin}
+            onChange={(event) => setPin(event.target.value.replace(/D/g, '').slice(0, 6))}
+            className="min-h-14 rounded-input border-2 border-brand-stone/30 px-3 text-crm-body tracking-[0.3em]"
+          />
+        </label>
+        {error === null ? null : (
+          <p role="alert" className="text-small font-semibold text-semantic-fee-expired">
+            {error}
+          </p>
+        )}
+        <div className="flex gap-2">
+          <button type="button" onClick={submitPin} disabled={pin.length < 4 || pending} className="min-h-14 rounded-button bg-brand-accent px-5 text-crm-body font-semibold text-brand-white disabled:opacity-50">
+            {t('unlock')}
+          </button>
+          <button type="button" onClick={() => { setHeld(null); setPin(''); setError(null); }} className="min-h-14 rounded-button px-5 text-crm-body font-semibold text-brand-obsidian">
+            {t('cancel')}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-4">
+      {error === null ? null : (
+        <p role="alert" className="rounded-panel bg-tint-fee-expired-bg p-4 text-crm-body font-semibold text-semantic-fee-expired">
+          {error}
+        </p>
+      )}
       {code === null ? null : (
         <div role="status" className="rounded-panel bg-brand-obsidian p-5 text-center text-brand-white">
           <p className="text-small text-brand-mist">{t('codeHelp')}</p>

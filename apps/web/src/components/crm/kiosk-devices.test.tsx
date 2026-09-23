@@ -30,6 +30,7 @@ const actions = () => ({
   pair: vi.fn().mockResolvedValue({ ok: true, code: '482913' }),
   revoke: vi.fn().mockResolvedValue({ ok: true }),
   setShadowMode: vi.fn().mockResolvedValue({ ok: true }),
+  unlock: vi.fn().mockResolvedValue({ ok: true }),
 });
 
 describe('KioskDevices', () => {
@@ -117,6 +118,59 @@ describe('KioskDevices', () => {
     );
 
     expect(screen.getByText('Watching only — it marks attendance but greets nobody')).toBeTruthy();
+  });
+
+  it('asks for the PIN rather than doing nothing, and then carries on', async () => {
+    // Settings need a PIN entered in the last five minutes. Before this, the button
+    // simply did nothing — the exact failure the keypad was fixed for.
+    const a = actions();
+    a.pair.mockResolvedValueOnce({ ok: false, code: 'PIN_REQUIRED' }).mockResolvedValueOnce({ ok: true, code: '482913' });
+    render(
+      <WithIntl>
+        <KioskDevices devices={[]} {...a} />
+      </WithIntl>,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Pair a phone' }));
+
+    const pin = await screen.findByLabelText('PIN');
+    await userEvent.type(pin, '2468');
+    await userEvent.click(screen.getByRole('button', { name: 'Unlock' }));
+
+    await waitFor(() => expect(a.unlock).toHaveBeenCalledWith('2468'));
+    // The action the owner actually asked for is retried, not forgotten.
+    await waitFor(() => expect(screen.getByText('482913')).toBeTruthy());
+  });
+
+  it('says a wrong PIN was wrong instead of failing quietly', async () => {
+    const a = actions();
+    a.pair.mockResolvedValue({ ok: false, code: 'PIN_REQUIRED' });
+    a.unlock.mockResolvedValue({ ok: false, code: 'INVALID_PIN' });
+    render(
+      <WithIntl>
+        <KioskDevices devices={[]} {...a} />
+      </WithIntl>,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Pair a phone' }));
+    await userEvent.type(await screen.findByLabelText('PIN'), '1111');
+    await userEvent.click(screen.getByRole('button', { name: 'Unlock' }));
+
+    expect(await screen.findByRole('alert')).toBeTruthy();
+  });
+
+  it('says so when something else goes wrong, rather than looking broken', async () => {
+    const a = actions();
+    a.pair.mockResolvedValue({ ok: false, code: 'generic' });
+    render(
+      <WithIntl>
+        <KioskDevices devices={[]} {...a} />
+      </WithIntl>,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Pair a phone' }));
+
+    expect(await screen.findByRole('alert')).toBeTruthy();
   });
 
   it('asks before revoking, because the phone stops working immediately', async () => {

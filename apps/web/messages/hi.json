@@ -1365,7 +1365,13 @@
       "startGreeting": "स्वागत करने दें",
       "watchOnly": "सिर्फ़ देखे",
       "revoke": "यह फ़ोन हटाएँ",
-      "revokeConfirm": "हाँ, हटा दीजिए"
+      "revokeConfirm": "हाँ, हटा दीजिए",
+      "pinTitle": "बदलने के लिए अपना PIN डालिए",
+      "pinLabel": "PIN",
+      "unlock": "खोलें",
+      "cancel": "रहने दें",
+      "wrongPin": "यह PIN सही नहीं था।",
+      "failed": "यह नहीं हुआ। दोबारा कोशिश कीजिए।"
     }
   },
   "photos": {

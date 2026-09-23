@@ -1365,7 +1365,13 @@
       "startGreeting": "Let it greet members",
       "watchOnly": "Watch only",
       "revoke": "Remove this phone",
-      "revokeConfirm": "Yes, remove it"
+      "revokeConfirm": "Yes, remove it",
+      "pinTitle": "Type your PIN to change this",
+      "pinLabel": "PIN",
+      "unlock": "Unlock",
+      "cancel": "Cancel",
+      "wrongPin": "That PIN was not right.",
+      "failed": "That did not work. Please try again."
     }
   },
   "photos": {
