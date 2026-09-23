@@ -4,6 +4,7 @@ import type {
   WhatsAppProvider,
   WhatsAppSendOutcome,
   WhatsAppSendRequest,
+  WhatsAppTextRequest,
 } from '@mfp/core/ports';
 import { renderTemplate } from './templates';
 
@@ -90,6 +91,40 @@ export class SimulatorWhatsAppProvider implements WhatsAppProvider {
 
     return { status: 'SIMULATED', bodyPreview };
   }
+  /**
+   * A free-form reply (BR-6.3), which WhatsApp allows only inside the service window a
+   * member's own message opens. In the simulator it is logged like any other message, so
+   * the owner can read exactly what the member would have.
+   */
+  async sendText(request: WhatsAppTextRequest): Promise<WhatsAppSendOutcome> {
+    const allowlisted = this.#options.allowlist.includes(request.to);
+    const real = this.#options.realProvider;
+
+    const recorded = await this.#options.log.record({
+      gymId: this.#options.gymId,
+      memberId: request.memberId ?? null,
+      membershipId: null,
+      direction: 'OUTBOUND',
+      purpose: request.purpose,
+      ruleCode: null,
+      templateName: null,
+      language: null,
+      toNumber: request.to,
+      idempotencyKey: request.idempotencyKey,
+      providerMessageId: null,
+      status: allowlisted && real !== undefined ? 'QUEUED' : 'SIMULATED',
+      bodyPreview: request.body,
+      payload: null,
+    });
+    if (!recorded) return { status: 'SKIPPED', reason: 'DUPLICATE_IDEMPOTENCY_KEY' };
+
+    if (allowlisted && real !== undefined) {
+      const outcome = await real.sendText(request);
+      if (outcome.status === 'SENT') await this.#options.log.updateStatus(outcome.providerMessageId, 'SENT', new Date());
+      return outcome;
+    }
+    return { status: 'SIMULATED', bodyPreview: request.body };
+  }
 }
 
 /**
@@ -126,4 +161,5 @@ export class InMemoryMessageLog implements MessageLogWriter {
     this.entries.length = 0;
     this.#keys.clear();
   }
+
 }

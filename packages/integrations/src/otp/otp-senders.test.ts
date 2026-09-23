@@ -17,6 +17,7 @@ describe('WhatsAppOtpSender', () => {
     const sent: WhatsAppSendRequest[] = [];
     const provider: WhatsAppProvider = {
       name: 'meta_cloud',
+      sendText: () => Promise.reject(new Error('not used here')),
       send: (request) => {
         sent.push(request);
         return Promise.resolve({ status: 'SENT', providerMessageId: 'wamid.1' });
@@ -36,6 +37,7 @@ describe('WhatsAppOtpSender', () => {
   it('fails loudly when WhatsApp refuses, so the member is not left waiting for nothing', async () => {
     const provider: WhatsAppProvider = {
       name: 'meta_cloud',
+      sendText: () => Promise.reject(new Error('not used here')),
       send: () => Promise.resolve({ status: 'FAILED', errorCode: '131026', errorMessage: 'undeliverable', retryable: false }),
     };
     await expect(new WhatsAppOtpSender(provider).send(TO, '482913', 'en')).rejects.toThrow('OTP_SEND_FAILED');

@@ -57,9 +57,15 @@ export interface Phase3Deps {
 }
 
 /** Starts the outbox poller; the returned function stops it and waits for a running pass. */
-export function startOutboxPoller(deps: Phase3Deps): () => Promise<void> {
+/**
+ * The outbox poller.
+ *
+ *  is how later phases add their own event types without this file
+ * knowing about them; an event with no handler stays pending until one exists.
+ */
+export function startOutboxPoller(deps: Phase3Deps, extraHandlers: OutboxHandlers = {}): () => Promise<void> {
   const store = new PrismaOutboxDispatchStore(deps.prisma);
-  const handlers = outboxHandlers(deps.boss);
+  const handlers = { ...outboxHandlers(deps.boss), ...extraHandlers };
   let running: Promise<void> | null = null;
   let stopped = false;
 

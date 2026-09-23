@@ -1,12 +1,13 @@
 import { fileURLToPath } from 'node:url';
 import { PgBoss } from 'pg-boss';
-import { parseEnv, systemClock, WORKER_HEARTBEAT_STALE_SECONDS } from '@mfp/shared';
+import { GymSettingsSchema, parseEnv, systemClock, WORKER_HEARTBEAT_STALE_SECONDS } from '@mfp/shared';
 import { createPrismaClient } from '@mfp/db';
 import { createStorageDriver } from '@mfp/integrations/storage';
 import { issueToken } from '@mfp/core';
 import { MetaCloudWhatsAppProvider, SimulatorWhatsAppProvider } from '@mfp/integrations/whatsapp';
 import { PrismaMessageLogWriter } from '@mfp/db';
 import { nightlyCallTasksHandler, registerReceiptPdfWorker, RECEIPT_PDF_QUEUE, startOutboxPoller, type Phase3Deps } from './jobs/phase3-jobs';
+import { messageOutboxHandlers } from './jobs/message-jobs';
 import { catchUpMissedSlots, registerReminderJobs, reminderSlots, slotHandlers, WHATSAPP_SEND_QUEUE, type Phase6Deps } from './jobs/phase6-jobs';
 import { createLogger, type Logger } from './logger';
 import { EVENT_QUEUES, IST_TZ, SCHEDULES, type ScheduleDefinition } from './schedules';
@@ -135,7 +136,22 @@ async function main(): Promise<void> {
   await registerSchedules(boss, log, { 'nightly-call-tasks': nightlyCallTasksHandler(phase3), ...handlers });
   await registerEventQueues(boss, log, new Set([RECEIPT_PDF_QUEUE, WHATSAPP_SEND_QUEUE]));
   await registerReceiptPdfWorker(phase3);
-  const stopOutbox = startOutboxPoller(phase3);
+  const stopOutbox = startOutboxPoller(
+    phase3,
+    messageOutboxHandlers({
+      prisma,
+      whatsapp,
+      log,
+      gymId: async () => (await prisma.gym.findUniqueOrThrow({ where: { slug: env.GYM_SLUG }, select: { id: true } })).id,
+      hoursLine: async () => {
+        const gym = await prisma.gym.findUniqueOrThrow({ where: { slug: env.GYM_SLUG }, select: { settings: true } });
+        const hours = GymSettingsSchema.parse(gym.settings).hours;
+        const open = hours.find((day) => !day.closed);
+        return open === undefined ? '' : `${open.open} – ${open.close}`;
+      },
+      unsubscribePayload: phase6.unsubscribePayload,
+    }),
+  );
 
   await registerReminderJobs(phase6, slots, new Set(SCHEDULES.map((schedule) => schedule.name)));
   log.info({ slots }, 'reminder slots registered');

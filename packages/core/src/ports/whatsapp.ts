@@ -1,4 +1,5 @@
 import type { E164Mobile, Language, WhatsAppTemplateName } from '@mfp/shared';
+import type { MessagePurpose } from './message-log';
 
 /**
  * WhatsApp delivery.
@@ -55,7 +56,20 @@ export type WhatsAppSendOutcome =
       readonly retryable: boolean;
     };
 
+/**
+ * A free-form message, allowed only inside the 24-hour service window that a member's
+ * own reply opens (BR-6.3: the unsubscribe and restart confirmations).
+ */
+export interface WhatsAppTextRequest {
+  readonly to: E164Mobile;
+  readonly body: string;
+  readonly idempotencyKey: string;
+  readonly purpose: MessagePurpose;
+  readonly memberId?: string | null;
+}
+
 export interface WhatsAppProvider {
   readonly name: 'meta_cloud' | 'bsp' | 'simulator';
   send(request: WhatsAppSendRequest): Promise<WhatsAppSendOutcome>;
+  sendText(request: WhatsAppTextRequest): Promise<WhatsAppSendOutcome>;
 }

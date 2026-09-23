@@ -64,6 +64,10 @@ export const WHATSAPP_TEMPLATES = {
   membershipExpired: 'mf_membership_expired',
   paymentReceipt: 'mf_payment_receipt',
   loginCode: 'mf_login_code',
+  welcomeMember: 'mf_welcome_member',
+  verificationApproved: 'mf_verification_approved',
+  ownerDigest: 'mf_owner_daily_digest',
+  ownerAlert: 'mf_owner_alert',
 } as const;
 export type WhatsAppTemplateName = (typeof WHATSAPP_TEMPLATES)[keyof typeof WHATSAPP_TEMPLATES];
 

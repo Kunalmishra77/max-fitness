@@ -79,6 +79,50 @@ describe('renderTemplate', () => {
   });
 });
 
+describe('the messages the gym sends besides reminders (T5, T6, T9, T10)', () => {
+  it('welcomes a new member with their code and the gym hours, in both languages', () => {
+    const values = { firstName: 'Priya', memberCode: 'MF-0231', hours: 'Mon–Sat 4:30 am – 10:00 pm' };
+    expect(renderTemplate('mf_welcome_member', 'en', values)).toContain('Welcome to Max Fitness Gym, Priya. Your member code is MF-0231.');
+    expect(renderTemplate('mf_welcome_member', 'hi', values)).toContain('MF-0231');
+    expect(renderTemplate('mf_welcome_member', 'hi', values)).toContain('प्रिया'.slice(0, 0) + 'Priya');
+  });
+
+  it('confirms a QR member’s details with the date their fees run to', () => {
+    const values = { firstName: 'Sanjay', endDate: '30 Sep 2026' };
+    expect(renderTemplate('mf_verification_approved', 'en', values)).toContain('your details are confirmed');
+    expect(renderTemplate('mf_verification_approved', 'en', values)).toContain('30 Sep 2026');
+    expect(renderTemplate('mf_verification_approved', 'hi', values)).toContain('30 Sep 2026');
+  });
+
+  it('writes the owner’s morning digest with every number in it', () => {
+    const body = renderTemplate('mf_owner_daily_digest', 'hi', {
+      ownerName: 'अजय',
+      endingToday: '3',
+      overdue: '37',
+      dueThisWeek: '28',
+      callsToday: '12',
+      birthdays: '1',
+      collectedYesterday: '₹8,500',
+    });
+    for (const value of ['अजय', '3', '37', '28', '12', '₹8,500']) expect(body).toContain(value);
+    expect(body).not.toContain('{{');
+  });
+
+  it('carries one controlled sentence for an owner alert', () => {
+    expect(renderTemplate('mf_owner_alert', 'hi', { sentence: 'संजय तोमर अभी जिम आए, फीस 6 दिन से बाकी है।' })).toContain('फीस 6 दिन से बाकी है।');
+  });
+
+  it('has every template the engine can name, in both languages', () => {
+    for (const name of ['mf_welcome_member', 'mf_verification_approved', 'mf_owner_daily_digest'] as const) {
+      for (const language of ['en', 'hi'] as const) {
+        expect(templateDefinition(name).body[language].length).toBeGreaterThan(10);
+      }
+    }
+    // The owner alert is one controlled sentence, so its body is just the variable.
+    expect(templateDefinition('mf_owner_alert').body.hi).toBe('{{1}}');
+  });
+});
+
 describe('daysLeftPhrase — the {{3}} variable in T1', () => {
   it('reads naturally in English', () => {
     expect(daysLeftPhrase(7, 'en')).toBe('in 7 days');
@@ -165,6 +209,21 @@ describe('SimulatorWhatsAppProvider', () => {
     expect(log.entries).toHaveLength(2);
     expect(log.entries[0]?.bodyPreview).toContain('Anita');
     expect(log.entries[1]?.bodyPreview).toContain('Rohit');
+  });
+
+  it('simulates a free-form reply too, and logs what the member would have read', async () => {
+    const log = new InMemoryMessageLog();
+    const provider = new SimulatorWhatsAppProvider({ gymId: 'gym_1', log, allowlist: [] });
+
+    const outcome = await provider.sendText({
+      to: TO,
+      body: 'आपके रिमाइंडर बंद कर दिए गए हैं।',
+      idempotencyKey: 'unsubconf:mem_1:2026-09-23',
+      purpose: 'UNSUBSCRIBE_CONFIRM',
+    });
+
+    expect(outcome).toEqual({ status: 'SIMULATED', bodyPreview: 'आपके रिमाइंडर बंद कर दिए गए हैं।' });
+    expect(log.entries[0]).toMatchObject({ status: 'SIMULATED', purpose: 'UNSUBSCRIBE_CONFIRM', bodyPreview: 'आपके रिमाइंडर बंद कर दिए गए हैं।', templateName: null });
   });
 
   it('records the member and membership when a context resolver is wired', async () => {

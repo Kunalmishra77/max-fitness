@@ -1,4 +1,4 @@
-import type { WhatsAppProvider, WhatsAppSendOutcome, WhatsAppSendRequest } from '@mfp/core/ports';
+import type { WhatsAppProvider, WhatsAppSendOutcome, WhatsAppSendRequest, WhatsAppTextRequest } from '@mfp/core/ports';
 
 /**
  * Meta WhatsApp Cloud API adapter — TYPED STUB, implemented in Phase 6.
@@ -27,6 +27,13 @@ export interface MetaCloudConfig {
   readonly appSecret: string;
 }
 
+/**
+ * Built against the Cloud API once the number is approved: the request bodies are
+ * verified against Meta's own reference then, not guessed now, because a wrong field
+ * name is only discovered on a live send (Phase 6 live-test plan).
+ */
+const NOT_LIVE_YET = "The WhatsApp Cloud API client is built when the gym's number is approved; the demo uses the simulator.";
+
 export class MetaCloudWhatsAppProvider implements WhatsAppProvider {
   readonly name = 'meta_cloud' as const;
 
@@ -35,6 +42,10 @@ export class MetaCloudWhatsAppProvider implements WhatsAppProvider {
   }
 
   send(_request: WhatsAppSendRequest): Promise<WhatsAppSendOutcome> {
-    return Promise.reject(new Error('MetaCloudWhatsAppProvider.send is implemented in Phase 6'));
+    return Promise.reject(new Error(NOT_LIVE_YET));
+  }
+
+  sendText(_request: WhatsAppTextRequest): Promise<WhatsAppSendOutcome> {
+    return Promise.reject(new Error(NOT_LIVE_YET));
   }
 }

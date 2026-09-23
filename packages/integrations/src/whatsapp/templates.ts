@@ -142,12 +142,106 @@ const LOGIN_CODE: TemplateDefinition = {
   },
 };
 
+/** T5 — the first message a new member gets, right after the receipt. */
+const WELCOME_MEMBER: TemplateDefinition = {
+  name: 'mf_welcome_member',
+  category: 'UTILITY',
+  variables: ['firstName', 'memberCode', 'hours'],
+  body: {
+    en: [
+      'Welcome to Max Fitness Gym, {{1}}. Your member code is {{2}}.',
+      '',
+      'Gym timings: {{3}}',
+      'On your first visit, please meet reception so we can set up your attendance.',
+    ].join('\n'),
+    hi: [
+      'Max Fitness Gym में आपका स्वागत है, {{1}}। आपका मेंबर कोड {{2}} है।',
+      '',
+      'जिम का समय: {{3}}',
+      'पहली बार आएँ तो रिसेप्शन पर मिलें, ताकि आपकी हाज़िरी सेट की जा सके।',
+    ].join('\n'),
+  },
+  footer: FOOTER,
+};
+
+/** T6 — a QR member's details checked and switched on at the desk. */
+const VERIFICATION_APPROVED: TemplateDefinition = {
+  name: 'mf_verification_approved',
+  category: 'UTILITY',
+  variables: ['firstName', 'endDate'],
+  body: {
+    en: [
+      'Hi {{1}}, your details are confirmed at Max Fitness Gym.',
+      '',
+      "Your fees are paid till {{2}}. We'll remind you before this date on WhatsApp.",
+      '',
+      'If you do not want reminders, please unsubscribe.',
+    ].join('\n'),
+    hi: [
+      'नमस्ते {{1}}, Max Fitness Gym में आपकी जानकारी पक्की हो गई है।',
+      '',
+      'आपकी फीस {{2}} तक जमा है। इस तारीख से पहले हम आपको WhatsApp पर याद दिला देंगे।',
+      '',
+      'अगर आप रिमाइंडर नहीं चाहते, तो कृपया अनसब्सक्राइब करें।',
+    ].join('\n'),
+  },
+  footer: FOOTER,
+};
+
+/** T9 — the owner's morning digest, skipped on days with nothing to say. */
+const OWNER_DIGEST: TemplateDefinition = {
+  name: 'mf_owner_daily_digest',
+  category: 'UTILITY',
+  variables: ['ownerName', 'endingToday', 'overdue', 'dueThisWeek', 'callsToday', 'birthdays', 'collectedYesterday'],
+  body: {
+    en: [
+      'Good morning {{1}}. Today at a glance:',
+      '',
+      'Fees ending today: {{2}}',
+      'Fees overdue: {{3}}',
+      'Fees due this week: {{4}}',
+      "Today's calls: {{5}}",
+      'Birthdays: {{6}}',
+      'Collected yesterday: {{7}}',
+    ].join('\n'),
+    hi: [
+      'सुप्रभात {{1}}। आज का हिसाब:',
+      '',
+      'फीस आज खत्म: {{2}}',
+      'फीस बाकी: {{3}}',
+      'इस हफ्ते आने वाली फीस: {{4}}',
+      'आज के कॉल: {{5}}',
+      'जन्मदिन: {{6}}',
+      'कल आए पैसे: {{7}}',
+    ].join('\n'),
+  },
+  footer: FOOTER,
+};
+
+/**
+ * T10 — one controlled sentence to the owner.
+ *
+ * The sentence is built in the app, never by the member, so an alert cannot carry
+ * whatever someone typed into WhatsApp.
+ */
+const OWNER_ALERT: TemplateDefinition = {
+  name: 'mf_owner_alert',
+  category: 'UTILITY',
+  variables: ['sentence'],
+  body: { en: '{{1}}', hi: '{{1}}' },
+  footer: FOOTER,
+};
+
 export const TEMPLATES: Readonly<Record<WhatsAppTemplateName, TemplateDefinition>> = {
   mf_renewal_due: RENEWAL_DUE,
   mf_renewal_due_today: RENEWAL_DUE_TODAY,
   mf_membership_expired: MEMBERSHIP_EXPIRED,
   mf_payment_receipt: PAYMENT_RECEIPT,
   mf_login_code: LOGIN_CODE,
+  mf_welcome_member: WELCOME_MEMBER,
+  mf_verification_approved: VERIFICATION_APPROVED,
+  mf_owner_daily_digest: OWNER_DIGEST,
+  mf_owner_alert: OWNER_ALERT,
 };
 
 export function templateDefinition(name: WhatsAppTemplateName): TemplateDefinition {
