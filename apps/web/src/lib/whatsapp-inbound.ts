@@ -1,4 +1,4 @@
-import { classifyInboundText, verifyToken, type ParsedWebhook, type RestartResult, type UnsubscribeResult } from '@mfp/core';
+import { classifyInboundText, pauseOnQualitySignal, verifyToken, type ParsedWebhook, type QualityGuardStore, type RestartResult, type UnsubscribeResult } from '@mfp/core';
 import type { Clock, E164Mobile } from '@mfp/shared';
 
 /**
@@ -21,11 +21,10 @@ export interface InboundDeps {
   readonly restart: (memberId: string) => Promise<RestartResult>;
   readonly membersOnNumber: (mobile: E164Mobile) => Promise<ReadonlyArray<{ id: string; fullName: string }>>;
   readonly updateStatus: (providerMessageId: string, status: string, at: Date, error: { code: string; message: string } | null) => Promise<void>;
-  readonly alertOwner: (kind: 'SHARED_NUMBER_STOP' | 'MEMBER_REPLIED' | 'WHATSAPP_QUALITY', context: Record<string, string>) => Promise<void>;
+  readonly alertOwner: (kind: 'SHARED_NUMBER_STOP' | 'MEMBER_REPLIED', context: Record<string, string>) => Promise<void>;
+  /** §9: a quality signal from Meta pauses the post-expiry rule and tells the owner. */
+  readonly qualityGuard: QualityGuardStore;
 }
-
-/** Meta's errors for quality and messaging limits; these pause the POST rule (§9). */
-const QUALITY_ERRORS = new Set(['131049', '131048', '130472', '131056']);
 
 /** `UNSUB.<token>` / `RESTART.<token>`: the prefix says what, the token says who. */
 function readPayload(value: string, secret: string, clock: Clock): { action: 'UNSUB' | 'RESTART'; memberId: string } | null {
@@ -73,8 +72,10 @@ export async function handleInboundWhatsApp(parsed: ParsedWebhook, deps: Inbound
   for (const status of parsed.statuses) {
     try {
       await deps.updateStatus(status.providerMessageId, status.status, status.at, status.error);
-      if (status.error !== null && QUALITY_ERRORS.has(status.error.code)) {
-        await deps.alertOwner('WHATSAPP_QUALITY', { code: status.error.code, message: status.error.message });
+      // Meta repeats the same error for every message in a bad batch; the guard is
+      // what makes that one pause and one alert rather than forty.
+      if (status.error !== null) {
+        await pauseOnQualitySignal({ errorCode: status.error.code, message: status.error.message }, deps.qualityGuard);
       }
     } catch (error) {
       console.error(`[whatsapp-inbound] status ${status.providerMessageId} failed: ${error instanceof Error ? error.name : 'Error'}`);

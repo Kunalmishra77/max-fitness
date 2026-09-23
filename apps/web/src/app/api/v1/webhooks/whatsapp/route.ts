@@ -89,11 +89,25 @@ export async function POST(request: NextRequest) {
         updateStatus: (providerMessageId, status, at, error) =>
           messageLog.updateStatus(providerMessageId, status as Parameters<PrismaMessageLogWriter['updateStatus']>[1], at, error ?? undefined),
         alertOwner: async (kind, context) => {
-          // A reply or a shared-number STOP is something a person has to read, so it lands
-          // as a SYSTEM alert with the words in it; quality problems have their own type.
-          await prisma.alert.create({
-            data: { gymId: gym.id, type: kind === 'WHATSAPP_QUALITY' ? 'WHATSAPP_QUALITY' : 'SYSTEM', title: `alert.${kind}`, params: context },
-          });
+          // A reply or a shared-number STOP is something a person has to read, so it
+          // lands as a SYSTEM alert with the words in it.
+          await prisma.alert.create({ data: { gymId: gym.id, type: 'SYSTEM', title: `alert.${kind}`, params: context } });
+        },
+        qualityGuard: {
+          // §9: the post-expiry chasing stops, and the messages members expect —
+          // receipts, welcomes, the pre-expiry reminders — keep going.
+          disableRules: async (codes) => {
+            const result = await prisma.reminderRule.updateMany({
+              where: { gymId: gym.id, code: { in: [...codes] }, isEnabled: true },
+              data: { isEnabled: false },
+            });
+            return result.count;
+          },
+          alertOwner: async (errorCode, message) => {
+            await prisma.alert.create({
+              data: { gymId: gym.id, type: 'WHATSAPP_QUALITY', title: 'crm.alerts.whatsappQuality', params: { code: errorCode, message } },
+            });
+          },
         },
       },
     );

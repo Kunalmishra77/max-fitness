@@ -701,6 +701,8 @@ model MessageLog {
   idempotencyKey    String?          @unique
   providerMessageId String?          @unique
   status            MessageStatus
+  /// The IST day this message belongs to; the per-number daily cap counts by it (BR-5.6)
+  businessDate      DateTime?        @db.Date
   bodyPreview       String? // rendered text for log/simulator (no secrets)
   payload           Json? // variables / inbound content
   errorCode         String?
@@ -718,6 +720,7 @@ model MessageLog {
   @@index([gymId, createdAt])
   @@index([memberId, createdAt])
   @@index([gymId, status])
+  @@index([toNumber, businessDate])
 }
 
 model WebhookEvent {

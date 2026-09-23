@@ -50,6 +50,24 @@ export class PrismaJobRuns {
     });
   }
 
+  /**
+   * Stop a slot part-way through (§9 failure guard).
+   *
+   * The run row is the flag the send job reads, so a slot that has started failing
+   * stops for every message still queued, not only for the one that failed.
+   */
+  async stop(jobName: string, runKey: string, reason: string): Promise<void> {
+    await this.#prisma.jobRun.updateMany({
+      where: { jobName, runKey },
+      data: { status: 'STOPPED', error: reason, finishedAt: new Date() },
+    });
+  }
+
+  async isStopped(jobName: string, runKey: string): Promise<boolean> {
+    const row = await this.#prisma.jobRun.findFirst({ where: { jobName, runKey }, select: { status: true } });
+    return row?.status === 'STOPPED';
+  }
+
   /** Slots of `today` that have not run yet — what a worker catches up on when it boots. */
   async missingSlots(jobNames: readonly string[], today: ISTDate): Promise<string[]> {
     const rows = await this.#prisma.jobRun.findMany({
@@ -58,6 +76,33 @@ export class PrismaJobRuns {
     });
     const done = new Set(rows.map((row) => row.jobName));
     return jobNames.filter((name) => !done.has(name));
+  }
+}
+
+/**
+ * How a slot's sends are going (§9 failure guard).
+ *
+ * Counted from the message log rather than from a running tally, so a worker that
+ * restarts mid-slot sees the same picture the one before it saw.
+ */
+export class PrismaSlotHealth {
+  readonly #prisma: PrismaClient;
+  constructor(prisma: PrismaClient) {
+    this.#prisma = prisma;
+  }
+
+  async counts(gymId: string, businessDate: ISTDate, slot: string): Promise<{ attempted: number; failed: number }> {
+    // Every reminder of this run ends its key with `:<date>:<slot>`.
+    const suffix = `:${businessDate}:${slot}`;
+    const rows = await this.#prisma.messageLog.groupBy({
+      by: ['status'],
+      where: { gymId, purpose: 'REMINDER', idempotencyKey: { endsWith: suffix }, status: { in: ['SENT', 'DELIVERED', 'READ', 'SIMULATED', 'FAILED'] } },
+      _count: { _all: true },
+    });
+    const byStatus = Object.fromEntries(rows.map((row) => [row.status, row._count._all]));
+    const failed = byStatus['FAILED'] ?? 0;
+    const attempted = Object.values(byStatus).reduce((sum, n) => sum + n, 0);
+    return { attempted, failed };
   }
 }
 

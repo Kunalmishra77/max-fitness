@@ -15,6 +15,25 @@ Blockers / questions for client:
 - …
 ```
 
+### 2026-09-24 — Phase 6 — The two safeguards, and a bug that would have stopped every reminder
+Done:
+- **Core (test-first, 14 tests, four mutations proved):** `isQualitySignal` (four Meta codes; a plain undeliverable is deliberately not one), `pauseOnQualitySignal` (disables POST conditionally, so a bad batch of forty produces one pause and one alert), `slotFailureVerdict` (more than a fifth, and at least five attempts — one failure out of two means nothing).
+- **Worker (test-first, 5 tests):** `guardSlotAfterFailure` stops the slot and alerts; stopping happens first and does not depend on the alert. `sendOne` now refuses to send for a stopped slot and logs `SKIPPED:SLOT_STOPPED`.
+- **Web:** the webhook now pauses the POST rule on a quality signal instead of only alerting (2 tests).
+- **`SendIntent` carries `businessDate` and `slot`,** so the guard knows which run a failure belongs to rather than parsing the idempotency key.
+
+**Bug found and fixed:** `PrismaSendContext.load` — the query `sendReminder` makes for *every* message — filtered on `MessageLog.businessDate`, **a column that did not exist**. Prisma's generated types did not catch it, so lint, typecheck and 1,290 unit tests were green while every reminder send would have thrown at runtime. Nobody had noticed because the worker has never run in production and no test covered that query. Added the column (migration `20260923101240_message_log_business_date`, backfilled from `createdAt` in IST), set it in the writer, and pinned it with a new integration test.
+
+- Two database integration tests that still asserted the removed `alert.owner` events were corrected; they had stayed green because they need a database.
+- **Verified:** lint clean, typecheck 8/8, unit tests **1293 passed / 67 skipped**, database integration **65 passed / 8 files**.
+
+Decisions: ADR-069.
+
+Pending / next (rest of Phase 6):
+- Reminder settings UI (slot times, per-number cap, per-rule toggles), which should warn when a rule is given several slots a day (ADR-068).
+- "Advance time" with a fake clock — deliberately deferred (ADR-067 §5).
+- E2E journey 8; live-send checklist and template approval status.
+
 ### 2026-09-23 (night, later) — Phase 6 — POST reminders once a day (client decision)
 Done:
 - **ADR-068, acting on what the simulator found.** The `POST` rule fired at 09:30, 14:00 and 19:00 every day of its seven-day window — 21 messages to one member whose fee ran out, and 2,806 messages in the demo's 30-day plan. The client chose **one a day, at 19:00**: 7 messages instead of 21.

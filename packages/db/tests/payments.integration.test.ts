@@ -307,7 +307,10 @@ suite('sign-up and payment against the database (P1–P8)', () => {
     expect(await new PrismaReceiptReader(prisma).receipt(unpaid.order.paymentId)).toBeNull();
 
     const keys = (await prisma.outboxEvent.findMany({ where: { gymId, payload: { path: ['paymentId'], equals: order.paymentId } } })).map((e) => e.dedupeKey);
-    expect(keys.sort()).toEqual([`alertpay:${order.paymentId}`, `pdf:${order.paymentId}`, `receipt:${order.paymentId}`]);
+    // The owner hears about the payment from its Alert row, not from a second
+    // outbox event with the same meaning (ADR-065).
+    expect(keys.sort()).toEqual([`pdf:${order.paymentId}`, `receipt:${order.paymentId}`]);
+    expect(await prisma.alert.count({ where: { gymId, memberId, type: 'ONLINE_PAYMENT' } })).toBe(1);
     expect(await prisma.outboxEvent.count({ where: { dedupeKey: `enroll:${memberId}` } })).toBe(1);
   });
 
@@ -371,7 +374,7 @@ suite('sign-up and payment against the database (P1–P8)', () => {
       failureReason: 'AMOUNT_MISMATCH',
     });
     expect((await prisma.member.findUniqueOrThrow({ where: { id: memberId } })).status).toBe('PENDING_PAYMENT');
-    expect(await prisma.outboxEvent.count({ where: { dedupeKey: `alertmismatch:${order.paymentId}` } })).toBe(1);
+    expect(await prisma.alert.count({ where: { gymId, memberId, type: 'SYSTEM', title: 'crm.alerts.paymentAmountMismatch' } })).toBe(1);
 
     // order.paid reporting the same wrong amount raises nothing new.
     expect((await webhook(provider, clock, 'order.paid', { id: providerPaymentId, order_id: order.providerOrderId, amount: 100 })).outcome).toBe('AMOUNT_MISMATCH');

@@ -35,6 +35,9 @@ export interface SendIntent {
   readonly memberId: string;
   readonly membershipId: string;
   readonly ruleCode: ReminderRuleCode;
+  /** The run this message belongs to: the failure guard needs to know which slot. */
+  readonly businessDate: ISTDate;
+  readonly slot: string;
   readonly templateName: WhatsAppTemplateName;
   readonly language: Language;
   readonly to: E164Mobile;
@@ -130,6 +133,8 @@ export function planSlot(
       memberId: candidate.memberId,
       membershipId: candidate.membershipId,
       ruleCode: rule.code,
+      businessDate: input.today,
+      slot: input.slot,
       templateName: rule.templateName,
       language: candidate.language,
       to: candidate.mobile,

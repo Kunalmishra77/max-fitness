@@ -38,9 +38,19 @@ function deps(over: Partial<InboundDeps> = {}): InboundDeps & { calls: string[] 
       calls.push(`status:${providerMessageId}:${status}`);
       return Promise.resolve();
     },
-    alertOwner: (kind: 'SHARED_NUMBER_STOP' | 'MEMBER_REPLIED' | 'WHATSAPP_QUALITY') => {
+    alertOwner: (kind: 'SHARED_NUMBER_STOP' | 'MEMBER_REPLIED') => {
       calls.push(`alert:${kind}`);
       return Promise.resolve();
+    },
+    qualityGuard: {
+      disableRules: (codes: readonly string[]) => {
+        calls.push(`disable:${codes.join(',')}`);
+        return Promise.resolve(codes.length);
+      },
+      alertOwner: (code: string) => {
+        calls.push(`alert:WHATSAPP_QUALITY:${code}`);
+        return Promise.resolve();
+      },
     },
     ...over,
   };
@@ -89,7 +99,7 @@ describe('handleInboundWhatsApp', () => {
     expect(d.calls).toEqual(['alert:MEMBER_REPLIED']);
   });
 
-  it('moves the message log along on a delivery status, and alerts on a quality failure', async () => {
+  it('pauses the post-expiry chasing when Meta signals a quality problem (§9)', async () => {
     const d = deps();
     await handleInboundWhatsApp(
       {
@@ -101,7 +111,20 @@ describe('handleInboundWhatsApp', () => {
       },
       d,
     );
-    expect(d.calls).toEqual(['status:wamid.1:DELIVERED', 'status:wamid.2:FAILED', 'alert:WHATSAPP_QUALITY']);
+    expect(d.calls).toEqual(['status:wamid.1:DELIVERED', 'status:wamid.2:FAILED', 'disable:POST', 'alert:WHATSAPP_QUALITY:131049']);
+  });
+
+  it('leaves the rules alone for an ordinary undeliverable message', async () => {
+    const d = deps();
+    await handleInboundWhatsApp(
+      {
+        // 131026 is one member's number, not the gym's standing.
+        statuses: [{ providerMessageId: 'wamid.3', status: 'FAILED', at: clock.now(), error: { code: '131026', message: 'undeliverable' } }],
+        replies: [],
+      },
+      d,
+    );
+    expect(d.calls).toEqual(['status:wamid.3:FAILED']);
   });
 
   it('does nothing at all for a member who cannot be found on the number', async () => {

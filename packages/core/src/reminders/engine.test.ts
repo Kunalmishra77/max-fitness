@@ -64,6 +64,10 @@ describe('planSlot', () => {
         memberId: 'mem_1',
         membershipId: 'mship_1',
         ruleCode: 'PRE_7',
+        // The run this message belongs to, carried rather than parsed back out of
+        // the key: the failure guard has to know which slot is going wrong.
+        businessDate: '2026-09-23',
+        slot: '10:00',
         templateName: 'mf_renewal_due',
         language: 'en',
         to: '+919000000001',

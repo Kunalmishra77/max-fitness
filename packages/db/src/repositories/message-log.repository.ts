@@ -1,5 +1,6 @@
 import type { MessageLogEntry, MessageLogWriter, MessageStatus } from '@mfp/core/ports';
 import type { Prisma } from '../generated/prisma/client';
+import { toDbDate } from '../dates';
 import type { PrismaClient, TransactionClient } from '../client';
 
 /**
@@ -42,6 +43,9 @@ export class PrismaMessageLogWriter implements MessageLogWriter {
           idempotencyKey: entry.idempotencyKey,
           providerMessageId: entry.providerMessageId,
           status: entry.status,
+          // The IST day the cap counts by (BR-5.6). Dropping it here was what made
+          // every reminder send throw: the column is what `PrismaSendContext` reads.
+          ...(entry.businessDate == null ? {} : { businessDate: toDbDate(entry.businessDate) }),
           bodyPreview: entry.bodyPreview,
           // A nullable JSON column takes an omitted key, not `null`. The port types the
           // payload as plain JSON-serialisable data, which is what Prisma stores.

@@ -110,6 +110,8 @@ const intent: SendIntent = {
   memberId: 'mem_1',
   membershipId: 'mship_1',
   ruleCode: 'PRE_7',
+  businessDate: istDate('2026-09-23'),
+  slot: '10:00',
   templateName: 'mf_renewal_due',
   language: 'en',
   to: MOBILE,

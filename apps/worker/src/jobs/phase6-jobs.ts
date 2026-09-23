@@ -11,12 +11,14 @@ import {
   PrismaReminderCandidates,
   PrismaReminderRules,
   PrismaSendContext,
+  PrismaSlotHealth,
   type PrismaClient,
 } from '@mfp/db';
 import type { Logger } from '../logger';
 import { reminderQueueName } from '../schedules';
 import { sendTemplate, type MessageJobDeps } from './message-jobs';
 import { runOwnerAlerts, runOwnerDigest } from './owner';
+import { guardSlotAfterFailure, slotRunKey } from './safeguards';
 import { RetryableSendError, runReminderSlot, sendReminder, type SendContext } from './reminders';
 
 /**
@@ -98,6 +100,32 @@ export async function runSlot(deps: Phase6Deps, slot: string, today: ISTDate): P
 export async function sendOne(deps: Phase6Deps, intent: SendIntent): Promise<void> {
   const id = await gymId(deps);
   const today = todayIST(deps.clock);
+  const runs = new PrismaJobRuns(deps.prisma);
+
+  // §9: a slot that has already been stopped sends nothing more, however many of its
+  // messages are still sitting in the queue.
+  if (await runs.isStopped(RUN_JOB_NAME, slotRunKey(intent))) {
+    await new PrismaMessageLogWriter(deps.prisma).record({
+      gymId: id,
+      memberId: intent.memberId,
+      membershipId: intent.membershipId,
+      direction: 'OUTBOUND',
+      purpose: 'REMINDER',
+      ruleCode: intent.ruleCode,
+      templateName: intent.templateName,
+      language: intent.language,
+      toNumber: intent.to,
+      idempotencyKey: intent.idempotencyKey,
+      providerMessageId: null,
+      status: 'SKIPPED',
+      bodyPreview: null,
+      payload: null,
+      errorCode: 'SLOT_STOPPED',
+      businessDate: intent.businessDate,
+    });
+    deps.log.warn({ key: intent.idempotencyKey, slot: intent.slot }, 'slot stopped — reminder not sent');
+    return;
+  }
 
   const result = await sendReminder(intent, {
     clock: deps.clock,
@@ -124,6 +152,19 @@ export async function sendOne(deps: Phase6Deps, intent: SendIntent): Promise<voi
     },
     whatsapp: { send: (request) => deps.whatsapp.send(request) },
   });
+
+  if (result.outcome === 'FAILED') {
+    const verdict = await guardSlotAfterFailure(intent, {
+      health: (businessDate, slot) => new PrismaSlotHealth(deps.prisma).counts(id, businessDate, slot),
+      stop: (runKey, reason) => runs.stop(RUN_JOB_NAME, runKey, reason),
+      alertOwner: async (slot, failed, attempted) => {
+        await deps.prisma.alert.create({
+          data: { gymId: id, type: 'WHATSAPP_FAILURE', title: 'crm.alerts.slotStopped', params: { slot, failed, planned: attempted } },
+        });
+      },
+    });
+    if (verdict.stopped) deps.log.error({ slot: intent.slot, ...verdict }, 'slot stopped: too many sends failed');
+  }
 
   if (result.outcome === 'SKIPPED') deps.log.info({ key: intent.idempotencyKey, reason: result.reason }, 'reminder skipped at send time');
   else deps.log.info({ key: intent.idempotencyKey, outcome: result.outcome }, 'reminder handled');
