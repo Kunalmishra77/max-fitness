@@ -15,6 +15,23 @@ Blockers / questions for client:
 - …
 ```
 
+### 2026-09-24 (late) — Attendance in the browser — the engine-independent half
+**Client decisions today:** no Android app for now, web app only; attendance by face recognition in the browser (the spec's option C, whose limits were put to the client first); and **FaceX** as the engine (ADR-072).
+
+Done:
+- **Verified FaceX rather than assuming it.** Apache 2.0, and the licence explicitly covers the *weights* as well as the code — which is what ADR-003 demanded and what research-only weights could never give. MobileFaceNet 512-d, a 401 KB detector, MiniFASNet anti-spoof. face-api.js was rejected (dlib weights, unmaintained since ~2020, TensorFlow.js, no anti-spoof).
+- **Found the catch:** FaceX ships **no npm package**, no browser API docs and only C examples — it is a C/WASM project with encrypted ONNX weights loaded through `onnxruntime-web`. (And weights "encrypted" for a browser must hand that browser the key, so it is obfuscation, not security.) It is not a drop-in; integrating it is its own slice, and effectively the POC the docs have wanted since ADR-003.
+- **So the engine-independent half was built first, behind a `FaceEngine` interface** (attendance spec §4, written in TypeScript here for the same reason it is written in Kotlin there). `packages/core` stays free of `lib.dom` — a frame is a structural `FaceFrame` that a browser `ImageData` satisfies, because the worker imports this package too.
+- **Core (test-first, 22 tests, six mutations proved):** cosine matching over a gallery, taking each member's *best* template; a match must clear the threshold **and** beat the runner-up by the margin, or the member confirms rather than being greeted; 3-of-5 frame agreement, so somebody walking past behind the member decides nothing, and agreement made of uncertain frames stays uncertain; a template of the wrong length (an older model) is ignored rather than scored as a stranger; and the frame check where a null liveness score means "this engine cannot tell", not "this face failed".
+- **Verified:** lint clean, typecheck 8/8, unit tests **1350 passed / 67 skipped**.
+
+Decisions: ADR-072.
+
+Pending / next:
+- The check-in page itself: camera, greeting, fees-due and expired states, keypad fallback.
+- The gallery the page matches against, and enrolment from the selfies members already gave at sign-up.
+- The FaceX integration slice, with the POC's measurements (accuracy and speed on the real tablet, in the real light) recorded against ADR-003.
+
 ### 2026-09-24 (night) — Phase 7 (server side) — Pairing the attendance phone
 **Scope note first:** the Phase 7 prompt's precondition is not met — the face-recognition POC has never been run and no licensed FaceEngine has been chosen (ADR-003 still says "after POC"). An Android app also cannot be built here: no SDK, no device, no vendor SDK. So Phase 7 is split (ADR-071): the server side is built now, the Android app is **blocked** on the client's engine licence and a build environment.
 

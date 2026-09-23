@@ -6,6 +6,7 @@ import {
   issuePairingCode,
   pairKioskDevice,
   PAIRING_CODE_TTL_MINUTES,
+  type PairingDeviceRow,
   type PairingStore,
 } from './pairing';
 
@@ -21,20 +22,22 @@ import {
 const NOW = new Date('2026-09-24T05:00:00Z');
 const PEPPER = 'a'.repeat(32);
 
-function store(seed: Parameters<typeof memory>[0] = {}) {
-  return memory(seed);
+/** The row as the database would hold it: mutable, because pairing writes to it. */
+interface StoredDevice {
+  id: string;
+  gymId: string;
+  pairingCodeHash: string | null;
+  pairingExpires: Date | null;
+  status: 'ACTIVE' | 'REVOKED';
+  name: string;
+  tokenHash: string | null;
+  appVersion: string | null;
+  modelVersion: string | null;
 }
 
-function memory(seed: {
-  device?: {
-    id: string;
-    gymId: string;
-    pairingCodeHash: string | null;
-    pairingExpires: Date | null;
-    status: 'ACTIVE' | 'REVOKED';
-  } | null;
-}) {
-  const devices = seed.device === undefined ? [] : [{ ...seed.device, name: 'Reception phone', tokenHash: null as string | null, appVersion: null as string | null, modelVersion: null as string | null }];
+function store(seed: { device?: PairingDeviceRow } = {}) {
+  const devices: StoredDevice[] =
+    seed.device === undefined ? [] : [{ ...seed.device, name: 'Reception phone', tokenHash: null, appVersion: null, modelVersion: null }];
   const impl: PairingStore = {
     findByPairingCodeHash: (hash) => Promise.resolve(devices.find((device) => device.pairingCodeHash === hash) ?? null),
     completePairing: (deviceId, fields) => {
