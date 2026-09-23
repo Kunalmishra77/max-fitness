@@ -663,7 +663,8 @@
       "sendWish": "Send wish",
       "wishSent": "Wish sent",
       "noWhatsApp": "Not on WhatsApp",
-      "wishFailed": "That did not go. Please try again."
+      "wishFailed": "That did not go. Please try again.",
+      "wishQueued": "Wish on its way"
     },
     "feeState": {
       "PAID": "Fees paid",

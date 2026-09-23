@@ -663,7 +663,8 @@
       "sendWish": "बधाई भेजें",
       "wishSent": "बधाई भेजी",
       "noWhatsApp": "WhatsApp पर नहीं",
-      "wishFailed": "यह नहीं गई। दोबारा कोशिश कीजिए।"
+      "wishFailed": "यह नहीं गई। दोबारा कोशिश कीजिए।",
+      "wishQueued": "बधाई भेजी जा रही है"
     },
     "feeState": {
       "PAID": "फीस जमा है",

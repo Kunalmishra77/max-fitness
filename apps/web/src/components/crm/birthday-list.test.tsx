@@ -16,7 +16,7 @@ const item = (over: Partial<BirthdayItem> = {}): BirthdayItem => ({
   fullName: 'Anita Rao',
   memberCode: 'MF-0231',
   canWish: true,
-  wished: false,
+  wish: 'none',
   ...over,
 });
 
@@ -44,18 +44,31 @@ describe('BirthdayList', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send wish' }));
 
     expect(onSend).toHaveBeenCalledWith('mem_1');
-    await waitFor(() => expect(screen.getByText('Wish sent')).toBeTruthy());
+    // Queued, not sent: the worker has not had it yet, and in a demo it never will.
+    await waitFor(() => expect(screen.getByText('Wish on its way')).toBeTruthy());
     expect(screen.queryByRole('button', { name: 'Send wish' })).toBeNull();
   });
 
   it('shows a wish already sent today without offering it again', () => {
     render(
       <WithIntl>
-        <BirthdayList items={[item({ wished: true })]} canSend onSend={ok()} />
+        <BirthdayList items={[item({ wish: 'sent' })]} canSend onSend={ok()} />
       </WithIntl>,
     );
 
     expect(screen.getByText('Wish sent')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Send wish' })).toBeNull();
+  });
+
+  it('shows a wish still on its way as on its way, not as sent', () => {
+    render(
+      <WithIntl>
+        <BirthdayList items={[item({ wish: 'queued' })]} canSend onSend={ok()} />
+      </WithIntl>,
+    );
+
+    expect(screen.getByText('Wish on its way')).toBeTruthy();
+    expect(screen.queryByText('Wish sent')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Send wish' })).toBeNull();
   });
 

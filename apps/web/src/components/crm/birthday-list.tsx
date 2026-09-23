@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
+import { cn } from '@/lib/cn';
 import { CrmIcon } from './crm-icons';
 
 /**
@@ -18,7 +19,8 @@ export interface BirthdayItem {
   readonly fullName: string;
   readonly memberCode: string | null;
   readonly canWish: boolean;
-  readonly wished: boolean;
+  /** 'none' = not sent yet, 'queued' = on its way, 'sent' = handed to WhatsApp. */
+  readonly wish: 'none' | 'queued' | 'sent';
 }
 
 export type BirthdayWishResult = { ok: true } | { ok: false; code: string };
@@ -34,7 +36,7 @@ export function BirthdayList({
   readonly onSend: (memberId: string) => Promise<BirthdayWishResult>;
 }) {
   const t = useTranslations('crm.home');
-  const [sent, setSent] = useState<ReadonlySet<string>>(new Set());
+  const [justQueued, setJustQueued] = useState<ReadonlySet<string>>(new Set());
   const [failed, setFailed] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -46,7 +48,7 @@ export function BirthdayList({
     setFailed(null);
     startTransition(async () => {
       const result = await onSend(memberId);
-      if (result.ok) setSent((done) => new Set([...done, memberId]));
+      if (result.ok) setJustQueued((done) => new Set([...done, memberId]));
       else setFailed(memberId);
     });
   };
@@ -55,14 +57,16 @@ export function BirthdayList({
     <>
       <ul className="mt-3 grid gap-2">
         {items.map((item) => {
-          const done = item.wished || sent.has(item.memberId);
+          // "Sent" only when the worker really sent it; a wish still in the outbox
+          // says so, because in a demo with no worker running nothing goes anywhere.
+          const state = item.wish === 'none' && justQueued.has(item.memberId) ? 'queued' : item.wish;
           return (
             <li key={item.memberId} className="flex flex-wrap items-center gap-2 rounded-input bg-brand-paper px-3 py-2">
               <span className="min-w-0 flex-1 truncate text-crm-body font-semibold text-brand-obsidian">{item.fullName}</span>
-              {done ? (
-                <span className="inline-flex items-center gap-1 text-small font-semibold text-semantic-fee-paid">
+              {state !== 'none' ? (
+                <span className={cn('inline-flex items-center gap-1 text-small font-semibold', state === 'sent' ? 'text-semantic-fee-paid' : 'text-brand-stone')}>
                   <CrmIcon name="whatsapp" className="size-4" />
-                  {t('wishSent')}
+                  {t(state === 'sent' ? 'wishSent' : 'wishQueued')}
                 </span>
               ) : !item.canWish ? (
                 <span className="text-small text-brand-stone">{t('noWhatsApp')}</span>
