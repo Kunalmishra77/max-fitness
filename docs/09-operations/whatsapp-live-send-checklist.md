@@ -88,6 +88,10 @@ for word. Submit **both** languages of each. Approval is usually minutes to a da
 - [ ] Verify token matches; Meta's GET challenge returns 200.
 - [ ] Subscribed to the **messages** field (statuses and inbound messages).
 - [ ] A test status callback appears in `/crm/messages` within a few seconds.
+- [ ] **Run E2E journey 8b.** It skips while `WHATSAPP_APP_SECRET` is empty and starts
+      running the moment it is set: it signs a real Unsubscribe tap, checks the member
+      drops out of the reminder plan, and checks a tampered payload and a wrong
+      signature are both refused (ADR-070).
 
 ## 6. The worker must actually be running
 

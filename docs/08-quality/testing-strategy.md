@@ -32,7 +32,10 @@
 5. Payment failure → retry → pay at reception → CRM pending payment → desk record → ACTIVE.
 6. Renew link from simulator message → pay → reminders timeline shows no further messages.
 7. QR existing → verification approve → membership with declared date → simulator shows reminders from correct day.
-8. Simulator: advance to E+1 → 3 messages → tap Unsubscribe → member LEFT, no more messages after advancing 3 days.
+8. Reminder plan and unsubscribe, in two halves (ADR-067, ADR-070):
+   - **8a** a new paid member appears in the 30-day plan, and a message opens into the words they would read.
+   - **8b** a signed Unsubscribe tap → member LEFT → the plan has nothing more for them, and a tampered payload or a wrong signature does nothing. *Skipped until `WHATSAPP_APP_SECRET` exists*, since the tap is a signed Meta webhook.
+   - The original wording used the simulator's "Advance time"; that control is deliberately not built (ADR-067), and the three-messages-a-day shape it assumed was changed to one a day (ADR-068).
 9. CRM login lockout after 5 wrong PINs.
 10. Reception role cannot access Settings or void payment (403 + hidden UI).
 11. Manual attendance + undo.
@@ -46,7 +49,7 @@
 | R3 | endDate = T+5 | none |
 | R4 | T+3, T+2, T+1 at 10:00 | one intent each day |
 | R5 | endDate = T, 10:00 | DUE_TODAY (if enabled) |
-| R6 | endDate = T−1, slots 09:30/14:00/19:00 | 3 POST intents |
+| R6 | endDate = T−1, slot 19:00 | 1 POST intent, and none at the slots POST used to share (ADR-068) |
 | R7 | endDate = T−8, cap 7 | none + call task exists |
 | R8 | cap null, endDate = T−40 | 3 intents (warning setting) |
 | R9 | Renewed yesterday (upcoming membership exists) with old end T+2 | none |

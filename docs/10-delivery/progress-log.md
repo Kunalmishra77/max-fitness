@@ -15,6 +15,23 @@ Blockers / questions for client:
 - …
 ```
 
+### 2026-09-24 (evening) — Phase 6 complete — Journey 8, without a fake clock
+Done:
+- **E2E journey 8, rewritten for what it was really for** (ADR-070). The original wording leaned on the simulator's "Advance time", which is deliberately not built (ADR-067), and on the three-messages-a-day shape that ADR-068 removed. What it exists to prove — a tap on Unsubscribe stops the messages — is now checked by reading the 30-day plan before and after the tap.
+  - **8a** signs a member up and pays through the public API, then checks they appear in the plan and that a row opens into the real rendered message. **Runs today; passes against production.**
+  - **8b** mints the same `UNSUB.<token>` the engine puts behind the button, posts it to the real webhook with a real `X-Hub-Signature-256`, and checks the member drops out of the plan — plus that a tampered payload does nothing and a wrong signature is refused. **Skipped until `WHATSAPP_APP_SECRET` exists**, which is named in the live-send checklist so it is switched on as part of going live.
+- `paidMember` is now shared between journeys 6 and 8 instead of copied.
+- `testing-strategy.md` updated: journey 8's two halves, and R6 in the reminder matrix (one POST intent, and none at the slots POST used to share).
+
+Decisions: ADR-070.
+
+**Phase 6 is complete as far as it can be without a WhatsApp number.** Everything that remains for live sending is in one place: `docs/09-operations/whatsapp-live-send-checklist.md`. Its only code item is `MetaCloudWhatsAppProvider`, still a typed stub on purpose.
+
+Pending / next:
+- Phase 7 — the Max Haazri kiosk.
+- Phase 8 — hardening.
+- Deferred by decision: "Advance time" in the simulator (ADR-067 §5).
+
 ### 2026-09-24 (later) — Phase 6 — The settings warning, and the live-send checklist
 Done:
 - **The reminder settings screen now counts out loud** what several times a day comes to (4 tests, two mutations proved): a POST rule with three times and a seven-day window says "यानी एक मेंबर को 21 मैसेज। दिन में एक बार आमतौर पर काफ़ी है।" This is the one screen where the shape ADR-068 removed could come back, so it says the number rather than letting the owner find out from a member. A single-day rule counts its times as themselves, not multiplied by the window.

@@ -1,8 +1,8 @@
-import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { expect, test, type APIRequestContext } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { issueToken } from '@mfp/core';
 import { systemClock } from '@mfp/shared';
+import { paidMember } from './paid-member';
 
 /**
  * Journey 6 (testing-strategy.md §3): renew link → pay.
@@ -13,51 +13,10 @@ import { systemClock } from '@mfp/shared';
  * arrives with the reminder engine.
  */
 
-const FACE_PHOTO = fileURLToPath(new URL('./fixtures/face.jpg', import.meta.url));
-
 try {
   process.loadEnvFile(fileURLToPath(new URL('../../../.env', import.meta.url)));
 } catch {
   // CI provides the environment directly.
-}
-
-function testMobile(): string {
-  return `9${String(Math.floor(Math.random() * 1e9)).padStart(9, '0')}`;
-}
-
-/** A new member, signed up and paid for through the same API the sign-up pages use. */
-async function paidMember(request: APIRequestContext): Promise<string> {
-  const registration = await request.post('/api/v1/registrations', {
-    multipart: {
-      fullName: 'Ravi Renewer',
-      mobile: testMobile(),
-      dob: '1990-02-10',
-      gender: 'MALE',
-      language: 'en',
-      consents: JSON.stringify({ terms: true, privacy: true, whatsappUpdates: true, faceAttendance: false }),
-      noticeVersion: '1.0',
-      selfie: { name: 'selfie.jpg', mimeType: 'image/jpeg', buffer: await readFile(FACE_PHOTO) },
-    },
-  });
-  expect(registration.status()).toBe(201);
-  const { memberId, registrationToken } = ((await registration.json()) as { data: { memberId: string; registrationToken: string } }).data;
-  const auth = { 'x-registration-token': registrationToken };
-
-  const plans = ((await (await request.get('/api/v1/plans?gender=MALE')).json()) as { data: { plans: { MALE: { cards: Array<{ planId: string; durationMonths: number }> } } } }).data;
-  const monthly = plans.plans.MALE.cards.find((card) => card.durationMonths === 1);
-  expect(monthly).toBeDefined();
-
-  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
-  const order = await request.post('/api/v1/checkout/orders', { headers: auth, data: { planId: monthly?.planId, startDate: today } });
-  expect(order.status()).toBe(201);
-  const { orderId } = ((await order.json()) as { data: { orderId: string } }).data;
-
-  const simulated = await request.post('/api/v1/checkout/simulate', { headers: auth, data: { providerOrderId: orderId, outcome: 'success' } });
-  const callback = ((await simulated.json()) as { data: Record<string, string> }).data;
-  const verified = await request.post('/api/v1/checkout/verify', { data: callback });
-  expect(((await verified.json()) as { data: { status: string } }).data.status).toBe('PAID');
-
-  return memberId;
 }
 
 test('journey 6: a renew link offers the chained start date and renews the membership', async ({ page, request }, testInfo) => {
@@ -65,7 +24,7 @@ test('journey 6: a renew link offers the chained start date and renews the membe
   const secret = process.env['LINK_TOKEN_SECRET'];
   test.skip(secret === undefined || secret === '', 'LINK_TOKEN_SECRET is needed to mint a renew link.');
 
-  const memberId = await paidMember(request);
+  const { memberId } = await paidMember(request);
   const token = issueToken({ purpose: 'renew', subject: memberId, ttlSeconds: 3_600, secret: secret ?? '', clock: systemClock });
 
   await page.goto(`/renew/${token}`);
