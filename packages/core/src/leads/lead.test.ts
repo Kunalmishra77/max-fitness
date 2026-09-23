@@ -149,7 +149,7 @@ const input = (overrides: Record<string, unknown> = {}) =>
   LeadCreateSchema.parse({ name: 'Neha Gupta', mobile: '98765 43210', goal: 'LOSE_WEIGHT', consentContact: true, ...overrides });
 
 describe('submitLead', () => {
-  it('creates a lead with the mobile in E.164, one owner alert and one outbox event, in one transaction', async () => {
+  it('creates a lead with the mobile in E.164 and one owner alert, in one transaction', async () => {
     const mem = memoryUow();
     const result = await submitLead(input(), { gymId: 'gym_1', clock: new FakeClock(NOW), uow: mem.uow });
 
@@ -159,9 +159,9 @@ describe('submitLead', () => {
     expect(mem.alerts).toEqual([
       { gymId: 'gym_1', type: 'NEW_LEAD', title: 'crm.alerts.newLead', params: { leadId: 'lead_1', name: 'Neha Gupta', goal: 'LOSE_WEIGHT' } },
     ]);
-    expect(mem.outbox).toEqual([
-      { type: 'alert.owner', gymId: 'gym_1', payload: { kind: 'NEW_LEAD', leadId: 'lead_1' }, dedupeKey: 'lead-alert:lead_1' },
-    ]);
+    // The Alert row is the record the owner's alert job reads; there is no second
+    // copy of the same intent in the outbox (ADR-065).
+    expect(mem.outbox).toEqual([]);
   });
 
   it('keeps UTM data when present', async () => {

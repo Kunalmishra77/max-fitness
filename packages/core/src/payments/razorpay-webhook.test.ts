@@ -90,7 +90,7 @@ describe('handleRazorpayWebhook', () => {
   it('treats order.paid after payment.captured as already confirmed (case P1)', async () => {
     await handle(body('payment.captured'), 'evt_1');
     expect(await handle(body('order.paid'), 'evt_2')).toEqual({ outcome: 'ALREADY_CONFIRMED' });
-    expect(payments.outbox).toHaveLength(4);
+    expect(payments.outbox).toHaveLength(3);
   });
 
   it('records a failed payment with its reason', async () => {

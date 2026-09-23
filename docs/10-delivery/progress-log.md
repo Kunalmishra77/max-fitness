@@ -15,6 +15,21 @@ Blockers / questions for client:
 - …
 ```
 
+### 2026-09-23 (later) — Phase 6 — The owner's digest and alerts
+Done:
+- **Core (test-first, 17 tests, three mutations proved):** `buildOwnerDigest` (T9), `alertSentence` for nine kinds of alert in both languages, `planOwnerAlerts` (cluster by arrival, ration of three messages per five minutes, bundle beyond that), `buildBirthdayWish` (T11, keyed by member and year). A mobile is masked even on its way to the owner; every sentence is one line, because a WhatsApp template variable cannot hold a newline.
+- **Database:** `Alert.notifiedAt` (migration `20260923064226_alert_notified_at`) — the owner's alerts are now driven by the `Alert` rows the app already writes, so the never-consumed `alert.owner` outbox events are gone. `PrismaOwnerData` (owner recipient, the seven digest counts) and `PrismaOwnerAlertQueue` (resolve, stamp, count the window). Six integration tests against Postgres pin the IST money boundary, the no-double-counting rule and the resolution of alert rows.
+- **Worker (test-first, 12 tests, three mutations proved):** `runOwnerDigest` at 08:30 — silent on a day with nothing to report, one per day whatever the cron does — and `runOwnerAlerts` every minute, which holds everything while "stop all automatic messages" is on and leaves a failed send unstamped so it is tried again. Both send through the same logged `sendTemplate` path as every other message.
+- **Verified:** lint clean, typecheck 8/8, unit tests **1242 passed / 58 skipped**, db integration **6 passed**.
+
+Decisions: ADR-065.
+
+Pending / next (rest of Phase 6):
+- Birthday wishes: the owner's Send button on the home screen (BR-8.2 keeps them manual).
+- Safeguards: auto-pause of the POST rule on a quality signal; slot failure guard above 20%.
+- Reminder settings UI (slot times, per-number cap, per-rule toggles) and the Message Simulator with a 30-day projected timeline and "Advance time".
+- E2E journey 8; live-send checklist and template approval status.
+
 ### 2026-09-23 — Phase 6 — Message log in Max Register
 Done:
 - **Read model:** `PrismaMessageLogReader.list()` (newest first, optional member and status filters, member name joined) and `.countsToday()` grouped by status, so the page does one round trip per question rather than one per row.

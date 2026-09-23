@@ -1305,6 +1305,14 @@
         "SIMULATED": "Demo"
       },
       "reason": {
+        "130472": "WhatsApp chose not to deliver it to this member",
+        "131026": "This number cannot receive WhatsApp",
+        "131031": "The gym’s WhatsApp account is blocked",
+        "131047": "More than 24 hours had passed since they last wrote",
+        "131048": "WhatsApp is holding back messages from this number for now",
+        "131049": "WhatsApp did not deliver it to keep the member from being flooded",
+        "132001": "This message template is not approved",
+        "133010": "This number is not on WhatsApp",
         "NUMBER_CAP": "This number already had its messages for the day",
         "SUPERSEDED_BY_NEWER_MEMBERSHIP": "They had already renewed",
         "UNSUBSCRIBED": "They had unsubscribed",

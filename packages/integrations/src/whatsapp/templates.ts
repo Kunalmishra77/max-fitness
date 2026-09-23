@@ -232,6 +232,24 @@ const OWNER_ALERT: TemplateDefinition = {
   footer: FOOTER,
 };
 
+/**
+ * T11 — the birthday wish.
+ *
+ * Marketing, not utility: it sells nothing, but Meta reads any unsolicited greeting
+ * that way, so it needs the member's own opt-in and the owner's tap — BR-8.2 keeps
+ * `autoBirthdayWish` off.
+ */
+const BIRTHDAY_WISH: TemplateDefinition = {
+  name: 'mf_birthday_wish',
+  category: 'MARKETING',
+  variables: ['firstName'],
+  body: {
+    en: 'Many happy returns of the day, {{1}}! 🎉 Everyone at Max Fitness Gym wishes you a healthy and strong year ahead.',
+    hi: 'जन्मदिन की बहुत-बहुत शुभकामनाएँ, {{1}}! 🎉 Max Fitness Gym की पूरी टीम की ओर से आपको स्वस्थ और ताकतवर साल की शुभकामनाएँ।',
+  },
+  footer: FOOTER,
+};
+
 export const TEMPLATES: Readonly<Record<WhatsAppTemplateName, TemplateDefinition>> = {
   mf_renewal_due: RENEWAL_DUE,
   mf_renewal_due_today: RENEWAL_DUE_TODAY,
@@ -242,6 +260,7 @@ export const TEMPLATES: Readonly<Record<WhatsAppTemplateName, TemplateDefinition
   mf_verification_approved: VERIFICATION_APPROVED,
   mf_owner_daily_digest: OWNER_DIGEST,
   mf_owner_alert: OWNER_ALERT,
+  mf_birthday_wish: BIRTHDAY_WISH,
 };
 
 export function templateDefinition(name: WhatsAppTemplateName): TemplateDefinition {

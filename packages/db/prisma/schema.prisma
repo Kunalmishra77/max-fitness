@@ -766,19 +766,22 @@ model CallTask {
 }
 
 model Alert {
-  id        String    @id @default(cuid())
-  gymId     String
-  type      AlertType
-  memberId  String?
-  title     String // i18n key
-  params    Json?
-  readAt    DateTime? @db.Timestamptz
-  createdAt DateTime  @default(now()) @db.Timestamptz
+  id         String    @id @default(cuid())
+  gymId      String
+  type       AlertType
+  memberId   String?
+  title      String // i18n key
+  params     Json?
+  readAt     DateTime? @db.Timestamptz
+  /// when the owner was told on WhatsApp; null = still waiting to be sent
+  notifiedAt DateTime? @db.Timestamptz
+  createdAt  DateTime  @default(now()) @db.Timestamptz
 
   gym    Gym     @relation(fields: [gymId], references: [id])
   member Member? @relation(fields: [memberId], references: [id])
 
   @@index([gymId, readAt, createdAt])
+  @@index([gymId, notifiedAt, createdAt])
 }
 
 model AuditLog {

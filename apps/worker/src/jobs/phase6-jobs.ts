@@ -1,9 +1,11 @@
 import type { PgBoss } from 'pg-boss';
-import type { SendIntent } from '@mfp/core';
+import type { SendIntent, TransactionalMessage } from '@mfp/core';
 import { GymSettingsSchema, todayIST, type Clock, type ISTDate } from '@mfp/shared';
 import type { WhatsAppProvider } from '@mfp/core/ports';
 import {
   PrismaJobRuns,
+  PrismaOwnerAlertQueue,
+  PrismaOwnerData,
   PrismaMessageLogUpdates,
   PrismaMessageLogWriter,
   PrismaReminderCandidates,
@@ -13,6 +15,8 @@ import {
 } from '@mfp/db';
 import type { Logger } from '../logger';
 import { reminderQueueName } from '../schedules';
+import { sendTemplate, type MessageJobDeps } from './message-jobs';
+import { runOwnerAlerts, runOwnerDigest } from './owner';
 import { RetryableSendError, runReminderSlot, sendReminder, type SendContext } from './reminders';
 
 /**
@@ -26,6 +30,7 @@ import { RetryableSendError, runReminderSlot, sendReminder, type SendContext } f
 
 export const WHATSAPP_SEND_QUEUE = 'whatsapp-send';
 const RUN_JOB_NAME = 'reminder-slot';
+const DIGEST_JOB_NAME = 'owner-digest';
 
 export interface Phase6Deps {
   readonly boss: Pick<PgBoss, 'send' | 'work' | 'createQueue' | 'schedule'>;
@@ -122,6 +127,51 @@ export async function sendOne(deps: Phase6Deps, intent: SendIntent): Promise<voi
 
   if (result.outcome === 'SKIPPED') deps.log.info({ key: intent.idempotencyKey, reason: result.reason }, 'reminder skipped at send time');
   else deps.log.info({ key: intent.idempotencyKey, outcome: result.outcome }, 'reminder handled');
+}
+
+/**
+ * The owner's own two jobs, for the schedule registration to use.
+ *
+ * Both need to send a built message the same way every other transactional message
+ * is sent — logged under its idempotency key first, then handed to the provider —
+ * so they borrow `sendTemplate` rather than growing a second path to WhatsApp.
+ */
+export function ownerJobHandlers(deps: Phase6Deps, message: MessageJobDeps): Record<string, () => Promise<void>> {
+  const deliver = (built: TransactionalMessage, to: string) => sendTemplate(message, built, to, null, null);
+  const runs = new PrismaJobRuns(deps.prisma);
+
+  return {
+    'owner-digest': async () => {
+      const id = await gymId(deps);
+      const data = new PrismaOwnerData(deps.prisma);
+      const result = await runOwnerDigest({
+        clock: deps.clock,
+        owner: () => data.owner(id),
+        counts: (today, yesterday) => data.digestCounts(id, today, yesterday),
+        deliver,
+        automaticPaused: async () => (await reminderSettings(deps, id)).automaticPaused,
+        claimRun: (runKey) => runs.claim(DIGEST_JOB_NAME, runKey, id),
+      });
+      deps.log.info(result, 'owner digest');
+    },
+
+    'owner-alerts': async () => {
+      const id = await gymId(deps);
+      const data = new PrismaOwnerData(deps.prisma);
+      const queue = new PrismaOwnerAlertQueue(deps.prisma);
+      const result = await runOwnerAlerts({
+        clock: deps.clock,
+        owner: () => data.owner(id),
+        pending: (since) => queue.pending(id, since),
+        sentInWindow: (since) => queue.sentInWindow(id, since),
+        deliver,
+        automaticPaused: async () => (await reminderSettings(deps, id)).automaticPaused,
+        markNotified: (ids, at) => queue.markNotified(ids, at),
+        onError: (error, alertIds) => deps.log.warn({ err: error, alertIds }, 'owner alert will be tried again'),
+      });
+      if (result.sent > 0 || result.dropped > 0) deps.log.info(result, 'owner alerts');
+    },
+  };
 }
 
 /** The gym's distinct slot times, in order. */

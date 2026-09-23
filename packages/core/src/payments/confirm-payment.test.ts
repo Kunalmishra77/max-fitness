@@ -59,15 +59,15 @@ describe('confirmPayment', () => {
     ]);
   });
 
-  it('queues the receipt, the receipt PDF, enrolment and the owner alert, each once', async () => {
+  it('queues the receipt, the receipt PDF and enrolment, each once', async () => {
     await confirm();
     expect(store.outbox.map((e) => [e.type, e.dedupeKey])).toEqual([
       ['whatsapp.receipt', 'receipt:pay_1'],
       ['receipt.pdf', 'pdf:pay_1'],
       ['kiosk.enroll', 'enroll:mem_1'],
-      ['alert.owner', 'alertpay:pay_1'],
     ]);
-    expect(store.outbox.find((e) => e.type === 'alert.owner')!.payload).toEqual({ kind: 'PAYMENT_RECEIVED', paymentId: 'pay_1' });
+    // The owner hears about it from the Alert row, not from a second outbox event (ADR-065).
+    expect(store.alerts.map((a) => a.type)).toContain('ONLINE_PAYMENT');
   });
 
   it('is idempotent: a second confirmation changes nothing (cases P1, P2)', async () => {
@@ -76,7 +76,7 @@ describe('confirmPayment', () => {
 
     expect(second).toEqual({ ...first, outcome: 'ALREADY_CONFIRMED' });
     expect(store.counters.get('gym_1:receipt:2026-27')).toBe(1);
-    expect(store.outbox).toHaveLength(4);
+    expect(store.outbox).toHaveLength(3);
     expect(payment().signatureOk).toBe(true);
   });
 
@@ -105,7 +105,7 @@ describe('confirmPayment', () => {
     await confirm({ paidAmountPaise: 100, source: 'webhook' });
 
     expect(store.alerts).toEqual([
-      { gymId: 'gym_1', type: 'SYSTEM', memberId: 'mem_1', title: 'crm.alerts.paymentAmountMismatch', params: { paymentId: 'pay_1' } },
+      { gymId: 'gym_1', type: 'SYSTEM', memberId: 'mem_1', title: 'crm.alerts.paymentAmountMismatch', params: { paymentId: 'pay_1', receivedPaise: 100 } },
     ]);
   });
 
@@ -121,9 +121,9 @@ describe('confirmPayment', () => {
     expect(payment()).toMatchObject({ status: 'CREATED', flag: 'AMOUNT_MISMATCH' });
     expect(store.members.get('mem_1')!.status).toBe('PENDING_PAYMENT');
     expect(store.counters.size).toBe(0);
-    expect(store.outbox.map((e) => [e.type, e.dedupeKey, e.payload])).toEqual([
-      ['alert.owner', 'alertmismatch:pay_1', { kind: 'PAYMENT_AMOUNT_MISMATCH', paymentId: 'pay_1' }],
-    ]);
+    expect(store.outbox).toEqual([]);
+    // Both numbers, so the owner's alert can say what was asked and what arrived.
+    expect(store.alerts.at(-1)).toMatchObject({ type: 'SYSTEM', title: 'crm.alerts.paymentAmountMismatch', params: { paymentId: 'pay_1', receivedPaise: 100 } });
   });
 
   it('confirms a payment that failed before and then succeeded on retry', async () => {

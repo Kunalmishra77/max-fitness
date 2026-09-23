@@ -1,6 +1,7 @@
 export * from './client';
 export * from './dates';
 export * from './repositories/message-log-read.repository';
+export * from './repositories/owner.repository';
 export * from './repositories/message-data.repository';
 export * from './repositories/unsubscribe.repository';
 export * from './repositories/reminder-runtime.repository';

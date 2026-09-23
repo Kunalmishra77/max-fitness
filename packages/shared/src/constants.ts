@@ -68,6 +68,7 @@ export const WHATSAPP_TEMPLATES = {
   verificationApproved: 'mf_verification_approved',
   ownerDigest: 'mf_owner_daily_digest',
   ownerAlert: 'mf_owner_alert',
+  birthdayWish: 'mf_birthday_wish',
 } as const;
 export type WhatsAppTemplateName = (typeof WHATSAPP_TEMPLATES)[keyof typeof WHATSAPP_TEMPLATES];
 

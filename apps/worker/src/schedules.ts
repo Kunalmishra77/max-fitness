@@ -77,6 +77,14 @@ export const SCHEDULES: readonly ScheduleDefinition[] = [
     implementedIn: 6,
   },
   {
+    name: 'owner-alerts',
+    // Alerts are meant to be immediate; the rationing that stops a busy morning
+    // buzzing eleven times lives in the job, not in how often it looks.
+    cron: '* * * * *',
+    description: 'Tell the owner what happened, bundling a burst into one message',
+    implementedIn: 6,
+  },
+  {
     name: 'kiosk-offline-check',
     cron: '*/10 5-22 * * *',
     description: 'Alert when the kiosk has not been seen for longer than the configured window',

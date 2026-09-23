@@ -42,12 +42,17 @@ function paymentIdOf(event: ClaimedOutboxEvent): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
-/** Send one built message, logging it first so a repeat cannot send twice. */
-async function sendTemplate(
+/**
+ * Send one built message, logging it first so a repeat cannot send twice.
+ *
+ * `memberId` is null for the messages that go to the owner rather than to a member:
+ * the digest and the alerts belong to the gym, not to anybody's record.
+ */
+export async function sendTemplate(
   deps: MessageJobDeps,
   message: TransactionalMessage,
   to: string,
-  memberId: string,
+  memberId: string | null,
   membershipId: string | null,
   buttons?: ReadonlyArray<{ payload: string; label: string }>,
 ): Promise<void> {

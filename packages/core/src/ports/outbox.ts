@@ -15,7 +15,6 @@ export type OutboxEventType =
   | 'whatsapp.verification_approved'
   | 'kiosk.gallery_changed'
   | 'kiosk.enroll'
-  | 'alert.owner'
   | 'calltask.create'
   | 'receipt.pdf';
 

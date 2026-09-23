@@ -36,7 +36,8 @@ export interface PaymentAlertRecord {
   readonly memberId: string;
   /** i18n key rendered by the CRM bell. */
   readonly title: string;
-  readonly params: Readonly<Record<string, string>>;
+  /** Stored as JSON; a number stays a number so the owner's alert can format it. */
+  readonly params: Readonly<Record<string, string | number>>;
 }
 
 /** Follow-up calls that no longer make sense once the member has paid. */
@@ -102,7 +103,6 @@ function paymentEvents(payment: PaymentForConfirmation): OutboxEventInput[] {
     { type: 'receipt.pdf', gymId, payload: { paymentId: id }, dedupeKey: `pdf:${id}` },
     // The dispatcher checks face consent and minor status before creating a job.
     { type: 'kiosk.enroll', gymId, payload: { memberId }, dedupeKey: `enroll:${memberId}` },
-    { type: 'alert.owner', gymId, payload: { kind: 'PAYMENT_RECEIVED', paymentId: id }, dedupeKey: `alertpay:${id}` },
   ];
 }
 
@@ -143,13 +143,8 @@ export function confirmPayment(
         type: 'SYSTEM',
         memberId: payment.memberId,
         title: 'crm.alerts.paymentAmountMismatch',
-        params: { paymentId: payment.id },
-      });
-      await store.enqueueOutbox({
-        type: 'alert.owner',
-        gymId: payment.gymId,
-        payload: { kind: 'PAYMENT_AMOUNT_MISMATCH', paymentId: payment.id },
-        dedupeKey: `alertmismatch:${payment.id}`,
+        // Both numbers, so the owner's alert can say what was asked and what came.
+        params: { paymentId: payment.id, receivedPaise: input.paidAmountPaise },
       });
       return { outcome: 'AMOUNT_MISMATCH', paymentId: payment.id, memberId: payment.memberId };
     }

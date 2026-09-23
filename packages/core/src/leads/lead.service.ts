@@ -83,14 +83,6 @@ export async function submitLead(
       params: { leadId, name: input.name, goal: input.goal },
     });
 
-    await store.enqueueOutbox({
-      type: 'alert.owner',
-      gymId: deps.gymId,
-      payload: { kind: 'NEW_LEAD', leadId },
-      // One owner alert per lead, however many times the request is retried.
-      dedupeKey: `lead-alert:${leadId}`,
-    });
-
     return { leadId, merged: false };
   });
 }

@@ -47,6 +47,7 @@ describe('MessageList', () => {
             row({ id: 'a', status: 'SKIPPED', errorCode: 'NUMBER_CAP' }),
             row({ id: 'b', memberName: 'Rohit Rao', status: 'SKIPPED', errorCode: 'SUPERSEDED_BY_NEWER_MEMBERSHIP' }),
             row({ id: 'c', memberName: 'Kunal Sethi', status: 'FAILED', errorCode: '131026' }),
+            row({ id: 'd', memberName: 'Farah Shukla', status: 'FAILED', errorCode: '999999' }),
           ]}
         />
       </WithIntl>,
@@ -54,8 +55,9 @@ describe('MessageList', () => {
 
     expect(screen.getByText('This number already had its messages for the day')).toBeTruthy();
     expect(screen.getByText('They had already renewed')).toBeTruthy();
-    // An unknown provider code is shown as it is, rather than guessed at.
-    expect(screen.getByText('131026')).toBeTruthy();
+    expect(screen.getByText('This number cannot receive WhatsApp')).toBeTruthy();
+    // A provider code we have no words for is shown as it is, rather than guessed at.
+    expect(screen.getByText('999999')).toBeTruthy();
   });
 
   it('marks a message the demo only simulated', () => {
