@@ -79,6 +79,21 @@ describe('KioskDevices', () => {
     expect(screen.getByText('Camera not working')).toBeTruthy();
   });
 
+  it('does not dress an unpaired phone as a working one', () => {
+    render(
+      <WithIntl>
+        <KioskDevices devices={[device({ paired: false, lastSeenLabel: '2 days ago' })]} {...actions()} />
+      </WithIntl>,
+    );
+
+    const card = screen.getByRole('article', { name: 'Reception phone' });
+    const status = within(card).getByText('Waiting to be paired');
+    // Green means "working" and red means "broken". A phone that has never finished
+    // pairing is neither, and either colour would be a lie the owner acts on.
+    expect(status.className).not.toContain('text-semantic-fee-paid');
+    expect(status.className).not.toContain('text-semantic-fee-expired');
+  });
+
   it('shows a pairing code once, big enough to read across a desk', async () => {
     const a = actions();
     render(

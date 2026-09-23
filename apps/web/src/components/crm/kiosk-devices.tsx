@@ -80,16 +80,24 @@ export function KioskDevices({
           </button>
         </div>
       ) : (
-        devices.map((device) => (
+        devices.map((device) => {
+          // Green means working and red means broken. A phone that has not finished
+          // pairing is neither, and either colour would be a lie the owner acts on.
+          const state = !device.paired ? 'waiting' : device.offline ? 'broken' : 'working';
+          const chip =
+            state === 'working' ? 'bg-tint-fee-paid-bg text-semantic-fee-paid' : state === 'broken' ? 'bg-tint-fee-expired-bg text-semantic-fee-expired' : 'bg-tint-fee-none-bg text-brand-stone';
+          const label = state === 'working' ? 'text-semantic-fee-paid' : state === 'broken' ? 'text-semantic-fee-expired' : 'text-brand-stone';
+
+          return (
           <article key={device.id} aria-label={device.name} className="rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm">
             <div className="flex flex-wrap items-center gap-3">
-              <span className={cn('flex size-10 items-center justify-center rounded-full', device.offline ? 'bg-tint-fee-expired-bg text-semantic-fee-expired' : 'bg-tint-fee-paid-bg text-semantic-fee-paid')}>
+              <span className={cn('flex size-10 items-center justify-center rounded-full', chip)}>
                 <CrmIcon name="attendance" className="size-5" />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-crm-body font-bold text-brand-obsidian">{device.name}</p>
-                <p className={cn('text-small font-semibold', device.offline ? 'text-semantic-fee-expired' : 'text-semantic-fee-paid')}>
-                  {device.paired ? (device.offline ? t('offline') : t('working')) : t('notPaired')}
+                <p className={cn('text-small font-semibold', label)}>
+                  {state === 'waiting' ? t('notPaired') : state === 'broken' ? t('offline') : t('working')}
                 </p>
               </div>
               {device.lastSeenLabel === null ? null : <p className="text-small text-brand-stone">{t('lastSeen', { when: device.lastSeenLabel })}</p>}
@@ -124,7 +132,8 @@ export function KioskDevices({
               )}
             </div>
           </article>
-        ))
+          );
+        })
       )}
     </div>
   );
