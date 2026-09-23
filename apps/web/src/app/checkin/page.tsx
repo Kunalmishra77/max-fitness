@@ -1,4 +1,3 @@
-import type { Metadata } from 'next';
 import { CheckInApp } from '@/components/checkin/checkin-app';
 
 /**
@@ -10,11 +9,6 @@ import { CheckInApp } from '@/components/checkin/checkin-app';
  */
 
 export const dynamic = 'force-dynamic';
-
-export const metadata: Metadata = {
-  title: 'Max Fitness — Attendance',
-  robots: { index: false, follow: false },
-};
 
 export default function CheckInPage() {
   return (

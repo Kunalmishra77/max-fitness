@@ -16,10 +16,12 @@ export const config = {
   // Public pages only:
   // - `/api` must never be redirected: webhooks, the kiosk and health checks call it.
   // - `/crm` takes its language from a cookie, not the URL (see i18n/crm-locale.ts).
+  // - `/checkin` is the reception tablet's own screen, not a page anybody browses to,
+  //   and has no locale in its URL for the same reason the CRM has none.
   // - Next internals and static files need no locale. Files are recognised by a known
   //   extension, not by any dot: signed links (`/r/{token}`, `/renew/{token}`) contain a
   //   dot between the token's body and signature and must still be localised.
   matcher: [
-    '/((?!api|crm|_next|_vercel|.*\\.(?:avif|webp|png|jpe?g|gif|svg|ico|mp4|webm|woff2?|ttf|js|mjs|css|map|json|txt|xml|webmanifest|wasm|tflite|pdf|md)$).*)',
+    '/((?!api|crm|checkin|_next|_vercel|.*\\.(?:avif|webp|png|jpe?g|gif|svg|ico|mp4|webm|woff2?|ttf|js|mjs|css|map|json|txt|xml|webmanifest|wasm|tflite|pdf|md)$).*)',
   ],
 };
