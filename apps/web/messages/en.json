@@ -1030,7 +1030,8 @@
       "kioskVoice": "Attendance phone greets out loud",
       "qrOtp": "Mobile check on the QR",
       "qrOtpHelper": "Members who scan the reception QR confirm their number with a 6-digit WhatsApp code first. Then they can pick their name from the register.",
-      "qrOtpOn": "Ask for a code"
+      "qrOtpOn": "Ask for a code",
+      "slotsWarning": "That is {count} messages to one member. Once a day is usually enough."
     },
     "staff": {
       "title": "Staff",

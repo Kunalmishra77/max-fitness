@@ -15,6 +15,18 @@ Blockers / questions for client:
 - …
 ```
 
+### 2026-09-24 (later) — Phase 6 — The settings warning, and the live-send checklist
+Done:
+- **The reminder settings screen now counts out loud** what several times a day comes to (4 tests, two mutations proved): a POST rule with three times and a seven-day window says "यानी एक मेंबर को 21 मैसेज। दिन में एक बार आमतौर पर काफ़ी है।" This is the one screen where the shape ADR-068 removed could come back, so it says the number rather than letting the owner find out from a member. A single-day rule counts its times as themselves, not multiplied by the window.
+- **`docs/09-operations/whatsapp-live-send-checklist.md`** — everything that has to be true before a real message reaches a real member: Meta verification and the number, all ten templates with their approval boxes, the `MetaCloudWhatsAppProvider` that is still deliberately a stub, the environment variables (with `DEMO_MODE=false` last), the webhook, the worker that has to actually be running, the first send to the owner's own number, and what to watch in week one.
+- `.env.example`: `OWNER_WHATSAPP_NUMBER` marked unused — the digest and alerts go to the OWNER staff record's own number, so changing it in Max Register is enough.
+- **Verified:** lint clean, unit tests **1297 passed / 67 skipped**.
+
+Pending / next:
+- E2E journey 8 (the reminder journey end to end).
+- "Advance time" with a fake clock — deliberately deferred (ADR-067 §5).
+- Then Phase 7 (the Max Haazri kiosk) and Phase 8 (hardening).
+
 ### 2026-09-24 — Phase 6 — The two safeguards, and a bug that would have stopped every reminder
 Done:
 - **Core (test-first, 14 tests, four mutations proved):** `isQualitySignal` (four Meta codes; a plain undeliverable is deliberately not one), `pauseOnQualitySignal` (disables POST conditionally, so a bad batch of forty produces one pause and one alert), `slotFailureVerdict` (more than a fifth, and at least five attempts — one failure out of two means nothing).

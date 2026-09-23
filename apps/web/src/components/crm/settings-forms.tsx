@@ -472,6 +472,14 @@ export function RemindersForm({
                     ) : null}
                   </div>
                 ))}
+                {/* ADR-068: three times a day for a seven-day window is 21 messages to
+                    one lapsed member. The screen says the number rather than letting the
+                    owner find out from a member. */}
+                {row.slots.length > 1 ? (
+                  <p className="text-small font-semibold text-semantic-fee-due-soon">
+                    {t('slotsWarning', { count: row.slots.length * (row.code === 'POST' ? Math.max(1, Math.round(days)) : 1) })}
+                  </p>
+                ) : null}
                 {row.slots.length < MAX_TIMES ? (
                   <button
                     type="button"
