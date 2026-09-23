@@ -137,6 +137,7 @@ async function main(): Promise<void> {
     prisma,
     whatsapp,
     log,
+    clock: systemClock,
     gymId: async () => (await prisma.gym.findUniqueOrThrow({ where: { slug: env.GYM_SLUG }, select: { id: true } })).id,
     hoursLine: async () => {
       const gym = await prisma.gym.findUniqueOrThrow({ where: { slug: env.GYM_SLUG }, select: { settings: true } });

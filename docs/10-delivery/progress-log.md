@@ -15,6 +15,21 @@ Blockers / questions for client:
 - …
 ```
 
+### 2026-09-23 (evening) — Phase 6 — Birthday wishes, sent by a tap
+Done:
+- **Core (test-first, 11 tests, three mutations proved):** `sendBirthdayWish` — capability, gym, "is it really today" by BR-8.1 (leap-day case included), ACTIVE + opted in + not unsubscribed + has a number, and one wish a year keyed `birthday:<memberId>:<year>`.
+- **Database:** `PrismaBirthdays.today()` — the SQL narrows, `hasBirthdayToday` decides, so the leap-day rule has one implementation — and the store the service writes through.
+- **Worker:** the `whatsapp.birthday` outbox handler, which takes the year from the event rather than from today, so a wish queued at 11:58 pm on 31 December is still that year's wish.
+- **Screen:** today's birthdays by name on the CRM home, each with "बधाई भेजें", "बधाई भेजी" once sent, or "WhatsApp पर नहीं" when they cannot be messaged; a failed send puts the button back (6 component tests).
+- **Verified:** lint clean, typecheck 8/8, unit tests **1259 passed / 58 skipped**.
+
+Decisions: ADR-066.
+
+Pending / next (rest of Phase 6):
+- Safeguards: auto-pause of the POST rule on a quality signal; slot failure guard above 20%.
+- Reminder settings UI (slot times, per-number cap, per-rule toggles) and the Message Simulator with a 30-day projected timeline and "Advance time".
+- E2E journey 8; live-send checklist and template approval status.
+
 ### 2026-09-23 (later) — Phase 6 — The owner's digest and alerts
 Done:
 - **Core (test-first, 17 tests, three mutations proved):** `buildOwnerDigest` (T9), `alertSentence` for nine kinds of alert in both languages, `planOwnerAlerts` (cluster by arrival, ration of three messages per five minutes, bundle beyond that), `buildBirthdayWish` (T11, keyed by member and year). A mobile is masked even on its way to the owner; every sentence is one line, because a WhatsApp template variable cannot hold a newline.

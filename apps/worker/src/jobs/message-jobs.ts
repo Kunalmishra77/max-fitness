@@ -1,4 +1,5 @@
 import {
+  buildBirthdayWish,
   buildReceiptMessage,
   buildVerificationApprovedMessage,
   buildWelcomeMessage,
@@ -9,6 +10,7 @@ import {
 } from '@mfp/core';
 import type { MessagePurpose, WhatsAppProvider } from '@mfp/core/ports';
 import { PrismaMessageData, PrismaMessageLogWriter, PrismaMessageLogUpdates, type PrismaClient } from '@mfp/db';
+import { istDate, todayIST, type Clock } from '@mfp/shared';
 import type { Logger } from '../logger';
 
 /**
@@ -26,6 +28,7 @@ export interface MessageJobDeps {
   readonly prisma: PrismaClient;
   readonly whatsapp: WhatsAppProvider;
   readonly log: Logger;
+  readonly clock: Clock;
   readonly gymId: () => Promise<string>;
   /** "Mon–Sat 4:30 am – 10:00 pm", for the welcome message. */
   readonly hoursLine: () => Promise<string>;
@@ -169,6 +172,18 @@ export function messageOutboxHandlers(deps: MessageJobDeps): OutboxHandlers {
         null,
         [{ payload: deps.unsubscribePayload(memberId), label: 'unsubscribe' }],
       );
+    },
+
+    'whatsapp.birthday': async (event) => {
+      const memberId = memberIdOf(event);
+      if (memberId === null) return;
+      const member = await data().member(memberId);
+      if (member === null) return;
+      // The year comes from the event, not from today: a wish queued at 11:58 pm on
+      // 31 December must still be that year's wish when the worker picks it up.
+      const year = (event.payload as { year?: unknown }).year;
+      const today = typeof year === 'string' ? istDate(`${year}-01-01`) : todayIST(deps.clock);
+      await sendTemplate(deps, buildBirthdayWish({ memberId, firstName: member.firstName, language: member.language, today }), member.mobile, memberId, null);
     },
 
     'whatsapp.unsubscribe_confirm': (event) => sendConfirmation(deps, event, 'UNSUBSCRIBED'),

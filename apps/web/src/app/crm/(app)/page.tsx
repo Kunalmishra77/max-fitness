@@ -2,7 +2,9 @@ import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { formatISTDate, type ISTDate } from '@mfp/shared';
 import { can } from '@mfp/core';
-import { setCrmLanguageAction } from '@/app/crm/actions';
+import { PrismaBirthdays } from '@mfp/db';
+import { sendBirthdayWishAction, setCrmLanguageAction } from '@/app/crm/actions';
+import { BirthdayList } from '@/components/crm/birthday-list';
 import { BottomNav, CrmHeader, FEE_TONE, MemberRow, rupees } from '@/components/crm/crm-chrome';
 import { CrmIcon, type CrmIconName } from '@/components/crm/crm-icons';
 import { LanguageSwitch } from '@/components/crm/language-switch';
@@ -38,10 +40,11 @@ export default async function CrmHomePage() {
   const now = clock.now();
 
   const showVerify = can(actor, 'verification.approve', now);
-  const [counts, calls, waiting] = await Promise.all([
+  const [counts, calls, waiting, birthdays] = await Promise.all([
     reader.dashboard(gym.id, today, monthStart(today), previousMonthStart(today)),
     reader.callTasks(gym.id, today, 5),
     showVerify ? verificationDeps().queue.count(gym.id) : Promise.resolve(0),
+    new PrismaBirthdays(getContainer().prisma).today(gym.id, today),
   ]);
   const showMoney = can(actor, 'money.view', now);
 
@@ -191,9 +194,10 @@ export default async function CrmHomePage() {
                   <h2 id="birthdays-heading" className="text-crm-body font-bold text-brand-obsidian">
                     {t('home.birthdays')} ({counts.birthdaysToday})
                   </h2>
-                  <p className="text-small text-brand-stone">{counts.birthdaysToday === 0 ? t('home.noBirthdays') : t('home.birthdaysHelp')}</p>
+                  <p className="text-small text-brand-stone">{t('home.birthdaysHelp')}</p>
                 </div>
               </div>
+              <BirthdayList items={birthdays} canSend={can(actor, 'member.edit', now)} onSend={sendBirthdayWishAction} />
             </section>
 
             {showMoney ? (

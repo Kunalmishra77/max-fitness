@@ -19,12 +19,14 @@ import {
   mayAfterPinEntry,
   recordCallOutcome,
   registerAtDesk,
+  sendBirthdayWish,
   undoAttendance,
   updateGymSettings,
   updatePlanPrices,
   voidPayment,
   type LeadStatus,
 } from '@mfp/core';
+import { PrismaBirthdays } from '@mfp/db';
 import { revalidateLandingContent } from '@/lib/revalidate-landing';
 import type {
   EraseResult,
@@ -40,6 +42,7 @@ import type {
 import { PLAN_DURATIONS, RegistrationFieldsSchema, StaffCreateSchema, StaffPinSchema, istDate, type PlanDurationMonths } from '@mfp/shared';
 import type { AddMemberErrorCode, AddMemberFields, AddMemberResult } from '@/components/crm/add-member-flow';
 import type { MarkResult, UndoResult } from '@/components/crm/attendance-marker';
+import type { BirthdayWishResult } from '@/components/crm/birthday-list';
 import type { CallOutcomeChoice, OutcomeResult } from '@/components/crm/call-outcome';
 import type { LeadResult } from '@/components/crm/lead-actions';
 import type { VoidResult } from '@/components/crm/void-payment';
@@ -176,6 +179,34 @@ export async function markAttendanceAction(memberId: string, clientEventId: stri
     if (code === 'FORBIDDEN') return { ok: false, code: 'FORBIDDEN' };
     if (code === 'NOT_FOUND') return { ok: false, code: 'NOT_FOUND' };
     console.error(`[crm] mark attendance failed: ${code ?? (error instanceof Error ? error.name : 'Error')}`);
+    return { ok: false, code: 'generic' };
+  }
+}
+
+/**
+ * The birthday wish, sent by a tap (BR-8.2).
+ *
+ * The screen hides the button when it cannot be sent; the service checks the same
+ * things again, because a hidden button is courtesy and this is the rule.
+ */
+export async function sendBirthdayWishAction(memberId: string): Promise<BirthdayWishResult> {
+  const { actor, gym, today } = await requireCrmContext();
+  const { clock, prisma } = getContainer();
+
+  try {
+    const { outcome } = await sendBirthdayWish(
+      { memberId },
+      { actor, gymId: gym.id, today, now: clock.now(), store: new PrismaBirthdays(prisma).store() },
+    );
+    if (outcome === 'QUEUED' || outcome === 'ALREADY_SENT') {
+      revalidatePath('/crm');
+      return { ok: true };
+    }
+    return { ok: false, code: outcome };
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    if (code === 'FORBIDDEN') return { ok: false, code: 'FORBIDDEN' };
+    console.error(`[crm] birthday wish failed: ${code ?? (error instanceof Error ? error.name : 'Error')}`);
     return { ok: false, code: 'generic' };
   }
 }

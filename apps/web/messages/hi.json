@@ -659,7 +659,11 @@
       "callsHelp": "आज इन्हें फोन करें; सबसे ज़रूरी पहले",
       "birthdaysHelp": "आएँ तो बधाई दें",
       "moneyHelp": "इस महीने जमा हुई फीस",
-      "alerts": "{count, plural, one {# अलर्ट} other {# अलर्ट}}"
+      "alerts": "{count, plural, one {# अलर्ट} other {# अलर्ट}}",
+      "sendWish": "बधाई भेजें",
+      "wishSent": "बधाई भेजी",
+      "noWhatsApp": "WhatsApp पर नहीं",
+      "wishFailed": "यह नहीं गई। दोबारा कोशिश कीजिए।"
     },
     "feeState": {
       "PAID": "फीस जमा है",

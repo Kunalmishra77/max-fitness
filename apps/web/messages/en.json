@@ -659,7 +659,11 @@
       "callsHelp": "Phone these people today; the most urgent are first",
       "birthdaysHelp": "Wish them when they come in",
       "moneyHelp": "Fees collected this month",
-      "alerts": "{count, plural, one {# alert} other {# alerts}}"
+      "alerts": "{count, plural, one {# alert} other {# alerts}}",
+      "sendWish": "Send wish",
+      "wishSent": "Wish sent",
+      "noWhatsApp": "Not on WhatsApp",
+      "wishFailed": "That did not go. Please try again."
     },
     "feeState": {
       "PAID": "Fees paid",
