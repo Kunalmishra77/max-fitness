@@ -15,6 +15,19 @@ Blockers / questions for client:
 - …
 ```
 
+### 2026-09-24 — The register starts empty
+Done:
+- **Every demo member deleted** on the client's explicit instruction, with the counts put to them first (ADR-073): 233 members, 3,267 memberships, 3,265 payments, 5,323 attendance events, 1,509 messages, 932 consents, 68 call tasks, 26 enquiries, 22 alerts, 13 photos, 9 verifications. Not recoverable.
+- **Kept so the gym can work:** the gym and its settings, both staff logins, the eight plans with their prices, the six reminder rules.
+- **Counters reset**, so the first real member is MF-0001 and the receipt book starts again. A receipt numbered 3266 on the gym's first day would be a lie in a book the gym may have to show someone.
+- Checked live: Max Register shows 0 members, 0 fees due, 0 calls, 0 birthdays — clean, not broken.
+
+**Do not run `pnpm db:seed` against this database again.**
+
+Pending / next (client's ask, same message):
+- The existing-member QR already exists (`/qr/existing`, ADR-058/060). It needs the client's field list: email and joining date as optional, and Gov ID **as photographs only** — Aadhaar both sides, PAN one side — plus a passport-size photo. No ID number is to be stored, which is also the lowest-risk reading of the Aadhaar Act and the DPDP Act.
+- The staff PINs are still the demo ones (2468 / 1357) and must be changed before a real member is added.
+
 ### 2026-09-24 (very late) — The reception check-in page and its keypad
 Done:
 - **The tablet pairs before it can look anybody up.** `/checkin` uses the same six-digit pairing a kiosk uses (ADR-071) and keeps its device token in `localStorage`. This is not ceremony: without it, a member's name and photo would be available to anyone who could reach the URL and guess a number — the same mistake the QR flow avoided with OTP (ADR-060). A token revoked in Max Register drops the tablet back to the pairing screen rather than failing silently.
