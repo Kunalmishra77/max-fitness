@@ -1330,6 +1330,16 @@
         "ALREADY_SENT": "It had already been sent",
         "DUPLICATE_IDEMPOTENCY_KEY": "It had already been sent"
       }
+    },
+    "simulator": {
+      "title": "Message plan",
+      "helper": "What the gym would send over the next 30 days",
+      "total": "{count} messages in 30 days",
+      "caveat": "A plan, not a promise: it assumes nobody renews, unsubscribes or joins in the meantime — if nothing changes, this is what goes out.",
+      "heldBack": "{count} held back by the daily limit for one number",
+      "count": "{count} messages",
+      "quiet": "Nothing to send",
+      "open": "Message plan"
     }
   },
   "photos": {

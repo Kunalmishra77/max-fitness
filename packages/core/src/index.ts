@@ -15,6 +15,7 @@ export * from './reminders/unsubscribe';
 export * from './reminders/inbound';
 export * from './reminders/transactional';
 export * from './reminders/owner';
+export * from './reminders/projection';
 
 export * from './calls/call-task.rules';
 export * from './members/birthdays';

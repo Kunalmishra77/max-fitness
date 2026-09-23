@@ -80,6 +80,12 @@ export default async function CrmMessagesPage({ searchParams }: { searchParams: 
           <Link href="/crm/messages?only=failed" className={pillClass(failedOnly)}>
             {t('messages.filterFailed')}
           </Link>
+          <Link
+            href="/crm/messages/simulator"
+            className="ml-auto inline-flex min-h-11 items-center rounded-full border border-brand-stone/25 px-4 text-small font-semibold text-brand-obsidian hover:border-brand-accent hover:text-brand-accent"
+          >
+            {t('simulator.open')}
+          </Link>
         </div>
       </div>
       <MessageList rows={view} />
