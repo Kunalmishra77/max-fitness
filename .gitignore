@@ -50,3 +50,4 @@ apps/web/e2e/fixtures/
 
 # vercel cli (`.env*` is already covered above, where `.env.example` is un-ignored)
 .vercel/
+*.tmp.mjs
