@@ -881,3 +881,15 @@ Pending / next:
 **Verified:** lint clean, `tsc --noEmit` clean for web and db, whole suite 1,403 passed / 67 skipped across 132 files.
 
 **Still outstanding (unchanged):** a host for the worker, Razorpay live keys, Meta WhatsApp verification, the FaceX integration and its POC, Phase 8 hardening. For the client: real plan prices, change both staff PINs (still 2468 / 1357), owner and boxing photographs, real promo text in Settings.
+
+## 2026-09-25 — Running the journeys against production, and the three things it found
+
+**Changed**
+- A start date that has gone stale is recovered rather than reported: the member is told, and offered one button built from the server's own date. Their plan and summary are unchanged (ADR-078). Applies to renewals too — both use the same step.
+- A refusal with no screen of its own now shows its code and the request id, so somebody at the desk can look it up. Previously every refusal but a token or a rate limit was "Something went wrong. Please try again" — which, for `INVALID_START_DATE`, was a button that could never work.
+- The desk-only pay screen no longer prints "Secure payments by Razorpay" under a screen whose only button is "Pay at reception".
+- `qr.spec.ts` rewritten: it was still driving the nine-question wizard and asserting an online pay button, so it described a product that no longer existed. It now fills the one page, uploads both sides of an Aadhaar, and checks reception sees them in the queue and on the member's page afterwards.
+
+**Verified against production** (https://max-fitness-kappa.vercel.app): both QR journeys pass end to end — member fills one page with an Aadhaar, reception logs in, sees both sides and the joining date, approves; and a new member is taken through the gym panel to a desk-only payment. Lint clean, `tsc --noEmit` clean, whole suite 1,406 passed / 67 skipped across 132 files.
+
+**Still outstanding (unchanged):** a host for the worker, Razorpay live keys, Meta WhatsApp verification, the FaceX integration and its POC, Phase 8 hardening, and a separate Supabase project so the database integration suite can run at all (ADR-077). For the client: real plan prices, change both staff PINs (still 2468 / 1357), owner and boxing photographs, real promo text in Settings.
