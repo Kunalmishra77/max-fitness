@@ -146,6 +146,23 @@ describe('PayStep', () => {
     ]);
   });
 
+  it('names the refusal and a reference when the server says no for a reason of its own', async () => {
+    // Somebody already holding a membership, a plan just withdrawn: refusals a member
+    // can hit and nobody at the desk can act on if all they are told is "try again".
+    server.use(
+      http.post('*/api/v1/checkout/orders', () =>
+        HttpResponse.json({ error: { code: 'MEMBERSHIP_OVERLAP' }, meta: { requestId: 'req_abc123' } }, { status: 422 }),
+      ),
+    );
+    const { user } = renderStep({ receptionOnly: true });
+
+    await user.click(screen.getByRole('button', { name: 'Pay at reception' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('MEMBERSHIP_OVERLAP');
+    expect(alert.textContent).toContain('req_abc123');
+  });
+
   it('does not promise a gateway to somebody who is paying at the desk', () => {
     renderStep({ receptionOnly: true });
     expect(screen.queryByText(/Razorpay/)).toBeNull();

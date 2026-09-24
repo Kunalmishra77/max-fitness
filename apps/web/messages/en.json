@@ -467,6 +467,7 @@
       "network": "You seem to be offline. Check your connection and try again.",
       "generic": "Something went wrong. Please try again, or call us.",
       "expired": "Your sign-up session has expired. Please start again.",
+      "serverSaid": "We could not complete this ({code}). Please show reception this reference: {reference}",
       "startAgain": "Start again"
     },
     "camera": {

@@ -146,6 +146,7 @@ export function PayStep({
   // send, so the second attempt is not the same refused request (ADR-078).
   const [start, setStart] = useState<ISTDate | null>(startDate);
   const [serverToday, setServerToday] = useState<ISTDate | null>(null);
+  const [refusal, setRefusal] = useState<{ code: string; requestId: string | null } | null>(null);
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -163,6 +164,7 @@ export function PayStep({
     readonly data: unknown;
     readonly code?: string | undefined;
     readonly today?: string | undefined;
+    readonly requestId?: string | undefined;
   }
 
   const failFromResponse = (attempt: OrderAttempt) => {
@@ -171,6 +173,13 @@ export function PayStep({
       setPhase('staleStart');
       return;
     }
+    // A refusal we have no screen for is still worth more than "something went wrong":
+    // the code says what the rule was and the reference finds it in the log (ADR-078).
+    setRefusal(
+      attempt.status === 401 || attempt.status === 429 || attempt.code === undefined
+        ? null
+        : { code: attempt.code, requestId: attempt.requestId ?? null },
+    );
     setPhase(attempt.status === 401 ? 'expired' : attempt.status === 429 ? 'rateLimited' : 'error');
   };
 
@@ -182,9 +191,15 @@ export function PayStep({
         body: JSON.stringify({ planId, startDate: on, payAtReception }),
       });
       const body = (await response.json().catch(() => null)) as
-        | { data?: unknown; error?: { code?: string; details?: { today?: string } } }
+        | { data?: unknown; error?: { code?: string; details?: { today?: string } }; meta?: { requestId?: string } }
         | null;
-      return { status: response.status, data: body?.data, code: body?.error?.code, today: body?.error?.details?.today };
+      return {
+        status: response.status,
+        data: body?.data,
+        code: body?.error?.code,
+        today: body?.error?.details?.today,
+        requestId: body?.meta?.requestId,
+      };
     } catch {
       return null;
     }
@@ -406,7 +421,9 @@ export function PayStep({
 
       {phase === 'expired' || phase === 'error' || phase === 'rateLimited' ? (
         <p role="alert" className="rounded-input bg-tint-fee-expired-bg p-3 text-body font-medium text-semantic-fee-expired">
-          {te(phase === 'expired' ? 'expired' : phase === 'rateLimited' ? 'rateLimited' : 'generic')}
+          {phase === 'error' && refusal !== null
+            ? te('serverSaid', { code: refusal.code, reference: refusal.requestId ?? '—' })
+            : te(phase === 'expired' ? 'expired' : phase === 'rateLimited' ? 'rateLimited' : 'generic')}
         </p>
       ) : null}
 
