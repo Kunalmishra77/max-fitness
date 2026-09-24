@@ -26,12 +26,13 @@ export async function TrustStrip({ trust, hoursLine }: { trust: TrustNumbers; ho
   return (
     <Section tone="navy" density="strip" className="border-t border-brand-accent/60 bg-brand-graphite">
       <h2 className="sr-only">{t('label')}</h2>
-      {/* Wraps on phones rather than scrolling sideways, so no fact hides off-screen. */}
-      <ul className="flex flex-wrap gap-2 md:flex-nowrap md:justify-between md:gap-6">
+      {/* Wraps at every width. It used to stop wrapping from `md`, where five
+          nowrap chips do not fit 768px and pushed the whole page sideways. */}
+      <ul className="flex flex-wrap justify-center gap-2 md:gap-x-6 md:gap-y-3">
         {items.map((item, i) => (
           <li
             key={i}
-            className="flex min-h-11 shrink-0 snap-start items-center gap-2 rounded-button border border-brand-paper/15 px-3 text-small font-medium tracking-wide whitespace-nowrap text-brand-mist md:rounded-none md:border-0 md:border-l md:border-brand-paper/10 md:pl-6 md:first:border-l-0 md:first:pl-0"
+            className="flex min-h-11 max-w-full shrink items-center gap-2 rounded-button border border-brand-paper/15 px-3 text-small font-medium tracking-wide text-brand-mist"
           >
             {item}
           </li>

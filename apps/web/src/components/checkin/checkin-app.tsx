@@ -118,19 +118,21 @@ export function CheckInApp() {
 
   if (token === null) {
     return (
-      <div className="mx-auto grid w-full max-w-sm gap-4">
+      <div className="mx-auto grid w-full max-w-sm min-w-0 gap-4">
         <div>
           <h1 className="font-display text-[1.75rem] font-bold text-brand-obsidian">{t('pairTitle')}</h1>
           <p className="mt-1 text-crm-body text-brand-stone">{t('pairHelp')}</p>
         </div>
         <label className="grid gap-1">
           <span className="text-small font-semibold text-brand-obsidian">{t('pairCode')}</span>
+          {/* An input carries an intrinsic width of roughly twenty characters, which at
+              this size is wider than a 320px phone; it is told to fit its box instead. */}
           <input
             value={code}
             onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
             inputMode="numeric"
             autoComplete="off"
-            className="min-h-16 rounded-input border-2 border-brand-stone/30 bg-white text-center font-display text-[2rem] tracking-[0.3em] tabular"
+            className="min-h-16 w-full min-w-0 rounded-input border-2 border-brand-stone/30 bg-white text-center font-display text-[2rem] tracking-[0.3em] tabular"
           />
         </label>
         {failed ? (
@@ -151,7 +153,7 @@ export function CheckInApp() {
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-sm gap-6">
+    <div className="mx-auto grid w-full max-w-sm min-w-0 gap-6">
       <h1 className="text-center font-display text-[1.75rem] font-bold text-brand-obsidian">{t('title')}</h1>
       <CheckInKeypad lookup={lookup} mark={mark} />
     </div>

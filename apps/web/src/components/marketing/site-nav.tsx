@@ -62,7 +62,9 @@ export function SiteNav({
       >
         {t('skipToContent')}
       </a>
-      <div className="mx-auto flex h-16 max-w-[var(--size-content-max)] items-center gap-2 px-5 md:px-6">
+      {/* `px-4` below 360px: at 320 the gutter was the difference between fitting
+          and the page scrolling sideways. */}
+      <div className="mx-auto flex h-16 max-w-[var(--size-content-max)] items-center gap-2 px-4 sm:px-5 md:px-6">
         <Link href="/" aria-label={t('home')} className="shrink-0">
           <Wordmark />
         </Link>
@@ -98,7 +100,7 @@ export function SiteNav({
             locale={otherLocale}
             lang={otherLocale}
             hrefLang={otherLocale}
-            className="inline-flex min-h-11 items-center rounded-button px-3 text-body font-semibold hover:bg-brand-paper/10"
+            className="inline-flex min-h-11 shrink-0 items-center rounded-button px-2 text-body font-semibold hover:bg-brand-paper/10 sm:px-3"
           >
             {t('switchTo')}
           </Link>
