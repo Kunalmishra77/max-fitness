@@ -14,6 +14,10 @@ import { formatISTDate } from '@mfp/shared/time';
  * Step 3 of sign-up, and the pay step of a renewal (PRD SU-10…12, PAY-01…06;
  * signup-and-payment-flow.md §1, §4, §8).
  *
+ * Somebody who scanned the reception QR is offered only "Pay at reception": they are
+ * standing at the desk and the gym has no live gateway, so a checkout there would be
+ * theatre (ADR-076).
+ *
  * The order is created only when the member taps Pay or Pay at reception. Online, the
  * gateway's window opens — Razorpay Standard Checkout, or in DEMO_MODE a dialog that
  * stands in for it — and its success callback is posted to `/checkout/verify`. A
@@ -76,8 +80,8 @@ export interface PayStepProps {
   readonly phoneDisplay: string;
   readonly onPaid: (result: PaidResult) => void;
   readonly onReserved: (result: ReservedResult) => void;
-  /** Someone standing at the desk: paying there is as good a choice as paying online. */
-  readonly receptionFirst?: boolean;
+  /** Someone standing at the desk: they pay there, and are not offered a checkout (ADR-076). */
+  readonly receptionOnly?: boolean;
   /** Injected in tests. */
   readonly loadRazorpay?: () => Promise<RazorpayConstructor>;
   readonly pollIntervalMs?: number;
@@ -128,7 +132,7 @@ export function PayStep({
   phoneDisplay,
   onPaid,
   onReserved,
-  receptionFirst = false,
+  receptionOnly = false,
   loadRazorpay = loadRazorpayScript,
   pollIntervalMs = 2_000,
 }: PayStepProps) {
@@ -298,7 +302,7 @@ export function PayStep({
   const busy = phase === 'creating' || phase === 'verifying' || phase === 'pending' || phase === 'demo';
 
   const actions = (primaryLabel: string) =>
-    receptionFirst ? (
+    receptionOnly ? (
       <div className="grid gap-3">
         <button
           type="button"
@@ -308,15 +312,7 @@ export function PayStep({
         >
           {t('payAtReception')}
         </button>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void payOnline()}
-          className={buttonVariants({ variant: 'primary', size: 'hero', full: true })}
-        >
-          {primaryLabel}
-        </button>
-        <p className="text-small text-brand-ink/80 text-center">{t('receptionHelper')}</p>
+        <p className="text-small text-brand-ink/80 text-center">{t('receptionOnlyHelper')}</p>
       </div>
     ) : (
       <div className="grid gap-3">

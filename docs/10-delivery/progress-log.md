@@ -843,3 +843,24 @@ Done:
 - Full documentation set, Prisma schema (validated), demo dataset, prompts.
 Pending / next:
 - Send client inputs sheet; start Meta verification and Razorpay KYC; run `docs/11-prompts/00-FIRST-PROMPT.md`.
+
+## 2026-09-24 — The reception QR, reworked: one page, the gym's fields, reception payment
+
+**Changed**
+- `QrExistingForm` replaces the nine-question wizard on `/qr/existing`: every question on one page, one Send, each complaint beside the answer it is about, and a server failure that shows its code and request id instead of "That could not be sent" (ADR-075).
+- New fields, as the client specified: joining date and email optional, everything else required, and a government ID collected as **photographs only** — Aadhaar/DL/voter ID two sides, PAN one — with no ID number field anywhere (ADR-074). `MediaKind.GOV_ID`, `MediaFile.label`, `Member.joinedOn`, `VerificationRequest.govIdType`, two migrations.
+- The declared fee date may now be up to three years old; 60 days back refused exactly the lapsed members the gym wants back. Staff still verify every request.
+- `/qr/new` shows the gym before the form — prices per gender, hours, joining fee, rating — and the QR path now offers **only** "Pay at reception" (ADR-076). The QR choice screen no longer promises online payment, in either language.
+- `lib/qr-i18n.ts` holds the one list of catalogues the QR pages send to the browser.
+
+**Two bugs this found, both live**
+- The `Field` component was declared inside the form, so each keystroke remounted the input and stole the focus — only the first character of each answer landed. Very likely what the member who reported "send hua nahi" actually hit.
+- `/qr/existing` rendered every label as its translation key (`qrExisting.fields.fullName`) in both languages, because `QrPage` ships a chosen subset of the catalogue and the new form's catalogue was not on the list. No component test could see it: they all wrap in `WithIntl`, which ships everything, which no page does. `qr-i18n.test.tsx` now renders through the same choosing production performs.
+
+**Verified against production** (https://max-fitness-kappa.vercel.app): five submissions accepted end to end — a fee date six months lapsed, one two years lapsed, joining date + email, Aadhaar with both sides, PAN with one — and two correctly refused: an Aadhaar missing its back, and an end date no plan could reach. Lint, `tsc --noEmit` and the web suite (45 files, 266 tests) green.
+
+**Pending**
+- Show the Gov ID photographs to staff in the verify queue at `/crm/verify`; they are stored but not yet surfaced. This is the point of collecting them.
+- Delete `qr-existing-flow.tsx` (the old wizard) once the new form has been used at the desk; only its `postQrExisting` is still reachable.
+- Unchanged and still outstanding: a host for the worker (nothing runs on a schedule, so no WhatsApp actually sends), Razorpay live keys, Meta WhatsApp number verification, the FaceX integration and its POC, Phase 8 hardening.
+- For the client: real plan prices, change both staff PINs (still 2468 / 1357), owner and boxing photographs, real promo text in Settings.

@@ -166,7 +166,7 @@ export function JoinPay(props: { prices: PriceLists; admissionPaise: number; pho
         admissionPaise: props.admissionPaise,
       }}
       phoneDisplay={props.phoneDisplay}
-      receptionFirst={state.fromQr === true}
+      receptionOnly={state.fromQr === true}
       onPaid={(result) => {
         updateJoinState({ paymentId: result.paymentId, reservedUntil: undefined, reservedAmountPaise: undefined });
         router.push('/join/done');

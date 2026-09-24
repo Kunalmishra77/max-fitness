@@ -110,11 +110,13 @@ describe('PayStep', () => {
     expect(screen.getByRole('button', { name: 'Pay at reception' })).toBeTruthy();
   });
 
-  it('offers paying at reception as an equal choice to someone at the desk', () => {
-    renderStep({ receptionFirst: true });
-    const online = screen.getByRole('button', { name: 'Pay ₹4,000' });
-    const reception = screen.getByRole('button', { name: 'Pay at reception' });
-    expect(reception.className).toBe(online.className);
+  it('asks someone at the desk to pay there, and does not offer to take their money online', () => {
+    // The gym has no live gateway, and the client asked for the QR path to say so
+    // plainly rather than open a checkout that cannot charge anyone (ADR-076).
+    renderStep({ receptionOnly: true });
+
+    expect(screen.getByRole('button', { name: 'Pay at reception' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Pay ₹4,000' })).toBeNull();
     expect(screen.queryByText('or')).toBeNull();
   });
 

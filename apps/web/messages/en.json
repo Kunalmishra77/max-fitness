@@ -522,6 +522,7 @@
       "orReception": "or",
       "payAtReception": "Pay at reception",
       "receptionHelper": "We'll hold your plan for 48 hours.",
+      "receptionOnlyHelper": "Pay at the desk — cash, UPI or card. We'll hold your plan for 48 hours and hand you a receipt.",
       "secure": "Secure payments by Razorpay: UPI, cards and netbanking.",
       "processing": "Confirming your payment…",
       "creating": "Opening payment…",
@@ -1391,7 +1392,7 @@
       "existing": "I am already a member",
       "existingHelper": "Send your details and the date your fees are paid until. Reception will check it.",
       "new": "I am new here",
-      "newHelper": "Join now — pay online or at reception."
+      "newHelper": "See the plans, fill in your details, and pay at reception."
     },
     "existing": {
       "title": "I am already a member",
