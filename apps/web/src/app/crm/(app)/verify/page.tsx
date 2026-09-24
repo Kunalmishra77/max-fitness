@@ -10,8 +10,9 @@ import { requireCrmContext, verificationDeps } from '@/lib/crm';
 /**
  * "जाँचें" — members who sent their details by QR (crm-ux-blueprint §9; ADR-058).
  *
- * Owner and reception decide them; a trainer is told so. Photos come through the same
- * five-minute signed links as the member profile.
+ * Owner and reception decide them; a trainer is told so. Photos — the selfie and each
+ * side of the government ID (ADR-074) — come through the same five-minute signed links
+ * as the member profile.
  */
 
 export const dynamic = 'force-dynamic';
@@ -45,6 +46,11 @@ export default async function CrmVerifyPage() {
       declaredEndDate: row.declaredEndDate,
       declaredAmountPaise: row.declaredAmountPaise,
       register: row.register === null ? null : { endDate: row.register.endDate, planMonths: row.register.planMonths },
+      joinedOn: row.member.joinedOn,
+      govIdType: row.govIdType,
+      govIdPhotos: await Promise.all(
+        row.govIdPhotos.map(async (photo) => ({ side: photo.side, url: await storage.signedUrl(photo.storageKey, 300) })),
+      ),
     })),
   );
 

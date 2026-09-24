@@ -6,6 +6,7 @@ import { formatISTDate } from '@mfp/shared';
 import { eraseMemberAction, unlockMemberDataAction, voidPaymentAction } from '@/app/crm/actions';
 import { BottomNav, CrmHeader, FEE_TONE, rupees, initials } from '@/components/crm/crm-chrome';
 import { CrmIcon } from '@/components/crm/crm-icons';
+import { GovIdStrip } from '@/components/crm/gov-id-strip';
 import { cn } from '@/lib/cn';
 import { MemberDataSection } from '@/components/crm/member-data';
 import { VoidPaymentButton } from '@/components/crm/void-payment';
@@ -35,6 +36,12 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
   // Photos are private objects, shown through a link that lapses in five minutes
   // (CLAUDE.md §2.8) — long enough to look at the page, too short to share.
   const photoUrl = member.photoKey === null ? null : await storage.signedUrl(member.photoKey, 300);
+  // A member's ID photographs are for the people who check identity at the desk, which
+  // is the same set `verification.approve` names — a trainer never sees them (ADR-077).
+  const maySeeId = can(actor, 'verification.approve', clock.now());
+  const govIdPhotos = !maySeeId
+    ? []
+    : await Promise.all(member.govIdPhotos.map(async (photo) => ({ side: photo.side, url: await storage.signedUrl(photo.storageKey, 300) })));
   const mayTakeFees = can(actor, 'payment.record', clock.now());
   // The button shows for a role that may void; the PIN it then asks for is what actually
   // permits it (security-plan.md §3.1).
@@ -118,6 +125,13 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
           ) : null}
         </div>
       </div>
+
+      {!maySeeId || govIdPhotos.length === 0 ? null : (
+        <section className="mt-3 bg-white px-4 py-4 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:px-6 lg:shadow-sm">
+          <h2 className="text-crm-body font-bold text-brand-obsidian">{t('profile.idOnFile')}</h2>
+          <GovIdStrip type={member.govIdType} photos={govIdPhotos} />
+        </section>
+      )}
 
       <section className="mt-3 bg-white px-4 py-4 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:px-6 lg:shadow-sm">
         <h2 className="text-crm-body font-bold text-brand-obsidian">{t('profile.attendanceMonth')}</h2>

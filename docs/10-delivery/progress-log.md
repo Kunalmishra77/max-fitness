@@ -864,3 +864,20 @@ Pending / next:
 - Delete `qr-existing-flow.tsx` (the old wizard) once the new form has been used at the desk; only its `postQrExisting` is still reachable.
 - Unchanged and still outstanding: a host for the worker (nothing runs on a schedule, so no WhatsApp actually sends), Razorpay live keys, Meta WhatsApp number verification, the FaceX integration and its POC, Phase 8 hardening.
 - For the client: real plan prices, change both staff PINs (still 2468 / 1357), owner and boxing photographs, real promo text in Settings.
+
+## 2026-09-24 (later) — A second pass: the loose ends the QR rework left
+
+**Changed**
+- The verify queue shows each side of the member's government ID beside their selfie, plus the joining date they gave; the member's profile keeps an "ID on file" section afterwards. Owner and reception only — a trainer never sees them (ADR-077). `GovIdStrip` is one component used by both.
+- The QR OTP switch in Settings is disabled with an explanation. Turning it on would have made the server refuse every QR submission, because the one-page form sends no code and there is no WhatsApp number to send one from. It was one tap away from breaking the demo.
+- The nine-question wizard is deleted: `qr-existing-flow.tsx` and its two test files, plus 55 keys of its copy in each language (~3.3 KB per locale off the page). `postQrExisting` now lives in `post-qr-existing.ts`.
+
+**Checked and found already right**
+- Erasing a member removes the ID photographs: the privacy repository deletes every `MediaFile` carrying the member's id, which now includes `GOV_ID`.
+
+**Established, not fixed — needs the client**
+- `TEST_DATABASE_URL` is empty, so the database integration suite (9 files, 67 tests) has never run here. That is how the `MessageLog.businessDate` bug reached production. `.env.example` requires a **separate** Supabase project for it, so it must not point at the gym's own database. A new integration test covering the ID photographs end to end is written and skipping until that project exists.
+
+**Verified:** lint clean, `tsc --noEmit` clean for web and db, whole suite 1,403 passed / 67 skipped across 132 files.
+
+**Still outstanding (unchanged):** a host for the worker, Razorpay live keys, Meta WhatsApp verification, the FaceX integration and its POC, Phase 8 hardening. For the client: real plan prices, change both staff PINs (still 2468 / 1357), owner and boxing photographs, real promo text in Settings.

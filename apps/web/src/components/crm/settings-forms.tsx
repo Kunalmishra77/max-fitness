@@ -570,15 +570,19 @@ export function QrOtpForm({
       unlock={unlock}
       save={() => save({ features: { otpRequired: on } })}
     >
-      <label className="text-crm-body flex min-h-14 items-center gap-3">
+      <label className="text-crm-body flex min-h-14 items-center gap-3 opacity-60">
         <input
           type="checkbox"
           checked={on}
+          disabled
           onChange={(event) => setOn(event.target.checked)}
           className="accent-brand-accent size-6"
         />
         {t('qrOtpOn')}
       </label>
+      {/* Turning this on would refuse every QR submission: the reception form is one
+          page with one Send and sends no code, and there is no number to send one from. */}
+      <p className="text-small text-brand-stone">{t('qrOtpBlocked')}</p>
     </Section>
   );
 }

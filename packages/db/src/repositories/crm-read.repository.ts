@@ -49,6 +49,9 @@ export interface MemberProfile extends MemberListItem {
     readonly endDate: ISTDate;
     readonly status: string;
   }>;
+  /** Which card the member showed at the QR, and a photograph of each side (ADR-074). */
+  readonly govIdType: string | null;
+  readonly govIdPhotos: readonly { readonly side: string; readonly storageKey: string }[];
   readonly payments: ReadonlyArray<{
     readonly id: string;
     readonly amountPaise: number;
@@ -254,6 +257,16 @@ export class PrismaCrmReader {
         isMinor: true,
         notes: true,
         photo: { select: { storageKey: true, deletedAt: true } },
+        media: {
+          where: { kind: 'GOV_ID', deletedAt: null },
+          orderBy: { createdAt: 'asc' },
+          select: { label: true, storageKey: true },
+        },
+        verifications: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { govIdType: true },
+        },
         memberships: {
           select: { id: true, durationMonths: true, startDate: true, endDate: true, status: true },
           orderBy: { endDate: 'desc' },
@@ -293,6 +306,13 @@ export class PrismaCrmReader {
       whatsappOptIn: member.whatsappOptIn,
       isMinor: member.isMinor,
       notes: member.notes,
+      govIdType: member.verifications[0]?.govIdType ?? null,
+      // The label is written as "<card>-<side>"; only the side is needed here, because
+      // the card is named once above the photographs.
+      govIdPhotos: member.media.map((file) => ({
+        side: (file.label ?? '').split('-').pop()?.toUpperCase() ?? '',
+        storageKey: file.storageKey,
+      })),
       memberships: member.memberships.map((m) => ({
         id: m.id,
         durationMonths: m.durationMonths,

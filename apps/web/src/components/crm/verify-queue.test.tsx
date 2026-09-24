@@ -25,6 +25,9 @@ const fresh: VerifyItem = {
   declaredEndDate: '2026-09-30',
   declaredAmountPaise: 400_000,
   register: null,
+  joinedOn: null,
+  govIdType: null,
+  govIdPhotos: [],
 };
 const matched: VerifyItem = { ...fresh, id: 'ver_2', referenceCode: 'Q-1234', fullName: 'Rekha Tomar', register: { endDate: '2026-09-28', planMonths: 3 } };
 
@@ -112,6 +115,40 @@ describe('VerifyQueue', () => {
 
     await waitFor(() => expect(reject).toHaveBeenCalledWith('ver_1', 'Not in the register'));
     expect(await screen.findByText('Rejected.')).toBeTruthy();
+  });
+
+  it('shows the ID photographs the member sent, and when they say they joined', () => {
+    // The whole point of asking for the card is that somebody at the desk looks at it
+    // against the person in front of them (ADR-074).
+    renderQueue([
+      {
+        ...fresh,
+        joinedOn: '2019-04-15',
+        govIdType: 'AADHAAR',
+        govIdPhotos: [
+          { side: 'FRONT', url: '/api/v1/files?key=front' },
+          { side: 'BACK', url: '/api/v1/files?key=back' },
+        ],
+      },
+    ]);
+    const card = screen.getByRole('article', { name: 'Suresh Yadav' });
+
+    expect(within(card).getByText(/Aadhaar/)).toBeTruthy();
+    expect(within(card).getByText(/15 Apr 2019/)).toBeTruthy();
+    const front = within(card).getByRole('img', { name: 'Aadhaar — front' });
+    const back = within(card).getByRole('img', { name: 'Aadhaar — back' });
+    expect(front.getAttribute('src')).toBe('/api/v1/files?key=front');
+    expect(back.getAttribute('src')).toBe('/api/v1/files?key=back');
+    // A card is unreadable at thumbnail size, so each one opens full size.
+    expect(within(card).getByRole('link', { name: 'Aadhaar — front' }).getAttribute('href')).toBe('/api/v1/files?key=front');
+  });
+
+  it('says plainly when a submission has no ID photograph rather than showing a gap', () => {
+    renderQueue([fresh]);
+    const card = screen.getByRole('article', { name: 'Suresh Yadav' });
+
+    expect(within(card).getByText('No ID photo')).toBeTruthy();
+    expect(within(card).queryAllByRole('link')).toEqual([]);
   });
 
   it('says so when there is nothing to check', () => {

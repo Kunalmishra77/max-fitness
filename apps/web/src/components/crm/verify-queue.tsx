@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useId, useState, useTransition } from 'react';
 import { formatINR, formatISTDate, type ISTDate } from '@mfp/shared';
+import { GovIdStrip, type GovIdPhoto } from './gov-id-strip';
 
 /**
  * "जाँचें" — members who sent their details by QR (crm-ux-blueprint §9; ADR-058).
@@ -24,6 +25,11 @@ export interface VerifyItem {
   readonly declaredEndDate: string;
   readonly declaredAmountPaise: number | null;
   readonly register: { readonly endDate: string; readonly planMonths: number | null } | null;
+  /** What the member says, when they remembered; optional on the form. */
+  readonly joinedOn: string | null;
+  readonly govIdType: string | null;
+  /** One per side the card has, each a short-lived signed URL (ADR-074). */
+  readonly govIdPhotos: readonly GovIdPhoto[];
 }
 
 export type VerifyResult = { readonly ok: true } | { readonly ok: false; readonly code: 'CONFLICT' | 'VALIDATION_FAILED' | 'FORBIDDEN' | 'generic' };
@@ -109,6 +115,7 @@ function VerifyCard({ item, approve, reject }: { item: VerifyItem; approve: Appr
           </h2>
           <p className="text-small text-brand-stone">{item.mobileMasked}</p>
           <p className="mt-1 text-small">{item.planMonths === null ? t('planUnknown') : t('plan', { count: item.planMonths })}</p>
+          {item.joinedOn === null ? null : <p className="text-small text-brand-stone">{t('joinedOn', { date: show(item.joinedOn) })}</p>}
           <p className="mt-2 inline-flex items-baseline gap-2 rounded-input bg-brand-obsidian px-3 py-1 text-white">
             <span className="text-small">{t('reference')}</span>
             <span className="font-display text-title font-bold tracking-wider">{item.referenceCode}</span>
@@ -122,6 +129,8 @@ function VerifyCard({ item, approve, reject }: { item: VerifyItem; approve: Appr
         </p>
       ) : (
         <>
+          <GovIdStrip type={item.govIdType} photos={item.govIdPhotos} />
+
           {item.register === null ? (
             <div className="mt-4">
               <p className="text-small font-semibold text-brand-stone">{t('declared')}</p>

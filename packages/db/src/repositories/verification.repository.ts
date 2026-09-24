@@ -324,7 +324,16 @@ export interface PendingVerification {
   readonly declaredPlanMonths: number | null;
   readonly declaredEndDate: ISTDate;
   readonly declaredAmountPaise: number | null;
-  readonly member: { readonly id: string; readonly fullName: string; readonly mobile: string; readonly photoKey: string | null };
+  /** Which card the member showed, and a photograph of each side of it (ADR-074). */
+  readonly govIdType: string | null;
+  readonly govIdPhotos: readonly { readonly side: string; readonly storageKey: string }[];
+  readonly member: {
+    readonly id: string;
+    readonly fullName: string;
+    readonly mobile: string;
+    readonly photoKey: string | null;
+    readonly joinedOn: ISTDate | null;
+  };
   /** What the paper register says, when the member was found in it. */
   readonly register: { readonly endDate: ISTDate; readonly planMonths: number | null; readonly memberCode: string | null } | null;
 }
@@ -349,13 +358,20 @@ export class PrismaVerificationQueue {
         declaredEndDate: true,
         declaredAmountPaise: true,
         matchedImportMemberId: true,
+        govIdType: true,
         member: {
           select: {
             id: true,
             fullName: true,
             mobile: true,
             memberCode: true,
+            joinedOn: true,
             photo: { select: { storageKey: true, deletedAt: true } },
+            media: {
+              where: { kind: 'GOV_ID', deletedAt: null },
+              orderBy: { createdAt: 'asc' },
+              select: { label: true, storageKey: true },
+            },
             memberships: {
               where: { source: 'IMPORT', isDeclared: true, status: 'CONFIRMED' },
               orderBy: { endDate: 'desc' },
@@ -376,11 +392,19 @@ export class PrismaVerificationQueue {
         declaredPlanMonths: row.declaredPlanMonths,
         declaredEndDate: fromDbDate(row.declaredEndDate),
         declaredAmountPaise: row.declaredAmountPaise,
+        govIdType: row.govIdType,
+        // The label is written as "<card>-<side>" when the photo is stored; the desk
+        // only needs the side, since the card is named once above the photographs.
+        govIdPhotos: row.member.media.map((file) => ({
+          side: (file.label ?? '').split('-').pop()?.toUpperCase() ?? '',
+          storageKey: file.storageKey,
+        })),
         member: {
           id: row.member.id,
           fullName: row.member.fullName,
           mobile: row.member.mobile,
           photoKey: row.member.photo === null || row.member.photo.deletedAt !== null ? null : row.member.photo.storageKey,
+          joinedOn: row.member.joinedOn === null ? null : fromDbDate(row.member.joinedOn),
         },
         register:
           registerMembership === undefined

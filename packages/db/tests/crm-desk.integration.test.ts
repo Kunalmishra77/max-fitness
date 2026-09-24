@@ -769,7 +769,13 @@ suite('CRM fee desk against Postgres', () => {
         consents: { terms: true, privacy: true, whatsappUpdates: true, faceAttendance: false },
         noticeVersion: '1.0',
       });
-    const submit = (fullName: string, mobile: string, declaredEndDate: string) =>
+    const card = { body: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]), width: 900, height: 600 };
+    const submit = (
+      fullName: string,
+      mobile: string,
+      declaredEndDate: string,
+      extra: { joinedOn?: string; govIdType?: 'AADHAAR' | 'PAN' } = {},
+    ) =>
       submitExistingMember(
         {
           fields: person(fullName, mobile),
@@ -777,8 +783,20 @@ suite('CRM fee desk against Postgres', () => {
           declaredPlanMonths: 3,
           declaredEndDate: istDate(declaredEndDate),
           declaredAmountPaise: 400_000,
-          joinedOn: null,
-          govId: null,
+          joinedOn: extra.joinedOn === undefined ? null : istDate(extra.joinedOn),
+          govId:
+            extra.govIdType === undefined
+              ? null
+              : {
+                  type: extra.govIdType,
+                  images:
+                    extra.govIdType === 'PAN'
+                      ? [{ side: 'FRONT' as const, ...card }]
+                      : [
+                          { side: 'FRONT' as const, ...card },
+                          { side: 'BACK' as const, ...card },
+                        ],
+                },
         },
         { clock, uow: qr, storage, gymId, minAge: 16, ipHash: null, userAgent: 'vitest' },
       );
@@ -833,6 +851,20 @@ suite('CRM fee desk against Postgres', () => {
     await rejectVerification({ verificationId: doubtfulItem?.id ?? '', reason: 'रजिस्टर में नहीं मिला' }, decide);
     expect(await prisma.verificationRequest.findUniqueOrThrow({ where: { id: doubtfulItem?.id ?? '' } })).toMatchObject({ status: 'REJECTED', rejectReason: 'रजिस्टर में नहीं मिला' });
     expect(await prisma.member.findFirstOrThrow({ where: { gymId, mobile: '+919000060003' } })).toMatchObject({ status: 'PENDING_VERIFICATION' });
+
+    // 4. The joining date and both sides of an Aadhaar reach the desk (ADR-074). The
+    // queue is what staff actually look at, so the photographs have to arrive there.
+    const withId = await submit('Qr Aadhaar', '9000060004', '2026-09-30', { joinedOn: '2019-04-15', govIdType: 'AADHAAR' });
+    const idItem = (await queue.pending(gymId)).find((item) => item.referenceCode === withId.referenceCode);
+    expect(idItem?.member.joinedOn).toBe('2019-04-15');
+    expect(idItem?.govIdType).toBe('AADHAAR');
+    expect(idItem?.govIdPhotos.map((photo) => photo.side)).toEqual(['FRONT', 'BACK']);
+    for (const photo of idItem?.govIdPhotos ?? []) expect(photo.storageKey).toMatch(/^gov-ids\//);
+    // The number is nowhere: the picture is the whole record.
+    const idMember = await prisma.member.findFirstOrThrow({ where: { gymId, mobile: '+919000060004' } });
+    expect(await prisma.mediaFile.count({ where: { memberId: idMember.id, kind: 'GOV_ID' } })).toBe(2);
+
+    await approveVerification({ verificationId: idItem?.id ?? '', approvedEndDate: istDate('2026-09-30') }, decide);
     expect(await queue.count(gymId)).toBe(0);
   });
 
