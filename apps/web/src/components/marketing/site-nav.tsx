@@ -90,7 +90,12 @@ export function SiteNav({
             aria-label={t('call', { phone: phoneDisplay })}
             data-track="call_click"
             data-track-source="nav"
-            className="hidden min-h-11 items-center gap-2 rounded-button px-2 font-display text-title font-bold whitespace-nowrap md:inline-flex"
+            // Shown on tablets, hidden again between 1024 and 1280, shown from there.
+            // That middle band is where the section links appear and the number, the
+            // links, the language and Sign up together no longer fit one row — and a
+            // page that can be dragged sideways is worse than a number the footer and
+            // the hero both carry anyway.
+            className="hidden min-h-11 items-center gap-2 rounded-button px-2 font-display text-title font-bold whitespace-nowrap md:inline-flex lg:hidden xl:inline-flex"
           >
             <PhoneIcon className="text-[1rem]" />
             {phoneDisplay}
