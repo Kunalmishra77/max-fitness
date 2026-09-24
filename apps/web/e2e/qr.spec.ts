@@ -3,12 +3,12 @@ import { expect, test } from '@playwright/test';
 import { waitForHydration } from './hydration';
 
 /**
- * Journey 7 (testing-strategy §3; qr-onboarding-flow §3; ADR-058): an existing member
- * scans the reception QR, sends their details with the month-end date, shows the code,
- * and reception approves it from the verify queue.
+ * Journey 7 (testing-strategy §3; qr-onboarding-flow §3; ADR-058, ADR-074, ADR-075):
+ * an existing member scans the reception QR, fills one page — including both sides of
+ * an Aadhaar — shows the code, and reception looks at the card and approves.
  *
  * Each run uses a fresh name and number, so it never collides with a member already
- * there. The selfie goes through the phone-camera file input with a drawn face.
+ * there. The selfie and the ID photographs go through the phone-camera file inputs.
  */
 
 const FACE_PHOTO = fileURLToPath(new URL('./fixtures/face.jpg', import.meta.url));
@@ -24,47 +24,45 @@ function inThreeWeeks(): string {
   return ist.toISOString().slice(0, 10);
 }
 
-test('an existing member sends their details by QR and reception approves them', async ({ page }) => {
+test('an existing member sends one page of details by QR and reception approves them', async ({ page }) => {
   const name = `Qr ${letters(1).toUpperCase()}${letters(6)}`;
   const mobile = `8${String(Math.floor(Math.random() * 1e9)).padStart(9, '0')}`;
 
   await page.goto('/qr');
   await page.getByRole('link', { name: /I am already a member/ }).click();
-  await expect(page.getByText('Question 1 of 9')).toBeVisible();
   await waitForHydration(page);
+  // One page, not nine questions (ADR-075).
+  await expect(page.getByText(/Question \d of \d/)).toHaveCount(0);
 
-  const next = () => page.getByRole('button', { name: 'Next' }).click();
-  await page.getByLabel('Mobile number').fill(mobile);
-  await next();
   await page.getByLabel('Full name').fill(name);
-  await next();
-  await page.getByRole('button', { name: 'Man', exact: true }).click();
-  await next();
-  await page.getByLabel('Day').fill('14');
-  await page.getByLabel('Month').fill('02');
-  await page.getByLabel('Year').fill('1990');
-  await next();
+  await page.getByLabel('Mobile number').fill(mobile);
+  await page.getByLabel('Date of birth').fill('1990-02-14');
+  // The radio itself is screen-reader only; the label is what a finger lands on.
+  await page.getByText('Male', { exact: true }).click();
+  await page.getByLabel('Joining date').fill('2019-04-15');
 
-  await page.getByRole('button', { name: 'Take selfie' }).click();
+  await page.getByRole('button', { name: 'Take your photo' }).click();
   const sheet = page.getByRole('dialog', { name: 'Take a selfie' });
   await sheet.locator('input[type=file]').setInputFiles(FACE_PHOTO);
   await sheet.getByRole('button', { name: 'Use this photo' }).click();
-  await next();
 
-  await page.getByRole('button', { name: '3 months' }).click();
-  await next();
+  await page.getByText('3 months', { exact: true }).click();
   await page.getByLabel('Fees paid until').fill(inThreeWeeks());
-  await next();
-  await page.getByLabel('Amount in rupees (optional)').fill('4000');
-  await next();
-  await page.getByText('I agree to the Terms of membership and Privacy policy.').click();
+
+  // The ID is photographs only — there is no field anywhere for the number (ADR-074).
+  await page.getByLabel('Which ID are you showing?').selectOption('AADHAAR');
+  await expect(page.getByLabel(/Aadhaar number|ID number/)).toHaveCount(0);
+  await page.getByLabel('Photo of the front').setInputFiles(FACE_PHOTO);
+  await page.getByLabel('Photo of the back').setInputFiles(FACE_PHOTO);
+
+  await page.getByRole('checkbox', { name: /I agree to the Terms/ }).check();
   await page.getByRole('button', { name: 'Send to reception' }).click();
 
   await expect(page).toHaveURL(/\/qr\/done\/Q-\d{4}$/, { timeout: 30_000 });
   const code = page.url().split('/').pop() ?? '';
   await expect(page.getByText(code)).toBeVisible();
 
-  // The desk: reception finds the code in the queue and approves the date the member gave.
+  // The desk: reception finds the code, looks at the ID, and approves the date given.
   await page.goto('/crm/login');
   await waitForHydration(page);
   await page.getByLabel('मोबाइल नंबर').fill(RECEPTION.mobile);
@@ -78,15 +76,25 @@ test('an existing member sends their details by QR and reception approves them',
   await expect(card.getByText(code)).toBeVisible();
   // Only the last digits of the number are shown to the desk.
   await expect(card.getByText(mobile)).toHaveCount(0);
+  // Both sides of the card reached the person who has to check it (ADR-077).
+  await expect(card.getByRole('img', { name: 'आधार — आगे' })).toBeVisible();
+  await expect(card.getByRole('img', { name: 'आधार — पीछे' })).toBeVisible();
+  await expect(card.getByText('जॉइन किया')).toBeVisible();
 
   await card.getByRole('button', { name: '✓ सही है' }).click();
   await expect(card.getByRole('status')).toHaveText('मंज़ूर — मेंबरशिप चालू।');
 
   await page.reload();
   await expect(page.getByRole('article', { name })).toHaveCount(0);
+
+  // And the photographs are still reachable afterwards, on the member's own page.
+  await page.goto('/crm/members');
+  await page.getByRole('link', { name: new RegExp(name) }).first().click();
+  await expect(page.getByRole('heading', { name: 'फ़ाइल पर ID' })).toBeVisible();
+  await expect(page.getByRole('img', { name: 'आधार — आगे' })).toBeVisible();
 });
 
-test('someone new joins from the QR and holds the plan to pay at the desk', async ({ page }, testInfo) => {
+test('someone new joins from the QR and pays at the desk, with no checkout offered', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'Writes to the database; one project is enough.');
   const mobile = `8${String(Math.floor(Math.random() * 1e9)).padStart(9, '0')}`;
 
@@ -94,6 +102,10 @@ test('someone new joins from the QR and holds the plan to pay at the desk', asyn
   await page.getByRole('link', { name: /I am new here/ }).click();
   await expect(page).toHaveURL(/\/qr\/new$/);
   await waitForHydration(page);
+
+  // The gym before the form: somebody who just scanned a poster knows nothing (ADR-075).
+  await expect(page.getByText('For men')).toBeVisible();
+  await expect(page.getByText(/pay at reception/i).first()).toBeVisible();
 
   await page.getByLabel('Full name').fill('Qr Newcomer');
   await page.getByLabel('Mobile number').fill(mobile);
@@ -113,12 +125,10 @@ test('someone new joins from the QR and holds the plan to pay at the desk', asyn
   await page.getByRole('radio').first().check();
   await page.getByRole('button', { name: 'Continue to payment' }).click();
 
-  // At the desk, paying there is offered first and just as prominently as paying online.
+  // The gym has no live gateway, so the QR path offers the desk and nothing else (ADR-076).
   await expect(page).toHaveURL(/\/join\/pay$/);
-  const reception = page.getByRole('button', { name: 'Pay at reception' });
-  const online = page.getByRole('button', { name: /^Pay ₹/ });
-  expect(await reception.getAttribute('class')).toBe(await online.getAttribute('class'));
-  await reception.click();
+  await expect(page.getByRole('button', { name: /^Pay ₹/ })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Pay at reception' }).click();
 
   await expect(page).toHaveURL(/\/join\/done$/);
   await expect(page.getByRole('heading', { name: 'Your plan is reserved, Qr.' })).toBeVisible();

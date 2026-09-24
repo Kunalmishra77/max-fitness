@@ -110,6 +110,47 @@ describe('PayStep', () => {
     expect(screen.getByRole('button', { name: 'Pay at reception' })).toBeTruthy();
   });
 
+  it('recovers when the start date has gone stale, rather than saying nothing went right', async () => {
+    // Somebody who filled the form last night, or just before midnight: the date they
+    // picked is now in the past and the server refuses it (ADR-078). "Something went
+    // wrong. Please try again" is a dead end — trying again sends the same stale date.
+    const bodies: unknown[] = [];
+    server.use(
+      http.post('*/api/v1/checkout/orders', async ({ request }) => {
+        const body = (await request.json()) as { startDate: string };
+        bodies.push(body);
+        if (body.startDate === '2026-09-11') {
+          return HttpResponse.json(
+            { error: { code: 'INVALID_START_DATE', details: { startDate: '2026-09-11', today: '2026-09-12' } } },
+            { status: 422 },
+          );
+        }
+        return HttpResponse.json(
+          { data: { kind: 'PAY_AT_RECEPTION', paymentId: null, amountPaise: 400_000, currency: 'INR', reservedUntil: '2026-09-14T04:30:00.000Z', membership: { startDate: '2026-09-12', endDate: '2026-12-11' } } },
+          { status: 201 },
+        );
+      }),
+    );
+    const { onReserved, user } = renderStep({ receptionOnly: true });
+
+    await user.click(screen.getByRole('button', { name: 'Pay at reception' }));
+
+    // Told what is actually wrong, and offered the one thing that fixes it.
+    expect(await screen.findByText(/start date/i)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Start from 12 Sep 2026' }));
+
+    await vi.waitFor(() => expect(onReserved).toHaveBeenCalled());
+    expect(bodies).toEqual([
+      { planId: 'plan_m3', startDate: '2026-09-11', payAtReception: true },
+      { planId: 'plan_m3', startDate: '2026-09-12', payAtReception: true },
+    ]);
+  });
+
+  it('does not promise a gateway to somebody who is paying at the desk', () => {
+    renderStep({ receptionOnly: true });
+    expect(screen.queryByText(/Razorpay/)).toBeNull();
+  });
+
   it('asks someone at the desk to pay there, and does not offer to take their money online', () => {
     // The gym has no live gateway, and the client asked for the QR path to say so
     // plainly rather than open a checkout that cannot charge anyone (ADR-076).

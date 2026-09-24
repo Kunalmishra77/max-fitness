@@ -87,7 +87,7 @@ export interface PayStepProps {
   readonly pollIntervalMs?: number;
 }
 
-type Phase = 'idle' | 'creating' | 'demo' | 'verifying' | 'pending' | 'failed' | 'review' | 'expired' | 'error' | 'rateLimited';
+type Phase = 'idle' | 'creating' | 'demo' | 'verifying' | 'pending' | 'failed' | 'review' | 'expired' | 'error' | 'rateLimited' | 'staleStart';
 
 interface OnlineOrder {
   readonly kind: 'ONLINE';
@@ -141,6 +141,11 @@ export function PayStep({
   const locale = useLocale();
   const [phase, setPhase] = useState<Phase>('idle');
   const [order, setOrder] = useState<OnlineOrder | null>(null);
+  // The date the member picked can go stale — they filled this last night, or crossed
+  // midnight while reading. The server tells us its own date; this holds the one to
+  // send, so the second attempt is not the same refused request (ADR-078).
+  const [start, setStart] = useState<ISTDate | null>(startDate);
+  const [serverToday, setServerToday] = useState<ISTDate | null>(null);
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -153,19 +158,33 @@ export function PayStep({
   const authHeader = { [auth.kind === 'registration' ? 'x-registration-token' : 'x-renew-token']: auth.token };
   const total = summary.planPricePaise + summary.admissionPaise;
 
-  const failFromResponse = (status: number) => {
-    setPhase(status === 401 ? 'expired' : status === 429 ? 'rateLimited' : 'error');
+  interface OrderAttempt {
+    readonly status: number;
+    readonly data: unknown;
+    readonly code?: string | undefined;
+    readonly today?: string | undefined;
+  }
+
+  const failFromResponse = (attempt: OrderAttempt) => {
+    if (attempt.code === 'INVALID_START_DATE' && attempt.today !== undefined) {
+      setServerToday(attempt.today as ISTDate);
+      setPhase('staleStart');
+      return;
+    }
+    setPhase(attempt.status === 401 ? 'expired' : attempt.status === 429 ? 'rateLimited' : 'error');
   };
 
-  const createOrder = async (payAtReception: boolean): Promise<{ status: number; data: unknown } | null> => {
+  const createOrder = async (payAtReception: boolean, on: ISTDate | null): Promise<OrderAttempt | null> => {
     try {
       const response = await fetch('/api/v1/checkout/orders', {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...authHeader },
-        body: JSON.stringify({ planId, startDate, payAtReception }),
+        body: JSON.stringify({ planId, startDate: on, payAtReception }),
       });
-      const body = (await response.json().catch(() => null)) as { data?: unknown } | null;
-      return { status: response.status, data: body?.data };
+      const body = (await response.json().catch(() => null)) as
+        | { data?: unknown; error?: { code?: string; details?: { today?: string } } }
+        | null;
+      return { status: response.status, data: body?.data, code: body?.error?.code, today: body?.error?.details?.today };
     } catch {
       return null;
     }
@@ -232,12 +251,12 @@ export function PayStep({
     }
   };
 
-  const payOnline = async () => {
+  const payOnline = async (on: ISTDate | null = start) => {
     setPhase('creating');
     track('payment_started');
-    const created = await createOrder(false);
+    const created = await createOrder(false, on);
     if (created === null) return setPhase('error');
-    if (created.status !== 201) return failFromResponse(created.status);
+    if (created.status !== 201) return failFromResponse(created);
     const current = created.data as OnlineOrder;
     setOrder(current);
 
@@ -282,19 +301,19 @@ export function PayStep({
         body: JSON.stringify({ providerOrderId: order.orderId, outcome }),
       });
       const body = (await response.json().catch(() => null)) as { data?: RazorpayCallback } | null;
-      if (!response.ok || body?.data === undefined) return failFromResponse(response.status);
+      if (!response.ok || body?.data === undefined) return failFromResponse({ status: response.status, data: undefined });
       await verify(order, body.data);
     } catch {
       setPhase('error');
     }
   };
 
-  const payAtReception = async () => {
+  const payAtReception = async (on: ISTDate | null = start) => {
     setPhase('creating');
     track('pay_at_reception_chosen');
-    const created = await createOrder(true);
+    const created = await createOrder(true, on);
     if (created === null) return setPhase('error');
-    if (created.status !== 201) return failFromResponse(created.status);
+    if (created.status !== 201) return failFromResponse(created);
     const data = created.data as ReservedResult;
     onReserved({ amountPaise: data.amountPaise, reservedUntil: data.reservedUntil, membership: data.membership });
   };
@@ -391,15 +410,37 @@ export function PayStep({
         </p>
       ) : null}
 
+      {/* The date the member picked has passed. Trying again would send it again, so
+          the only useful button is the one that moves it on (ADR-078). */}
+      {phase === 'staleStart' && serverToday !== null ? (
+        <div role="alert" className="rounded-panel bg-tint-fee-due-soon-bg p-5">
+          <p className="font-semibold text-brand-obsidian">{t('staleStartTitle')}</p>
+          <p className="mt-2 text-body leading-body">{t('staleStartBody', { date: formatISTDate(serverToday, locale) })}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setStart(serverToday);
+              void (receptionOnly ? payAtReception(serverToday) : payOnline(serverToday));
+            }}
+            className={cn(buttonVariants({ variant: 'primary', full: true }), 'mt-4')}
+          >
+            {t('staleStartAction', { date: formatISTDate(serverToday, locale) })}
+          </button>
+        </div>
+      ) : null}
+
       {phase === 'creating' || phase === 'verifying' ? (
         <p role="status" className="text-center text-body">
           {phase === 'creating' ? t('creating') : t('processing')}
         </p>
       ) : null}
 
-      {phase === 'review' || phase === 'pending' || phase === 'expired' ? null : actions(phase === 'failed' ? t('tryAgain') : t('payNow', { amount: price(total) }))}
+      {phase === 'review' || phase === 'pending' || phase === 'expired' || phase === 'staleStart'
+        ? null
+        : actions(phase === 'failed' ? t('tryAgain') : t('payNow', { amount: price(total) }))}
 
-      <p className={cn('text-center text-small text-brand-stone')}>{t('secure')}</p>
+      {/* Nobody paying at the desk is being taken to a gateway, so nothing claims one. */}
+      {receptionOnly ? null : <p className={cn('text-center text-small text-brand-stone')}>{t('secure')}</p>}
 
       <Dialog open={phase === 'demo'} onOpenChange={(open) => (open ? undefined : setPhase('idle'))}>
         <DialogContent>
