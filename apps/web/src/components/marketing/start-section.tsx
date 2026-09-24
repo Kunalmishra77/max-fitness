@@ -20,7 +20,7 @@ export async function StartSection({ phoneDisplay }: { phoneDisplay: string }) {
         {t('h2')}
       </SectionHeading>
 
-      <ol className="relative mt-10 grid gap-8 md:grid-cols-4 md:gap-6">
+      <ol className="relative mt-10 grid gap-8 md:grid-cols-2 md:gap-6 lg:grid-cols-4">
         <div aria-hidden className="absolute top-2 bottom-2 left-6 w-px bg-brand-stone/30 md:hidden" />
         <div aria-hidden className="absolute top-6 right-[12%] left-6 hidden h-px bg-brand-stone/30 md:block" />
         {STEPS.map((step, index) => (

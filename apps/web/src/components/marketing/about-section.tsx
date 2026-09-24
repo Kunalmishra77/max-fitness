@@ -24,8 +24,8 @@ export async function AboutSection({ years, hoursLine }: { years: number; hoursL
 
   return (
     <Section id="about" tone="chalk" labelledBy="about-heading">
-      <div className="grid gap-10 md:grid-cols-12 md:gap-6">
-        <div className="relative md:col-span-6">
+      <div className="grid gap-10 lg:grid-cols-12 lg:gap-6">
+        <div className="relative lg:col-span-6">
           <div className="relative">
             {/* A red frame offset behind the photo (ADR-061). */}
             <span
@@ -59,7 +59,7 @@ export async function AboutSection({ years, hoursLine }: { years: number; hoursL
           />
         </div>
 
-        <div className="md:col-span-5 md:col-start-8 md:self-center">
+        <div className="lg:col-span-5 lg:col-start-8 lg:self-center">
           <SectionHeading id="about-heading" eyebrow={t('eyebrow')} className="text-brand-obsidian">
             {t('h2')}
           </SectionHeading>

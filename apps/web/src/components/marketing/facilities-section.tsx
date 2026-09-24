@@ -16,10 +16,10 @@ import { SitePhoto } from './site-photo';
  */
 
 const LAYOUT: ReadonlyArray<{ zone: FacilityZone; span: string; aspect: string }> = [
-  { zone: 'strength', span: 'md:col-span-7', aspect: 'aspect-[4/3]' },
-  { zone: 'cardio', span: 'md:col-span-5', aspect: 'aspect-[4/3] md:aspect-auto md:h-full md:min-h-64' },
-  { zone: 'boxing', span: 'md:col-span-4', aspect: 'aspect-[4/3] md:aspect-square' },
-  { zone: 'functional', span: 'md:col-span-8', aspect: 'aspect-[16/9]' },
+  { zone: 'strength', span: 'lg:col-span-7', aspect: 'aspect-[4/3]' },
+  { zone: 'cardio', span: 'lg:col-span-5', aspect: 'aspect-[4/3] lg:aspect-auto lg:h-full lg:min-h-64' },
+  { zone: 'boxing', span: 'lg:col-span-4', aspect: 'aspect-[4/3] lg:aspect-square' },
+  { zone: 'functional', span: 'lg:col-span-8', aspect: 'aspect-[16/9]' },
 ];
 
 export async function FacilitiesSection({ showUnconfirmed }: { showUnconfirmed: boolean }) {
@@ -36,7 +36,7 @@ export async function FacilitiesSection({ showUnconfirmed }: { showUnconfirmed: 
         {t('h2')}
       </SectionHeading>
 
-      <div className="mt-10 grid gap-x-6 gap-y-10 md:grid-cols-12">
+      <div className="mt-10 grid gap-x-6 gap-y-10 lg:grid-cols-12">
         {LAYOUT.map(({ zone, span, aspect }, index) => {
           const photoId = FACILITY_PHOTOS[zone];
           return (

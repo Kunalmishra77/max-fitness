@@ -35,8 +35,8 @@ export async function SiteFooter({
 
   return (
     <footer className="deferred-render border-t-2 border-brand-accent bg-brand-obsidian text-brand-paper">
-      <div className="mx-auto grid max-w-[var(--size-content-max)] gap-10 px-5 py-14 md:grid-cols-12 md:gap-6 md:px-6">
-        <div className="md:col-span-5">
+      <div className="mx-auto grid max-w-[var(--size-content-max)] gap-10 px-5 py-14 lg:grid-cols-12 lg:gap-6 md:px-6">
+        <div className="lg:col-span-5">
           <Wordmark />
           <address className="mt-5 max-w-[34ch] text-body leading-body text-brand-paper/85 not-italic">{address}</address>
           <a
@@ -54,7 +54,7 @@ export async function SiteFooter({
           )}
         </div>
 
-        <nav aria-labelledby="footer-quick" className="md:col-span-3 md:col-start-7">
+        <nav aria-labelledby="footer-quick" className="lg:col-span-3 lg:col-start-7">
           <h2 id="footer-quick" className="font-body text-small font-semibold text-brand-paper/70">
             {t('quickLinks')}
           </h2>
@@ -69,7 +69,7 @@ export async function SiteFooter({
           </ul>
         </nav>
 
-        <nav aria-labelledby="footer-legal" className="md:col-span-3">
+        <nav aria-labelledby="footer-legal" className="lg:col-span-3">
           <h2 id="footer-legal" className="font-body text-small font-semibold text-brand-paper/70">
             {t('legalLinks')}
           </h2>

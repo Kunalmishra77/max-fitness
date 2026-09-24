@@ -36,8 +36,8 @@ export async function OwnerSection({
       aria-labelledby="owner-heading"
       className="deferred-render scroll-mt-20 bg-brand-obsidian text-brand-paper"
     >
-      <div className="mx-auto grid max-w-[var(--size-content-max)] gap-10 px-5 py-16 md:grid-cols-12 md:gap-6 md:px-6 md:py-24">
-        <div className="md:col-span-5">
+      <div className="mx-auto grid max-w-[var(--size-content-max)] gap-10 px-5 py-16 lg:grid-cols-12 lg:gap-6 md:px-6 md:py-24">
+        <div className="lg:col-span-5">
           {/* Until the owner's portrait is shot: the gym's mark on a lit plate, named for what it will hold. */}
           <div
             role="img"
@@ -51,7 +51,7 @@ export async function OwnerSection({
           </div>
         </div>
 
-        <div className="md:col-span-6 md:col-start-7 md:self-center">
+        <div className="lg:col-span-6 lg:col-start-7 lg:self-center">
           <Eyebrow onDark>{t('eyebrow')}</Eyebrow>
           <p className="mt-6 font-display text-title font-bold tracking-[0.06em] uppercase">{t('name')}</p>
           <p className="mt-1 text-body text-brand-mist">{t('role')}</p>

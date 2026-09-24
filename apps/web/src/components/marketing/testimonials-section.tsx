@@ -31,7 +31,7 @@ export async function TestimonialsSection({
       <ul
         tabIndex={0}
         aria-label={t('h2')}
-        className="-mx-5 mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 md:mx-0 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:px-0"
+        className="-mx-5 mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 md:mx-0 md:grid md:grid-cols-2 md:gap-6 lg:grid-cols-3 md:overflow-visible md:px-0"
       >
         {reviews.map((review) => (
           <li
