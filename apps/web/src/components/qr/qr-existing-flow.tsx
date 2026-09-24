@@ -23,14 +23,18 @@ export type QrSubmitResult =
   | { readonly ok: true; readonly referenceCode: string }
   | {
       readonly ok: false;
-      readonly code:
-        | 'VALIDATION_FAILED'
-        | 'UNDER_MINIMUM_AGE'
-        | 'SELFIE_REJECTED'
-        | 'RATE_LIMITED'
-        | 'OTP_REQUIRED'
-        | 'generic';
+      /**
+       * The named refusals the screen reacts to, or whatever else the server said.
+       *
+       * Open rather than a closed list: a member stuck on something we did not
+       * anticipate should be shown the code and a reference, not "generic" (ADR-075).
+       */
+      readonly code: string;
       readonly fields?: readonly string[];
+      /** So a member who cannot get past this can quote something to reception. */
+      readonly requestId?: string | undefined;
+      readonly minAge?: number | undefined;
+      readonly attemptsLeft?: number | undefined;
     };
 
 /** A register entry on a proven number, as `/qr/lookup` returns it. */
@@ -170,7 +174,8 @@ export async function postQrExisting(form: FormData): Promise<QrSubmitResult> {
     const response = await fetch('/api/v1/qr/existing', { method: 'POST', body: form });
     const body = (await response.json().catch(() => ({}))) as {
       data?: { referenceCode?: string };
-      error?: { code?: string; details?: { fields?: Record<string, string>; field?: string } };
+      error?: { code?: string; details?: { fields?: Record<string, string>; field?: string; minAge?: number } };
+      meta?: { requestId?: string };
     };
     if (response.ok && typeof body.data?.referenceCode === 'string') return { ok: true, referenceCode: body.data.referenceCode };
     const code = body.error?.code;
@@ -178,13 +183,18 @@ export async function postQrExisting(form: FormData): Promise<QrSubmitResult> {
       ...Object.keys(body.error?.details?.fields ?? {}),
       ...(body.error?.details?.field === undefined ? [] : [body.error.details.field]),
     ];
-    if (code === 'RATE_LIMITED' || code === 'OTP_REQUIRED') return { ok: false, code };
-    if (code === 'UNDER_MINIMUM_AGE') return { ok: false, code, fields: ['dob'] };
-    if (code === 'SELFIE_REJECTED') return { ok: false, code, fields: ['selfie'] };
-    if (code === 'VALIDATION_FAILED') return { ok: false, code, fields };
-    return { ok: false, code: 'generic' };
+    // Carried through so a member who cannot get past this can show reception a
+    // reference rather than "it did not work" (ADR-075).
+    const requestId = body.meta?.requestId;
+    if (code === 'RATE_LIMITED' || code === 'OTP_REQUIRED') return { ok: false, code, requestId };
+    if (code === 'UNDER_MINIMUM_AGE') return { ok: false, code, fields: ['dob'], requestId, minAge: body.error?.details?.minAge };
+    if (code === 'SELFIE_REJECTED') return { ok: false, code, fields: ['selfie'], requestId };
+    if (code === 'VALIDATION_FAILED') return { ok: false, code, fields, requestId };
+    return { ok: false, code: code ?? `HTTP ${response.status}`, requestId };
   } catch {
-    return { ok: false, code: 'generic' };
+    // The request never arrived: no code, no reference, and saying otherwise would
+    // send the member to reception with a number that means nothing.
+    return { ok: false, code: 'NETWORK' };
   }
 }
 

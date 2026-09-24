@@ -129,6 +129,8 @@ enum MediaKind {
   RECEIPT_PDF
   CHECKIN_SNAPSHOT
   IMPORT_FILE
+  /// A photograph of a government ID. The number is never stored (ADR-074).
+  GOV_ID
 }
 
 enum FaceTemplateStatus {
@@ -389,6 +391,9 @@ model Member {
   faceConsent             Boolean      @default(false)
   remindersUnsubscribedAt DateTime?    @db.Timestamptz
   remindersPausedUntil    DateTime?    @db.Date
+  /// When they first joined the gym, which may be long before this system existed.
+  /// Optional: plenty of members will not remember (ADR-074).
+  joinedOn                DateTime?    @db.Date
   leftAt                  DateTime?    @db.Date
   leftReason              LeftReason?
   leftNote                String?
@@ -514,6 +519,8 @@ model VerificationRequest {
   declaredPlanMonths    Int?
   declaredEndDate       DateTime           @db.Date
   declaredAmountPaise   Int?
+  /// Which card the photographs are of. The number itself is never stored (ADR-074).
+  govIdType             String?
   matchedImportMemberId String?
   status                VerificationStatus @default(PENDING)
   decidedById           String?
@@ -536,6 +543,8 @@ model MediaFile {
   gymId       String
   memberId    String?
   kind        MediaKind
+  /// Which one, when a member has several of a kind: "aadhaar-front", "aadhaar-back", "pan-front"
+  label       String?
   storageKey  String    @unique
   mimeType    String
   sizeBytes   Int

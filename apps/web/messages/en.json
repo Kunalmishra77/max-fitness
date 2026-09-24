@@ -1497,5 +1497,93 @@
     "pairCode": "Pairing code",
     "pairButton": "Connect",
     "pairFailed": "That code did not work. Ask for a new one."
+  },
+  "qrExisting": {
+    "optional": "(optional)",
+    "beforeSend": "Before you send",
+    "takePhoto": "Take your photo",
+    "retakePhoto": "Take it again",
+    "send": "Send to reception",
+    "sending": "Sending…",
+    "joinedOnHelp": "Leave this blank if you do not remember.",
+    "endDateHelp": "The date your fees are paid until. An old date is fine — reception will sort it out.",
+    "fields": {
+      "fullName": "Full name",
+      "mobile": "Mobile number",
+      "dob": "Date of birth",
+      "gender": "You are",
+      "email": "Email",
+      "joinedOn": "Joining date",
+      "selfie": "Your photo",
+      "plan": "Which plan do you have?",
+      "endDate": "Fees paid until",
+      "amount": "How much did you pay?",
+      "govIdType": "Which ID are you showing?"
+    },
+    "gender": {
+      "MALE": "Male",
+      "FEMALE": "Female",
+      "OTHER": "Other"
+    },
+    "plans": {
+      "1": "1 month",
+      "3": "3 months",
+      "6": "6 months",
+      "12": "12 months",
+      "unsure": "Not sure"
+    },
+    "govId": {
+      "choose": "Choose one",
+      "AADHAAR": "Aadhaar",
+      "PAN": "PAN card",
+      "DL": "Driving licence",
+      "VOTER": "Voter ID",
+      "front": "Photo of the front",
+      "back": "Photo of the back",
+      "help": "We keep only the photograph. We never store the number."
+    },
+    "consent": {
+      "terms": "I agree to the Terms of membership and Privacy policy.",
+      "whatsapp": "Send my receipts and reminders on WhatsApp.",
+      "face": "Use my face for automatic attendance at reception. Optional.",
+      "readTerms": "Read the terms",
+      "readPrivacy": "Read the privacy policy"
+    },
+    "errors": {
+      "fillFirst": "Please fill the answers marked below.",
+      "checkMarked": "Please check the answers marked below.",
+      "fullName": "Please write your full name.",
+      "mobile": "Please write a 10-digit mobile number.",
+      "dob": "Please give your date of birth.",
+      "gender": "Please choose one.",
+      "email": "That email does not look right.",
+      "joinedOn": "That date does not look right.",
+      "selfie": "Please take your photo.",
+      "plan": "Please choose your plan.",
+      "endDate": "Please give the date your fees are paid until.",
+      "amount": "Please write whole rupees, with no paise.",
+      "govIdType": "Please choose which ID you are showing.",
+      "govId": "Please add the photo of every side asked for.",
+      "govIdPhotos": "Please add the photo of every side asked for.",
+      "terms": "Please agree to the terms to continue.",
+      "underAge": "You must be at least {minAge} to join. Please talk to reception.",
+      "rateLimited": "Too many attempts. Please wait a few minutes, or tell reception.",
+      "serverSaid": "That could not be sent ({code}). Please tell reception and show them this: {reference}"
+    }
+  },
+  "qrNew": {
+    "title": "Max Fitness Gym, at a glance",
+    "ratingLine": "Nyay Khand 1, Indirapuram · {rating}★ from {reviews} Google reviews",
+    "for": {
+      "MALE": "For men",
+      "FEMALE": "For women"
+    },
+    "months": "{count, plural, one {# month} other {# months}}",
+    "hours": "Open",
+    "admission": "Joining fee",
+    "admissionNone": "None",
+    "includes": "Included",
+    "includesList": "Cardio, weights, functional training, and trainers on the floor.",
+    "payAtReception": "Fill this in, then pay at reception — cash, UPI or card. You will get a receipt on the spot."
   }
 }

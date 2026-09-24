@@ -86,6 +86,11 @@ class FakeStore implements ExistingMemberStore {
   createSelfieMedia() {
     return Promise.resolve('media_1');
   }
+  readonly govIdMedia: Array<{ memberId: string; label: string; key: string }> = [];
+  createGovIdMedia(record: { memberId: string; label: string; stored: { key: string } }) {
+    this.govIdMedia.push({ memberId: record.memberId, label: record.label, key: record.stored.key });
+    return Promise.resolve(`media_${this.govIdMedia.length + 1}`);
+  }
   setMemberPhoto(memberId: string, mediaId: string) {
     this.photos.push({ memberId, mediaId });
     return Promise.resolve();
@@ -121,6 +126,8 @@ describe('submitExistingMember', () => {
       endDate: string;
       amountPaise: number | null;
       claimedMemberId: string;
+      joinedOn: string | null;
+      govId: { type: 'AADHAAR' | 'PAN' | 'DL' | 'VOTER'; images: Array<{ side: 'FRONT' | 'BACK'; body: Uint8Array; width: number; height: number }> } | null;
     }> = {},
   ) =>
     submitExistingMember(
@@ -130,6 +137,8 @@ describe('submitExistingMember', () => {
         declaredPlanMonths: declared.planMonths === undefined ? 3 : declared.planMonths,
         declaredEndDate: istDate(declared.endDate ?? '2026-09-30'),
         declaredAmountPaise: declared.amountPaise === undefined ? 400_000 : declared.amountPaise,
+        joinedOn: declared.joinedOn === undefined ? null : declared.joinedOn === null ? null : istDate(declared.joinedOn),
+        govId: declared.govId === undefined ? null : declared.govId,
         ...(declared.claimedMemberId === undefined ? {} : { claimedMemberId: declared.claimedMemberId }),
       },
       {
@@ -170,6 +179,7 @@ describe('submitExistingMember', () => {
         declaredPlanMonths: 3,
         declaredEndDate: '2026-09-30',
         declaredAmountPaise: 400_000,
+        govIdType: null,
         matchedImportMemberId: null,
       },
     ]);
@@ -225,13 +235,19 @@ describe('submitExistingMember', () => {
     expect(await submit()).toMatchObject({ referenceCode: 'Q-1234' });
   });
 
-  it('accepts a month-end date from sixty days ago to thirteen months ahead, and nothing else', async () => {
-    await expect(submit({ endDate: '2026-07-19' })).resolves.toBeDefined();
+  it('takes a fee date that ran out long ago, because that member is the one worth getting back', async () => {
+    // Six months lapsed used to be refused outright (ADR-075). Staff check every one
+    // of these at the desk, so the form's job is to let them through, not to judge.
+    await expect(submit({ endDate: '2026-03-01' })).resolves.toBeDefined();
     store = new FakeStore();
     digits = [5555];
-    await expect(submit({ endDate: '2027-10-17' })).resolves.toBeDefined();
+    await expect(submit({ endDate: '2024-01-15' })).resolves.toBeDefined();
+  });
 
-    for (const endDate of ['2026-07-18', '2027-10-18']) {
+  it('still refuses a date that cannot be a fee date at all', async () => {
+    // Thirteen months ahead, because no plan runs longer; and further back than any
+    // register the gym still has, which is a typo rather than a member.
+    for (const endDate of ['2027-10-18', '2020-01-01']) {
       store = new FakeStore();
       await expect(submit({ endDate })).rejects.toMatchObject({ code: 'VALIDATION_FAILED', meta: { field: 'declaredEndDate' } });
     }
@@ -253,10 +269,83 @@ describe('submitExistingMember', () => {
     const failing = { transaction: () => Promise.reject(new Error('db down')) };
     await expect(
       submitExistingMember(
-        { fields, selfie, declaredPlanMonths: 3, declaredEndDate: istDate('2026-09-30'), declaredAmountPaise: null },
+        { fields, selfie, declaredPlanMonths: 3, declaredEndDate: istDate('2026-09-30'), declaredAmountPaise: null, joinedOn: null, govId: null },
         { clock, uow: failing, storage, gymId: 'gym_1', minAge: 16, ipHash: null, userAgent: null },
       ),
     ).rejects.toThrow('db down');
     expect(storage.objects.size).toBe(0);
+  });
+
+  // ── What the client asked the QR to collect as well (ADR-074) ──────────────
+
+  const card = (side: 'FRONT' | 'BACK') => ({ side, body: new Uint8Array([1, 2, 3]), width: 900, height: 600 });
+
+  it('keeps the joining date when the member remembers it', async () => {
+    await submit({ joinedOn: '2019-04-15' });
+
+    expect(store.members[0]).toMatchObject({ joinedOn: '2019-04-15' });
+  });
+
+  it('does not insist on a joining date, because plenty of members will not know', async () => {
+    await submit({ joinedOn: null });
+
+    expect(store.members[0]).toMatchObject({ joinedOn: null });
+  });
+
+  it('stores both sides of an Aadhaar as pictures, and no number anywhere', async () => {
+    await submit({ govId: { type: 'AADHAAR', images: [card('FRONT'), card('BACK')] } });
+
+    expect(store.govIdMedia.map((m) => m.label)).toEqual(['aadhaar-front', 'aadhaar-back']);
+    // The request records which card it was, and nothing else about it. There is no
+    // field anywhere for the number — that part is a guarantee of the types, not of
+    // this assertion — so what is stored is a label and a storage key.
+    expect(store.requests[0]).toMatchObject({ govIdType: 'AADHAAR' });
+    expect(Object.keys(store.govIdMedia[0] ?? {}).sort()).toEqual(['key', 'label', 'memberId']);
+  });
+
+  it('stores the one side a PAN card has', async () => {
+    await submit({ govId: { type: 'PAN', images: [card('FRONT')] } });
+
+    expect(store.govIdMedia.map((m) => m.label)).toEqual(['pan-front']);
+  });
+
+  it('refuses an Aadhaar missing its back, and stores nothing at all', async () => {
+    await expect(submit({ govId: { type: 'AADHAAR', images: [card('FRONT')] } })).rejects.toMatchObject({
+      code: 'VALIDATION_FAILED',
+      meta: { field: 'govId' },
+    });
+
+    expect(storage.objects.size).toBe(0);
+    expect(store.members).toEqual([]);
+    expect(store.requests).toEqual([]);
+  });
+
+  it('takes the ID pictures away again when the database write fails', async () => {
+    // The selfie was already cleaned up on failure; the ID photographs are more
+    // sensitive still, and must not be the thing left behind in the bucket.
+    const failing = { transaction: () => Promise.reject(new Error('db down')) };
+    await expect(
+      submitExistingMember(
+        {
+          fields,
+          selfie,
+          declaredPlanMonths: 3,
+          declaredEndDate: istDate('2026-09-30'),
+          declaredAmountPaise: null,
+          joinedOn: null,
+          govId: { type: 'AADHAAR', images: [card('FRONT'), card('BACK')] },
+        },
+        { clock, uow: failing, storage, gymId: 'gym_1', minAge: 16, ipHash: null, userAgent: null },
+      ),
+    ).rejects.toThrow('db down');
+
+    expect(storage.objects.size).toBe(0);
+  });
+
+  it('still works for a member who brought no ID at all', async () => {
+    await submit({ govId: null });
+
+    expect(store.govIdMedia).toEqual([]);
+    expect(store.requests[0]).toMatchObject({ govIdType: null });
   });
 });

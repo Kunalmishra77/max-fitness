@@ -76,3 +76,46 @@ export async function processSelfie(bytes: Uint8Array): Promise<ProcessedSelfie>
 
   return { body: new Uint8Array(data.buffer, data.byteOffset, data.byteLength), width: info.width, height: info.height };
 }
+
+/** An ID card is read by a person at the desk, so it keeps more detail than a face does. */
+export const MAX_GOV_ID_BYTES = 8 * 1024 * 1024;
+const GOV_ID_MIN_SHORT_SIDE_PX = 300;
+const GOV_ID_MAX_SIDE_PX = 1600;
+
+/**
+ * The same pipeline as a selfie, with a card's needs rather than a face's
+ * (ADR-074; security-plan §3.1).
+ *
+ * The rules that matter are identical and non-negotiable: the declared content type is
+ * ignored, the bytes must decode, and the image is re-encoded from pixels — which is
+ * what drops the EXIF a phone photo carries. Photographing an ID card in the gym and
+ * leaving the member's home location inside the file would be a strange way to protect
+ * their identity.
+ *
+ * It keeps more resolution than a selfie because a person has to read the card, and it
+ * refuses a smaller picture, because a card nobody can read is not evidence.
+ */
+export async function processGovIdImage(bytes: Uint8Array): Promise<ProcessedSelfie> {
+  if (bytes.byteLength > MAX_GOV_ID_BYTES) throw new SelfieRejectedError('too_large');
+  if (detectImageType(bytes) === null) throw new SelfieRejectedError('unsupported_type');
+
+  let upright: { data: Buffer; info: OutputInfo };
+  try {
+    upright = await sharp(bytes, { limitInputPixels: MAX_INPUT_PIXELS, failOn: 'error' }).rotate().raw().toBuffer({ resolveWithObject: true });
+  } catch {
+    throw new SelfieRejectedError('unreadable');
+  }
+
+  if (Math.min(upright.info.width, upright.info.height) < GOV_ID_MIN_SHORT_SIDE_PX) {
+    throw new SelfieRejectedError('too_small');
+  }
+
+  const { data, info } = await sharp(upright.data, {
+    raw: { width: upright.info.width, height: upright.info.height, channels: upright.info.channels },
+  })
+    .resize({ width: GOV_ID_MAX_SIDE_PX, height: GOV_ID_MAX_SIDE_PX, fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: 86, mozjpeg: true })
+    .toBuffer({ resolveWithObject: true });
+
+  return { body: new Uint8Array(data.buffer, data.byteOffset, data.byteLength), width: info.width, height: info.height };
+}

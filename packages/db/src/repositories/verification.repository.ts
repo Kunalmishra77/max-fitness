@@ -63,6 +63,7 @@ function existingMemberStore(tx: TransactionClient): ExistingMemberStore {
           fullName: record.fullName,
           mobile: record.mobile,
           email: record.email,
+          ...(record.joinedOn === null ? {} : { joinedOn: toDbDate(record.joinedOn) }),
           dob: toDbDate(record.dob),
           gender: record.gender,
           language: record.language,
@@ -87,6 +88,31 @@ function existingMemberStore(tx: TransactionClient): ExistingMemberStore {
           gymId: record.gymId,
           memberId: record.memberId,
           kind: 'SELFIE',
+          storageKey: record.stored.key,
+          mimeType: record.stored.mimeType,
+          sizeBytes: record.stored.sizeBytes,
+          sha256: record.stored.sha256,
+          width: record.width,
+          height: record.height,
+        },
+        select: { id: true },
+      });
+      return created.id;
+    },
+
+    /**
+     * A photograph of one side of a government ID (ADR-074).
+     *
+     * `label` is what tells the desk which side it is looking at; the number is
+     * neither asked for nor stored, so the picture is the whole record.
+     */
+    async createGovIdMedia(record) {
+      const created = await tx.mediaFile.create({
+        data: {
+          gymId: record.gymId,
+          memberId: record.memberId,
+          kind: 'GOV_ID',
+          label: record.label,
           storageKey: record.stored.key,
           mimeType: record.stored.mimeType,
           sizeBytes: record.stored.sizeBytes,
@@ -128,6 +154,7 @@ function existingMemberStore(tx: TransactionClient): ExistingMemberStore {
           declaredPlanMonths: record.declaredPlanMonths,
           declaredEndDate: toDbDate(record.declaredEndDate),
           declaredAmountPaise: record.declaredAmountPaise,
+          govIdType: record.govIdType,
           matchedImportMemberId: record.matchedImportMemberId,
         },
         select: { id: true },

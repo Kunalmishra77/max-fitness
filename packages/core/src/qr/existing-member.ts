@@ -14,6 +14,7 @@ import {
   type RegistrationFields,
 } from '@mfp/shared';
 import { DomainError } from '../errors';
+import { validateGovId, type GovIdImage, type GovIdType } from './gov-id';
 import type { StorageDriver, StoredObject } from '../ports/storage';
 import type { ConsentRecord, SelfieImage } from '../signup/registration.service';
 import { assessAge, registrationConsents } from '../signup/registration.rules';
@@ -37,8 +38,16 @@ import { assessAge, registrationConsents } from '../signup/registration.rules';
  * shown to staff.
  */
 
-/** A declared month-end further back than this has lapsed long enough to need a talk at the desk. */
-const DECLARED_DAYS_BACK = 60;
+/**
+ * How far back a declared month-end may be (ADR-075).
+ *
+ * This was sixty days, on the reasoning that a longer lapse needs a conversation at
+ * the desk. In a real gym it refused exactly the people the gym most wants back: a
+ * member whose fees ran out in March, standing at reception in September, was told
+ * only that their form "could not be sent". Staff verify every one of these anyway,
+ * so the date is now allowed to be old and the desk is told it is old.
+ */
+const DECLARED_DAYS_BACK = 3 * 365;
 /** No plan runs longer than twelve months. */
 const DECLARED_MONTHS_AHEAD = 13;
 const MAX_AMOUNT_PAISE = 100_000_000;
@@ -49,6 +58,8 @@ export interface QrMemberRecord {
   readonly fullName: string;
   readonly mobile: E164Mobile;
   readonly email: string | null;
+  /** When they first joined, if they remember. Plenty will not (ADR-074). */
+  readonly joinedOn: ISTDate | null;
   readonly dob: ISTDate;
   readonly gender: Gender;
   readonly language: Language;
@@ -66,6 +77,8 @@ export interface VerificationRequestRecord {
   readonly declaredPlanMonths: PlanDurationMonths | null;
   readonly declaredEndDate: ISTDate;
   readonly declaredAmountPaise: number | null;
+  /** Which card the photographs are of. The number itself is never stored (ADR-074). */
+  readonly govIdType: GovIdType | null;
   readonly matchedImportMemberId: string | null;
 }
 
@@ -89,6 +102,15 @@ export interface ExistingMemberStore {
   /** The member confirmed themselves: their consents now count (ADR-009). */
   confirmImportedMember(memberId: string, values: { readonly whatsappOptIn: boolean; readonly faceConsent: boolean }): Promise<void>;
   createSelfieMedia(record: { readonly gymId: string; readonly memberId: string; readonly stored: StoredObject; readonly width: number; readonly height: number }): Promise<string>;
+  /** A photograph of one side of a government ID, labelled so the desk knows which. */
+  createGovIdMedia(record: {
+    readonly gymId: string;
+    readonly memberId: string;
+    readonly label: string;
+    readonly stored: StoredObject;
+    readonly width: number;
+    readonly height: number;
+  }): Promise<string>;
   setMemberPhoto(memberId: string, mediaId: string): Promise<void>;
   createConsents(records: readonly ConsentRecord[]): Promise<void>;
   createVerificationRequest(record: VerificationRequestRecord): Promise<string>;
@@ -113,6 +135,10 @@ export async function submitExistingMember(
     readonly declaredPlanMonths: PlanDurationMonths | null;
     readonly declaredEndDate: ISTDate;
     readonly declaredAmountPaise: number | null;
+    /** Optional: plenty of members will not remember the day they joined. */
+    readonly joinedOn: ISTDate | null;
+    /** Photographs only — the number is never asked for or stored (ADR-074). */
+    readonly govId: { readonly type: GovIdType; readonly images: readonly GovIdImage[] } | null;
     /**
      * The register entry the member picked after proving the number by OTP (ADR-060).
      * The caller passes it only with a valid OTP token for `fields.mobile`.
@@ -142,12 +168,36 @@ export async function submitExistingMember(
   if (amount !== null && (!Number.isInteger(amount) || amount < 0 || amount % 100 !== 0 || amount > MAX_AMOUNT_PAISE)) {
     throw new DomainError('VALIDATION_FAILED', 'The amount is whole rupees', { field: 'declaredAmountPaise' });
   }
+  // The ID is checked before anything is written or uploaded, so a member who
+  // photographed only one side of an Aadhaar leaves nothing behind in the bucket.
+  if (input.govId !== null) {
+    const verdict = validateGovId(input.govId.type, input.govId.images);
+    if (!verdict.ok) throw new DomainError('VALIDATION_FAILED', `The ID photographs are not usable (${verdict.reason})`, { field: 'govId' });
+  }
+
   // As for sign-up: an under-age applicant's photo is never kept.
   const { isMinor } = assessAge({ dob: fields.dob, today, minAge: deps.minAge });
   const consent = registrationConsents({ consents: fields.consents, isMinor });
   const draw = deps.randomCode ?? (() => randomInt(1000, 10000));
 
   const stored = await deps.storage.put({ body: input.selfie.body, mimeType: 'image/jpeg', prefix: 'selfies' });
+  // ID photographs are more sensitive than the selfie, so they are tracked from the
+  // moment they are uploaded and removed again on any failure below.
+  const govIdStored: Array<{ label: string; stored: StoredObject; width: number; height: number }> = [];
+  try {
+    for (const image of input.govId?.images ?? []) {
+      const object = await deps.storage.put({ body: image.body, mimeType: 'image/jpeg', prefix: 'gov-ids' });
+      govIdStored.push({
+        label: `${(input.govId?.type ?? '').toLowerCase()}-${image.side.toLowerCase()}`,
+        stored: object,
+        width: image.width,
+        height: image.height,
+      });
+    }
+  } catch (error) {
+    await cleanUp(deps.storage, [stored, ...govIdStored.map((item) => item.stored)]);
+    throw error;
+  }
 
   let outcome: { referenceCode: string; matchedExisting: boolean; keptPhoto: boolean };
   try {
@@ -168,6 +218,7 @@ export async function submitExistingMember(
           fullName: fields.fullName,
           mobile: fields.mobile,
           email: fields.email ?? null,
+          joinedOn: input.joinedOn,
           dob: fields.dob,
           gender: fields.gender,
           language: fields.language,
@@ -184,6 +235,9 @@ export async function submitExistingMember(
 
       const mediaId = await store.createSelfieMedia({ gymId: deps.gymId, memberId, stored, width: input.selfie.width, height: input.selfie.height });
       await store.setMemberPhoto(memberId, mediaId);
+      for (const image of govIdStored) {
+        await store.createGovIdMedia({ gymId: deps.gymId, memberId, label: image.label, stored: image.stored, width: image.width, height: image.height });
+      }
       await store.createConsents(
         consent.rows.map((row) => ({
           gymId: deps.gymId,
@@ -212,16 +266,30 @@ export async function submitExistingMember(
         declaredPlanMonths: input.declaredPlanMonths,
         declaredEndDate: input.declaredEndDate,
         declaredAmountPaise: amount,
+        govIdType: input.govId?.type ?? null,
         matchedImportMemberId: imported?.id ?? null,
       });
       await store.createAlert({ gymId: deps.gymId, memberId, params: { referenceCode } });
       return { referenceCode, matchedExisting: imported !== null, keptPhoto: true };
     });
   } catch (error) {
-    await deps.storage.delete(stored.key).catch(() => undefined);
+    await cleanUp(deps.storage, [stored, ...govIdStored.map((item) => item.stored)]);
     throw error;
   }
 
-  if (!outcome.keptPhoto) await deps.storage.delete(stored.key).catch(() => undefined);
+  if (!outcome.keptPhoto) await cleanUp(deps.storage, [stored, ...govIdStored.map((item) => item.stored)]);
   return { referenceCode: outcome.referenceCode, matchedExisting: outcome.matchedExisting };
+}
+
+/**
+ * Take back every object this attempt uploaded.
+ *
+ * A refusal must leave nothing behind, and ID photographs least of all — a bucket
+ * quietly accumulating Aadhaar cards from failed submissions is the worst possible
+ * shape for this feature to fail into.
+ */
+async function cleanUp(storage: StorageDriver, objects: readonly StoredObject[]): Promise<void> {
+  for (const object of objects) {
+    await storage.delete(object.key).catch(() => undefined);
+  }
 }

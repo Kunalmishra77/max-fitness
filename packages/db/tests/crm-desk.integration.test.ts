@@ -771,7 +771,15 @@ suite('CRM fee desk against Postgres', () => {
       });
     const submit = (fullName: string, mobile: string, declaredEndDate: string) =>
       submitExistingMember(
-        { fields: person(fullName, mobile), selfie: { body: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]), width: 720, height: 720 }, declaredPlanMonths: 3, declaredEndDate: istDate(declaredEndDate), declaredAmountPaise: 400_000 },
+        {
+          fields: person(fullName, mobile),
+          selfie: { body: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]), width: 720, height: 720 },
+          declaredPlanMonths: 3,
+          declaredEndDate: istDate(declaredEndDate),
+          declaredAmountPaise: 400_000,
+          joinedOn: null,
+          govId: null,
+        },
         { clock, uow: qr, storage, gymId, minAge: 16, ipHash: null, userAgent: 'vitest' },
       );
 

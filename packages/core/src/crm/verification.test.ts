@@ -152,9 +152,11 @@ describe('approveVerification', () => {
     expect(store.activated).toEqual([{ memberId: 'mem_imp', memberCode: 'MF-0007' }]);
   });
 
-  it('refuses a chosen date outside sixty days back to thirteen months ahead', async () => {
-    await expect(approve({ approvedEndDate: '2026-07-18' })).rejects.toMatchObject({ code: 'VALIDATION_FAILED', meta: { field: 'approvedEndDate' } });
-    expect(store.decisions).toEqual([]);
+  it('lets staff approve a date that lapsed months ago, and refuses one that cannot be real', async () => {
+    // Staff are the check here, so a long-lapsed member is theirs to approve (ADR-075).
+    await expect(approve({ approvedEndDate: '2026-03-01' })).resolves.toBeDefined();
+
+    await expect(approve({ approvedEndDate: '2027-10-18' })).rejects.toMatchObject({ code: 'VALIDATION_FAILED', meta: { field: 'approvedEndDate' } });
   });
 
   it('decides a request only once, and says so for an unknown one', async () => {

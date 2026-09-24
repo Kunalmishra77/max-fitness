@@ -1,4 +1,4 @@
-// Domain rules. Pure functions with an injected Clock — no framework, no Prisma.
+// Domain rules. Pure functions with an injected Clock â€” no framework, no Prisma.
 export * from './errors';
 export * from './ports/index';
 
@@ -15,6 +15,7 @@ export * from './reminders/unsubscribe';
 export * from './reminders/inbound';
 export * from './reminders/transactional';
 export * from './kiosk/check-in';
+export * from './qr/gov-id';
 export * from './kiosk/face-engine';
 export * from './kiosk/matcher';
 export * from './kiosk/pairing';

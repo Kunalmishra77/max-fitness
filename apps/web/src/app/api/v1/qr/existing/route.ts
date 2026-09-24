@@ -8,7 +8,7 @@ import { loadGym } from '@/lib/gym';
 import { parseQrExistingForm } from '@/lib/qr-existing-form';
 import { qrOtpGate } from '@/lib/qr-otp-gate';
 import { clientIp, limiterKey, registrationLimiters } from '@/lib/rate-limit';
-import { MAX_SELFIE_BYTES, processSelfie } from '@/lib/selfie-image';
+import { MAX_SELFIE_BYTES, processGovIdImage, processSelfie } from '@/lib/selfie-image';
 import { hashIp } from '@/lib/signup-access';
 
 /**
@@ -82,6 +82,21 @@ export async function POST(request: NextRequest) {
         declaredPlanMonths: parsed.declaredPlanMonths,
         declaredEndDate: parsed.declaredEndDate,
         declaredAmountPaise: parsed.declaredAmountPaise,
+        joinedOn: parsed.joinedOn,
+        // Re-encoded from pixels like the selfie, so the EXIF a phone photo carries —
+        // including where it was taken — never reaches storage (ADR-074).
+        govId:
+          parsed.govId === null
+            ? null
+            : {
+                type: parsed.govId.type,
+                images: await Promise.all(
+                  parsed.govId.images.map(async (image) => {
+                    const processed = await processGovIdImage(image.body);
+                    return { side: image.side, body: processed.body, width: processed.width, height: processed.height };
+                  }),
+                ),
+              },
         ...(gate.claimedMemberId === undefined ? {} : { claimedMemberId: gate.claimedMemberId }),
       },
       {
