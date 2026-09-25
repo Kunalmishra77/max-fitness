@@ -893,3 +893,26 @@ Pending / next:
 **Verified against production** (https://max-fitness-kappa.vercel.app): both QR journeys pass end to end — member fills one page with an Aadhaar, reception logs in, sees both sides and the joining date, approves; and a new member is taken through the gym panel to a desk-only payment. Lint clean, `tsc --noEmit` clean, whole suite 1,406 passed / 67 skipped across 132 files.
 
 **Still outstanding (unchanged):** a host for the worker, Razorpay live keys, Meta WhatsApp verification, the FaceX integration and its POC, Phase 8 hardening, and a separate Supabase project so the database integration suite can run at all (ADR-077). For the client: real plan prices, change both staff PINs (still 2468 / 1357), owner and boxing photographs, real promo text in Settings.
+
+## 2026-09-25 (later) — Announcements, and the integration suite runs at last
+
+**Built: announcements to every member (ADR-079)**
+- `/crm/announcements` — the owner writes one message in Hindi and/or English, picks members on a running plan or the whole register, sees "N of M members" and why the rest are excluded, confirms, and it goes out on WhatsApp: one message per member in their own language, through the outbox, keyed so a redelivery cannot tell anybody twice.
+- Staff see the latest announcement on the CRM home screen — reception is who gets asked about it.
+- Owner only, with the PIN just entered. No new capability: `settings.manage` already means that. Reception does not see the menu item.
+- Refuses while the gym's automatic messages are off, and outside the hours members agreed to, naming the window on screen.
+- Eligibility is re-checked when each message is actually sent, so somebody who unsubscribes in between is not messaged.
+- `mf_announcement` registered as a MARKETING template. Nothing can actually send until Meta approves it and the gym's number is live; until then it lands in the Message Simulator.
+
+**The test database now works (client decision: keep one Supabase project)**
+- `TEST_DATABASE_URL` points at the same project through the session pooler. The database integration suite runs for the first time on this machine: **71 tests that had never executed, all green** — including the Gov ID one written earlier and a new five-test announcement suite covering the audience query, the dedupe constraint, the count shown before sending, and a member who unsubscribes between the send and the worker.
+- The whole suite is now **1,493 passed / 2 skipped across 144 files** (it was 1,406 / 67).
+- Safe on a shared project because every integration suite creates a throwaway gym and deletes it, scoping every query to it. The E2E journeys are not like that — they drive the real gym and leave test members behind, which is what `pnpm wipe:members` is for.
+
+**Cleared today, before this**
+- 29 test members, 14 verifications, 9 payments, 14 memberships, 38 media rows, 116 consents, 20 alerts and 1 enquiry removed from the gym's register; counters reset so the first real member is MF-0001 (ADR-079, client instruction).
+- **Still open:** those 38 photographs are gone from the database but not from the bucket — this machine cannot open a TLS connection to the Supabase storage host. Every object under `selfies/` and `gov-ids/` is now an orphan, so the folders can be emptied from the Supabase dashboard.
+
+**Verified:** lint clean, `tsc --noEmit` clean for core, db, worker and web, whole suite green, and the announcements page opened on production as the owner with no untranslated keys and no console errors.
+
+**Still outstanding:** a host for the worker (nothing on a schedule runs, so no WhatsApp actually sends), Razorpay live keys, Meta verification plus approval of `mf_announcement` and the other templates, the FaceX integration and its POC, Phase 8 hardening. For the client: real plan prices, change both staff PINs (still 2468 / 1357), owner and boxing photographs, real promo text in Settings.
