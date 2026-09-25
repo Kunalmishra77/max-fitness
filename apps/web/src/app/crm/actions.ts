@@ -21,6 +21,7 @@ import {
   hashPairingCode,
   issuePairingCode,
   registerAtDesk,
+  sendAnnouncement,
   sendBirthdayWish,
   undoAttendance,
   updateGymSettings,
@@ -28,7 +29,7 @@ import {
   voidPayment,
   type LeadStatus,
 } from '@mfp/core';
-import { PrismaBirthdays, PrismaKioskDevices } from '@mfp/db';
+import { PrismaAnnouncementUnitOfWork, PrismaBirthdays, PrismaKioskDevices } from '@mfp/db';
 import { revalidateLandingContent } from '@/lib/revalidate-landing';
 import type {
   EraseResult,
@@ -41,7 +42,8 @@ import type {
   StaffResult,
   UnlockResult,
 } from '@/lib/settings-types';
-import { PLAN_DURATIONS, RegistrationFieldsSchema, StaffCreateSchema, StaffPinSchema, istDate, type PlanDurationMonths } from '@mfp/shared';
+import { PLAN_DURATIONS, RegistrationFieldsSchema, StaffCreateSchema, StaffPinSchema, istDate, nowISTTime, type PlanDurationMonths } from '@mfp/shared';
+import type { AnnouncementActionResult, AnnouncementInput } from '@/components/crm/announcement-composer';
 import type { AddMemberErrorCode, AddMemberFields, AddMemberResult } from '@/components/crm/add-member-flow';
 import type { MarkResult, UndoResult } from '@/components/crm/attendance-marker';
 import type { BirthdayWishResult } from '@/components/crm/birthday-list';
@@ -303,6 +305,54 @@ export async function unlockSettingsAction(pin: string): Promise<UnlockResult> {
   const elevated = await elevate(actor, pin);
   if (elevated.ok) return { ok: true };
   return { ok: false, code: elevated.code === 'VALIDATION_FAILED' ? 'INVALID_PIN' : elevated.code };
+}
+
+/**
+ * Send one announcement to every member the gym may message (ADR-079).
+ *
+ * The only action that reaches the whole register, so it wears the same fresh-PIN rule
+ * as settings, and every refusal comes back as something the screen can explain: the
+ * gym's automatic messages are off, it is outside messaging hours, or nobody in the
+ * chosen audience agreed to WhatsApp.
+ */
+export async function sendAnnouncementAction(input: AnnouncementInput): Promise<AnnouncementActionResult> {
+  const { actor, gym } = await requireCrmContext();
+  const { clock, prisma } = getContainer();
+  const now = clock.now();
+
+  if (!mayAfterPinEntry(actor, 'settings.manage', now)) return { ok: false, code: 'FORBIDDEN' };
+  if (!can(actor, 'settings.manage', now)) return { ok: false, code: 'PIN_REQUIRED' };
+
+  try {
+    const result = await sendAnnouncement(
+      { textEn: input.textEn, textHi: input.textHi, audience: input.audience },
+      {
+        actor,
+        gymId: gym.id,
+        now,
+        nowIST: nowISTTime(clock),
+        settings: { automaticPaused: gym.settings.reminders.automaticPaused, quietHours: gym.settings.reminders.quietHours },
+        uow: new PrismaAnnouncementUnitOfWork(prisma),
+      },
+    );
+    revalidatePath('/crm');
+    revalidatePath('/crm/announcements');
+    return { ok: true, queued: result.queued, skipped: result.skipped };
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    if (code === 'QUIET_HOURS_VIOLATION') {
+      const meta = (error as { meta?: { start?: string; end?: string } }).meta;
+      return { ok: false, code: 'QUIET_HOURS', start: meta?.start ?? '', end: meta?.end ?? '' };
+    }
+    if (code === 'CONFLICT') return { ok: false, code: 'PAUSED' };
+    if (code === 'FORBIDDEN') return { ok: false, code: 'PIN_REQUIRED' };
+    if (code === 'VALIDATION_FAILED') {
+      const field = (error as { meta?: { field?: string } }).meta?.field;
+      return { ok: false, code: field === 'audience' ? 'NOBODY' : 'VALIDATION_FAILED' };
+    }
+    console.error(`[crm] announcement failed: ${code ?? (error instanceof Error ? error.name : 'Error')}`);
+    return { ok: false, code: 'generic' };
+  }
 }
 
 /** Shared by both saves: who may, whether the PIN is still fresh, and what an error means. */

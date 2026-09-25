@@ -181,6 +181,7 @@ enum MessagePurpose {
   OWNER_DIGEST
   OWNER_ALERT
   BIRTHDAY
+  ANNOUNCEMENT
   UNSUBSCRIBE_CONFIRM
   RESTART_CONFIRM
   OTHER
@@ -278,6 +279,28 @@ model Gym {
   outbox        OutboxEvent[]
   otps          OtpCode[]
   webhookEvents WebhookEvent[]
+  announcements Announcement[]
+}
+
+/// One message the owner sent to every member at once (ADR-079). The row is the source
+/// of the words: the outbox events carry only its id, so nothing can drift.
+model Announcement {
+  id             String   @id @default(cuid())
+  gymId          String
+  textEn         String
+  textHi         String
+  /// "ACTIVE" (members with a running plan) or "EVERYONE" on the register.
+  audience       String
+  createdById    String
+  /// How many members it was queued for, after the ones who cannot be messaged.
+  recipientCount Int
+  sentAt         DateTime @db.Timestamptz
+  createdAt      DateTime @default(now()) @db.Timestamptz
+
+  gym       Gym       @relation(fields: [gymId], references: [id])
+  createdBy StaffUser @relation(fields: [createdById], references: [id])
+
+  @@index([gymId, sentAt])
 }
 
 model Counter {
@@ -309,8 +332,9 @@ model StaffUser {
   createdAt      DateTime  @default(now()) @db.Timestamptz
   updatedAt      DateTime  @updatedAt @db.Timestamptz
 
-  gym      Gym       @relation(fields: [gymId], references: [id])
-  sessions Session[]
+  gym           Gym            @relation(fields: [gymId], references: [id])
+  sessions      Session[]
+  announcements Announcement[]
 
   @@unique([gymId, mobile])
 }

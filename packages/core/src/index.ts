@@ -27,6 +27,7 @@ export * from './reminders/safeguards';
 export * from './calls/call-task.rules';
 export * from './members/birthdays';
 export * from './members/birthday-wish';
+export * from './announcements/announcement';
 export * from './attendance/cooldown';
 export * from './payments/receipt-number';
 export * from './tokens/signed-links';

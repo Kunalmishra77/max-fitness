@@ -1188,6 +1188,45 @@
       "rowsWrong": "Some lines still have mistakes. Choose the corrected file again.",
       "checkedTitle": "File check"
     },
+    "announce": {
+      "title": "Announcement",
+      "link": "Send an announcement",
+      "desc": "One WhatsApp message to every member",
+      "reachTitle": "Who will get this",
+      "reach": "{reachable} of {total} members",
+      "reachWhy": "{count} will not: they never agreed to WhatsApp, have unsubscribed, or have no number on file.",
+      "hindi": "In Hindi",
+      "english": "In English",
+      "oneLanguageIsEnough": "One language is enough — members who prefer the other will get this one.",
+      "whoTitle": "Send it to",
+      "who": {
+        "ACTIVE": "Members with a running plan",
+        "EVERYONE": "Everyone on the register"
+      },
+      "previewTitle": "What a member will read",
+      "previewBody": "Hi Sanjay, a message from Max Fitness Gym: {message}",
+      "send": "Send to members",
+      "sending": "Sending…",
+      "confirmTitle": "Send this to {count} members on WhatsApp?",
+      "confirmHelper": "This cannot be taken back. Line breaks become spaces.",
+      "confirmSend": "Yes, send it",
+      "cancel": "Cancel",
+      "pinAgain": "Enter your PIN again to send this",
+      "sent": "On its way to {count} members.",
+      "sentSkipped": "{count} could not be messaged.",
+      "empty": "No announcements yet.",
+      "sentAt": "{date} · by {name}",
+      "sentCount": "{sent} of {total} sent",
+      "latestTitle": "Announcement",
+      "errors": {
+        "text": "Write the announcement in at least one language.",
+        "quietHours": "Members agreed to be messaged between {start} and {end}. Please send it in that window.",
+        "paused": "Automatic messages are switched off for this gym. Turn them on in Settings before sending an announcement.",
+        "nobody": "Nobody in this group can be messaged on WhatsApp.",
+        "notAllowed": "Only the owner can send an announcement.",
+        "failed": "That did not go. Please try again."
+      }
+    },
     "verify": {
       "title": "Check",
       "link": "Check QR members",
@@ -1261,6 +1300,10 @@
       "verify": {
         "label": "Check QR members",
         "desc": "Approve members who scanned the QR"
+      },
+      "announce": {
+        "label": "Send an announcement",
+        "desc": "One WhatsApp message to every member"
       },
       "reports": {
         "label": "Reports",

@@ -21,6 +21,7 @@ export type MessagePurpose =
   | 'OWNER_DIGEST'
   | 'OWNER_ALERT'
   | 'BIRTHDAY'
+  | 'ANNOUNCEMENT'
   | 'UNSUBSCRIBE_CONFIRM'
   | 'RESTART_CONFIRM'
   | 'OTHER';

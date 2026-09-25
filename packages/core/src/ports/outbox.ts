@@ -14,6 +14,7 @@ export type OutboxEventType =
   | 'whatsapp.restart_confirm'
   | 'whatsapp.verification_approved'
   | 'whatsapp.birthday'
+  | 'whatsapp.announcement'
   | 'kiosk.gallery_changed'
   | 'kiosk.enroll'
   | 'calltask.create'

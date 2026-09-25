@@ -1,4 +1,6 @@
 import {
+  announcementBodyFor,
+  buildAnnouncement,
   buildBirthdayWish,
   buildReceiptMessage,
   buildVerificationApprovedMessage,
@@ -9,7 +11,7 @@ import {
   type TransactionalMessage,
 } from '@mfp/core';
 import type { MessagePurpose, WhatsAppProvider } from '@mfp/core/ports';
-import { PrismaMessageData, PrismaMessageLogWriter, PrismaMessageLogUpdates, type PrismaClient } from '@mfp/db';
+import { PrismaAnnouncements, PrismaMessageData, PrismaMessageLogWriter, PrismaMessageLogUpdates, type PrismaClient } from '@mfp/db';
 import { istDate, todayIST, type Clock } from '@mfp/shared';
 import type { Logger } from '../logger';
 
@@ -184,6 +186,38 @@ export function messageOutboxHandlers(deps: MessageJobDeps): OutboxHandlers {
       const year = (event.payload as { year?: unknown }).year;
       const today = typeof year === 'string' ? istDate(`${year}-01-01`) : todayIST(deps.clock);
       await sendTemplate(deps, buildBirthdayWish({ memberId, firstName: member.firstName, language: member.language, today }), member.mobile, memberId, null);
+    },
+
+    /**
+     * The owner's announcement, one member at a time (ADR-079).
+     *
+     * Eligibility is checked again here, not only when the owner pressed send: a member
+     * can unsubscribe in the seconds between, and a marketing message to somebody who
+     * just opted out is the one that costs the gym its number.
+     */
+    'whatsapp.announcement': async (event) => {
+      const memberId = memberIdOf(event);
+      const payload = event.payload as { announcementId?: unknown };
+      const announcementId = typeof payload.announcementId === 'string' ? payload.announcementId : null;
+      if (memberId === null || announcementId === null) return;
+
+      const found = await new PrismaAnnouncements(deps.prisma).forMember(announcementId, memberId);
+      if (found === null || found.member === null) return;
+      if (!found.stillEligible) {
+        deps.log.info({ announcementId }, 'member is no longer reachable — announcement not sent');
+        return;
+      }
+
+      const message = announcementBodyFor(found, found.member.language);
+      if (message === '') return;
+      await sendTemplate(
+        deps,
+        buildAnnouncement({ announcementId, memberId, firstName: found.member.firstName, language: found.member.language, message }),
+        found.member.mobile,
+        memberId,
+        null,
+        [{ payload: deps.unsubscribePayload(memberId), label: 'unsubscribe' }],
+      );
     },
 
     'whatsapp.unsubscribe_confirm': (event) => sendConfirmation(deps, event, 'UNSUBSCRIBED'),

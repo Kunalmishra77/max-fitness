@@ -250,6 +250,27 @@ const BIRTHDAY_WISH: TemplateDefinition = {
   footer: FOOTER,
 };
 
+/**
+ * T12 — the owner's announcement to every member (ADR-079).
+ *
+ * Marketing, because Meta reads any message the member did not ask for that way, whether
+ * it says "closed for Diwali" or "50% off". So it needs the member's own opt-in, and the
+ * gym needs this template approved before a single one of these can go out.
+ *
+ * The owner's words are one variable, like the owner's own alerts: whatever they write is
+ * the message, and nothing here adds to it or interprets it.
+ */
+const ANNOUNCEMENT: TemplateDefinition = {
+  name: 'mf_announcement',
+  category: 'MARKETING',
+  variables: ['firstName', 'message'],
+  body: {
+    en: 'Hi {{1}}, a message from Max Fitness Gym: {{2}}',
+    hi: 'नमस्ते {{1}}, Max Fitness Gym की ओर से सूचना: {{2}}',
+  },
+  footer: FOOTER,
+};
+
 export const TEMPLATES: Readonly<Record<WhatsAppTemplateName, TemplateDefinition>> = {
   mf_renewal_due: RENEWAL_DUE,
   mf_renewal_due_today: RENEWAL_DUE_TODAY,
@@ -261,6 +282,7 @@ export const TEMPLATES: Readonly<Record<WhatsAppTemplateName, TemplateDefinition
   mf_owner_daily_digest: OWNER_DIGEST,
   mf_owner_alert: OWNER_ALERT,
   mf_birthday_wish: BIRTHDAY_WISH,
+  mf_announcement: ANNOUNCEMENT,
 };
 
 export function templateDefinition(name: WhatsAppTemplateName): TemplateDefinition {

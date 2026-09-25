@@ -19,6 +19,7 @@ export type CrmNavKey =
   | 'messages'
   | 'leads'
   | 'verify'
+  | 'announce'
   | 'reports'
   | 'import'
   | 'staff'
@@ -53,6 +54,8 @@ export function crmNavItems(actor: CrmActor, now: Date, waitingVerifications: nu
       group: 'people',
       ...(waitingVerifications > 0 ? { badge: waitingVerifications } : {}),
     },
+    // One message to every member is the owner's, and needs the PIN on the way in (ADR-079).
+    afterPin('settings.manage') && { key: 'announce', href: '/crm/announcements', icon: 'whatsapp', group: 'business' },
     may('money.view') && { key: 'reports', href: '/crm/reports', icon: 'reports', group: 'business' },
     afterPin('member.import') && { key: 'import', href: '/crm/import', icon: 'import', group: 'business' },
     afterPin('settings.manage') && { key: 'staff', href: '/crm/settings/staff', icon: 'staff', group: 'business' },

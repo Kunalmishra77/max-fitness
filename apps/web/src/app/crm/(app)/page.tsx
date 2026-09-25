@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
-import { formatISTDate, type ISTDate } from '@mfp/shared';
+import { formatISTDate, toISTDate, type ISTDate } from '@mfp/shared';
 import { can } from '@mfp/core';
-import { PrismaBirthdays } from '@mfp/db';
+import { PrismaAnnouncements, PrismaBirthdays } from '@mfp/db';
 import { sendBirthdayWishAction, setCrmLanguageAction } from '@/app/crm/actions';
 import { BirthdayList } from '@/components/crm/birthday-list';
 import { BottomNav, CrmHeader, FEE_TONE, MemberRow, rupees } from '@/components/crm/crm-chrome';
@@ -35,16 +35,18 @@ function previousMonthStart(date: ISTDate): ISTDate {
 export default async function CrmHomePage() {
   const { actor, gym, today, reader } = await requireCrmContext();
   const t = await getTranslations('crm');
+  const ta = await getTranslations('crm.announce');
   const locale = (await getLocale()) === 'en' ? 'en' : 'hi';
   const { clock } = getContainer();
   const now = clock.now();
 
   const showVerify = can(actor, 'verification.approve', now);
-  const [counts, calls, waiting, birthdays] = await Promise.all([
+  const [counts, calls, waiting, birthdays, latest] = await Promise.all([
     reader.dashboard(gym.id, today, monthStart(today), previousMonthStart(today)),
     reader.callTasks(gym.id, today, 5),
     showVerify ? verificationDeps().queue.count(gym.id) : Promise.resolve(0),
     new PrismaBirthdays(getContainer().prisma).today(gym.id, today),
+    new PrismaAnnouncements(getContainer().prisma).latest(gym.id),
   ]);
   const showMoney = can(actor, 'money.view', now);
 
@@ -93,6 +95,20 @@ export default async function CrmHomePage() {
         <div className="flex justify-end lg:hidden">
           <LanguageSwitch current={locale} change={setCrmLanguageAction} tone="light" />
         </div>
+
+        {/* Whatever the owner last told the members, every member of staff sees too —
+            reception is asked about it first (ADR-079). */}
+        {latest === null ? null : (
+          <section aria-labelledby="latest-announcement" className="rounded-panel border-l-4 border-brand-accent bg-white p-4 shadow-sm">
+            <h2 id="latest-announcement" className="text-small font-semibold tracking-[0.18em] text-brand-stone uppercase">
+              {ta('latestTitle')}
+            </h2>
+            <p className="mt-1 text-crm-body text-brand-obsidian">
+              {locale === 'hi' && latest.textHi !== '' ? latest.textHi : latest.textEn !== '' ? latest.textEn : latest.textHi}
+            </p>
+            <p className="mt-1 text-small text-brand-stone">{ta('sentAt', { date: formatISTDate(toISTDate(latest.sentAt), locale), name: latest.byName })}</p>
+          </section>
+        )}
 
         <section aria-labelledby="quick-heading">
           <h2 id="quick-heading" className="sr-only">

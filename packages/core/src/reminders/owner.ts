@@ -192,6 +192,28 @@ export function planOwnerAlerts(input: {
   });
 }
 
+/**
+ * The owner's announcement, as one member receives it (ADR-079).
+ *
+ * Keyed by the announcement and the member, the same string the outbox event carries, so
+ * a redelivery cannot tell anybody twice.
+ */
+export function buildAnnouncement(input: {
+  announcementId: string;
+  memberId: string;
+  firstName: string;
+  language: Language;
+  message: string;
+}): TransactionalMessage {
+  return {
+    templateName: 'mf_announcement',
+    language: input.language,
+    idempotencyKey: `announcement:${input.announcementId}:${input.memberId}`,
+    purpose: 'ANNOUNCEMENT',
+    variables: { firstName: input.firstName, message: input.message },
+  };
+}
+
 export function buildBirthdayWish(input: { memberId: string; firstName: string; language: Language; today: ISTDate }): TransactionalMessage {
   return {
     templateName: 'mf_birthday_wish',
