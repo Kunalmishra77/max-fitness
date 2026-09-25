@@ -110,12 +110,10 @@ the terms today sees square brackets.
 - [ ] **Opening hours confirmed.** We have Mon–Sat 4:30 am – 10:00 pm, Sunday closed.
 - [ ] **The PIN code confirmed.** Google's listing says 201020; postal references and
       Justdial say 201014, which is what the site uses. Worth one look at an old bill.
-- [ ] **One photograph: the boxing corner.** Eight gym photos are in place — the floor,
-      cardio, the functional turf, a trainer, three of the champions. The boxing corner is
-      the only slot on the live site still saying "Photo coming soon". One decent phone
-      picture of the heavy bags is enough.
 - [ ] **A photograph of the owner**, if the gym wants one in the Owner section rather than
-      the champions pictures it uses today.
+      the champions pictures it uses today. Every other photo slot is filled: the floor,
+      cardio, the functional turf, a trainer and three of the champions. Nothing on the
+      site says "photo coming soon" any more.
 - [ ] **Promotional line**, if the gym wants the red announcement bar on the website — and
       it is worth knowing this exists, because it is the fastest way to tell *visitors*
       something without messaging members.

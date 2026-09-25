@@ -49,7 +49,8 @@ On-page (revised 2026-09-11, ADR-031):
 1. Add website URL with UTM: `?utm_source=google&utm_medium=gbp&utm_campaign=profile`.
 2. Align the business name to the real signboard name (e.g., "Max Fitness Gym") — remove emojis and odd capitalisation; GBP guidelines expect the real-world name and edits otherwise risk suspension.
 3. Consistent NAP everywhere (site footer, Justdial, Instagram): exact same address string and phone.
-4. Primary category "Gym"; secondary categories only if true (e.g., "Personal trainer", "Boxing gym").
+4. Primary category "Gym"; secondary categories only if true (e.g., "Personal trainer"). Not
+   "Boxing gym" — the gym has none (2026-09-25).
 5. Fill hours incl. special hours for festivals; add attributes (women-friendly etc. only if true).
 6. Upload the new professional photo set (20+), cover photo, logo, 3 short videos.
 7. Products/Services: list the 4 plans with prices.

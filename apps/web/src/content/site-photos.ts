@@ -22,13 +22,12 @@ export const ABOUT_PHOTOS = {
 
 /**
  * Each zone gets the upload that shows what its caption promises: dumbbells, bench and
- * plates for strength; step platforms on the wooden floor for functional. Boxing has no
- * recent photo yet and keeps its placeholder.
+ * plates for strength; step platforms on the wooden floor for functional. Every zone has
+ * its photo, so nothing on the facilities grid shows a placeholder any more.
  */
 export const FACILITY_PHOTOS: Readonly<Record<FacilityZone, SitePhotoId | null>> = {
   strength: 'functional-turf',
   cardio: 'cardio-crossfit',
-  boxing: null,
   functional: 'cardio-steps',
 };
 

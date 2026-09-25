@@ -100,7 +100,8 @@ export const OWNER_STORY = {
   quoteAuthor: 'Aadhar G.',
 } as const;
 
-export const FACILITY_ZONES = ['strength', 'cardio', 'functional', 'boxing'] as const;
+/** The gym has no boxing corner — it was in the early wireframes and never existed (2026-09-25). */
+export const FACILITY_ZONES = ['strength', 'cardio', 'functional'] as const;
 export type FacilityZone = (typeof FACILITY_ZONES)[number];
 
 /**

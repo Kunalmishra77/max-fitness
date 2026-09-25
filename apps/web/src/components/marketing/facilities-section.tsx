@@ -9,17 +9,17 @@ import { SitePhoto } from './site-photo';
 /**
  * Facilities by zone (PRD LP-07, wireframe §5).
  *
- * Not a row of identical cards: an asymmetric grid that mirrors the real floor —
- * two wide zones on top, a narrow boxing corner beside a wide functional floor below.
- * "Also here" lists only confirmed facilities in production (LP-07 acceptance). A zone
- * with no photo of its own yet keeps the placeholder rather than borrowing one (ADR-057).
+ * Not a row of identical cards: an asymmetric grid that mirrors the real floor — two
+ * zones side by side on top, the functional floor wide underneath. "Also here" lists only
+ * confirmed facilities in production (LP-07 acceptance). A zone with no photo of its own
+ * yet keeps the placeholder rather than borrowing one (ADR-057).
  */
 
 const LAYOUT: ReadonlyArray<{ zone: FacilityZone; span: string; aspect: string }> = [
   { zone: 'strength', span: 'lg:col-span-7', aspect: 'aspect-[4/3]' },
   { zone: 'cardio', span: 'lg:col-span-5', aspect: 'aspect-[4/3] lg:aspect-auto lg:h-full lg:min-h-64' },
-  { zone: 'boxing', span: 'lg:col-span-4', aspect: 'aspect-[4/3] lg:aspect-square' },
-  { zone: 'functional', span: 'lg:col-span-8', aspect: 'aspect-[16/9]' },
+  // Full width, so losing the fourth zone leaves no hole in the row (2026-09-25).
+  { zone: 'functional', span: 'lg:col-span-12', aspect: 'aspect-[16/9] lg:aspect-[21/9]' },
 ];
 
 export async function FacilitiesSection({ showUnconfirmed }: { showUnconfirmed: boolean }) {

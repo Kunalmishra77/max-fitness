@@ -53,7 +53,7 @@ ffmpeg -i in.mov -vf "scale=1280:-2,fps=30" -an -c:v libvpx-vp9 -b:v 0 -crf 36 -
 | V2 | Hero slide 2 | Trainer demonstrating a machine to a nervous beginner; close hands + face | Warm, patient body language |
 | V3 | Hero slide 3 | Woman training on functional floor (ropes or step platform) with trainer nearby | Respectful framing, consent |
 | V4 | B-roll | Battle rope waves, 60 fps | Functional floor |
-| V5 | B-roll | Heavy bag combo | Boxing corner |
+| V5 | B-roll | ~~Heavy bag combo~~ — dropped: the gym has no boxing corner (2026-09-25) | — |
 | V6 | B-roll | Treadmill row, members walking in evening | Cardio |
 | V7 | B-roll | Plates loading, chalk hands | Strength |
 | V8 | B-roll | Exterior signboard at dusk, entrance, Sai Mandir landmark context | Wayfinding |

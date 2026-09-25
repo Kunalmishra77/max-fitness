@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import { FACILITY_EXTRAS, type FacilityZone } from '@/content/landing-content';
+import { FACILITY_EXTRAS, FACILITY_ZONES } from '@/content/landing-content';
 
 /**
  * A red band of what the floor offers, moving slowly (ADR-061).
@@ -8,12 +8,11 @@ import { FACILITY_EXTRAS, type FacilityZone } from '@/content/landing-content';
  * copy is hidden from assistive tech, and the motion pauses on hover and stops with
  * reduced motion (globals.css).
  */
-const ZONES: readonly FacilityZone[] = ['strength', 'cardio', 'functional', 'boxing'];
-
 export async function MarqueeBand() {
   const t = await getTranslations('facilities');
+  // The zones themselves, so a zone added or removed cannot be left behind here.
   const words = [
-    ...ZONES.map((zone) => t(`zones.${zone}.name`)),
+    ...FACILITY_ZONES.map((zone) => t(`zones.${zone}.name`)),
     ...FACILITY_EXTRAS.filter((extra) => extra.confirmed).map((extra) => t(`extras.${extra.key}`)),
   ];
   const row = (hidden: boolean) => (

@@ -98,11 +98,11 @@ Not identical cards — each zone is a photo + a short list, laid out as an asym
 │ [photo] Strength zone          │ [photo] Cardio zone        │
 │ Machines, free weights,      │ Treadmills, recumbent     │
 │ benches, mirrors              │ bikes                      │
-├───────────────┬───────────────┴───────────────────────────┤
-│ [photo]       │ [photo] Functional floor                   │
-│ Boxing corner │ Battle ropes, step platforms, agility    │
-│ Heavy bags    │ cones, open wooden floor                  │
-├───────────────┴────────────────────────────────────────────┤
+├───────────────────────────────┴───────────────────────────┤
+│ [photo] Functional floor                                   │
+│ Battle ropes, step platforms, agility cones, open wooden   │
+│ floor                                          (full width) │
+├────────────────────────────────────────────────────────────┤
 │ Also here: Personal training, Changing area*, Lockers*, │
 │ Drinking water*, Music        (*show only if confirmed)   │
 └────────────────────────────────────────────────────────────┘

@@ -171,10 +171,6 @@
       "functional": {
         "name": "Functional floor",
         "body": "Battle ropes, step platforms and agility cones on an open wooden floor."
-      },
-      "boxing": {
-        "name": "Boxing corner",
-        "body": "Heavy bags for conditioning and stress-busting rounds."
       }
     },
     "alsoHere": "Also here",

@@ -61,7 +61,8 @@ Slider controls (a11y): "Pause slideshow", "Play slideshow", "Show slide {n} of 
 - Strength zone: "Machines, free weights, benches and full mirrors for form checks."
 - Cardio zone: "Treadmills and recumbent bikes for warm-ups, fat loss and endurance." (reviews: separate cardio area)
 - Functional floor: "Battle ropes, step platforms and agility cones on an open wooden floor." (owner photo, 2020)
-- Boxing corner: "Heavy bags for conditioning and stress-busting rounds." (owner photo, 2020)
+- Not listed: a boxing corner. It was in the early wireframes from a 2020 photo; the owner
+  confirmed on 2026-09-25 that the gym has none, so the zone was removed everywhere.
 - Also: "Personal training" (confirmed) · "Diet plans" (confirmed) · "Lockers" [VERIFY] · "Drinking water" [VERIFY] · "Parking nearby" [VERIFY] · "Air-conditioned" [VERIFY]
 - Not listed: changing area (a 2025 review reports none) — add only if the owner confirms one exists now.
 
