@@ -44,12 +44,17 @@ for word. Submit **both** languages of each. Approval is usually minutes to a da
 | T9 | `mf_owner_daily_digest` | Utility | ☐ submitted ☐ approved |
 | T10 | `mf_owner_alert` | Utility | ☐ submitted ☐ approved |
 | T11 | `mf_birthday_wish` | Marketing | ☐ submitted ☐ approved |
+| T12 | `mf_announcement` | Marketing | ☐ submitted ☐ approved |
 
 - [ ] **Sample values given for every variable.** A template submitted without them is
       rejected without explanation.
 - [ ] **No promotional wording in a Utility template.** "Renew to keep your workouts
       going" is fine; "special offer" makes it Marketing, which costs more and needs
       marketing consent.
+- [ ] **T12 carries the owner's own words in `{{2}}`,** so its sample value must read
+      like a real announcement ("Closed tomorrow for Diwali."). It is Marketing however
+      harmless it sounds, so a member without WhatsApp opt-in never receives one
+      (ADR-079).
 - [ ] **T10 is a single `{{1}}` body.** Meta sometimes rejects that shape. If it is
       rejected, register the three explicit templates named in the templates doc
       (`mf_owner_alert_expired_visit`, `mf_owner_alert_new_lead`,
