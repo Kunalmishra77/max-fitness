@@ -27,7 +27,8 @@
     "tokens": "pnpm --filter @mfp/config run tokens",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "qr:poster": "tsx infra/scripts/generate-qr-poster.ts"
+    "qr:poster": "tsx infra/scripts/generate-qr-poster.ts",
+    "wipe:members": "pnpm --filter @mfp/worker run wipe:members"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

@@ -4,6 +4,6 @@
     "types": ["node"],
     "tsBuildInfoFile": "./.turbo/tsconfig.tsbuildinfo"
   },
-  "include": ["src/**/*.ts", "*.ts"],
+  "include": ["src/**/*.ts", "scripts/**/*.ts", "*.ts"],
   "exclude": ["node_modules", "dist", "src/generated"]
 }
