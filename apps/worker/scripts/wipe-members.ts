@@ -13,6 +13,12 @@
  *   pnpm wipe:members -- --yes             # does it
  *   pnpm wipe:members -- --yes --counters  # and restarts member codes and receipts at 1
  *   pnpm wipe:members -- --yes --storage=skip   # leave the files alone
+ *   pnpm wipe:members -- --only="Demo " --yes   # only members whose name contains this
+ *
+ * `--only` exists because the register is no longer empty. On 2026-10-01 a real member
+ * had filled the form at 8:45 that morning and was sitting in the queue beside two of my
+ * own test rows; a blanket wipe would have deleted them. Name the test data, do not
+ * assume everything is test data.
  *
  * Photographs go from storage as well as the database, and a key that will not delete is
  * named rather than swallowed: a selfie left in a bucket is the kind of thing nobody
@@ -26,6 +32,8 @@ const has = (flag: string) => args.includes(flag);
 const commit = has('--yes');
 const resetCounters = has('--counters');
 const storageMode = (args.find((arg) => arg.startsWith('--storage='))?.split('=')[1] ?? 'auto') as 'auto' | 's3' | 'local' | 'skip';
+/** Case-insensitive substring of the member's name; without it, every member goes. */
+const only = args.find((arg) => arg.startsWith('--only='))?.slice('--only='.length)?.trim() ?? '';
 
 const need = (name: string): string => {
   const value = process.env[name];
@@ -41,12 +49,18 @@ async function main(): Promise<void> {
 
   try {
     const members = await prisma.member.findMany({
+      where: only === '' ? {} : { fullName: { contains: only, mode: 'insensitive' } },
       orderBy: { createdAt: 'asc' },
       select: { id: true, fullName: true, mobile: true, memberCode: true, status: true, source: true, createdAt: true },
     });
 
+    if (only !== '') {
+      const total = await prisma.member.count();
+      console.log(`Only members whose name contains "${only}": ${members.length} of ${total}. The rest are left alone.\n`);
+    }
+
     if (members.length === 0) {
-      console.log('No members. Nothing to do.');
+      console.log('No members matched. Nothing to do.');
       return;
     }
 
@@ -94,14 +108,21 @@ async function main(): Promise<void> {
     await step('memberships', prisma.membership.deleteMany({ where }));
     await step('media rows', prisma.mediaFile.deleteMany({ where: { id: { in: files.map((file) => file.id) } } }));
     await step('members', prisma.member.deleteMany({ where: { id: { in: ids } } }));
-    await step('enquiries', prisma.lead.deleteMany({}));
-    // Queued work names members by id inside its payload, so whatever is still pending
-    // is about somebody who no longer exists.
-    await step('queued events', prisma.outboxEvent.deleteMany({ where: { status: 'PENDING' } }));
 
-    if (resetCounters) {
-      const { count } = await prisma.counter.updateMany({ data: { value: 0 } });
-      done.push(['counters reset', count]);
+    // These three are not member-scoped, so they only run on a full wipe. Clearing every
+    // enquiry, or every counter, because two test rows were removed would take somebody
+    // real with them.
+    if (only === '') {
+      await step('enquiries', prisma.lead.deleteMany({}));
+      // Queued work names members by id inside its payload, so whatever is still pending
+      // is about somebody who no longer exists.
+      await step('queued events', prisma.outboxEvent.deleteMany({ where: { status: 'PENDING' } }));
+      if (resetCounters) {
+        const { count } = await prisma.counter.updateMany({ data: { value: 0 } });
+        done.push(['counters reset', count]);
+      }
+    } else {
+      console.log('  enquiries, queued events and counters: left alone (--only)');
     }
 
     for (const [label, n] of done) console.log(`  ${label}: ${n}`);

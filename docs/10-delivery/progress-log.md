@@ -916,3 +916,22 @@ Pending / next:
 **Verified:** lint clean, `tsc --noEmit` clean for core, db, worker and web, whole suite green, and the announcements page opened on production as the owner with no untranslated keys and no console errors.
 
 **Still outstanding:** a host for the worker (nothing on a schedule runs, so no WhatsApp actually sends), Razorpay live keys, Meta verification plus approval of `mf_announcement` and the other templates, the FaceX integration and its POC, Phase 8 hardening. For the client: real plan prices, change both staff PINs (still 2468 / 1357), owner and boxing photographs, real promo text in Settings.
+
+## 2026-10-01 — Members were being turned away at reception
+
+**The defect, and it was mine.** The QR route's body limit was sized for a selfie and never raised when ID photographs were added, so every member uploading an Aadhaar met "HTTP 413" before any of our code ran. Fixed two ways: the browser now shrinks each card to about 400 KB before upload, and the limit is sized for a selfie and two cards. Proved against production — 0.4 MB cards accepted, 3 MB cards refused by the host itself, which is why the shrinking rather than the limit is the real fix (ADR-080).
+
+**Also shipped, from the gym watching members use it**
+- One question at a time again: seven screens with a `3 / 7` bar, Back keeping every answer, and a server refusal taking the member to the screen that holds the answer it is about.
+- `/qr` — what the poster opens — goes straight to the existing-member form. `/qr/new` still works, it is just not on the poster.
+- "How much did you pay" removed. "1 month" reads "Monthly". "Which ID are you showing?" reads "Upload a Govt ID". The ID uploads are big tappable panels with a camera icon that turn green once a photo is in.
+- A browser that cannot shrink a photo no longer sends the original into a host that will bounce it; it says the photo is too large.
+- The gym has no boxing corner — the zone is gone from the site, both languages, the photo slot and the shot list. Nothing says "photo coming soon" any more.
+
+**Verified live, end to end** on a phone-sized viewport: poster URL → form → all seven screens → `Q-3880` → visible in the verify queue with the masked number, the plan, "ID shown: Aadhaar" and all three photographs. No console errors. The demo rows were then removed.
+
+**Real members are coming through.** Two submissions from actual members sat in the queue while this was being tested — one from 8:45 am (before the fix, so the form does work for some phones) and one from 11:59 am, after the stepped form went live.
+
+**A near miss worth recording:** `wipe:members` would have deleted those real members along with my test rows. It now takes `--only=<name>` and, with it, leaves enquiries, queued events and the counters alone. The register is no longer empty — nothing may assume otherwise.
+
+**Still open:** storage objects for deleted members remain in the bucket (this machine cannot reach the Supabase storage host over TLS); `selfies/` and `gov-ids/` contain orphans that need clearing from the dashboard — but **not wholesale any more**, since real members' photographs are now in there too.
