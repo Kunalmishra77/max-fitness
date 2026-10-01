@@ -1,6 +1,8 @@
 import { todayIST, type Clock, type E164Mobile, type Gender, type ISTDate, type MemberStatus } from '@mfp/shared';
 import { DomainError } from '../errors';
+import { membershipPeriod } from '../membership/dates';
 import type { PaymentProvider } from '../ports/payments';
+import { combinedQuote, ptPlanForMember } from '../pricing/personal-training';
 import type { Plan } from '../pricing/plans';
 import {
   PAY_AT_RECEPTION_HOLD_HOURS,
@@ -57,10 +59,30 @@ export interface PendingMembershipRecord {
  */
 export type ReusableMembershipQuery = PendingMembershipRecord & { readonly createdAfter: Date };
 
+/**
+ * Personal training held alongside the membership (ADR-087).
+ *
+ * Its own record from the start, so the gym can answer "who has a trainer, until when"
+ * without unpicking payments, and so an unpaid hold can lapse on its own.
+ */
+export interface PendingPtEnrolmentRecord {
+  readonly gymId: string;
+  readonly memberId: string;
+  readonly planId: string;
+  readonly membershipId: string;
+  readonly durationMonths: number;
+  readonly startDate: ISTDate;
+  readonly endDate: ISTDate;
+  /** Copied from the plan at purchase; later price changes never alter it (BR-2.8). */
+  readonly pricePaise: number;
+}
+
 export interface NewPaymentRecord {
   readonly gymId: string;
   readonly memberId: string;
   readonly membershipId: string;
+  /** Set when this payment also covers personal training (ADR-087). */
+  readonly ptEnrolmentId: string | null;
   readonly amountPaise: number;
   readonly method: 'RAZORPAY' | 'SIMULATED';
 }
@@ -72,6 +94,9 @@ export interface CheckoutStore {
   /** An unpaid, uncancelled membership matching every field, created after `createdAfter`. */
   findReusablePendingMembership(query: ReusableMembershipQuery): Promise<{ readonly id: string; readonly createdAt: Date } | null>;
   createPendingMembership(record: PendingMembershipRecord): Promise<{ readonly id: string; readonly createdAt: Date }>;
+  /** An unpaid, uncancelled enrolment for the same purchase, so a retry books one trainer. */
+  findReusablePendingPtEnrolment(query: PendingPtEnrolmentRecord): Promise<{ readonly id: string } | null>;
+  createPendingPtEnrolment(record: PendingPtEnrolmentRecord): Promise<{ readonly id: string }>;
   createPayment(record: NewPaymentRecord): Promise<string>;
   setProviderOrderId(paymentId: string, providerOrderId: string): Promise<void>;
 }
@@ -95,6 +120,8 @@ export interface CreateCheckoutInput {
   readonly planId: string;
   /** Required for a sign-up; ignored for a renewal, whose start follows BR-3.4. */
   readonly startDate: ISTDate | null;
+  /** "Do you need personal training?" — `null` is no (ADR-087). */
+  readonly ptPlanId?: string | null;
   readonly payAtReception: boolean;
   readonly mode: CheckoutMode;
 }
@@ -186,40 +213,69 @@ export async function createCheckoutOrder(input: CreateCheckoutInput, deps: Chec
       (await store.findReusablePendingMembership({ ...record, createdAfter: holdStart })) ??
       (await store.createPendingMembership(record));
 
+    // Personal training, if they asked for one. Priced and length-checked here, on the
+    // server, for the same reason the membership is (BR-11.3, ADR-087).
+    const ptPlan =
+      input.ptPlanId === undefined || input.ptPlanId === null
+        ? null
+        : ptPlanForMember({
+            plans: await store.getPlans(member.gymId),
+            planId: input.ptPlanId,
+            memberGender: member.gender,
+            otherGenderPricing: deps.settings.pricing.otherGenderPricing,
+          });
+    const combined = combinedQuote({ membership: quote, ptPlan, membershipMonths: quote.durationMonths });
+
+    let ptEnrolmentId: string | null = null;
+    if (ptPlan !== null) {
+      const ptRecord: PendingPtEnrolmentRecord = {
+        gymId: member.gymId,
+        memberId: member.id,
+        planId: ptPlan.id,
+        membershipId: membership.id,
+        durationMonths: ptPlan.durationMonths,
+        startDate: quote.startDate,
+        endDate: membershipPeriod(quote.startDate, ptPlan.durationMonths).endDate,
+        pricePaise: ptPlan.pricePaise,
+      };
+      ptEnrolmentId = ((await store.findReusablePendingPtEnrolment(ptRecord)) ?? (await store.createPendingPtEnrolment(ptRecord))).id;
+    }
+
     if (input.payAtReception) {
-      return { member, quote, membership, paymentId: null };
+      return { member, quote, combined, membership, paymentId: null };
     }
 
     const paymentId = await store.createPayment({
       gymId: member.gymId,
       memberId: member.id,
       membershipId: membership.id,
-      amountPaise: quote.totalPaise,
+      ptEnrolmentId,
+      amountPaise: combined.totalPaise,
       method: deps.provider.name === 'simulated' ? 'SIMULATED' : 'RAZORPAY',
     });
-    return { member, quote, membership, paymentId };
+    return { member, quote, combined, membership, paymentId };
   });
 
-  const { member, quote, membership, paymentId } = reserved;
+  const { member, quote, combined, membership, paymentId } = reserved;
   const membershipView = { id: membership.id, startDate: quote.startDate, endDate: quote.endDate };
 
   if (paymentId === null) {
     return {
       kind: 'PAY_AT_RECEPTION',
-      amountPaise: quote.totalPaise,
+      amountPaise: combined.totalPaise,
       reservedUntil: reservationExpiresAt(membership.createdAt),
       membership: membershipView,
     };
   }
 
   const order = await deps.provider.createOrder({
-    amountPaise: quote.totalPaise,
+    amountPaise: combined.totalPaise,
     currency: 'INR',
     // Our payment id, so the provider's record and ours can always be reconciled.
     receipt: paymentId,
     notes: { memberId: member.id, membershipId: membership.id },
   });
-  if (order.amountPaise !== quote.totalPaise) {
+  if (order.amountPaise !== combined.totalPaise) {
     throw new DomainError('PRICE_MISMATCH', 'The payment provider created an order for a different amount');
   }
   await deps.uow.transaction((store) => store.setProviderOrderId(paymentId, order.providerOrderId));
@@ -230,7 +286,7 @@ export async function createCheckoutOrder(input: CreateCheckoutInput, deps: Chec
     provider: deps.provider.name,
     providerOrderId: order.providerOrderId,
     publicKeyId: order.publicKeyId,
-    amountPaise: quote.totalPaise,
+    amountPaise: combined.totalPaise,
     membership: membershipView,
     prefill: { name: member.fullName, contact: member.mobile, email: member.email },
   };

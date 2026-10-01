@@ -232,7 +232,12 @@
     "noSavingLabel": "No saving",
     "note": "Pay at reception — cash, UPI or card. Prices are for gym floor access with trainer guidance.",
     "unavailable": "Today's fees are being updated. Call or WhatsApp us and we'll tell you straight away.",
-    "eyebrow": "Membership"
+    "eyebrow": "Membership",
+    "ptH3": "Personal training",
+    "ptBody": "A trainer with you for every session — your form corrected, your weights planned, your progress tracked. Taken alongside a membership, for as many months as you want. Same price for men and women.",
+    "ptMonths": "{count, plural, one {1 month} other {# months}}",
+    "ptPerMonth": "{price} / month",
+    "ptTotal": "{price} in total"
   },
   "reviews": {
     "h2": "What members say",
@@ -516,7 +521,16 @@
       "endsOn": "Ends on {date}",
       "choose": "Choose a plan to continue.",
       "continue": "Continue to payment",
-      "unavailable": "Plans can't be loaded right now. Call or WhatsApp us and we'll sign you up."
+      "unavailable": "Plans can't be loaded right now. Call or WhatsApp us and we'll sign you up.",
+      "ptHeading": "Personal training",
+      "ptHelper": "Do you need personal training? A trainer with you for every session, on top of your membership.",
+      "ptYes": "Yes",
+      "ptNo": "No",
+      "ptMonths": "{count, plural, one {1 month personal training} other {# months personal training}}",
+      "ptPerMonth": "{price} / month",
+      "ptTotal": "Membership {membership} + personal training {pt} = {total}",
+      "ptChoose": "Choose a personal training plan, or answer No.",
+      "ptNeedsPlan": "Choose your membership first — personal training runs alongside it."
     },
     "pay": {
       "summary": "{name}, {plan}, {start} to {end}",
@@ -760,7 +774,12 @@
       },
       "actions": "More for this member",
       "edit": "Correct details",
-      "dataAndPrivacy": "Data and privacy"
+      "dataAndPrivacy": "Data and privacy",
+      "pt": "Personal training",
+      "ptMonths": "{count, plural, one {1 month} other {# months}} with a trainer",
+      "ptRunning": "Running",
+      "ptEnded": "Finished",
+      "ptUnpaid": "Not paid yet"
     },
     "renew": {
       "title": "Take fees",
@@ -1096,7 +1115,12 @@
       "qrOtpHelper": "Members who scan the reception QR confirm their number with a 6-digit WhatsApp code first. Then they can pick their name from the register.",
       "qrOtpOn": "Ask for a code",
       "qrOtpBlocked": "Not available yet: the gym's WhatsApp number is not live, so no code can be sent. The reception form is one page and asks for no code. This comes back with WhatsApp.",
-      "slotsWarning": "That is {count} messages to one member. Once a day is usually enough."
+      "slotsWarning": "That is {count} messages to one member. Once a day is usually enough.",
+      "ptPrices": "Personal training",
+      "ptPricesHelper": "What a trainer costs per month, for each term. Same price for men and women.",
+      "ptTotal": "Total {amount}",
+      "ptOn": "On sale",
+      "ptOff": "Off"
     },
     "staff": {
       "title": "Staff",

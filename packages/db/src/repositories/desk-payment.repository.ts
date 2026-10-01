@@ -52,7 +52,7 @@ function storeFor(tx: TransactionClient): DeskPaymentStore {
     async getPlans(gymId) {
       const rows = await tx.plan.findMany({
         where: { gymId },
-        select: { id: true, code: true, durationMonths: true, gender: true, pricePaise: true, isActive: true, sortOrder: true },
+        select: { id: true, code: true, kind: true, durationMonths: true, gender: true, pricePaise: true, isActive: true, sortOrder: true },
       });
       return rows.flatMap((row): Plan[] =>
         isPricedGender(row.gender) && [1, 3, 6, 12].includes(row.durationMonths)

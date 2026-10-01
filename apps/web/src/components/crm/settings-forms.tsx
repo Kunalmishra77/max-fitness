@@ -228,6 +228,105 @@ export function PricesForm({ plans, save, unlock }: { plans: readonly PlanPrice[
   );
 }
 
+// ── Personal training prices (ADR-087) ──────────────────────────────────────
+
+export interface PtPlanPrice extends PlanPrice {
+  readonly isActive: boolean;
+}
+
+/**
+ * Personal training, priced the way the gym quotes it: **per month** (ADR-087).
+ *
+ * The owner types ₹4,500 for the three-month plan and the total — ₹13,500 — is what is
+ * stored and charged, because the total is what the member pays and what the receipt must
+ * add up to. Both figures are on screen, so there is nothing to work out in your head.
+ *
+ * Men and women have separate rows at the same price today. The form edits one price per
+ * term and writes it to both, which is also how a future split starts: change these rows
+ * and nothing else needs to change.
+ */
+export function PtPricesForm({
+  plans,
+  save,
+  setActive,
+  unlock,
+}: {
+  plans: readonly PtPlanPrice[];
+  save: (prices: readonly PriceInput[]) => Promise<SettingsResult>;
+  setActive: (code: string, isActive: boolean) => Promise<SettingsResult>;
+  unlock: Unlock;
+}) {
+  const t = useTranslations('crm.settings');
+  const terms = [...new Set(plans.map((plan) => plan.durationMonths))].sort((a, b) => a - b);
+  const [perMonth, setPerMonth] = useState<Record<number, number>>(() =>
+    Object.fromEntries(terms.map((months) => [months, Math.round((plans.find((plan) => plan.durationMonths === months)?.pricePaise ?? 0) / months / 100)])),
+  );
+  const [pending, setPending] = useState<number | null>(null);
+  const set = (months: number, value: number) => setPerMonth((current) => ({ ...current, [months]: Math.max(0, Math.round(value)) }));
+  const activeFor = (months: number) => plans.some((plan) => plan.durationMonths === months && plan.isActive);
+
+  if (plans.length === 0) return null;
+
+  return (
+    <Section
+      title={t('ptPrices')}
+      helper={t('ptPricesHelper')}
+      unlock={unlock}
+      // One price per term, written to both price lists.
+      save={() => save(plans.map((plan) => ({ code: plan.code, pricePaise: (perMonth[plan.durationMonths] ?? 0) * plan.durationMonths * 100 })))}
+    >
+      <div className="grid grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+        {terms.map((months) => {
+          const value = perMonth[months] ?? 0;
+          const on = activeFor(months);
+          const label = `${t('months', { count: months })} · ${t('ptPrices')}`;
+          return (
+            <div key={months} className={cn('rounded-panel border border-brand-stone/20 p-2', on ? '' : 'bg-brand-paper')}>
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="text-small font-semibold">{t('months', { count: months })}</p>
+                <button
+                  type="button"
+                  disabled={pending === months}
+                  onClick={() => {
+                    setPending(months);
+                    const codes = plans.filter((plan) => plan.durationMonths === months).map((plan) => plan.code);
+                    void (async () => {
+                      for (const code of codes) await setActive(code, !on);
+                      setPending(null);
+                    })();
+                  }}
+                  className={cn('rounded-full px-3 py-1 text-small font-semibold', on ? 'bg-tint-fee-paid-bg text-semantic-fee-paid' : 'bg-tint-fee-none-bg text-brand-stone')}
+                >
+                  {t(on ? 'ptOn' : 'ptOff')}
+                </button>
+              </div>
+              <div className="mt-1 flex items-center gap-1">
+                <button type="button" aria-label={`${label}: ${t('minus')}`} onClick={() => set(months, value - 100)} className="size-11 shrink-0 rounded-button bg-tint-fee-none-bg text-xl font-bold">
+                  −
+                </button>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={100}
+                  step={100}
+                  aria-label={label}
+                  value={value}
+                  onChange={(event) => set(months, Number(event.target.value))}
+                  className="min-h-11 w-full min-w-0 rounded-input border-2 border-brand-stone/40 px-1 text-center text-crm-body tabular-nums"
+                />
+                <button type="button" aria-label={`${label}: ${t('plus')}`} onClick={() => set(months, value + 100)} className="size-11 shrink-0 rounded-button bg-tint-fee-none-bg text-xl font-bold">
+                  +
+                </button>
+              </div>
+              <p className="mt-1 text-small text-brand-stone">{t('ptTotal', { amount: inr(value * months) })}</p>
+            </div>
+          );
+        })}
+      </div>
+    </Section>
+  );
+}
+
 // ── Joining rules ───────────────────────────────────────────────────────────
 
 export function JoiningForm({

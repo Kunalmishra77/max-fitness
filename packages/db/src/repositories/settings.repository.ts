@@ -63,13 +63,18 @@ function settingsStore(tx: TransactionClient): SettingsStore & ReminderSettingsS
       await tx.gym.update({ where: { id: gymId }, data: { settings } });
     },
 
-    async loadPlans(gymId: string): Promise<ReadonlyArray<{ code: string; pricePaise: number }>> {
-      return await tx.plan.findMany({ where: { gymId }, select: { code: true, pricePaise: true } });
+    async loadPlans(gymId: string): Promise<ReadonlyArray<{ code: string; pricePaise: number; isActive: boolean }>> {
+      return await tx.plan.findMany({ where: { gymId }, select: { code: true, pricePaise: true, isActive: true } });
     },
 
     async savePlanPrice(gymId: string, code: string, pricePaise: number): Promise<void> {
       // BR-2.8: only the plan changes; every membership keeps the price it was sold at.
       await tx.plan.update({ where: { gymId_code: { gymId, code } }, data: { pricePaise } });
+    },
+
+    async savePlanActive(gymId: string, code: string, isActive: boolean): Promise<void> {
+      // The row stays; only the price lists stop offering it (ADR-087).
+      await tx.plan.update({ where: { gymId_code: { gymId, code } }, data: { isActive } });
     },
 
     async writeAudit(entry: SettingsAuditEntry): Promise<void> {

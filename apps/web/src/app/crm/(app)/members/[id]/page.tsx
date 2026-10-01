@@ -198,6 +198,40 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
         </section>
       )}
 
+      {/* Personal training, when they have it (ADR-087): the current term first, because
+          "is their trainer still paid for" is the question the desk gets asked. */}
+      {member.ptEnrolments.length === 0 ? null : (
+        <section className="mt-3 bg-white px-4 py-4 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:px-6 lg:shadow-sm">
+          <h2 className="text-crm-body font-bold text-brand-obsidian">{t('profile.pt')}</h2>
+          <ul className="mt-2 divide-y divide-brand-stone/15">
+            {member.ptEnrolments.map((pt) => {
+              const running = pt.status === 'CONFIRMED' && pt.endDate >= today;
+              return (
+                <li key={pt.id} className="flex items-baseline justify-between gap-3 py-3">
+                  <span>
+                    <span className="block text-crm-body font-semibold text-brand-obsidian">{t('profile.ptMonths', { count: pt.durationMonths })}</span>
+                    <span className="block text-small text-brand-stone">
+                      {formatISTDate(pt.startDate, locale)} – {formatISTDate(pt.endDate, locale)}
+                    </span>
+                  </span>
+                  <span className="text-right">
+                    <span className="block text-crm-body font-semibold">{rupees(pt.pricePaise)}</span>
+                    <span
+                      className={cn(
+                        'mt-1 inline-block rounded-full px-2.5 py-0.5 text-small font-semibold',
+                        pt.status !== 'CONFIRMED' ? FEE_TONE.NONE.chip : running ? FEE_TONE.PAID.chip : FEE_TONE.EXPIRED.chip,
+                      )}
+                    >
+                      {t(pt.status === 'CONFIRMED' ? (running ? 'profile.ptRunning' : 'profile.ptEnded') : 'profile.ptUnpaid')}
+                    </span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
       <section className="mt-3 bg-white px-4 py-4 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:px-6 lg:shadow-sm">
         <h2 className="text-crm-body font-bold text-brand-obsidian">{t('profile.attendanceMonth')}</h2>
         <div className="mt-3 grid grid-cols-7 gap-2" aria-hidden>

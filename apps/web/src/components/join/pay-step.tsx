@@ -34,6 +34,9 @@ export interface PaySummary {
   readonly endDate: ISTDate;
   readonly planPricePaise: Money;
   readonly admissionPaise: Money;
+  /** Personal training bought with it, shown on its own line (ADR-087). */
+  readonly ptLabel?: string;
+  readonly ptPricePaise?: Money;
 }
 
 export interface PaidResult {
@@ -74,6 +77,8 @@ export type RazorpayConstructor = new (options: RazorpayOptions) => { open(): vo
 export interface PayStepProps {
   readonly auth: { readonly kind: 'registration' | 'renew'; readonly token: string };
   readonly planId: string;
+  /** Personal training bought with it, or `null` (ADR-087). The server prices both. */
+  readonly ptPlanId?: string | null;
   /** `null` for a renewal: the server applies BR-3.4. */
   readonly startDate: ISTDate | null;
   readonly summary: PaySummary;
@@ -127,6 +132,7 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export function PayStep({
   auth,
   planId,
+  ptPlanId = null,
   startDate,
   summary,
   phoneDisplay,
@@ -157,7 +163,8 @@ export function PayStep({
   }, []);
 
   const authHeader = { [auth.kind === 'registration' ? 'x-registration-token' : 'x-renew-token']: auth.token };
-  const total = summary.planPricePaise + summary.admissionPaise;
+  // The membership, the joining fee and the trainer, each on its own line (PRD PT-04).
+  const total = summary.planPricePaise + summary.admissionPaise + (summary.ptPricePaise ?? 0);
 
   interface OrderAttempt {
     readonly status: number;
@@ -188,7 +195,7 @@ export function PayStep({
       const response = await fetch('/api/v1/checkout/orders', {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...authHeader },
-        body: JSON.stringify({ planId, startDate: on, payAtReception }),
+        body: JSON.stringify({ planId, ptPlanId, startDate: on, payAtReception }),
       });
       const body = (await response.json().catch(() => null)) as
         | { data?: unknown; error?: { code?: string; details?: { today?: string } }; meta?: { requestId?: string } }
@@ -391,6 +398,12 @@ export function PayStep({
               <dd className="text-right">{price(summary.admissionPaise)}</dd>
             </>
           ) : null}
+          {summary.ptPricePaise === undefined || summary.ptLabel === undefined ? null : (
+            <>
+              <dt>{summary.ptLabel}</dt>
+              <dd className="text-right">{price(summary.ptPricePaise)}</dd>
+            </>
+          )}
           <dt className="border-t border-brand-stone/30 pt-2 font-semibold">{t('total')}</dt>
           <dd className="border-t border-brand-stone/30 pt-2 text-right font-display text-title font-bold text-brand-accent-deep">
             {price(total)}

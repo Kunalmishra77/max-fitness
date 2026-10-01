@@ -4,6 +4,7 @@ export * from './ports/index';
 
 export * from './pricing/plans';
 export * from './pricing/pricing';
+export * from './pricing/personal-training';
 
 export * from './membership/dates';
 export * from './membership/fee-state';

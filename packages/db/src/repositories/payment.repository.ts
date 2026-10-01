@@ -38,7 +38,7 @@ function confirmationStoreFor(tx: TransactionClient): PaymentConfirmationStore {
   return {
     async lockPaymentByOrderId(providerOrderId) {
       const rows = await tx.$queryRaw<PaymentForConfirmation[]>`
-        SELECT "id", "gymId", "memberId", "membershipId", "amountPaise", "status"::text AS "status", "receiptNo", "failureReason"
+        SELECT "id", "gymId", "memberId", "membershipId", "ptEnrolmentId", "amountPaise", "status"::text AS "status", "receiptNo", "failureReason"
         FROM "Payment"
         WHERE "providerOrderId" = ${providerOrderId}
         FOR UPDATE
@@ -83,6 +83,13 @@ function confirmationStoreFor(tx: TransactionClient): PaymentConfirmationStore {
       // Money received wins over a reservation the nightly job already cancelled.
       await tx.membership.update({
         where: { id: membershipId },
+        data: { status: 'CONFIRMED', confirmedAt, cancelledAt: null },
+      });
+    },
+
+    async confirmPtEnrolment(ptEnrolmentId, confirmedAt) {
+      await tx.ptEnrolment.update({
+        where: { id: ptEnrolmentId },
         data: { status: 'CONFIRMED', confirmedAt, cancelledAt: null },
       });
     },

@@ -1,6 +1,6 @@
 'use client';
 
-import type { PlanCardView } from '@mfp/core';
+import type { PlanCardView, PtCardView } from '@mfp/core';
 import { membershipEndDate } from '@mfp/core/membership';
 import type { ISTDate } from '@mfp/shared/time';
 import { useTranslations } from 'next-intl';
@@ -22,7 +22,17 @@ import { PlanStep } from './plan-step';
  * on the server and reads the state after mounting, rather than guessing and flashing.
  */
 
-export type PriceLists = Readonly<Record<'MALE' | 'FEMALE' | 'OTHER', { readonly cards: readonly PlanCardView[]; readonly deskConfirmsPrice: boolean }>>;
+export type PriceLists = Readonly<
+  Record<
+    'MALE' | 'FEMALE' | 'OTHER',
+    {
+      readonly cards: readonly PlanCardView[];
+      /** Personal training on that price list (ADR-087); empty when the gym sells none. */
+      readonly ptCards: readonly PtCardView[];
+      readonly deskConfirmsPrice: boolean;
+    }
+  >
+>;
 
 function useJoinState(): JoinState | null {
   const [state, setState] = useState<JoinState | null>(null);
@@ -35,6 +45,11 @@ function useJoinState(): JoinState | null {
 function usePlanLabel() {
   const t = useTranslations('signup.plan');
   return (card: PlanCardView) => (card.durationMonths === 1 ? t('monthly') : t('months', { count: card.durationMonths }));
+}
+
+function usePtLabel() {
+  const t = useTranslations('signup.plan');
+  return (card: PtCardView) => t('ptMonths', { count: card.durationMonths });
 }
 
 function Placeholder() {
@@ -118,6 +133,7 @@ export function JoinPlan(props: { prices: PriceLists; admissionPaise: number; to
   return (
     <PlanStep
       cards={list.cards}
+      ptCards={list.ptCards}
       deskConfirmsPrice={list.deskConfirmsPrice}
       admissionPaise={props.admissionPaise}
       today={props.today}
@@ -126,7 +142,7 @@ export function JoinPlan(props: { prices: PriceLists; admissionPaise: number; to
       {...(state.planId === undefined ? {} : { initialPlanId: state.planId })}
       {...(state.startDate === undefined ? {} : { initialStartDate: state.startDate })}
       onContinue={(choice) => {
-        updateJoinState({ planId: choice.planId, startDate: choice.startDate });
+        updateJoinState({ planId: choice.planId, startDate: choice.startDate, ptPlanId: choice.ptPlanId ?? undefined });
         router.push('/join/pay');
       }}
     />
@@ -137,6 +153,7 @@ export function JoinPay(props: { prices: PriceLists; admissionPaise: number; pho
   const t = useTranslations('signup');
   const router = useRouter();
   const label = usePlanLabel();
+  const ptLabel = usePtLabel();
   const state = useJoinState();
   if (state === null) return <Placeholder />;
   if (state.registrationToken === undefined || state.gender === undefined || state.firstName === undefined) return <StartAgain />;
@@ -151,10 +168,12 @@ export function JoinPay(props: { prices: PriceLists; admissionPaise: number; pho
   }
 
   const startDate = state.startDate as ISTDate;
+  const ptCard = props.prices[state.gender].ptCards.find((c) => c.planId === state.ptPlanId);
   return (
     <PayStep
       auth={{ kind: 'registration', token: state.registrationToken }}
       planId={card.planId}
+      ptPlanId={ptCard?.planId ?? null}
       startDate={startDate}
       summary={{
         firstName: state.firstName,
@@ -164,6 +183,7 @@ export function JoinPay(props: { prices: PriceLists; admissionPaise: number; pho
         planPricePaise: card.pricePaise,
         // A sign-up is always a first membership (BR-2.6); the server decides the final amount.
         admissionPaise: props.admissionPaise,
+        ...(ptCard === undefined ? {} : { ptLabel: ptLabel(ptCard), ptPricePaise: ptCard.pricePaise }),
       }}
       phoneDisplay={props.phoneDisplay}
       receptionOnly={state.fromQr === true}

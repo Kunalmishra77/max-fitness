@@ -31,19 +31,41 @@ export type PricedGender = (typeof PRICED_GENDERS)[number];
 export const GENDERS = ['MALE', 'FEMALE', 'OTHER'] as const;
 export type Gender = (typeof GENDERS)[number];
 
-/** `M3_FEMALE` and friends — the `Plan.code` format (database-design.md §2). */
-export type PlanCode = `M${PlanDurationMonths}_${PricedGender}`;
+/**
+ * What a plan row sells. A gym membership, or personal training alongside one —
+ * priced separately, bought separately, and never a substitute for the membership (ADR-087).
+ */
+export const PLAN_KINDS = ['MEMBERSHIP', 'PT'] as const;
+export type PlanKind = (typeof PLAN_KINDS)[number];
 
-export function planCode(months: PlanDurationMonths, gender: PricedGender): PlanCode {
+/** `M3_FEMALE` and friends — the `Plan.code` format (database-design.md §2). */
+export type MembershipPlanCode = `M${PlanDurationMonths}_${PricedGender}`;
+/** `PT3_FEMALE` — personal training, same shape so one table holds both (ADR-087). */
+export type PtPlanCode = `PT${PlanDurationMonths}_${PricedGender}`;
+export type PlanCode = MembershipPlanCode | PtPlanCode;
+
+export function planCode(months: PlanDurationMonths, gender: PricedGender): MembershipPlanCode {
   return `M${months}_${gender}`;
 }
 
-export const PLAN_CODES: readonly PlanCode[] = PRICED_GENDERS.flatMap((g) =>
+export function ptPlanCode(months: PlanDurationMonths, gender: PricedGender): PtPlanCode {
+  return `PT${months}_${gender}`;
+}
+
+export const PLAN_CODES: readonly MembershipPlanCode[] = PRICED_GENDERS.flatMap((g) =>
   PLAN_DURATIONS.map((m) => planCode(m, g)),
 );
 
+export const PT_PLAN_CODES: readonly PtPlanCode[] = PRICED_GENDERS.flatMap((g) =>
+  PLAN_DURATIONS.map((m) => ptPlanCode(m, g)),
+);
+
+export function planKindOfCode(code: string): PlanKind {
+  return code.startsWith('PT') ? 'PT' : 'MEMBERSHIP';
+}
+
 /** Default prices in paise (BR-2.2). The 3/6/12-month rows are placeholders pending owner sign-off. */
-export const DEFAULT_PLAN_PRICES_PAISE: Readonly<Record<PlanCode, number>> = {
+export const DEFAULT_PLAN_PRICES_PAISE: Readonly<Record<MembershipPlanCode, number>> = {
   M1_MALE: 150_000,
   M3_MALE: 400_000,
   M6_MALE: 750_000,
@@ -52,6 +74,21 @@ export const DEFAULT_PLAN_PRICES_PAISE: Readonly<Record<PlanCode, number>> = {
   M3_FEMALE: 320_000,
   M6_FEMALE: 600_000,
   M12_FEMALE: 1_080_000,
+};
+
+/**
+ * Personal training, as the gym quoted it in October 2026: the same price for men and
+ * women, and the longer you take the less each month costs (ADR-087).
+ *
+ * Stored as the **total** for the whole term — ₹4,500 × 3 is ₹13,500 — because that is
+ * what the member pays and what the receipt must add up to. The per-month figure the
+ * price list shows is derived from it, never the other way round, so the two cannot drift.
+ */
+export const DEFAULT_PT_PRICES_PAISE: Readonly<Record<PlanDurationMonths, number>> = {
+  1: 500_000,
+  3: 1_350_000,
+  6: 2_400_000,
+  12: 3_600_000,
 };
 
 // ── Reminder rules (BR-5.1) ───────────────────────────────────────────────────

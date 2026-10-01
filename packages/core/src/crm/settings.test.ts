@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { defaultGymSettings, type GymSettings } from '@mfp/shared';
 import { fakeClockAt } from '../testing/builders';
 import type { CrmActor } from './permissions';
-import { updateGymSettings, updatePlanPrices, type SettingsAuditEntry, type SettingsStore } from './settings';
+import { setPlanActive, updateGymSettings, updatePlanPrices, type SettingsAuditEntry, type SettingsStore } from './settings';
 
 /**
  * The owner's settings (crm-ux-blueprint §14; crm-module-spec §3).
@@ -29,11 +29,13 @@ const reception: CrmActor = { ...owner, staffUserId: 'staff_2', role: 'RECEPTION
 class FakeStore implements SettingsStore {
   settings: unknown = defaultGymSettings();
   plans = [
-    { code: 'M1_MALE', pricePaise: 150_000 },
-    { code: 'M3_MALE', pricePaise: 400_000 },
+    { code: 'M1_MALE', pricePaise: 150_000, isActive: true },
+    { code: 'M3_MALE', pricePaise: 400_000, isActive: true },
+    { code: 'PT3_MALE', pricePaise: 1_350_000, isActive: true },
   ];
   readonly saved: GymSettings[] = [];
   readonly prices: Array<{ code: string; pricePaise: number }> = [];
+  readonly actives: Array<{ code: string; isActive: boolean }> = [];
   readonly audit: SettingsAuditEntry[] = [];
 
   loadSettings() {
@@ -50,11 +52,46 @@ class FakeStore implements SettingsStore {
     this.prices.push({ code, pricePaise });
     return Promise.resolve();
   }
+  savePlanActive(_gymId: string, code: string, isActive: boolean) {
+    this.actives.push({ code, isActive });
+    return Promise.resolve();
+  }
   writeAudit(entry: SettingsAuditEntry) {
     this.audit.push(entry);
     return Promise.resolve();
   }
 }
+
+describe('setPlanActive', () => {
+  let store: FakeStore;
+  beforeEach(() => {
+    store = new FakeStore();
+  });
+
+  const setActive = (code: string, isActive: boolean, actor: CrmActor = owner) =>
+    setPlanActive({ code, isActive }, { actor, clock, uow: { transaction: (work) => work(store) } });
+
+  it('takes a plan off sale and records it', async () => {
+    // ADR-087: the owner stops selling 3-month PT without losing anybody already on it.
+    await expect(setActive('PT3_MALE', false)).resolves.toEqual({ changed: true });
+
+    expect(store.actives).toEqual([{ code: 'PT3_MALE', isActive: false }]);
+    expect(store.audit[0]?.action).toBe('plans.active');
+    expect(store.audit[0]?.after).toEqual({ PT3_MALE: false });
+  });
+
+  it('writes nothing when the plan is already in that state', async () => {
+    await expect(setActive('PT3_MALE', true)).resolves.toEqual({ changed: false });
+    expect(store.actives).toEqual([]);
+    expect(store.audit).toEqual([]);
+  });
+
+  it('refuses an unknown plan, and anyone who is not the owner with a PIN', async () => {
+    await expect(setActive('PT9_MALE', false)).rejects.toThrow(expect.objectContaining({ code: 'NOT_FOUND' }) as Error);
+    await expect(setActive('PT3_MALE', false, reception)).rejects.toThrow(expect.objectContaining({ code: 'FORBIDDEN' }) as Error);
+    await expect(setActive('PT3_MALE', false, ownerWithoutPin)).rejects.toThrow(expect.objectContaining({ code: 'FORBIDDEN' }) as Error);
+  });
+});
 
 describe('updatePlanPrices', () => {
   let store: FakeStore;

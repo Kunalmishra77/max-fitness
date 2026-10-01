@@ -24,6 +24,7 @@ import {
   registerAtDesk,
   sendAnnouncement,
   sendBirthdayWish,
+  setPlanActive,
   undoAttendance,
   updateGymSettings,
   updatePlanPrices,
@@ -423,6 +424,16 @@ async function settingsSave(work: (deps: ReturnType<typeof settingsDeps> & { act
 
 export async function savePlanPricesAction(prices: readonly PriceInput[]): Promise<SettingsResult> {
   return settingsSave(async (deps) => (await updatePlanPrices({ prices }, deps)).changed > 0);
+}
+
+/**
+ * Take a plan on or off sale (ADR-087).
+ *
+ * The row stays, so anyone already on that plan keeps their price and their dates; only
+ * the price lists stop offering it.
+ */
+export async function setPlanActiveAction(code: string, isActive: boolean): Promise<SettingsResult> {
+  return settingsSave(async (deps) => (await setPlanActive({ code, isActive }, deps)).changed);
 }
 
 export async function saveSettingsAction(patch: SettingsPatchInput): Promise<SettingsResult> {

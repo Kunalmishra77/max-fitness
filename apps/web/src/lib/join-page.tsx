@@ -1,4 +1,4 @@
-import { needsDeskPriceConfirmation, planCards } from '@mfp/core';
+import { needsDeskPriceConfirmation, planCards, ptCards } from '@mfp/core';
 import type { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
@@ -35,6 +35,8 @@ export function priceLists(ctx: SiteContext): PriceLists {
   const { plans, settings } = ctx.data;
   const list = (gender: 'MALE' | 'FEMALE' | 'OTHER') => ({
     cards: planCards(plans, gender, settings.pricing),
+    // Personal training on the same list, so the sign-up can ask about it (ADR-087).
+    ptCards: ptCards(plans, gender, settings.pricing),
     deskConfirmsPrice: needsDeskPriceConfirmation(gender, settings.pricing.otherGenderPricing),
   });
   return { MALE: list('MALE'), FEMALE: list('FEMALE'), OTHER: list('OTHER') };

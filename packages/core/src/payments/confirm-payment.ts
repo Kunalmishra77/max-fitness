@@ -22,6 +22,8 @@ export interface PaymentForConfirmation {
   readonly gymId: string;
   readonly memberId: string;
   readonly membershipId: string | null;
+  /** Set when the same payment also bought personal training (ADR-087). */
+  readonly ptEnrolmentId: string | null;
   readonly amountPaise: number;
   readonly status: PaymentRecordStatus;
   readonly receiptNo: string | null;
@@ -66,6 +68,7 @@ export interface PaymentConfirmationStore {
   markPaymentPaid(paymentId: string, update: PaidUpdate): Promise<void>;
   flagPayment(paymentId: string, reason: 'AMOUNT_MISMATCH'): Promise<void>;
   confirmMembership(membershipId: string, confirmedAt: Date): Promise<void>;
+  confirmPtEnrolment(ptEnrolmentId: string, confirmedAt: Date): Promise<void>;
   getMember(memberId: string): Promise<{ readonly id: string; readonly memberCode: string | null }>;
   activateMember(memberId: string, memberCode: string): Promise<void>;
   closeOpenCallTasks(memberId: string, reasons: readonly CallTaskClosedByPayment[], closedAt: Date): Promise<void>;
@@ -162,6 +165,10 @@ export function confirmPayment(
     });
     if (payment.membershipId !== null) {
       await store.confirmMembership(payment.membershipId, now);
+    }
+    // The trainer starts when the membership does: one payment, both things confirmed.
+    if (payment.ptEnrolmentId !== null) {
+      await store.confirmPtEnrolment(payment.ptEnrolmentId, now);
     }
 
     const member = await store.getMember(payment.memberId);

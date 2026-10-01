@@ -54,7 +54,7 @@ const loadFromDatabase = unstable_cache(
     const planRows = await prisma.plan.findMany({
       where: { gymId: gym.id, isActive: true },
       orderBy: [{ gender: 'asc' }, { durationMonths: 'asc' }],
-      select: { id: true, code: true, durationMonths: true, gender: true, pricePaise: true, isActive: true, sortOrder: true },
+      select: { id: true, code: true, kind: true, durationMonths: true, gender: true, pricePaise: true, isActive: true, sortOrder: true },
     });
 
     return {
@@ -71,6 +71,7 @@ const loadFromDatabase = unstable_cache(
       plans: planRows.map((row) => ({
         id: row.id,
         code: row.code as Plan['code'],
+        kind: row.kind,
         durationMonths: row.durationMonths as Plan['durationMonths'],
         gender: row.gender as PricedGender,
         pricePaise: row.pricePaise,

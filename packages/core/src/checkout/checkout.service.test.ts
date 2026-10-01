@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { istDate, type E164Mobile } from '@mfp/shared';
 import { DomainError } from '../errors';
 import type { Plan } from '../pricing/plans';
-import { buildPlan, fakeClockAt } from '../testing/builders';
+import { buildPlan, buildPtPlan, fakeClockAt } from '../testing/builders';
 import { FakePaymentProvider } from '../testing/payments';
 import type { CheckoutSettings } from './checkout.rules';
 import {
@@ -12,6 +12,7 @@ import {
   type MemberForCheckout,
   type NewPaymentRecord,
   type PendingMembershipRecord,
+  type PendingPtEnrolmentRecord,
   type ReusableMembershipQuery,
 } from './checkout.service';
 
@@ -19,6 +20,7 @@ class FakeCheckoutStore implements CheckoutStore {
   member: MemberForCheckout | null = null;
   plans: Plan[] = [];
   readonly memberships: Array<PendingMembershipRecord & { id: string; createdAt: Date }> = [];
+  readonly ptEnrolments: Array<PendingPtEnrolmentRecord & { id: string }> = [];
   readonly payments: Array<NewPaymentRecord & { id: string; providerOrderId: string | null }> = [];
   createdAt = new Date('2026-09-11T04:30:00Z');
 
@@ -44,6 +46,17 @@ class FakeCheckoutStore implements CheckoutStore {
     const created = { ...record, id: `ms_${this.memberships.length + 1}`, createdAt: this.createdAt };
     this.memberships.push(created);
     return Promise.resolve({ id: created.id, createdAt: created.createdAt });
+  }
+  findReusablePendingPtEnrolment(query: PendingPtEnrolmentRecord) {
+    const found = this.ptEnrolments.find(
+      (pt) => pt.memberId === query.memberId && pt.planId === query.planId && pt.startDate === query.startDate && pt.pricePaise === query.pricePaise,
+    );
+    return Promise.resolve(found === undefined ? null : { id: found.id });
+  }
+  createPendingPtEnrolment(record: PendingPtEnrolmentRecord) {
+    const created = { ...record, id: `pt_${this.ptEnrolments.length + 1}` };
+    this.ptEnrolments.push(created);
+    return Promise.resolve({ id: created.id });
   }
   createPayment(record: NewPaymentRecord) {
     const id = `pay_${this.payments.length + 1}`;
@@ -105,6 +118,76 @@ describe('createCheckoutOrder', () => {
       deps,
     );
 
+  describe('with personal training', () => {
+    // ADR-087: PT is bought alongside the membership, in one payment, and must end up as
+    // its own record — otherwise the gym cannot tell who has a trainer or for how long.
+    const ptQuarter = buildPtPlan({ durationMonths: 3, gender: 'MALE' });
+
+    beforeEach(() => {
+      store.plans = [maleQuarter, femaleMonthly, ptQuarter];
+    });
+
+    it('reserves the trainer for the same term and charges one combined amount', async () => {
+      const result = await signup({ ptPlanId: ptQuarter.id });
+
+      expect(store.ptEnrolments).toEqual([
+        expect.objectContaining({
+          gymId: 'gym_1',
+          memberId: 'mem_1',
+          planId: ptQuarter.id,
+          membershipId: 'ms_1',
+          durationMonths: 3,
+          startDate: '2026-09-11',
+          endDate: '2026-12-10',
+          pricePaise: 1_350_000,
+        }),
+      ]);
+      expect(store.payments[0]?.amountPaise).toBe(1_750_000);
+      expect(store.payments[0]?.ptEnrolmentId).toBe('pt_1');
+      expect(result.amountPaise).toBe(1_750_000);
+    });
+
+    it('buys no trainer when the member said no', async () => {
+      await signup();
+      expect(store.ptEnrolments).toEqual([]);
+      expect(store.payments[0]?.ptEnrolmentId).toBeNull();
+    });
+
+    it('refuses personal training longer than the membership it rides on', async () => {
+      const ptYear = buildPtPlan({ durationMonths: 12, gender: 'MALE' });
+      store.plans = [maleQuarter, ptYear];
+      expect(await codeOf(signup({ ptPlanId: ptYear.id }))).toBe('PT_LONGER_THAN_MEMBERSHIP');
+      expect(store.ptEnrolments).toEqual([]);
+    });
+
+    it('refuses a membership plan passed as the PT plan', async () => {
+      expect(await codeOf(signup({ ptPlanId: maleQuarter.id }))).toBe('PLAN_KIND_MISMATCH');
+    });
+
+    it('refuses PT from the other price list', async () => {
+      const femalePt = buildPtPlan({ durationMonths: 3, gender: 'FEMALE' });
+      store.plans = [maleQuarter, femalePt];
+      expect(await codeOf(signup({ ptPlanId: femalePt.id }))).toBe('PLAN_GENDER_MISMATCH');
+    });
+
+    it('holds the trainer too when the member will pay at reception', async () => {
+      const result = await signup({ ptPlanId: ptQuarter.id, payAtReception: true });
+
+      expect(result.kind).toBe('PAY_AT_RECEPTION');
+      expect(result.amountPaise).toBe(1_750_000);
+      expect(store.ptEnrolments).toHaveLength(1);
+      expect(store.payments).toEqual([]);
+    });
+
+    it('reuses the held trainer rather than booking a second one on a retry', async () => {
+      await signup({ ptPlanId: ptQuarter.id, payAtReception: true });
+      await signup({ ptPlanId: ptQuarter.id });
+
+      expect(store.ptEnrolments).toHaveLength(1);
+      expect(store.payments[0]?.ptEnrolmentId).toBe('pt_1');
+    });
+  });
+
   it('creates a pending membership, a payment and a provider order priced on the server', async () => {
     const result = await signup();
 
@@ -122,7 +205,16 @@ describe('createCheckoutOrder', () => {
       }),
     ]);
     expect(store.payments).toEqual([
-      { id: 'pay_1', gymId: 'gym_1', memberId: 'mem_1', membershipId: 'ms_1', amountPaise: 400_000, method: 'RAZORPAY', providerOrderId: 'order_1' },
+      {
+        id: 'pay_1',
+        gymId: 'gym_1',
+        memberId: 'mem_1',
+        membershipId: 'ms_1',
+        ptEnrolmentId: null,
+        amountPaise: 400_000,
+        method: 'RAZORPAY',
+        providerOrderId: 'order_1',
+      },
     ]);
     expect(provider.orders).toEqual([
       { amountPaise: 400_000, currency: 'INR', receipt: 'pay_1', notes: { memberId: 'mem_1', membershipId: 'ms_1' } },

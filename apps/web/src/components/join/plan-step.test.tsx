@@ -87,7 +87,80 @@ describe('PlanStep', () => {
 
     await user.click(screen.getByRole('radio', { name: /12 months/ }));
     await user.click(screen.getByRole('button', { name: 'Continue to payment' }));
-    expect(onContinue).toHaveBeenCalledWith({ planId: 'plan_m12', startDate: '2026-09-11' });
+    expect(onContinue).toHaveBeenCalledWith({ planId: 'plan_m12', startDate: '2026-09-11', ptPlanId: null });
+  });
+
+  describe('personal training', () => {
+    // ADR-087: the question is asked once, here, where the member can see what it adds.
+    const pt = (durationMonths: 1 | 3 | 6 | 12, pricePaise: number) => ({
+      planId: `plan_pt${durationMonths}`,
+      code: `PT${durationMonths}_MALE`,
+      durationMonths,
+      pricePaise,
+      perMonthPaise: Math.round(pricePaise / durationMonths),
+    });
+    const PT_CARDS = [pt(1, 500_000), pt(3, 1_350_000), pt(6, 2_400_000), pt(12, 3_600_000)];
+
+    it('is not asked at all when the gym sells no personal training', () => {
+      renderStep({ ptCards: [] });
+      expect(screen.queryByRole('group', { name: /personal training/i })).toBeNull();
+    });
+
+    it('asks, and continues with nothing extra when the answer is no', async () => {
+      const { onContinue, user } = renderStep({ ptCards: PT_CARDS });
+
+      expect(screen.getByRole<HTMLInputElement>('radio', { name: 'No' }).checked).toBe(true);
+      await user.click(screen.getByRole('radio', { name: /3 months/ }));
+      await user.click(screen.getByRole('button', { name: 'Continue to payment' }));
+
+      expect(onContinue).toHaveBeenCalledWith({ planId: 'plan_m3', startDate: '2026-09-11', ptPlanId: null });
+    });
+
+    it('offers only trainer terms that fit inside the membership, and adds the cost up', async () => {
+      // Twelve months of a trainer on a three-month membership is a mis-sale (ADR-087).
+      const { onContinue, user } = renderStep({ ptCards: PT_CARDS });
+      await user.click(screen.getByRole('radio', { name: /3 months/ }));
+      await user.click(screen.getByRole('radio', { name: 'Yes' }));
+
+      const group = screen.getByRole('group', { name: /personal training/i });
+      expect(within(group).getAllByRole('radio').map((option) => option.getAttribute('value'))).toEqual(['no', 'yes', 'plan_pt1', 'plan_pt3']);
+
+      await user.click(within(group).getByRole('radio', { name: /3 months/ }));
+      expect(screen.getByText('Membership ₹4,000 + personal training ₹13,500 = ₹17,500')).toBeTruthy();
+
+      await user.click(screen.getByRole('button', { name: 'Continue to payment' }));
+      expect(onContinue).toHaveBeenCalledWith({ planId: 'plan_m3', startDate: '2026-09-11', ptPlanId: 'plan_pt3' });
+    });
+
+    it('drops a trainer term that no longer fits when the membership is shortened, and asks again', async () => {
+      const { onContinue, user } = renderStep({ ptCards: PT_CARDS });
+      await user.click(screen.getByRole('radio', { name: /12 months/ }));
+      await user.click(screen.getByRole('radio', { name: 'Yes' }));
+      await user.click(screen.getByRole('radio', { name: /12 months personal training/i }));
+
+      await user.click(screen.getByRole('radio', { name: /Monthly/ }));
+
+      // One month of membership can carry only one month of trainer. The old choice is
+      // gone, and the member is asked rather than silently charged either way.
+      const group = screen.getByRole('group', { name: /personal training/i });
+      expect(within(group).getAllByRole('radio').map((option) => option.getAttribute('value'))).toEqual(['no', 'yes', 'plan_pt1']);
+      await user.click(screen.getByRole('button', { name: 'Continue to payment' }));
+      expect(onContinue).not.toHaveBeenCalled();
+
+      await user.click(within(group).getByRole('radio', { name: /1 month personal training/i }));
+      await user.click(screen.getByRole('button', { name: 'Continue to payment' }));
+      expect(onContinue).toHaveBeenCalledWith({ planId: 'plan_m1', startDate: '2026-09-11', ptPlanId: 'plan_pt1' });
+    });
+
+    it('asks for a choice when the member says yes and picks no term', async () => {
+      const { onContinue, user } = renderStep({ ptCards: PT_CARDS });
+      await user.click(screen.getByRole('radio', { name: /3 months/ }));
+      await user.click(screen.getByRole('radio', { name: 'Yes' }));
+      await user.click(screen.getByRole('button', { name: 'Continue to payment' }));
+
+      expect(onContinue).not.toHaveBeenCalled();
+      expect(screen.getByRole('alert').textContent).toContain('Choose a personal training plan');
+    });
   });
 
   it('uses a fixed start date for a renewal instead of offering a choice', async () => {
@@ -98,7 +171,7 @@ describe('PlanStep', () => {
     expect(screen.getByText('Ends on 19 Oct 2026')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: 'Continue to payment' }));
-    expect(onContinue).toHaveBeenCalledWith({ planId: 'plan_m1', startDate: '2026-09-20' });
+    expect(onContinue).toHaveBeenCalledWith({ planId: 'plan_m1', startDate: '2026-09-20', ptPlanId: null });
   });
 
   it('mentions the admission fee and a desk-confirmed price when they apply', () => {

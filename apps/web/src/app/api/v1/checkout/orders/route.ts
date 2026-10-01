@@ -53,6 +53,8 @@ export async function POST(request: NextRequest) {
       {
         memberId: access.memberId,
         planId: parsed.data.planId,
+        // "Do you need personal training?" — priced and length-checked server-side (ADR-087).
+        ptPlanId: parsed.data.ptPlanId,
         // A renewal's start follows BR-3.4 from the member's record, whatever was sent.
         startDate: access.mode === 'renewal' ? null : parsed.data.startDate,
         payAtReception: parsed.data.payAtReception,

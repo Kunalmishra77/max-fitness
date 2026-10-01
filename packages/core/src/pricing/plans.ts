@@ -4,6 +4,7 @@ import {
   type Gender,
   type PlanCode,
   type PlanDurationMonths,
+  type PlanKind,
   type PricedGender,
 } from '@mfp/shared';
 import { DomainError } from '../errors';
@@ -18,6 +19,8 @@ import { DomainError } from '../errors';
 export interface Plan {
   readonly id: string;
   readonly code: PlanCode;
+  /** A gym membership, or personal training sold alongside one (ADR-087). */
+  readonly kind: PlanKind;
   readonly durationMonths: PlanDurationMonths;
   readonly gender: PricedGender;
   /** Integer paise (CLAUDE.md §2.1). */
@@ -64,10 +67,15 @@ export function needsDeskPriceConfirmation(
   return gender === 'OTHER' && otherGenderPricing === 'ASK_AT_DESK';
 }
 
-/** The active plans for a gender, in display order (shortest first). */
+/**
+ * The active *membership* plans for a gender, in display order (shortest first).
+ *
+ * PT lives in the same table and is deliberately excluded: it is sold alongside a
+ * membership, never instead of one, and `ptPlansFor` lists it (ADR-087).
+ */
 export function plansForGender(plans: readonly Plan[], gender: PricedGender): Plan[] {
   return plans
-    .filter((p) => p.isActive && p.gender === gender)
+    .filter((p) => p.kind === 'MEMBERSHIP' && p.isActive && p.gender === gender)
     .sort((a, b) => a.sortOrder - b.sortOrder || a.durationMonths - b.durationMonths);
 }
 
@@ -100,5 +108,5 @@ export function findPlanById(plans: readonly Plan[], planId: string): Plan {
 
 /** The 1-month plan for a gender — the baseline the "you save" figure compares against (BR-2.4). */
 export function monthlyPlanFor(plans: readonly Plan[], gender: PricedGender): Plan | undefined {
-  return plans.find((p) => p.gender === gender && p.durationMonths === 1 && p.isActive);
+  return plans.find((p) => p.kind === 'MEMBERSHIP' && p.gender === gender && p.durationMonths === 1 && p.isActive);
 }

@@ -23,7 +23,7 @@ export interface SettingsAuditEntry {
   readonly gymId: string;
   readonly actorType: 'staff';
   readonly actorId: string;
-  readonly action: 'settings.update' | 'plans.price' | 'reminders.update';
+  readonly action: 'settings.update' | 'plans.price' | 'plans.active' | 'reminders.update';
   readonly entityType: 'Gym' | 'Plan' | 'ReminderRule';
   readonly entityId: string | null;
   readonly before: Readonly<Record<string, unknown>>;
@@ -34,8 +34,9 @@ export interface SettingsStore {
   /** The stored document as it is; it is parsed here, in one place. Locks the gym row. */
   loadSettings(gymId: string): Promise<unknown>;
   saveSettings(gymId: string, settings: GymSettings): Promise<void>;
-  loadPlans(gymId: string): Promise<ReadonlyArray<{ readonly code: string; readonly pricePaise: number }>>;
+  loadPlans(gymId: string): Promise<ReadonlyArray<{ readonly code: string; readonly pricePaise: number; readonly isActive: boolean }>>;
   savePlanPrice(gymId: string, code: string, pricePaise: number): Promise<void>;
+  savePlanActive(gymId: string, code: string, isActive: boolean): Promise<void>;
   writeAudit(entry: SettingsAuditEntry): Promise<void>;
 }
 
@@ -102,6 +103,39 @@ export async function updatePlanPrices(
       });
     }
     return { changed: changed.length };
+  });
+}
+
+/**
+ * Take a plan on or off sale (ADR-087).
+ *
+ * The owner stops offering, say, three-month personal training without touching anyone
+ * already on it: the row stays, so existing enrolments keep their price and their dates,
+ * and only the price lists stop showing it.
+ */
+export async function setPlanActive(
+  input: { readonly code: string; readonly isActive: boolean },
+  deps: SettingsDeps,
+): Promise<{ readonly changed: boolean }> {
+  assertCan(deps.actor, 'settings.manage', deps.clock.now());
+
+  return deps.uow.transaction(async (store) => {
+    const plan = (await store.loadPlans(deps.actor.gymId)).find((row) => row.code === input.code);
+    if (plan === undefined) throw new DomainError('NOT_FOUND', 'No such plan', { code: input.code });
+    if (plan.isActive === input.isActive) return { changed: false };
+
+    await store.savePlanActive(deps.actor.gymId, input.code, input.isActive);
+    await store.writeAudit({
+      gymId: deps.actor.gymId,
+      actorType: 'staff',
+      actorId: deps.actor.staffUserId,
+      action: 'plans.active',
+      entityType: 'Plan',
+      entityId: null,
+      before: { [input.code]: plan.isActive },
+      after: { [input.code]: input.isActive },
+    });
+    return { changed: true };
   });
 }
 

@@ -5,9 +5,15 @@ describe('CheckoutOrderSchema', () => {
   it('accepts a plan and a start date, defaulting to online payment', () => {
     expect(CheckoutOrderSchema.parse({ planId: 'cm1plan000001', startDate: '2026-09-11' })).toEqual({
       planId: 'cm1plan000001',
+      // No personal training unless it is asked for by name (ADR-087).
+      ptPlanId: null,
       startDate: '2026-09-11',
       payAtReception: false,
     });
+  });
+
+  it('carries a personal training plan when one was chosen', () => {
+    expect(CheckoutOrderSchema.parse({ planId: 'cm1plan000001', ptPlanId: 'cm1pt0000001', startDate: '2026-09-11' }).ptPlanId).toBe('cm1pt0000001');
   });
 
   it('allows a renewal to leave the start date to the server', () => {

@@ -12,6 +12,8 @@ import { MEMBER_GENDERS } from './registration';
 export const CheckoutOrderSchema = z
   .object({
     planId: z.string().trim().min(1).max(64),
+    /** Personal training bought alongside it; `null` is "no thanks" (ADR-087). */
+    ptPlanId: z.string().trim().min(1).max(64).nullable().default(null),
     /** Required for a sign-up; a renewal's start follows BR-3.4 and is left `null`. */
     startDate: z.string().refine(isISTDate, { message: 'startDate' }).nullable().default(null),
     payAtReception: z.boolean().default(false),

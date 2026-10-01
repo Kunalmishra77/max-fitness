@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { can, mayAfterPinEntry } from '@mfp/core';
-import { savePlanPricesAction, saveReminderSettingsAction, saveSettingsAction, unlockSettingsAction } from '@/app/crm/actions';
+import { savePlanPricesAction, saveReminderSettingsAction, saveSettingsAction, setPlanActiveAction, unlockSettingsAction } from '@/app/crm/actions';
 import { BottomNav, CrmHeader } from '@/components/crm/crm-chrome';
 import {
   AutomaticMessagesForm,
@@ -9,6 +9,7 @@ import {
   LanguageVoiceForm,
   QrOtpForm,
   PricesForm,
+  PtPricesForm,
   PromoForm,
   RemindersForm,
   SettingsUnlock,
@@ -58,9 +59,10 @@ export default async function CrmSettingsPage() {
   }
 
   const [plans, reminderRules] = await Promise.all([
+    // Every plan, PT included and inactive ones too: the owner turns them on and off here.
     prisma.plan.findMany({
-      where: { gymId: gym.id, isActive: true, gender: { in: ['MALE', 'FEMALE'] } },
-      select: { code: true, gender: true, durationMonths: true, pricePaise: true },
+      where: { gymId: gym.id, gender: { in: ['MALE', 'FEMALE'] } },
+      select: { code: true, kind: true, gender: true, durationMonths: true, pricePaise: true, isActive: true },
       orderBy: [{ gender: 'asc' }, { durationMonths: 'asc' }],
     }),
     // In the order they reach a member: a week before, then the day, then after.
@@ -74,8 +76,25 @@ export default async function CrmSettingsPage() {
       <CrmHeader title={t('settings.title')} subtitle={t('menu.settings.desc')} back="/crm/more" />
       <div className="grid gap-3 p-4 pb-24">
         <PricesForm
-          plans={plans.map((plan) => ({ code: plan.code, gender: plan.gender as 'MALE' | 'FEMALE', durationMonths: plan.durationMonths, pricePaise: plan.pricePaise }))}
+          plans={plans
+            .filter((plan) => plan.kind === 'MEMBERSHIP' && plan.isActive)
+            .map((plan) => ({ code: plan.code, gender: plan.gender as 'MALE' | 'FEMALE', durationMonths: plan.durationMonths, pricePaise: plan.pricePaise }))}
           save={savePlanPricesAction}
+          unlock={unlockSettingsAction}
+        />
+        {/* Personal training, below the memberships it rides on (ADR-087). */}
+        <PtPricesForm
+          plans={plans
+            .filter((plan) => plan.kind === 'PT')
+            .map((plan) => ({
+              code: plan.code,
+              gender: plan.gender as 'MALE' | 'FEMALE',
+              durationMonths: plan.durationMonths,
+              pricePaise: plan.pricePaise,
+              isActive: plan.isActive,
+            }))}
+          save={savePlanPricesAction}
+          setActive={setPlanActiveAction}
           unlock={unlockSettingsAction}
         />
         <JoiningForm admissionFeeRupees={pricing.admissionFeePaise / 100} minAge={privacy.minAge} save={saveSettingsAction} unlock={unlockSettingsAction} />

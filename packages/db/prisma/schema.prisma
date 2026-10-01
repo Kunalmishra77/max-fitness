@@ -70,6 +70,17 @@ enum MembershipStatus {
   CANCELLED
 }
 
+enum PlanKind {
+  MEMBERSHIP
+  PT
+}
+
+enum PtEnrolmentStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  CANCELLED
+}
+
 enum PaymentMethod {
   RAZORPAY
   CASH
@@ -261,6 +272,7 @@ model Gym {
   plans         Plan[]
   members       Member[]
   memberships   Membership[]
+  ptEnrolments  PtEnrolment[]
   payments      Payment[]
   leads         Lead[]
   verifications VerificationRequest[]
@@ -378,20 +390,54 @@ model OtpCode {
 model Plan {
   id             String   @id @default(cuid())
   gymId          String
-  code           String // e.g. "M1_MALE", "M12_FEMALE"
+  code           String // e.g. "M1_MALE", "M12_FEMALE", "PT3_MALE"
+  /// MEMBERSHIP or PT. PT is sold alongside a membership, never instead of one (ADR-087).
+  kind           PlanKind @default(MEMBERSHIP)
   durationMonths Int
   gender         Gender
+  /// The total for the whole term, in paise. A per-month figure is derived for display.
   pricePaise     Int
   isActive       Boolean  @default(true)
   sortOrder      Int      @default(0)
   createdAt      DateTime @default(now()) @db.Timestamptz
   updatedAt      DateTime @updatedAt @db.Timestamptz
 
-  gym         Gym          @relation(fields: [gymId], references: [id])
-  memberships Membership[]
+  gym           Gym            @relation(fields: [gymId], references: [id])
+  memberships   Membership[]
+  ptEnrolments  PtEnrolment[]
 
   @@unique([gymId, code])
-  @@index([gymId, gender, isActive])
+  @@index([gymId, kind, gender, isActive])
+}
+
+/// Personal training bought by a member, alongside the membership it rides on (ADR-087).
+model PtEnrolment {
+  id             String            @id @default(cuid())
+  gymId          String
+  memberId       String
+  planId         String
+  /// The membership this PT term goes with, when it was bought together with one.
+  membershipId   String?
+  durationMonths Int
+  startDate      DateTime          @db.Date
+  endDate        DateTime          @db.Date
+  /// Copied from the plan at purchase: a price change must never alter what was paid (BR-2.8).
+  pricePaise     Int
+  status         PtEnrolmentStatus
+  createdById    String?
+  confirmedAt    DateTime?         @db.Timestamptz
+  cancelledAt    DateTime?         @db.Timestamptz
+  createdAt      DateTime          @default(now()) @db.Timestamptz
+  updatedAt      DateTime          @updatedAt @db.Timestamptz
+
+  gym        Gym         @relation(fields: [gymId], references: [id])
+  member     Member      @relation(fields: [memberId], references: [id])
+  plan       Plan        @relation(fields: [planId], references: [id])
+  membership Membership? @relation(fields: [membershipId], references: [id])
+  payments   Payment[]
+
+  @@index([gymId, status, endDate])
+  @@index([memberId])
 }
 
 // ───────────────────────────── Members ─────────────────────────────
@@ -434,6 +480,7 @@ model Member {
   gym           Gym                   @relation(fields: [gymId], references: [id])
   photo         MediaFile?            @relation("MemberPhoto", fields: [photoMediaId], references: [id])
   memberships   Membership[]
+  ptEnrolments  PtEnrolment[]
   payments      Payment[]
   media         MediaFile[]           @relation("MemberMedia")
   faceTemplates FaceTemplate[]
@@ -474,11 +521,12 @@ model Membership {
   createdAt       DateTime         @default(now()) @db.Timestamptz
   updatedAt       DateTime         @updatedAt @db.Timestamptz
 
-  gym      Gym          @relation(fields: [gymId], references: [id])
-  member   Member       @relation(fields: [memberId], references: [id])
-  plan     Plan?        @relation(fields: [planId], references: [id])
-  payments Payment[]
-  messages MessageLog[]
+  gym          Gym           @relation(fields: [gymId], references: [id])
+  member       Member        @relation(fields: [memberId], references: [id])
+  plan         Plan?         @relation(fields: [planId], references: [id])
+  payments     Payment[]
+  messages     MessageLog[]
+  ptEnrolments PtEnrolment[]
 
   @@index([gymId, status, endDate])
   @@index([memberId, endDate])
@@ -489,6 +537,9 @@ model Payment {
   gymId               String
   memberId            String
   membershipId        String?
+  /// Set when this payment also covers personal training (ADR-087). The split is read
+  /// from the membership and the enrolment, so no amount is stored twice.
+  ptEnrolmentId       String?
   amountPaise         Int
   method              PaymentMethod
   status              PaymentStatus
@@ -505,9 +556,10 @@ model Payment {
   createdAt           DateTime      @default(now()) @db.Timestamptz
   updatedAt           DateTime      @updatedAt @db.Timestamptz
 
-  gym        Gym         @relation(fields: [gymId], references: [id])
-  member     Member      @relation(fields: [memberId], references: [id])
-  membership Membership? @relation(fields: [membershipId], references: [id])
+  gym         Gym          @relation(fields: [gymId], references: [id])
+  member      Member       @relation(fields: [memberId], references: [id])
+  membership  Membership?  @relation(fields: [membershipId], references: [id])
+  ptEnrolment PtEnrolment? @relation(fields: [ptEnrolmentId], references: [id])
 
   @@unique([gymId, receiptNo])
   @@index([gymId, status, paidAt])

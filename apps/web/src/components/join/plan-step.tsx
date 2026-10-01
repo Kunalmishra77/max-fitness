@@ -1,6 +1,6 @@
 'use client';
 
-import type { PlanCardView } from '@mfp/core';
+import type { PlanCardView, PtCardView } from '@mfp/core';
 import { membershipEndDate } from '@mfp/core/membership';
 import { addDays, type ISTDate } from '@mfp/shared/time';
 import { formatINR } from '@mfp/shared/money';
@@ -24,11 +24,15 @@ import { formatISTDate } from '@mfp/shared/time';
 export interface PlanChoice {
   readonly planId: string;
   readonly startDate: ISTDate;
+  /** `null` when the member said no to personal training (ADR-087). */
+  readonly ptPlanId: string | null;
 }
 
 export interface PlanStepProps {
   /** The member's price list, shortest plan first. */
   readonly cards: readonly PlanCardView[];
+  /** Personal training on this member's price list; empty when the gym sells none. */
+  readonly ptCards?: readonly PtCardView[];
   readonly admissionPaise: number;
   readonly deskConfirmsPrice: boolean;
   readonly today: ISTDate;
@@ -46,6 +50,7 @@ const price = (paise: number) => formatINR(paise, { showPaise: false });
 
 export function PlanStep({
   cards,
+  ptCards = [],
   admissionPaise,
   deskConfirmsPrice,
   today,
@@ -73,12 +78,23 @@ export function PlanStep({
   const monthly = cards.find((c) => c.durationMonths === 1);
   const packages = cards.filter((c) => c.durationMonths > 1);
   const chosen = cards.find((c) => c.planId === planId);
-  const label = (card: PlanCardView) =>
+  const label = (card: PlanCardView | PtCardView) =>
     card.durationMonths === 1 ? t('monthly') : t('months', { count: card.durationMonths });
+
+  // Personal training (ADR-087). "No" is the default, and only terms that fit inside the
+  // chosen membership are offered — a trainer booked past it is a mis-sale the desk has
+  // to unpick, and the server refuses it anyway.
+  const [wantsPt, setWantsPt] = useState(false);
+  const [ptPlanId, setPtPlanId] = useState('');
+  const [ptMissing, setPtMissing] = useState(false);
+  const ptFits = chosen === undefined ? [] : ptCards.filter((card) => card.durationMonths <= chosen.durationMonths);
+  const ptChosen = ptFits.find((card) => card.planId === ptPlanId);
 
   const choose = (card: PlanCardView) => {
     setPlanId(card.planId);
     setMissing(false);
+    // A shorter membership can carry a shorter trainer term, so an impossible choice goes.
+    if (ptChosen !== undefined && ptChosen.durationMonths > card.durationMonths) setPtPlanId('');
     track('plan_selected', { plan: card.code });
   };
 
@@ -134,7 +150,11 @@ export function PlanStep({
           setMissing(true);
           return;
         }
-        onContinue({ planId: chosen.planId, startDate });
+        if (wantsPt && ptFits.length > 0 && ptChosen === undefined) {
+          setPtMissing(true);
+          return;
+        }
+        onContinue({ planId: chosen.planId, startDate, ptPlanId: wantsPt ? (ptChosen?.planId ?? null) : null });
       }}
       className="grid gap-6"
     >
@@ -153,6 +173,92 @@ export function PlanStep({
             {t('packagesHeading')}
           </legend>
           {packages.map((card) => option(card, false))}
+        </fieldset>
+      )}
+
+      {ptCards.length === 0 ? null : (
+        <fieldset className="grid gap-2">
+          <legend className="font-display text-title text-brand-obsidian mb-2 font-bold">{t('ptHeading')}</legend>
+          <p className="text-body text-brand-ink/80 -mt-1 mb-1">{t('ptHelper')}</p>
+          <div className="flex gap-2">
+            {(
+              [
+                ['no', false],
+                ['yes', true],
+              ] as const
+            ).map(([value, wants]) => (
+              <label
+                key={value}
+                className={cn(
+                  'rounded-panel flex flex-1 cursor-pointer items-center justify-center gap-2 border-2 p-3 font-semibold',
+                  'has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2',
+                  wantsPt === wants ? 'border-brand-obsidian bg-brand-obsidian/[0.04]' : 'border-brand-stone/30 bg-brand-white',
+                )}
+              >
+                <input
+                  type="radio"
+                  name={`${id}-wants-pt`}
+                  value={value}
+                  checked={wantsPt === wants}
+                  onChange={() => {
+                    setWantsPt(wants);
+                    setPtMissing(false);
+                    if (!wants) setPtPlanId('');
+                  }}
+                  className="accent-brand-obsidian size-5 shrink-0"
+                />
+                {t(wants ? 'ptYes' : 'ptNo')}
+              </label>
+            ))}
+          </div>
+
+          {!wantsPt ? null : ptFits.length === 0 ? (
+            <p className="text-body text-brand-ink/80">{t('ptNeedsPlan')}</p>
+          ) : (
+            ptFits.map((card) => (
+              <label
+                key={card.planId}
+                className={cn(
+                  'rounded-panel flex cursor-pointer items-center gap-3 border-2 p-4',
+                  'has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2',
+                  ptPlanId === card.planId ? 'border-brand-obsidian bg-brand-obsidian/[0.04]' : 'border-brand-stone/30 bg-brand-white',
+                )}
+              >
+                <input
+                  type="radio"
+                  name={`${id}-pt`}
+                  value={card.planId}
+                  checked={ptPlanId === card.planId}
+                  onChange={() => {
+                    setPtPlanId(card.planId);
+                    setPtMissing(false);
+                  }}
+                  className="accent-brand-obsidian size-5 shrink-0"
+                />
+                <span className="flex min-w-0 flex-1 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                  <span className="text-brand-ink font-semibold">{t('ptMonths', { count: card.durationMonths })}</span>
+                  <span className="font-display text-brand-accent-deep text-body-l font-bold">{price(card.pricePaise)}</span>
+                  <span className="text-small text-brand-ink/80 w-full">{t('ptPerMonth', { price: price(card.perMonthPaise) })}</span>
+                </span>
+              </label>
+            ))
+          )}
+
+          {chosen === undefined || ptChosen === undefined ? null : (
+            <p aria-live="polite" className="text-body text-brand-obsidian font-semibold">
+              {t('ptTotal', {
+                membership: price(chosen.pricePaise + admissionPaise),
+                pt: price(ptChosen.pricePaise),
+                total: price(chosen.pricePaise + admissionPaise + ptChosen.pricePaise),
+              })}
+            </p>
+          )}
+
+          {ptMissing ? (
+            <p role="alert" className="rounded-input bg-tint-fee-expired-bg text-body text-semantic-fee-expired p-3 font-medium">
+              {t('ptChoose')}
+            </p>
+          ) : null}
         </fieldset>
       )}
 

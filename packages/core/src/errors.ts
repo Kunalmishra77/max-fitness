@@ -14,6 +14,10 @@ export const DOMAIN_ERROR_CODES = [
   'INVALID_PLAN_DURATION',
   'PRICE_MISMATCH',
   'PLAN_GENDER_MISMATCH',
+  /** A membership plan was offered where personal training was asked for, or the reverse (ADR-087). */
+  'PLAN_KIND_MISMATCH',
+  /** PT cannot run past the membership it rides on (ADR-087). */
+  'PT_LONGER_THAN_MEMBERSHIP',
 
   // Membership dates
   'INVALID_START_DATE',

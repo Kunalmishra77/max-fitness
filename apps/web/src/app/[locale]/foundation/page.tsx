@@ -352,6 +352,7 @@ function toPlan(row: {
   return {
     id: row.id,
     code: row.code as Plan['code'],
+    kind: 'MEMBERSHIP',
     durationMonths: row.durationMonths as Plan['durationMonths'],
     gender: row.gender as PricedGender,
     pricePaise: row.pricePaise,

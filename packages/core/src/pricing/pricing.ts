@@ -129,8 +129,9 @@ export function planCards(
 ): PlanCardView[] {
   const pricedGender: PricedGender = pricingGenderFor(gender, settings.otherGenderPricing);
   const monthly = monthlyPlanFor(plans, pricedGender);
+  // Memberships only: PT is priced on its own card (ADR-087).
   const relevant = plans
-    .filter((p) => p.isActive && p.gender === pricedGender)
+    .filter((p) => p.kind === 'MEMBERSHIP' && p.isActive && p.gender === pricedGender)
     .sort((a, b) => a.durationMonths - b.durationMonths);
 
   let bestIndex = -1;

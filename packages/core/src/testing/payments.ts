@@ -34,6 +34,7 @@ export class InMemoryPaymentStore implements PaymentConfirmationStore {
   readonly payments = new Map<string, StoredPayment>();
   readonly counters = new Map<string, number>();
   readonly memberships = new Map<string, { confirmedAt: Date | null }>();
+  readonly ptEnrolments = new Map<string, { confirmedAt: Date | null }>();
   readonly members = new Map<string, { memberCode: string | null; status: string }>();
   readonly closedTasks: Array<{ memberId: string; reasons: readonly string[] }> = [];
   readonly outbox: OutboxEventInput[] = [];
@@ -64,6 +65,13 @@ export class InMemoryPaymentStore implements PaymentConfirmationStore {
     const membership = this.memberships.get(membershipId);
     if (membership === undefined) throw new Error(`No membership ${membershipId}`);
     membership.confirmedAt = confirmedAt;
+    return Promise.resolve();
+  }
+
+  confirmPtEnrolment(ptEnrolmentId: string, confirmedAt: Date): Promise<void> {
+    const enrolment = this.ptEnrolments.get(ptEnrolmentId);
+    if (enrolment === undefined) throw new Error(`No PT enrolment ${ptEnrolmentId}`);
+    enrolment.confirmedAt = confirmedAt;
     return Promise.resolve();
   }
 
@@ -115,6 +123,7 @@ export function seedPendingPayment(store: InMemoryPaymentStore, overrides: Parti
     gymId: 'gym_1',
     memberId: 'mem_1',
     membershipId: 'ms_1',
+    ptEnrolmentId: null,
     amountPaise: 400_000,
     status: 'CREATED',
     receiptNo: null,

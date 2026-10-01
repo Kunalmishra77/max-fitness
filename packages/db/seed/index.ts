@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { hash } from '@node-rs/argon2';
 import {
   DEFAULT_PLAN_PRICES_PAISE,
+  DEFAULT_PT_PRICES_PAISE,
   DEFAULT_REMINDER_RULES,
   FEE_STATES,
   GymSettingsSchema,
@@ -24,6 +25,7 @@ import {
   istDate,
   istTime,
   planCode,
+  ptPlanCode,
   slotToUtc,
   systemClock,
   todayIST,
@@ -154,6 +156,27 @@ async function main(): Promise<void> {
               durationMonths: months,
               gender,
               pricePaise: DEFAULT_PLAN_PRICES_PAISE[code],
+              isActive: true,
+              sortOrder: months,
+            };
+          }),
+        ),
+      });
+
+      // Personal training, the same four terms at the same price for men and women — one
+      // row per gender anyway, so a future split needs a price change and no new code (ADR-087).
+      await prisma.plan.createMany({
+        data: PRICED_GENDERS.flatMap((gender) =>
+          PLAN_DURATIONS.map((months) => {
+            const code = ptPlanCode(months, gender);
+            return {
+              id: `plan_${code.toLowerCase()}`,
+              gymId: GYM.id,
+              code,
+              kind: 'PT' as const,
+              durationMonths: months,
+              gender,
+              pricePaise: DEFAULT_PT_PRICES_PAISE[months],
               isActive: true,
               sortOrder: months,
             };

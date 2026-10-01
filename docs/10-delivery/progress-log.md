@@ -935,3 +935,29 @@ Pending / next:
 **A near miss worth recording:** `wipe:members` would have deleted those real members along with my test rows. It now takes `--only=<name>` and, with it, leaves enquiries, queued events and the counters alone. The register is no longer empty — nothing may assume otherwise.
 
 **Still open:** storage objects for deleted members remain in the bucket (this machine cannot reach the Supabase storage host over TLS); `selfies/` and `gov-ids/` contain orphans that need clearing from the dashboard — but **not wholesale any more**, since real members' photographs are now in there too.
+
+## 2026-10-02 — The member profile, correcting details, and personal training
+
+**The client sent two documents:** twenty-one CRM improvements, then a second list adding personal training, AI diet plans over WhatsApp, a configurable WhatsApp bot and a paid "free trial". This session delivered the first group of the first document and the whole of personal training.
+
+### Shipped — the member on one screen (ADR-086)
+- The profile now carries mobile, email, date of birth, gender, joining date, training slot, plan and what the plan was settled for; every row present even when empty.
+- **"Correct details"** — a new screen and server action for the member's own details, with the same Zod schema in the browser and on the server. An erased member is refused; a shared number is reported, not refused; the audit row names the fields that changed and never their values.
+- Export and erasure moved into one menu top-right, beside editing. Photographs and IDs open in a dialog instead of a new tab.
+- The members list gained eight columns: photo, number, plan, status, fees-paid-till, slot, joined, last came — cards on a phone, a table from `lg`.
+- "Check QR members" removed from the menu; the Members screen shows the waiting count and opens the queue.
+- **A silent data-loss bug fixed:** approving a QR submission dropped the member's declared amount. Proved with a failing test first.
+
+### Shipped — personal training (ADR-087)
+- `Plan.kind` (`MEMBERSHIP` | `PT`) and a new `PtEnrolment` table; migration `20261001192811_pt_plans` applied to Supabase.
+- Eight PT plan rows created on the live gym at the owner's prices (₹5,000 / ₹4,500 / ₹4,000 / ₹3,000 per month for 1, 3, 6, 12 months), with `pnpm --filter @mfp/worker run set:pt` — dry run by default.
+- Core: `ptPlansFor`, `ptCards`, `ptPlanForMember`, `combinedQuote`; PT excluded from the membership price list; PT longer than its membership refused.
+- Checkout reserves the enrolment alongside the membership, charges one combined amount, and `confirmPayment` confirms both in the same transaction.
+- Website: a PT section on the fees block, and "Do you need personal training?" in the sign-up plan step with the combined total before paying.
+- CRM: a PT price section under the membership prices — monthly rate in, total shown, each term on or off sale — and a PT panel on the member profile.
+
+### Pending
+- PT in the **QR new-member form** and at the desk ("Take fees"), and PT numbers in reports — next slice.
+- The **free trial** (₹100/day), **AI diet plans**, the **WhatsApp bot settings**, and the dashboard/report additions from the second document.
+- Still blocked on the client: an **AI API key** (diet plans and the bot cannot run without one — the code can be built either way), **WhatsApp Cloud API approval and a worker host** for two-way conversations, and **Razorpay credentials plus Subscriptions/e-mandate** for online PT and trial payments.
+- Not built, deliberately: "add a new PT plan" and arbitrary plan durations — 1/3/6/12 is wired through membership dates, plan codes and reminder offsets (ADR-087).

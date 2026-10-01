@@ -55,7 +55,7 @@ function storeFor(tx: TransactionClient): CheckoutStore {
     async getPlans(gymId) {
       const rows = await tx.plan.findMany({
         where: { gymId },
-        select: { id: true, code: true, durationMonths: true, gender: true, pricePaise: true, isActive: true, sortOrder: true },
+        select: { id: true, code: true, kind: true, durationMonths: true, gender: true, pricePaise: true, isActive: true, sortOrder: true },
       });
       // A row outside the catalogue's shape cannot be sold online; skip it rather than guess.
       return rows.flatMap((row): Plan[] => {
@@ -99,6 +99,42 @@ function storeFor(tx: TransactionClient): CheckoutStore {
           status: 'PENDING_PAYMENT',
         },
         select: { id: true, createdAt: true },
+      });
+    },
+
+    // ADR-087: one trainer per purchase, so a retried checkout finds the held enrolment
+    // instead of booking a second one beside it.
+    findReusablePendingPtEnrolment(query) {
+      return tx.ptEnrolment.findFirst({
+        where: {
+          memberId: query.memberId,
+          planId: query.planId,
+          membershipId: query.membershipId,
+          durationMonths: query.durationMonths,
+          startDate: toDbDate(query.startDate),
+          endDate: toDbDate(query.endDate),
+          pricePaise: query.pricePaise,
+          status: 'PENDING_PAYMENT',
+        },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true },
+      });
+    },
+
+    createPendingPtEnrolment(record) {
+      return tx.ptEnrolment.create({
+        data: {
+          gymId: record.gymId,
+          memberId: record.memberId,
+          planId: record.planId,
+          membershipId: record.membershipId,
+          durationMonths: record.durationMonths,
+          startDate: toDbDate(record.startDate),
+          endDate: toDbDate(record.endDate),
+          pricePaise: record.pricePaise,
+          status: 'PENDING_PAYMENT',
+        },
+        select: { id: true },
       });
     },
 

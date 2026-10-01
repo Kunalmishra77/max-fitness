@@ -1,9 +1,11 @@
 import {
   DEFAULT_PLAN_PRICES_PAISE,
+  DEFAULT_PT_PRICES_PAISE,
   FakeClock,
   istDate,
   istTime,
   planCode,
+  ptPlanCode,
   type ISTDate,
   type ISTTime,
   type PlanDurationMonths,
@@ -48,6 +50,7 @@ export function buildPlan(overrides: Partial<Plan> = {}): Plan {
   return {
     id: `plan-${code}`,
     code,
+    kind: 'MEMBERSHIP',
     durationMonths,
     gender,
     pricePaise: DEFAULT_PLAN_PRICES_PAISE[code],
@@ -62,6 +65,29 @@ export function buildPlanCatalogue(): Plan[] {
   const genders: PricedGender[] = ['MALE', 'FEMALE'];
   const months: PlanDurationMonths[] = [1, 3, 6, 12];
   return genders.flatMap((gender) => months.map((durationMonths) => buildPlan({ gender, durationMonths })));
+}
+
+/** One personal-training plan at the gym's quoted price (ADR-087). */
+export function buildPtPlan(overrides: Partial<Plan> = {}): Plan {
+  const durationMonths: PlanDurationMonths = overrides.durationMonths ?? 1;
+  const gender: PricedGender = overrides.gender ?? 'MALE';
+  const code = ptPlanCode(durationMonths, gender);
+  return buildPlan({
+    id: `plan-${code}`,
+    code,
+    kind: 'PT',
+    gender,
+    durationMonths,
+    pricePaise: DEFAULT_PT_PRICES_PAISE[durationMonths],
+    ...overrides,
+  });
+}
+
+/** The eight PT plans (ADR-087), for tests that need PT beside the memberships. */
+export function buildPtCatalogue(): Plan[] {
+  const genders: PricedGender[] = ['MALE', 'FEMALE'];
+  const months: PlanDurationMonths[] = [1, 3, 6, 12];
+  return genders.flatMap((gender) => months.map((durationMonths) => buildPtPlan({ gender, durationMonths })));
 }
 
 let membershipCounter = 0;

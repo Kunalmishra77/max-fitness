@@ -62,6 +62,15 @@ export interface MemberProfile extends MemberListItem {
     /** True when it came from the QR or the register rather than a payment. */
     readonly isDeclared: boolean;
   }>;
+  /** Personal training this member has bought, newest first (ADR-087). */
+  readonly ptEnrolments: ReadonlyArray<{
+    readonly id: string;
+    readonly durationMonths: number;
+    readonly startDate: ISTDate;
+    readonly endDate: ISTDate;
+    readonly status: string;
+    readonly pricePaise: number;
+  }>;
   /** Which card the member showed at the QR, and a photograph of each side (ADR-074). */
   readonly govIdType: string | null;
   readonly govIdPhotos: readonly { readonly side: string; readonly storageKey: string }[];
@@ -298,6 +307,11 @@ export class PrismaCrmReader {
           orderBy: { endDate: 'desc' },
           take: 10,
         },
+        ptEnrolments: {
+          select: { id: true, durationMonths: true, startDate: true, endDate: true, status: true, pricePaise: true },
+          orderBy: { endDate: 'desc' },
+          take: 10,
+        },
         payments: {
           select: { id: true, amountPaise: true, method: true, status: true, receiptNo: true, paidAt: true },
           orderBy: { createdAt: 'desc' },
@@ -352,6 +366,14 @@ export class PrismaCrmReader {
         status: m.status,
         pricePaise: m.pricePaise,
         isDeclared: m.isDeclared,
+      })),
+      ptEnrolments: member.ptEnrolments.map((pt) => ({
+        id: pt.id,
+        durationMonths: pt.durationMonths,
+        startDate: fromDbDate(pt.startDate),
+        endDate: fromDbDate(pt.endDate),
+        status: pt.status,
+        pricePaise: pt.pricePaise,
       })),
       payments: member.payments,
       attendanceDays: [...new Set(attendance.map((a) => Number(fromDbDate(a.attendanceDate).slice(8, 10))))],

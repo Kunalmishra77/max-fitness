@@ -32,6 +32,30 @@ describe('confirmPayment', () => {
       { clock, uow: inMemoryUnitOfWork(store) },
     );
 
+  it('confirms the personal training the same payment covers', async () => {
+    // One payment, two things bought: the trainer must start when the membership does,
+    // not wait for someone to notice the enrolment is still pending (ADR-087).
+    store.ptEnrolments.set('pt_1', { confirmedAt: null });
+    seedPendingPayment(store, { ptEnrolmentId: 'pt_1' });
+
+    await confirm();
+
+    expect(store.ptEnrolments.get('pt_1')?.confirmedAt).toEqual(clock.now());
+    expect(store.memberships.get('ms_1')?.confirmedAt).toEqual(clock.now());
+  });
+
+  it('leaves the enrolment alone on a repeat delivery of a payment already confirmed', async () => {
+    store.ptEnrolments.set('pt_1', { confirmedAt: null });
+    seedPendingPayment(store, { ptEnrolmentId: 'pt_1' });
+    await confirm();
+    const first = store.ptEnrolments.get('pt_1')?.confirmedAt;
+
+    const again = await confirm();
+
+    expect(again.outcome).toBe('ALREADY_CONFIRMED');
+    expect(store.ptEnrolments.get('pt_1')?.confirmedAt).toEqual(first);
+  });
+
   it('marks the payment paid, numbers the receipt and activates the member', async () => {
     const result = await confirm();
 
