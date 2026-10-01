@@ -35,10 +35,19 @@ export interface MemberListItem {
   readonly daysLeft: number | null;
   readonly effectiveEndDate: ISTDate | null;
   readonly photoKey: string | null;
+  /** When they first joined the gym, which may be long before this system existed. */
+  readonly joinedOn: ISTDate | null;
+  /** Morning, evening or both — the gym shuts between noon and five (ADR-082). */
+  readonly trainingSlot: string | null;
+  /** Length of the newest plan, for the list's "Plan" column (ADR-086). */
+  readonly planMonths: number | null;
+  /** Last check-in, so the list can say who has stopped coming without a second query. */
+  readonly lastAttendanceAt: Date | null;
 }
 
 export interface MemberProfile extends MemberListItem {
   readonly dob: ISTDate | null;
+  readonly email: string | null;
   readonly whatsappOptIn: boolean;
   readonly isMinor: boolean;
   readonly notes: string | null;
@@ -48,6 +57,10 @@ export interface MemberProfile extends MemberListItem {
     readonly startDate: ISTDate | null;
     readonly endDate: ISTDate;
     readonly status: string;
+    /** What was paid, or what the member declared at the QR (ADR-086). */
+    readonly pricePaise: number;
+    /** True when it came from the QR or the register rather than a payment. */
+    readonly isDeclared: boolean;
   }>;
   /** Which card the member showed at the QR, and a photograph of each side (ADR-074). */
   readonly govIdType: string | null;
@@ -216,7 +229,12 @@ export class PrismaCrmReader {
         mobile: true,
         status: true,
         gender: true,
+        joinedOn: true,
+        trainingSlot: true,
+        lastAttendanceAt: true,
         photo: { select: { storageKey: true, deletedAt: true } },
+        // Newest plan only: the list shows what they are on now, not their history.
+        memberships: { select: { durationMonths: true }, orderBy: { endDate: 'desc' }, take: 1 },
       },
       orderBy: { fullName: 'asc' },
       take: options.limit ?? 50,
@@ -237,6 +255,10 @@ export class PrismaCrmReader {
           daysLeft: fee?.daysLeft ?? null,
           effectiveEndDate: fee?.effectiveEndDate == null ? null : fromDbDate(fee.effectiveEndDate),
           photoKey: row.photo === null || row.photo.deletedAt !== null ? null : row.photo.storageKey,
+          joinedOn: row.joinedOn === null ? null : fromDbDate(row.joinedOn),
+          trainingSlot: row.trainingSlot,
+          planMonths: row.memberships[0]?.durationMonths ?? null,
+          lastAttendanceAt: row.lastAttendanceAt,
         };
       })
       .filter((member) => options.feeState === undefined || member.feeState === options.feeState);
@@ -253,6 +275,10 @@ export class PrismaCrmReader {
         status: true,
         gender: true,
         dob: true,
+        email: true,
+        joinedOn: true,
+        trainingSlot: true,
+        lastAttendanceAt: true,
         whatsappOptIn: true,
         isMinor: true,
         notes: true,
@@ -268,7 +294,7 @@ export class PrismaCrmReader {
           select: { govIdType: true },
         },
         memberships: {
-          select: { id: true, durationMonths: true, startDate: true, endDate: true, status: true },
+          select: { id: true, durationMonths: true, startDate: true, endDate: true, status: true, pricePaise: true, isDeclared: true },
           orderBy: { endDate: 'desc' },
           take: 10,
         },
@@ -303,6 +329,11 @@ export class PrismaCrmReader {
       effectiveEndDate: fee?.effectiveEndDate == null ? null : fromDbDate(fee.effectiveEndDate),
       photoKey: member.photo === null || member.photo.deletedAt !== null ? null : member.photo.storageKey,
       dob: member.dob === null ? null : fromDbDate(member.dob),
+      email: member.email,
+      joinedOn: member.joinedOn === null ? null : fromDbDate(member.joinedOn),
+      trainingSlot: member.trainingSlot,
+      planMonths: member.memberships[0]?.durationMonths ?? null,
+      lastAttendanceAt: member.lastAttendanceAt,
       whatsappOptIn: member.whatsappOptIn,
       isMinor: member.isMinor,
       notes: member.notes,
@@ -319,6 +350,8 @@ export class PrismaCrmReader {
         startDate: m.startDate === null ? null : fromDbDate(m.startDate),
         endDate: fromDbDate(m.endDate),
         status: m.status,
+        pricePaise: m.pricePaise,
+        isDeclared: m.isDeclared,
       })),
       payments: member.payments,
       attendanceDays: [...new Set(attendance.map((a) => Number(fromDbDate(a.attendanceDate).slice(8, 10))))],

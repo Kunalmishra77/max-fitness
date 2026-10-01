@@ -60,7 +60,14 @@ export interface VerificationStore {
   findDeclaredImportMembership(memberId: string): Promise<{ readonly id: string; readonly endDate: ISTDate } | null>;
   updateDeclaredMembership(
     membershipId: string,
-    values: { readonly startDate: ISTDate | null; readonly endDate: ISTDate; readonly durationMonths: PlanDurationMonths | null },
+    values: {
+      readonly startDate: ISTDate | null;
+      readonly endDate: ISTDate;
+      readonly durationMonths: PlanDurationMonths | null;
+      /** What the member says they paid. Dropping it here lost it for exactly the
+          members the register import exists for (ADR-086). */
+      readonly pricePaise: number;
+    },
   ): Promise<void>;
   createDeclaredMembership(record: DeclaredMembershipRecord): Promise<string>;
   nextCounterValue(gymId: string, key: string): Promise<number>;
@@ -121,7 +128,7 @@ export async function approveVerification(
         createdById: actor.staffUserId,
       });
     } else {
-      await store.updateDeclaredMembership(imported.id, { startDate, endDate, durationMonths: months });
+      await store.updateDeclaredMembership(imported.id, { startDate, endDate, durationMonths: months, pricePaise: request.declaredAmountPaise ?? 0 });
     }
 
     const member = await store.getMember(request.memberId);

@@ -36,7 +36,7 @@ class FakeStore implements VerificationStore {
   member = { id: 'mem_1', memberCode: null as string | null, status: 'PENDING_VERIFICATION' };
   importMembership: { id: string; endDate: ISTDate } | null = null;
   readonly created: DeclaredMembershipRecord[] = [];
-  readonly updated: Array<{ id: string; startDate: ISTDate | null; endDate: ISTDate; durationMonths: number | null }> = [];
+  readonly updated: Array<{ id: string; startDate: ISTDate | null; endDate: ISTDate; durationMonths: number | null; pricePaise: number }> = [];
   readonly activated: Array<{ memberId: string; memberCode: string }> = [];
   readonly decisions: Array<Record<string, unknown>> = [];
   readonly closed: string[] = [];
@@ -53,7 +53,7 @@ class FakeStore implements VerificationStore {
   findDeclaredImportMembership() {
     return Promise.resolve(this.importMembership);
   }
-  updateDeclaredMembership(id: string, values: { startDate: ISTDate | null; endDate: ISTDate; durationMonths: number | null }) {
+  updateDeclaredMembership(id: string, values: { startDate: ISTDate | null; endDate: ISTDate; durationMonths: number | null; pricePaise: number }) {
     this.updated.push({ id, ...values });
     return Promise.resolve();
   }
@@ -138,6 +138,19 @@ describe('approveVerification', () => {
     });
   });
 
+  it('keeps the amount the member declared, for a register member as well as a new one (ADR-086)', async () => {
+    // The declared amount is what the desk checks the member's cash against. It was
+    // written for a new member and silently dropped for one matched to the paper
+    // register, so the very members the register import exists for lost it.
+    store.request = { ...(store.request as LockedVerification), memberId: 'mem_imp', matchedImportMemberId: 'mem_imp' };
+    store.member = { id: 'mem_imp', memberCode: 'MF-0007', status: 'ACTIVE' };
+    store.importMembership = { id: 'ms_imp', endDate: istDate('2026-09-28') };
+
+    await approve({ approvedEndDate: '2026-09-28' });
+
+    expect(store.updated[0]).toMatchObject({ id: 'ms_imp', pricePaise: 400_000 });
+  });
+
   it('moves the register membership to the chosen date for an imported member, and keeps the member code', async () => {
     store.request = { ...(store.request as LockedVerification), memberId: 'mem_imp', matchedImportMemberId: 'mem_imp' };
     store.member = { id: 'mem_imp', memberCode: 'MF-0007', status: 'ACTIVE' };
@@ -148,7 +161,7 @@ describe('approveVerification', () => {
     expect(result).toMatchObject({ memberCode: 'MF-0007', endDate: '2026-09-28' });
     expect(store.created).toEqual([]);
     // Same date as the register: nothing to move, only the plan length is recorded.
-    expect(store.updated).toEqual([{ id: 'ms_imp', startDate: '2026-06-29', endDate: '2026-09-28', durationMonths: 3 }]);
+    expect(store.updated).toEqual([{ id: 'ms_imp', startDate: '2026-06-29', endDate: '2026-09-28', durationMonths: 3, pricePaise: 400_000 }]);
     expect(store.activated).toEqual([{ memberId: 'mem_imp', memberCode: 'MF-0007' }]);
   });
 

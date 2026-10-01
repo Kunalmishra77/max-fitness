@@ -148,13 +148,11 @@ export function toTwelveHour(time: ISTTime): { hour: number; minute: number; mer
  * Worth asking only because this gym shuts between noon and five: the answer tells the
  * owner how many people are coming before work and how many after it, which is how they
  * decide when a trainer needs to be on the floor.
+ *
+ * It is a stored field, so the list itself lives beside the other stored enumerations in
+ * `@mfp/shared` and is re-exported here, where the hours it refers to are computed.
  */
-export const TRAINING_SLOTS = ['MORNING', 'EVENING', 'BOTH'] as const;
-export type TrainingSlot = (typeof TRAINING_SLOTS)[number];
-
-export function isTrainingSlot(value: unknown): value is TrainingSlot {
-  return typeof value === 'string' && (TRAINING_SLOTS as readonly string[]).includes(value);
-}
+export { TRAINING_SLOTS, isTrainingSlot, type TrainingSlot } from '@mfp/shared';
 
 export type DayPeriod = 'morning' | 'afternoon' | 'evening' | 'night';
 

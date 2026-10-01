@@ -120,6 +120,17 @@ export type MemberStatus = (typeof MEMBER_STATUSES)[number];
 export const MEMBERSHIP_STATUSES = ['PENDING_PAYMENT', 'CONFIRMED', 'CANCELLED'] as const;
 export type MembershipStatus = (typeof MEMBERSHIP_STATUSES)[number];
 
+/**
+ * Which half of the day a member trains in. The gym opens 4:30–12:00 and again
+ * 17:00–22:00, so "when do you come?" is a real question the desk asks (ADR-085).
+ */
+export const TRAINING_SLOTS = ['MORNING', 'EVENING', 'BOTH'] as const;
+export type TrainingSlot = (typeof TRAINING_SLOTS)[number];
+
+export function isTrainingSlot(value: unknown): value is TrainingSlot {
+  return typeof value === 'string' && (TRAINING_SLOTS as readonly string[]).includes(value);
+}
+
 // ── Call tasks (BR-7) ─────────────────────────────────────────────────────────
 export const CALL_TASK_REASONS = [
   'EXPIRED_BUT_VISITING',

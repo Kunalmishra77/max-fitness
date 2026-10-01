@@ -7,8 +7,10 @@ import { eraseMemberAction, unlockMemberDataAction, voidPaymentAction } from '@/
 import { BottomNav, CrmHeader, FEE_TONE, rupees, initials } from '@/components/crm/crm-chrome';
 import { CrmIcon } from '@/components/crm/crm-icons';
 import { GovIdStrip } from '@/components/crm/gov-id-strip';
+import { PhotoViewer } from '@/components/crm/photo-viewer';
+import { displayPhone } from '@/lib/site';
 import { cn } from '@/lib/cn';
-import { MemberDataSection } from '@/components/crm/member-data';
+import { MemberActionsMenu } from '@/components/crm/member-actions-menu';
 import { VoidPaymentButton } from '@/components/crm/void-payment';
 import { getContainer } from '@/lib/container';
 import { requireCrmContext } from '@/lib/crm';
@@ -43,12 +45,32 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
     ? []
     : await Promise.all(member.govIdPhotos.map(async (photo) => ({ side: photo.side, url: await storage.signedUrl(photo.storageKey, 300) })));
   const mayTakeFees = can(actor, 'payment.record', clock.now());
+  const mayEdit = can(actor, 'member.edit', clock.now());
   // The button shows for a role that may void; the PIN it then asks for is what actually
   // permits it (security-plan.md §3.1).
   const mayVoid = mayAfterPinEntry(actor, 'payment.void', clock.now());
   // Owner only, and hidden rather than disabled for everyone else (crm-ux-blueprint §16).
   const mayManageData = mayAfterPinEntry(actor, 'member.erase', clock.now());
   const exportReady = can(actor, 'member.export', clock.now());
+  // The newest membership is the one the desk is asked about.
+  const current = member.memberships[0] ?? null;
+  const planLine =
+    current === null
+      ? null
+      : current.durationMonths === null
+        ? t('profile.planUnknownLength')
+        : t('profile.plan', { count: current.durationMonths });
+  // "Settlement" is what the money behind this plan is: a payment taken here, or an
+  // amount the member declared at the QR and the desk has yet to collect (ADR-086).
+  const settlementLine =
+    current === null
+      ? null
+      : current.pricePaise === 0
+        ? t('profile.settlementNone')
+        : current.isDeclared
+          ? t('profile.settlementDeclared', { amount: rupees(current.pricePaise) })
+          : t('profile.settlementPaid', { amount: rupees(current.pricePaise) });
+
   const daysInMonth = new Date(Number(today.slice(0, 4)), Number(today.slice(5, 7)), 0).getDate();
   const attended = new Set(member.attendanceDays);
   const feeLine =
@@ -62,7 +84,21 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
 
   return (
     <>
-      <CrmHeader title={member.fullName} back="/crm/members" />
+      <CrmHeader
+        title={member.fullName}
+        back="/crm/members"
+        right={
+          <MemberActionsMenu
+            memberId={member.id}
+            memberName={member.fullName}
+            mayEdit={mayEdit}
+            mayManageData={mayManageData}
+            exportReady={exportReady}
+            unlock={unlockMemberDataAction}
+            erase={eraseMemberAction}
+          />
+        }
+      />
 
       <div className="bg-white px-4 pt-4 pb-5 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:p-6 lg:shadow-sm">
         <div className="flex items-center gap-4">
@@ -74,14 +110,17 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
               {initials(member.fullName)}
             </span>
           ) : (
-            // A signed, short-lived URL to a private file: next/image would cache it.
-            <img
-              src={photoUrl}
-              alt={t('profile.photoAlt', { name: member.fullName })}
-              width={96}
-              height={96}
-              className="size-20 shrink-0 rounded-full object-cover ring-2 ring-brand-accent/30"
-            />
+            // Opens here, not in a new tab: the desk keeps the record it is looking at.
+            <PhotoViewer url={photoUrl} alt={t('profile.photoAlt', { name: member.fullName })}>
+              {/* A signed, short-lived URL to a private file: next/image would cache it. */}
+              <img
+                src={photoUrl}
+                alt={t('profile.photoAlt', { name: member.fullName })}
+                width={96}
+                height={96}
+                className="size-20 shrink-0 rounded-full object-cover ring-2 ring-brand-accent/30"
+              />
+            </PhotoViewer>
           )}
           <div className="min-w-0">
             <p className="truncate font-display text-display-m leading-tight font-bold text-brand-obsidian">{member.fullName}</p>
@@ -96,6 +135,32 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
           </p>
           <p className="text-crm-body">{feeLine}</p>
         </div>
+
+        {/* Everything the desk might be asked for, in one place, every row present even
+            when it is empty — a hidden field reads as "we never asked" (ADR-086). */}
+        <dl className="mt-4 grid gap-x-6 gap-y-2 border-t border-brand-stone/15 pt-4 sm:grid-cols-2">
+          {(
+            [
+              // The whole number, readable and copyable: the desk has to ring it.
+              ['mobile', displayPhone(member.mobile)],
+              ['email', member.email],
+              ['dob', member.dob === null ? null : formatISTDate(member.dob, locale)],
+              ['gender', t(`gender.${member.gender}` as never)],
+              ['joinedOn', member.joinedOn === null ? null : formatISTDate(member.joinedOn, locale)],
+              ['slot', member.trainingSlot === null ? null : t(`verify.slot.${member.trainingSlot}` as never)],
+              ['plan', planLine],
+              ['settlement', settlementLine],
+              ['status', t(`status.${member.status}` as never)],
+            ] as const
+          ).map(([key, value]) => (
+            <div key={key} className="flex items-baseline justify-between gap-3 sm:block">
+              <dt className="text-small text-brand-stone">{t(`profile.field.${key}` as never)}</dt>
+              <dd className={cn('text-crm-body', value === null || value === '' ? 'text-brand-stone italic' : 'font-semibold text-brand-obsidian')}>
+                {value === null || value === '' ? t('profile.notGiven') : value}
+              </dd>
+            </div>
+          ))}
+        </dl>
 
         <div className="mt-4 grid grid-cols-3 gap-2">
           <a
@@ -200,16 +265,6 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
           ))}
         </ul>
       </section>
-
-      {mayManageData ? (
-        <MemberDataSection
-          memberId={member.id}
-          memberName={member.fullName}
-          exportReady={exportReady}
-          unlock={unlockMemberDataAction}
-          erase={eraseMemberAction}
-        />
-      ) : null}
 
       <BottomNav active="members" />
     </>

@@ -686,13 +686,46 @@
       "overdue": "{count} days overdue",
       "till": "till {date}"
     },
+    "gender": {
+      "MALE": "Male",
+      "FEMALE": "Female",
+      "OTHER": "Other"
+    },
+    "status": {
+      "ACTIVE": "Active",
+      "PENDING_PAYMENT": "Waiting for payment",
+      "PENDING_VERIFICATION": "Waiting to be checked",
+      "LEFT": "Left",
+      "BLOCKED": "Blocked"
+    },
     "members": {
       "title": "Members",
+      "waiting": "{count, plural, one {# member sent their details and is waiting to be checked} other {# members sent their details and are waiting to be checked}}",
+      "check": "Check now",
       "search": "Search name, number or code",
       "filterAll": "All",
       "empty": "No members found",
       "count": "{count} members",
-      "left": "Left the gym"
+      "left": "Left the gym",
+      "col": {
+        "member": "Member",
+        "mobile": "Mobile",
+        "plan": "Plan",
+        "status": "Status",
+        "paidTill": "Fees paid till",
+        "slot": "Trains",
+        "joined": "Joined",
+        "lastSeen": "Last came"
+      },
+      "slotShort": {
+        "MORNING": "Morning",
+        "EVENING": "Evening",
+        "BOTH": "Both"
+      },
+      "tillShort": "till {date}",
+      "seenToday": "Came today",
+      "seenDaysAgo": "{count, plural, one {1 day ago} other {# days ago}}",
+      "neverSeen": "Never came"
     },
     "profile": {
       "call": "Call",
@@ -707,7 +740,27 @@
       "monthly": "1 month",
       "receipt": "Receipt {receiptNo}",
       "back": "Back",
-      "photoAlt": "Photo of {name}"
+      "photoAlt": "Photo of {name}",
+      "notGiven": "Not given",
+      "plan": "{count, plural, one {# month} other {# months}}",
+      "planUnknownLength": "Length not recorded",
+      "settlementNone": "Nothing recorded",
+      "settlementPaid": "{amount} paid",
+      "settlementDeclared": "{amount} — member said so, not yet taken",
+      "field": {
+        "mobile": "Mobile",
+        "email": "Email",
+        "dob": "Date of birth",
+        "gender": "Gender",
+        "joinedOn": "Joined the gym",
+        "slot": "Trains",
+        "plan": "Plan",
+        "settlement": "Plan settlement",
+        "status": "Status"
+      },
+      "actions": "More for this member",
+      "edit": "Correct details",
+      "dataAndPrivacy": "Data and privacy"
     },
     "renew": {
       "title": "Take fees",
@@ -1449,6 +1502,42 @@
       "cancel": "Cancel",
       "wrongPin": "That PIN was not right.",
       "failed": "That did not work. Please try again."
+    },
+    "edit": {
+      "title": "Correct details",
+      "fullName": "Full name",
+      "mobile": "Mobile number",
+      "mobileHelper": "The number WhatsApp reminders go to.",
+      "email": "Email (optional)",
+      "dob": "Date of birth",
+      "dobHelper": "Leave blank if it was never recorded.",
+      "gender": "Gender",
+      "trainingSlot": "When do they train?",
+      "slotUnknown": "Not recorded",
+      "language": "Message language",
+      "languageHelper": "WhatsApp messages to this member go in this language.",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "backToProfile": "Back to profile",
+      "sharedMobile": "Saved. {count, plural, one {One other member} other {# other members}} already has this number — fine for a family, worth a check otherwise.",
+      "languages": {
+        "hi": "Hindi",
+        "en": "English"
+      },
+      "errors": {
+        "fullName": "Enter the full name, 2 letters or more.",
+        "mobile": "Enter a 10-digit Indian mobile number.",
+        "email": "That email does not look right. Leave it blank if there is none.",
+        "dob": "Enter a real date, or leave it blank.",
+        "gender": "Choose one.",
+        "language": "Choose a language.",
+        "trainingSlot": "Choose when they train, or leave it as not recorded.",
+        "FORBIDDEN": "Your login cannot change member details.",
+        "NOT_FOUND": "This member is no longer in the register.",
+        "ERASED": "This member's data has been erased and cannot be edited.",
+        "generic": "That could not be saved. Try again."
+      }
     }
   },
   "photos": {

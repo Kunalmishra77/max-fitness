@@ -9,6 +9,7 @@ import {
   approveVerification,
   can,
   commitMemberImport,
+  editMember,
   eraseMember,
   previewMemberImport,
   rejectVerification,
@@ -42,7 +43,18 @@ import type {
   StaffResult,
   UnlockResult,
 } from '@/lib/settings-types';
-import { PLAN_DURATIONS, RegistrationFieldsSchema, StaffCreateSchema, StaffPinSchema, istDate, nowISTTime, type PlanDurationMonths } from '@mfp/shared';
+import {
+  MemberEditSchema,
+  PLAN_DURATIONS,
+  RegistrationFieldsSchema,
+  StaffCreateSchema,
+  StaffPinSchema,
+  istDate,
+  nowISTTime,
+  type MemberEditErrorCode,
+  type PlanDurationMonths,
+} from '@mfp/shared';
+import type { MemberEditOutcome, MemberEditValuesInput } from '@/components/crm/member-edit-form';
 import type { AnnouncementActionResult, AnnouncementInput } from '@/components/crm/announcement-composer';
 import type { AddMemberErrorCode, AddMemberFields, AddMemberResult } from '@/components/crm/add-member-flow';
 import type { MarkResult, UndoResult } from '@/components/crm/attendance-marker';
@@ -63,6 +75,7 @@ import {
   deskRegistrationDeps,
   elevate,
   leadPipelineDeps,
+  memberEditDeps,
   memberImport,
   memberPrivacy,
   requireCrmContext,
@@ -158,6 +171,36 @@ export async function addMemberAction(fields: AddMemberFields, photoForm: FormDa
     // A date in the future or an impossible age arrives as VALIDATION_FAILED.
     if (code === 'VALIDATION_FAILED') return { ok: false, code: 'dob' };
     console.error(`[crm] add member failed: ${code ?? (error instanceof Error ? error.name : 'Error')}`);
+    return { ok: false, code: 'generic' };
+  }
+}
+
+/**
+ * Correct a member's own details (crm-ux-blueprint §5).
+ *
+ * Only the member's details: plan, fees and status move by taking a payment or through the
+ * verification queue, where the money and the dates are reasoned about.
+ */
+export async function editMemberAction(memberId: string, values: MemberEditValuesInput): Promise<MemberEditOutcome> {
+  const { actor } = await requireCrmContext();
+
+  const parsed = MemberEditSchema.safeParse(values);
+  if (!parsed.success) {
+    const code = parsed.error.issues[0]?.message as MemberEditErrorCode | undefined;
+    return { ok: false, code: code ?? 'generic' };
+  }
+
+  try {
+    const result = await editMember({ memberId, values: parsed.data }, { actor, ...memberEditDeps() });
+    revalidatePath(`/crm/members/${memberId}`);
+    revalidatePath('/crm/members');
+    return { ok: true, changed: result.changed, sharesMobileWith: result.sharesMobileWith };
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    if (code === 'FORBIDDEN') return { ok: false, code: 'FORBIDDEN' };
+    if (code === 'NOT_FOUND') return { ok: false, code: 'NOT_FOUND' };
+    if (code === 'CONFLICT') return { ok: false, code: 'ERASED' };
+    console.error(`[crm] edit member failed: ${code ?? (error instanceof Error ? error.name : 'Error')}`);
     return { ok: false, code: 'generic' };
   }
 }

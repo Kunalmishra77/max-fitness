@@ -18,7 +18,6 @@ export type CrmNavKey =
   | 'calls'
   | 'messages'
   | 'leads'
-  | 'verify'
   | 'announce'
   | 'reports'
   | 'import'
@@ -34,7 +33,7 @@ export interface CrmNavItem {
   readonly badge?: number;
 }
 
-export function crmNavItems(actor: CrmActor, now: Date, waitingVerifications: number): CrmNavItem[] {
+export function crmNavItems(actor: CrmActor, now: Date): CrmNavItem[] {
   const may = (capability: Parameters<typeof can>[1]) => can(actor, capability, now);
   // Settings, staff and the import ask for the PIN on the way in; show them to whoever it would admit.
   const afterPin = (capability: Parameters<typeof mayAfterPinEntry>[1]) => mayAfterPinEntry(actor, capability, now);
@@ -47,13 +46,9 @@ export function crmNavItems(actor: CrmActor, now: Date, waitingVerifications: nu
     { key: 'calls', href: '/crm/calls', icon: 'calls', group: 'today' },
     { key: 'leads', href: '/crm/leads', icon: 'leads', group: 'people' },
     { key: 'messages', href: '/crm/messages', icon: 'whatsapp', group: 'business' },
-    may('verification.approve') && {
-      key: 'verify',
-      href: '/crm/verify',
-      icon: 'verify',
-      group: 'people',
-      ...(waitingVerifications > 0 ? { badge: waitingVerifications } : {}),
-    },
+    // "Check QR members" was its own menu entry, which made QR arrivals feel like a
+    // separate kind of person. They are members; the Members screen says how many are
+    // waiting and opens the queue (ADR-086). `/crm/verify` still exists.
     // One message to every member is the owner's, and needs the PIN on the way in (ADR-079).
     afterPin('settings.manage') && { key: 'announce', href: '/crm/announcements', icon: 'whatsapp', group: 'business' },
     may('money.view') && { key: 'reports', href: '/crm/reports', icon: 'reports', group: 'business' },

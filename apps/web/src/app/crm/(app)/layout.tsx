@@ -3,9 +3,8 @@ import { Suspense, type ReactNode } from 'react';
 import { setCrmLanguageAction } from '@/app/crm/actions';
 import { CrmSidebar, type SidebarGroup } from '@/components/crm/crm-sidebar';
 import { getContainer } from '@/lib/container';
-import { requireCrmContext, verificationDeps } from '@/lib/crm';
+import { requireCrmContext } from '@/lib/crm';
 import { crmNavItems, type CrmNavItem } from '@/lib/crm-nav';
-import { can } from '@mfp/core';
 
 /**
  * Everything behind the login (crm-ux-blueprint §2; ADR-062).
@@ -20,12 +19,11 @@ export const dynamic = 'force-dynamic';
 const GROUP_ORDER: ReadonlyArray<CrmNavItem['group']> = ['today', 'people', 'business', 'account'];
 
 export default async function CrmAppLayout({ children }: { children: ReactNode }) {
-  const { actor, gym } = await requireCrmContext();
+  const { actor } = await requireCrmContext();
   const t = await getTranslations('crm');
   const locale = (await getLocale()) === 'en' ? 'en' : 'hi';
   const now = getContainer().clock.now();
-  const waiting = can(actor, 'verification.approve', now) ? await verificationDeps().queue.count(gym.id) : 0;
-  const items = crmNavItems(actor, now, waiting);
+  const items = crmNavItems(actor, now);
 
   const groups: SidebarGroup[] = GROUP_ORDER.map((group) => ({
     title: t(`menu.groups.${group}`),

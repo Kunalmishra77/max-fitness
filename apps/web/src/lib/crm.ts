@@ -9,6 +9,7 @@ import {
   PrismaDeskPaymentUnitOfWork,
   PrismaElevationStore,
   PrismaLeadPipelineUnitOfWork,
+  PrismaMemberEdit,
   PrismaMemberImport,
   PrismaVerificationQueue,
   PrismaVerificationUnitOfWork,
@@ -203,6 +204,12 @@ export function memberPrivacy() {
   const container = getContainer();
   const privacy = new PrismaMemberPrivacy(container.prisma);
   return { clock: container.clock, storage: container.storage, uow: privacy, store: privacy.store };
+}
+
+/** Correcting a member's own details (crm-ux-blueprint §5). */
+export function memberEditDeps() {
+  const container = getContainer();
+  return { clock: container.clock, uow: new PrismaMemberEdit(container.prisma) };
 }
 
 /** Importing the paper register: the preview reads, the commit writes in one transaction. */

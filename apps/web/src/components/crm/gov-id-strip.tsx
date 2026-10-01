@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { PhotoViewer } from './photo-viewer';
 
 export interface GovIdPhoto {
   /** "FRONT", "BACK", or "FILE" when the member gave the whole card as one file. */
@@ -35,9 +36,9 @@ export function GovIdStrip({ type, photos }: { type: string | null; photos: read
           const alt = t('govIdAlt', { type: typeLabel, side: t(`govIdSide.${photo.side}` as never) });
           return (
             <li key={photo.side}>
-              <a href={photo.url} target="_blank" rel="noreferrer" aria-label={alt} className="block rounded-panel focus-visible:outline-2 focus-visible:outline-offset-2">
-                {/* A PDF the member already had cannot be shown in an <img>, so it gets a
-                    tile that opens it instead of a broken picture (ADR-081). */}
+              {/* Opened here rather than in a new tab, so the desk does not lose the
+                  member's record behind it (ADR-086). */}
+              <PhotoViewer url={photo.url} alt={alt} isFile={photo.side === 'FILE'}>
                 {photo.side === 'FILE' ? (
                   <span className="flex h-24 w-36 flex-col items-center justify-center rounded-panel border border-brand-stone/30 bg-tint-fee-none-bg">
                     <span aria-hidden className="text-2xl leading-none">📄</span>
@@ -47,7 +48,7 @@ export function GovIdStrip({ type, photos }: { type: string | null; photos: read
                   /* A signed, short-lived URL to a private file: next/image would cache it. */
                   <img src={photo.url} alt={alt} className="h-24 w-36 rounded-panel border border-brand-stone/30 object-cover" />
                 )}
-              </a>
+              </PhotoViewer>
             </li>
           );
         })}

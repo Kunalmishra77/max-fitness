@@ -218,6 +218,7 @@ function verificationStore(tx: TransactionClient): VerificationStore {
           startDate: values.startDate === null ? null : toDbDate(values.startDate),
           endDate: toDbDate(values.endDate),
           durationMonths: values.durationMonths,
+          pricePaise: values.pricePaise,
         },
       });
     },

@@ -11,30 +11,26 @@ import { crmNavItems } from './crm-nav';
 
 const now = new Date('2026-09-18T06:00:00Z');
 const actor = (role: CrmActor['role']): CrmActor => ({ staffUserId: 's1', gymId: 'g1', role, elevatedUntil: null, receptionMayTakePayments: true });
-const keys = (role: CrmActor['role']) => crmNavItems(actor(role), now, 0).map((item) => item.key);
+const keys = (role: CrmActor['role']) => crmNavItems(actor(role), now).map((item) => item.key);
 
 describe('crmNavItems', () => {
   it('gives the owner every place, grouped for the day, the members and the business', () => {
-    const items = crmNavItems(actor('OWNER'), now, 3);
+    const items = crmNavItems(actor('OWNER'), now);
     expect(items.map((item) => item.key)).toEqual([
-      'home', 'members', 'fees', 'attendance', 'calls', 'leads', 'messages', 'verify', 'announce', 'reports', 'import', 'staff', 'settings', 'pin',
+      'home', 'members', 'fees', 'attendance', 'calls', 'leads', 'messages', 'announce', 'reports', 'import', 'staff', 'settings', 'pin',
     ]);
-    expect(items.find((item) => item.key === 'verify')?.badge).toBe(3);
     expect(new Set(items.map((item) => item.group))).toEqual(new Set(['today', 'people', 'business', 'account']));
+  });
+
+  it('has no entry of its own for QR arrivals, who are members like anybody else', () => {
+    // The gym asked for it gone: the Members screen says how many are waiting and
+    // opens the queue, so a QR arrival is not a separate kind of person (ADR-086).
+    for (const role of ['OWNER', 'RECEPTION', 'TRAINER'] as const) expect(keys(role)).not.toContain('verify');
   });
 
   it('keeps money, settings, staff, the register import and the announcement from reception', () => {
     // One message to every member is the owner's alone (ADR-079).
-    expect(keys('RECEPTION')).toEqual(['home', 'members', 'fees', 'attendance', 'calls', 'leads', 'messages', 'verify', 'pin']);
+    expect(keys('RECEPTION')).toEqual(['home', 'members', 'fees', 'attendance', 'calls', 'leads', 'messages', 'pin']);
     expect(keys('RECEPTION')).not.toContain('announce');
-  });
-
-  it('keeps the verify queue from a trainer as well', () => {
-    expect(keys('TRAINER')).not.toContain('verify');
-    expect(keys('TRAINER')).toContain('attendance');
-  });
-
-  it('shows no badge when nothing is waiting', () => {
-    expect(crmNavItems(actor('OWNER'), now, 0).find((item) => item.key === 'verify')?.badge).toBeUndefined();
   });
 });

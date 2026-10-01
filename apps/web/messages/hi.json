@@ -686,13 +686,46 @@
       "overdue": "{count} दिन से बाकी",
       "till": "{date} तक"
     },
+    "gender": {
+      "MALE": "पुरुष",
+      "FEMALE": "महिला",
+      "OTHER": "अन्य"
+    },
+    "status": {
+      "ACTIVE": "चालू",
+      "PENDING_PAYMENT": "फीस का इंतज़ार",
+      "PENDING_VERIFICATION": "जाँच बाकी है",
+      "LEFT": "छोड़ चुके",
+      "BLOCKED": "रोका गया"
+    },
     "members": {
       "title": "मेंबर",
+      "waiting": "{count, plural, one {# मेंबर ने जानकारी भेजी है, जाँच बाकी है} other {# मेंबर्स ने जानकारी भेजी है, जाँच बाकी है}}",
+      "check": "अभी जाँचें",
       "search": "नाम, नंबर या कोड खोजें",
       "filterAll": "सब",
       "empty": "कोई मेंबर नहीं मिला",
       "count": "{count} मेंबर",
-      "left": "जिम छोड़ दिया"
+      "left": "जिम छोड़ दिया",
+      "col": {
+        "member": "मेंबर",
+        "mobile": "मोबाइल",
+        "plan": "प्लान",
+        "status": "स्थिति",
+        "paidTill": "फ़ीस कब तक",
+        "slot": "कब आते हैं",
+        "joined": "जॉइन किया",
+        "lastSeen": "आख़िरी बार आए"
+      },
+      "slotShort": {
+        "MORNING": "सुबह",
+        "EVENING": "शाम",
+        "BOTH": "दोनों"
+      },
+      "tillShort": "{date} तक",
+      "seenToday": "आज आए",
+      "seenDaysAgo": "{count, plural, one {1 दिन पहले} other {# दिन पहले}}",
+      "neverSeen": "कभी नहीं आए"
     },
     "profile": {
       "call": "कॉल",
@@ -707,7 +740,27 @@
       "monthly": "1 महीना",
       "receipt": "रसीद {receiptNo}",
       "back": "वापस",
-      "photoAlt": "{name} की फोटो"
+      "photoAlt": "{name} की फोटो",
+      "notGiven": "नहीं दिया",
+      "plan": "{count, plural, one {# महीना} other {# महीने}}",
+      "planUnknownLength": "अवधि दर्ज नहीं",
+      "settlementNone": "कुछ दर्ज नहीं",
+      "settlementPaid": "{amount} जमा",
+      "settlementDeclared": "{amount} — मेंबर ने बताया, अभी लिया नहीं",
+      "field": {
+        "mobile": "मोबाइल",
+        "email": "ईमेल",
+        "dob": "जन्म तिथि",
+        "gender": "लिंग",
+        "joinedOn": "जिम कब जॉइन किया",
+        "slot": "कब आते हैं",
+        "plan": "प्लान",
+        "settlement": "प्लान सेटलमेंट",
+        "status": "स्थिति"
+      },
+      "actions": "इस मेंबर के लिए और",
+      "edit": "जानकारी ठीक करें",
+      "dataAndPrivacy": "डेटा और प्राइवेसी"
     },
     "renew": {
       "title": "फीस लें",
@@ -1449,6 +1502,42 @@
       "cancel": "रहने दें",
       "wrongPin": "यह PIN सही नहीं था।",
       "failed": "यह नहीं हुआ। दोबारा कोशिश कीजिए।"
+    },
+    "edit": {
+      "title": "जानकारी ठीक करें",
+      "fullName": "पूरा नाम",
+      "mobile": "मोबाइल नंबर",
+      "mobileHelper": "WhatsApp रिमाइंडर इसी नंबर पर जाते हैं।",
+      "email": "ईमेल (ज़रूरी नहीं)",
+      "dob": "जन्म तिथि",
+      "dobHelper": "अगर कभी लिखी नहीं गई थी, खाली छोड़ दें।",
+      "gender": "लिंग",
+      "trainingSlot": "कब आते हैं?",
+      "slotUnknown": "लिखा नहीं है",
+      "language": "मैसेज की भाषा",
+      "languageHelper": "इस मेंबर को WhatsApp मैसेज इसी भाषा में जाएँगे।",
+      "save": "बदलाव सेव करें",
+      "saving": "सेव हो रहा है…",
+      "cancel": "रद्द करें",
+      "backToProfile": "प्रोफ़ाइल पर वापस",
+      "sharedMobile": "सेव हो गया। यह नंबर {count, plural, one {एक और मेंबर} other {# और मेंबरों}} के पास भी है — परिवार हो तो ठीक, वरना एक बार देख लें।",
+      "languages": {
+        "hi": "हिंदी",
+        "en": "अंग्रेज़ी"
+      },
+      "errors": {
+        "fullName": "पूरा नाम लिखें, कम से कम 2 अक्षर।",
+        "mobile": "10 अंकों का मोबाइल नंबर लिखें।",
+        "email": "यह ईमेल सही नहीं लग रहा। न हो तो खाली छोड़ दें।",
+        "dob": "सही तारीख़ लिखें, या खाली छोड़ दें।",
+        "gender": "एक चुनें।",
+        "language": "भाषा चुनें।",
+        "trainingSlot": "कब आते हैं चुनें, या \"लिखा नहीं है\" रहने दें।",
+        "FORBIDDEN": "आपकी लॉगिन मेंबर की जानकारी नहीं बदल सकती।",
+        "NOT_FOUND": "यह मेंबर अब रजिस्टर में नहीं है।",
+        "ERASED": "इस मेंबर का डेटा मिटा दिया गया है, अब बदला नहीं जा सकता।",
+        "generic": "सेव नहीं हो सका। दोबारा कोशिश करें।"
+      }
     }
   },
   "photos": {

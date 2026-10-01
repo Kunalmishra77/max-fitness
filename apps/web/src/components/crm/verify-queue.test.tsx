@@ -143,8 +143,9 @@ describe('VerifyQueue', () => {
     const back = within(card).getByRole('img', { name: 'Aadhaar — back' });
     expect(front.getAttribute('src')).toBe('/api/v1/files?key=front');
     expect(back.getAttribute('src')).toBe('/api/v1/files?key=back');
-    // A card is unreadable at thumbnail size, so each one opens full size.
-    expect(within(card).getByRole('link', { name: 'Aadhaar — front' }).getAttribute('href')).toBe('/api/v1/files?key=front');
+    // A card is unreadable at thumbnail size, so each one opens full size — here on the
+    // page rather than in a new tab, which used to lose the queue behind it (ADR-086).
+    expect(within(card).getByRole('button', { name: 'Aadhaar — front' })).toBeTruthy();
   });
 
   it('says plainly when a submission has no ID photograph rather than showing a gap', () => {

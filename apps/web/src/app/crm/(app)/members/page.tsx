@@ -1,11 +1,14 @@
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import type { FeeState, MemberStatus } from '@mfp/shared';
-import { BottomNav, CrmHeader, FEE_TONE, MemberRow, CRM_CARD, pillClass } from '@/components/crm/crm-chrome';
+import { BottomNav, CrmHeader, FEE_TONE, CRM_CARD, pillClass } from '@/components/crm/crm-chrome';
 import { CrmIcon } from '@/components/crm/crm-icons';
 import { cn } from '@/lib/cn';
+import { MemberList } from '@/components/crm/member-list';
 import { MemberSearch } from '@/components/crm/member-search';
-import { requireCrmContext } from '@/lib/crm';
+import { can } from '@mfp/core';
+import { getContainer } from '@/lib/container';
+import { requireCrmContext, verificationDeps } from '@/lib/crm';
 
 /**
  * Members — list, search and fee filters (crm-ux-blueprint §4).
@@ -19,9 +22,11 @@ export const dynamic = 'force-dynamic';
 const FEE_FILTERS: readonly FeeState[] = ['EXPIRED', 'DUE_SOON', 'PAID'];
 
 export default async function CrmMembersPage({ searchParams }: { searchParams: Promise<{ q?: string; fee?: string; status?: string }> }) {
-  const { gym, today, reader } = await requireCrmContext();
+  const { actor, gym, today, reader } = await requireCrmContext();
   const t = await getTranslations('crm');
   const { q, fee, status } = await searchParams;
+
+  const waiting = can(actor, 'verification.approve', getContainer().clock.now()) ? await verificationDeps().queue.count(gym.id) : 0;
 
   const feeState = FEE_FILTERS.includes(fee as FeeState) ? (fee as FeeState) : undefined;
   const members = await reader.members(gym.id, today, {
@@ -30,6 +35,16 @@ export default async function CrmMembersPage({ searchParams }: { searchParams: P
     ...(status === 'ACTIVE' ? { status: 'ACTIVE' as MemberStatus } : {}),
     limit: 100,
   });
+
+  // Signing is a local HMAC, not a request to Supabase, so a hundred thumbnails cost
+  // nothing; each link lapses in five minutes like every other private file (CLAUDE.md §2.8).
+  const { storage } = getContainer();
+  const entries = await Promise.all(
+    members.map(async (member) => ({
+      member,
+      photoUrl: member.photoKey === null ? null : await storage.signedUrl(member.photoKey, 300),
+    })),
+  );
 
   const chip = (active: boolean, tone?: string) => pillClass(active, tone);
 
@@ -50,17 +65,20 @@ export default async function CrmMembersPage({ searchParams }: { searchParams: P
         </div>
       </div>
 
+      {/* QR arrivals are members too, so they are found here rather than behind a menu
+          entry of their own (ADR-086). */}
+      {waiting === 0 ? null : (
+        <Link href="/crm/verify" className={cn(CRM_CARD, 'mt-3 flex min-h-16 items-center justify-between gap-3 px-4 py-3 hover:border-brand-accent')}>
+          <span className="text-crm-body font-semibold text-brand-obsidian">{t('members.waiting', { count: waiting })}</span>
+          <span className="rounded-full bg-brand-accent px-3 py-1 text-small font-bold text-brand-white">{t('members.check')}</span>
+        </Link>
+      )}
+
       <p className="px-4 py-2 text-small text-brand-stone">{t('members.count', { count: members.length })}</p>
       {members.length === 0 ? (
         <p className="px-4 py-8 text-center text-crm-body text-brand-stone">{t('members.empty')}</p>
       ) : (
-        <ul className={cn(CRM_CARD, 'overflow-hidden')}>
-          {members.map((member) => (
-            <li key={member.id}>
-              <MemberRow member={member} />
-            </li>
-          ))}
-        </ul>
+        <MemberList today={today} entries={entries} />
       )}
 
       <Link

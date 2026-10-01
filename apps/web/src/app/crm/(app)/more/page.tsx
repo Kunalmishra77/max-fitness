@@ -1,13 +1,12 @@
 import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
-import { can } from '@mfp/core';
 import { setCrmLanguageAction } from '@/app/crm/actions';
 import { BottomNav, CrmHeader } from '@/components/crm/crm-chrome';
 import { CrmIcon } from '@/components/crm/crm-icons';
 import { LanguageSwitch } from '@/components/crm/language-switch';
 import { LogoutButton } from '@/components/crm/logout-button';
 import { getContainer } from '@/lib/container';
-import { requireCrmContext, verificationDeps } from '@/lib/crm';
+import { requireCrmContext } from '@/lib/crm';
 import { crmNavItems, type CrmNavItem } from '@/lib/crm-nav';
 
 /**
@@ -24,12 +23,11 @@ const GROUPS: ReadonlyArray<CrmNavItem['group']> = ['today', 'people', 'business
 const ON_BOTTOM_BAR = new Set(['home', 'members', 'fees', 'attendance']);
 
 export default async function CrmMorePage() {
-  const { actor, gym } = await requireCrmContext();
+  const { actor } = await requireCrmContext();
   const t = await getTranslations('crm');
   const locale = (await getLocale()) === 'en' ? 'en' : 'hi';
   const now = getContainer().clock.now();
-  const waiting = can(actor, 'verification.approve', now) ? await verificationDeps().queue.count(gym.id) : 0;
-  const items = crmNavItems(actor, now, waiting).filter((item) => !ON_BOTTOM_BAR.has(item.key));
+  const items = crmNavItems(actor, now).filter((item) => !ON_BOTTOM_BAR.has(item.key));
 
   return (
     <>
