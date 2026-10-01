@@ -180,7 +180,15 @@
       "drinkingWater": "Drinking water",
       "parking": "Parking nearby",
       "airConditioned": "Air-conditioned",
-      "dietPlans": "Diet plans"
+      "dietPlans": "Diet plans",
+      "supplements": "Supplements at the counter"
+    },
+    "supplements": {
+      "title": "Supplements, from the counter you already trust",
+      "body": "Whey, mass gainers, creatine and the everyday basics — kept at reception and sold to members. Ask the desk what is in stock and what it costs; your trainer will tell you honestly whether you need it before they sell you anything.",
+      "point1": "Genuine, sealed products — bought at the gym, not forwarded from a link.",
+      "point2": "Advice first: your trainer looks at your diet plan before suggesting anything.",
+      "point3": "Members' prices. Ask at the desk, or on WhatsApp."
     },
     "eyebrow": "The floor"
   },
@@ -1580,6 +1588,26 @@
       "underAge": "You must be at least {minAge} to join. Please talk to reception.",
       "rateLimited": "Too many attempts. Please wait a few minutes, or tell reception.",
       "serverSaid": "That could not be sent ({code}). Please tell reception and show them this: {reference}"
+    }
+  },
+  "qrNewForm": {
+    "mobileHelp": "Your receipt and reminders come to this number on WhatsApp.",
+    "genderHelp": "The gym's plans are priced separately for men and women.",
+    "selfieHelp": "So the staff at the desk recognise you.",
+    "planTitle": "Which plan would you like?",
+    "planHelp": "Longer plans cost less per month. You can change it at the desk.",
+    "months": "{count, plural, one {# Month} other {# Months}}",
+    "joiningFee": "Joining fee {amount}, once.",
+    "slotTitle": "When will you train?",
+    "emailHelp": "Only for your receipt. We will not send you offers.",
+    "summary": "{months, plural, one {# month} other {# months}} · {amount} to pay",
+    "payAtReception": "Pay at the desk — cash, UPI or card. Your plan is held for 48 hours and you get a receipt on the spot.",
+    "done": {
+      "title": "Done, {name} — your plan is held.",
+      "body": "Pay this at the reception desk and your membership starts straight away. Cash, UPI or card."
+    },
+    "errors": {
+      "plan": "Please choose a plan."
     }
   },
   "qrNew": {

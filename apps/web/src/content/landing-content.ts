@@ -110,11 +110,13 @@ export type FacilityZone = (typeof FACILITY_ZONES)[number];
  * there is none. The rest await the owner.
  */
 export const FACILITY_EXTRAS: ReadonlyArray<{
-  readonly key: 'personalTraining' | 'dietPlans' | 'lockers' | 'drinkingWater' | 'parking' | 'airConditioned';
+  readonly key: 'personalTraining' | 'dietPlans' | 'supplements' | 'lockers' | 'drinkingWater' | 'parking' | 'airConditioned';
   readonly confirmed: boolean;
 }> = [
   { key: 'personalTraining', confirmed: true },
   { key: 'dietPlans', confirmed: true },
+  // The owner confirmed the gym sells supplements at the counter (2026-10-01).
+  { key: 'supplements', confirmed: true },
   { key: 'lockers', confirmed: false },
   { key: 'drinkingWater', confirmed: false },
   { key: 'parking', confirmed: false },

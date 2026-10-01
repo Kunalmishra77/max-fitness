@@ -70,6 +70,11 @@ export default defineConfig({
           environmentOptions: { happyDOM: { url: 'http://localhost:3000' } },
           include: ['src/**/*.test.{ts,tsx}'],
           setupFiles: ['./src/test/setup.ts'],
+          // The reception forms are walked a question at a time with real user events
+          // (ADR-080), which is slow and genuinely so; the 5s default times the worker
+          // out rather than failing an assertion, which reads like a broken test.
+          testTimeout: 30_000,
+          hookTimeout: 30_000,
         },
       },
     ],

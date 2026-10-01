@@ -73,6 +73,23 @@ export async function FacilitiesSection({ showUnconfirmed }: { showUnconfirmed: 
         })}
       </div>
 
+      {/* Supplements are a real part of what the gym does and a real reason members come
+          back to the counter, so they get a panel rather than a chip. Nothing here names
+          a brand or a price: we do not know them, and inventing them would be a lie
+          printed on the gym's own website (ADR-084). */}
+      <section className="mt-12 rounded-panel border border-brand-paper/15 bg-brand-paper/5 p-6 md:p-8">
+        <h3 className="font-display text-title font-bold tracking-[0.04em] uppercase">{t('supplements.title')}</h3>
+        <p className="mt-3 max-w-[60ch] text-body leading-body text-brand-mist">{t('supplements.body')}</p>
+        <ul className="mt-5 grid gap-3 md:grid-cols-3">
+          {(['point1', 'point2', 'point3'] as const).map((key) => (
+            <li key={key} className="flex gap-3 text-body leading-body">
+              <span aria-hidden className="mt-2 size-2 shrink-0 rotate-45 bg-brand-accent-glow" />
+              <span>{t(`supplements.${key}`)}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
       {extras.length > 0 ? (
         <div className="mt-12 border-t border-brand-paper/15 pt-6">
           <h3 className="text-title font-semibold">{t('alsoHere')}</h3>
