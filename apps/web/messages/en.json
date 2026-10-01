@@ -483,6 +483,7 @@
       "denied": "Camera access is blocked. Allow the camera in your browser settings, or take a photo with your phone camera instead.",
       "tryAgain": "Try again",
       "usePhoneCamera": "Use phone camera",
+      "choosePhoto": "Choose a photo you already have",
       "inUse": "Your camera is being used by another app. Close that app and try again.",
       "noCamera": "We couldn't use a camera here. Take a photo with your phone camera instead.",
       "inApp": "Camera may not work inside Instagram or WhatsApp. Open this page in Chrome for the best experience.",
@@ -1258,8 +1259,10 @@
       },
       "govIdSide": {
         "FRONT": "front",
-        "BACK": "back"
+        "BACK": "back",
+        "FILE": "the member's own file"
       },
+      "govIdOpenFile": "Open file",
       "govIdAlt": "{type} — {side}",
       "errors": {
         "conflict": "Someone has already decided this one.",
@@ -1530,10 +1533,11 @@
       "VOTER": "Voter ID",
       "front": "Front of the card",
       "back": "Back of the card",
-      "tapToAdd": "Tap to take a photo",
-      "added": "Photo added — tap to change",
+      "tapToAdd": "Tap to take a photo, or pick one you already have",
+      "added": "Added — tap to change",
       "working": "Getting it ready…",
-      "help": "We keep only the photograph. We never store the number."
+      "wholeCard": "Your file (both sides)",
+      "help": "A photo, or the PDF from DigiLocker — whatever you have. We keep only the picture and never the number."
     },
     "consent": {
       "terms": "I agree to the Terms of membership and Privacy policy.",

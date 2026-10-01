@@ -20,8 +20,15 @@ export type QrExistingFormResult =
       readonly declaredAmountPaise: number | null;
       /** Optional: plenty of members will not remember the day they joined. */
       readonly joinedOn: ISTDate | null;
-      /** Photographs only. The parser never reads, and the form never asks for, a number. */
-      readonly govId: { readonly type: GovIdType; readonly images: readonly RawGovIdImage[] } | null;
+      /**
+       * Pictures only. The parser never reads, and the form never asks for, a number.
+       * Either photographs of each side, or the one file the member had (ADR-081).
+       */
+      readonly govId: {
+        readonly type: GovIdType;
+        readonly images: readonly RawGovIdImage[];
+        readonly document: RawGovIdDocument | null;
+      } | null;
     }
   | { readonly ok: false; readonly fields: Record<string, string> };
 
@@ -30,6 +37,15 @@ export interface RawGovIdImage {
   readonly side: 'FRONT' | 'BACK';
   readonly body: Uint8Array;
 }
+
+/** The whole card as one file the member already had — a DigiLocker PDF (ADR-081). */
+export interface RawGovIdDocument {
+  readonly body: Uint8Array;
+  readonly mimeType: string;
+}
+
+const PDF_SIGNATURE = [0x25, 0x50, 0x44, 0x46];
+const looksLikePdf = (bytes: Uint8Array) => PDF_SIGNATURE.every((byte, i) => bytes[i] === byte);
 
 const MAX_RUPEES = 1_000_000;
 /** A photograph of a card off a phone camera; anything larger is not a card. */
@@ -70,21 +86,40 @@ export async function parseQrExistingForm(form: FormData): Promise<QrExistingFor
   if (joinedText !== '' && joinedOn === null) fields['joinedOn'] = 'joinedOn';
 
   const govIdTypeText = text(form, 'govIdType');
-  let govId: { type: GovIdType; images: RawGovIdImage[] } | null = null;
+  let govId: { type: GovIdType; images: RawGovIdImage[]; document: RawGovIdDocument | null } | null = null;
   if (govIdTypeText !== '') {
     if (!isGovIdType(govIdTypeText)) {
       fields['govIdType'] = 'govIdType';
     } else {
       const images: RawGovIdImage[] = [];
+      let document: RawGovIdDocument | null = null;
+
       for (const side of govIdSidesFor(govIdTypeText)) {
         const part = form.get(`govId${side === 'FRONT' ? 'Front' : 'Back'}`);
         if (!(part instanceof File) || part.size === 0 || part.size > MAX_ID_BYTES) {
+          // A PDF carries the whole card, so the front alone is the whole answer and a
+          // missing back is not missing anything (ADR-081).
+          if (side === 'BACK' && document !== null) break;
           fields['govId'] = 'govId';
           break;
         }
-        images.push({ side, body: new Uint8Array(await part.arrayBuffer()) });
+        const body = new Uint8Array(await part.arrayBuffer());
+        if (looksLikePdf(body)) {
+          if (side === 'BACK') {
+            // Two PDFs, or a PDF behind a photograph: the domain refuses it, plainly.
+            fields['govId'] = 'govId';
+            break;
+          }
+          document = { body, mimeType: 'application/pdf' };
+          continue;
+        }
+        if (document !== null) {
+          fields['govId'] = 'govId';
+          break;
+        }
+        images.push({ side, body });
       }
-      if (fields['govId'] === undefined) govId = { type: govIdTypeText, images };
+      if (fields['govId'] === undefined) govId = { type: govIdTypeText, images, document };
     }
   }
 

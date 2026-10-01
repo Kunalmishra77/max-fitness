@@ -153,6 +153,9 @@ export function QrExistingForm({
   // several megabytes, and three of those are more than the request may carry (ADR-080).
   const [govIdFront, setGovIdFront] = useState<Blob | null>(null);
   const [govIdBack, setGovIdBack] = useState<Blob | null>(null);
+  // A DigiLocker PDF is the whole card, so once one is picked there is no back to ask
+  // for — and asking would be asking for something that does not exist (ADR-081).
+  const [govIdIsFile, setGovIdIsFile] = useState(false);
   const [shrinking, setShrinking] = useState(false);
   const [terms, setTerms] = useState(false);
   const [whatsapp, setWhatsapp] = useState(true);
@@ -174,7 +177,7 @@ export function QrExistingForm({
     setCameraOpen(false);
   };
 
-  const sides = govIdType === '' ? [] : govIdSidesFor(govIdType);
+  const sides = govIdType === '' ? [] : govIdIsFile ? (['FRONT'] as const) : govIdSidesFor(govIdType);
 
   /**
    * Shrink the picked card before it goes anywhere (ADR-080).
@@ -196,8 +199,28 @@ export function QrExistingForm({
 
     if (file === null) {
       keep(null);
+      if (side === 'FRONT') setGovIdIsFile(false);
       return;
     }
+
+    // A file the member already has goes up as it is: there is nothing to shrink, and
+    // it carries the whole card rather than one side of it.
+    const isFile = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+    if (side === 'FRONT') {
+      setGovIdIsFile(isFile);
+      if (isFile) setGovIdBack(null);
+    }
+    if (isFile) {
+      if (file.size > MAX_UPLOAD_BYTES) {
+        keep(null);
+        problem(t('errors.govIdTooBig'));
+        return;
+      }
+      problem(null);
+      keep(file);
+      return;
+    }
+
     setShrinking(true);
     void shrinkId(file)
       .catch(() => file)
@@ -423,17 +446,19 @@ export function QrExistingForm({
               chosen === null ? 'border-brand-stone/50 bg-white' : 'border-semantic-fee-paid bg-tint-fee-paid-bg',
             )}
           >
-            <span aria-hidden className="block text-[2.5rem] leading-none">{chosen === null ? '📷' : '✓'}</span>
+            <span aria-hidden className="block text-[2.5rem] leading-none">{chosen === null ? '📷' : govIdIsFile && side === 'FRONT' ? '📄' : '✓'}</span>
             <span className="mt-2 block text-body-l font-semibold text-brand-ink">
-              {t(side === 'FRONT' ? 'govId.front' : 'govId.back')}
+              {govIdIsFile && side === 'FRONT' ? t('govId.wholeCard') : t(side === 'FRONT' ? 'govId.front' : 'govId.back')}
             </span>
             <span className="mt-1 block text-small text-brand-stone">
               {shrinking ? t('govId.working') : chosen === null ? t('govId.tapToAdd') : t('govId.added')}
             </span>
+            {/* No `capture`: the phone then offers the camera *and* the gallery and the
+                files app, because plenty of members already have the card as photos or a
+                DigiLocker PDF and never have the plastic on them (ADR-081). */}
             <input
               type="file"
-              accept="image/*"
-              capture="environment"
+              accept="image/*,application/pdf"
               onChange={(e) => keepIdPhoto(side, e.target.files?.[0] ?? null)}
               className="sr-only"
             />

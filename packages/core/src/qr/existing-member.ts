@@ -14,7 +14,7 @@ import {
   type RegistrationFields,
 } from '@mfp/shared';
 import { DomainError } from '../errors';
-import { validateGovId, type GovIdImage, type GovIdType } from './gov-id';
+import { validateGovId, type GovIdType, type GovIdUpload } from './gov-id';
 import type { StorageDriver, StoredObject } from '../ports/storage';
 import type { ConsentRecord, SelfieImage } from '../signup/registration.service';
 import { assessAge, registrationConsents } from '../signup/registration.rules';
@@ -137,8 +137,11 @@ export async function submitExistingMember(
     readonly declaredAmountPaise: number | null;
     /** Optional: plenty of members will not remember the day they joined. */
     readonly joinedOn: ISTDate | null;
-    /** Photographs only — the number is never asked for or stored (ADR-074). */
-    readonly govId: { readonly type: GovIdType; readonly images: readonly GovIdImage[] } | null;
+    /**
+     * Pictures only — the number is never asked for or stored (ADR-074). Either
+     * photographs of each side, or the one file the member already has (ADR-081).
+     */
+    readonly govId: { readonly type: GovIdType; readonly images: readonly GovIdUpload[] } | null;
     /**
      * The register entry the member picked after proving the number by OTP (ADR-060).
      * The caller passes it only with a valid OTP token for `fields.mobile`.
@@ -185,13 +188,21 @@ export async function submitExistingMember(
   // moment they are uploaded and removed again on any failure below.
   const govIdStored: Array<{ label: string; stored: StoredObject; width: number; height: number }> = [];
   try {
-    for (const image of input.govId?.images ?? []) {
-      const object = await deps.storage.put({ body: image.body, mimeType: 'image/jpeg', prefix: 'gov-ids' });
+    for (const upload of input.govId?.images ?? []) {
+      const card = (input.govId?.type ?? '').toLowerCase();
+      // A file the member already had keeps its own type and has no pixels to record;
+      // "-file" rather than a side, because it is the whole card (ADR-081).
+      const isDocument = upload.kind === 'document';
+      const object = await deps.storage.put({
+        body: upload.body,
+        mimeType: isDocument ? 'application/pdf' : 'image/jpeg',
+        prefix: 'gov-ids',
+      });
       govIdStored.push({
-        label: `${(input.govId?.type ?? '').toLowerCase()}-${image.side.toLowerCase()}`,
+        label: isDocument ? `${card}-file` : `${card}-${upload.side.toLowerCase()}`,
         stored: object,
-        width: image.width,
-        height: image.height,
+        width: isDocument ? 0 : upload.width,
+        height: isDocument ? 0 : upload.height,
       });
     }
   } catch (error) {

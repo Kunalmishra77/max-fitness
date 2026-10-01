@@ -97,12 +97,17 @@ export async function POST(request: NextRequest) {
             ? null
             : {
                 type: parsed.govId.type,
-                images: await Promise.all(
-                  parsed.govId.images.map(async (image) => {
-                    const processed = await processGovIdImage(image.body);
-                    return { side: image.side, body: processed.body, width: processed.width, height: processed.height };
-                  }),
-                ),
+                images: [
+                  ...(await Promise.all(
+                    parsed.govId.images.map(async (image) => {
+                      const processed = await processGovIdImage(image.body);
+                      return { side: image.side, body: processed.body, width: processed.width, height: processed.height } as const;
+                    }),
+                  )),
+                  // A file the member already had goes through untouched: we cannot
+                  // re-encode a PDF, and it carries no camera EXIF to strip (ADR-081).
+                  ...(parsed.govId.document === null ? [] : [{ kind: 'document' as const, body: parsed.govId.document.body }]),
+                ],
               },
         ...(gate.claimedMemberId === undefined ? {} : { claimedMemberId: gate.claimedMemberId }),
       },

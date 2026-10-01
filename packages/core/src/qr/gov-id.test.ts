@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GOV_ID_TYPES, govIdSidesFor, isGovIdType, validateGovId, type GovIdImage } from './gov-id';
+import { GOV_ID_TYPES, govIdSidesFor, isGovIdType, validateGovId, type GovIdImage, type GovIdUpload } from './gov-id';
 
 /**
  * The photographs of a member's government ID (client decision, ADR-074).
@@ -75,5 +75,28 @@ describe('validateGovId', () => {
 
   it('does not care what order the sides arrive in', () => {
     expect(validateGovId('AADHAAR', [image('BACK'), image('FRONT')])).toEqual({ ok: true });
+  });
+});
+
+describe('validateGovId, when the member has the card as a file rather than in their hand', () => {
+  // Plenty of members have no physical Aadhaar any more — they have the DigiLocker PDF,
+  // which carries the whole card, both sides, in one file (ADR-081).
+  const pdf = (): GovIdUpload => ({ kind: 'document', body: new Uint8Array([0x25, 0x50, 0x44, 0x46]) });
+
+  it('takes one file as the whole card, both sides and all', () => {
+    expect(validateGovId('AADHAAR', [pdf()])).toEqual({ ok: true });
+    expect(validateGovId('PAN', [pdf()])).toEqual({ ok: true });
+  });
+
+  it('wants exactly one, because a second is not a second side', () => {
+    expect(validateGovId('AADHAAR', [pdf(), pdf()])).toEqual({ ok: false, reason: 'UNEXPECTED_SIDE' });
+  });
+
+  it('refuses an empty file here too', () => {
+    expect(validateGovId('PAN', [{ kind: 'document', body: new Uint8Array() }])).toEqual({ ok: false, reason: 'EMPTY' });
+  });
+
+  it('will not take a file and a photograph together, which is nobody’s intention', () => {
+    expect(validateGovId('AADHAAR', [pdf(), image('FRONT')])).toEqual({ ok: false, reason: 'UNEXPECTED_SIDE' });
   });
 });

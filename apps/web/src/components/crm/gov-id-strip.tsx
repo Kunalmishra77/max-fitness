@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 
 export interface GovIdPhoto {
-  /** "FRONT" or "BACK", taken from the label the photo was stored under. */
+  /** "FRONT", "BACK", or "FILE" when the member gave the whole card as one file. */
   readonly side: string;
   /** A signed link that lapses in five minutes (CLAUDE.md §2.8). */
   readonly url: string;
@@ -36,8 +36,17 @@ export function GovIdStrip({ type, photos }: { type: string | null; photos: read
           return (
             <li key={photo.side}>
               <a href={photo.url} target="_blank" rel="noreferrer" aria-label={alt} className="block rounded-panel focus-visible:outline-2 focus-visible:outline-offset-2">
-                {/* A signed, short-lived URL to a private file: next/image would cache it. */}
-                <img src={photo.url} alt={alt} className="h-24 w-36 rounded-panel border border-brand-stone/30 object-cover" />
+                {/* A PDF the member already had cannot be shown in an <img>, so it gets a
+                    tile that opens it instead of a broken picture (ADR-081). */}
+                {photo.side === 'FILE' ? (
+                  <span className="flex h-24 w-36 flex-col items-center justify-center rounded-panel border border-brand-stone/30 bg-tint-fee-none-bg">
+                    <span aria-hidden className="text-2xl leading-none">📄</span>
+                    <span className="mt-1 text-small font-semibold text-brand-obsidian">{t('govIdOpenFile')}</span>
+                  </span>
+                ) : (
+                  /* A signed, short-lived URL to a private file: next/image would cache it. */
+                  <img src={photo.url} alt={alt} className="h-24 w-36 rounded-panel border border-brand-stone/30 object-cover" />
+                )}
               </a>
             </li>
           );

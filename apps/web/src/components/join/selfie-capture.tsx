@@ -79,6 +79,7 @@ export function SelfieCapture({
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const detectorRef = useRef<FaceDetectorLike | null>(null);
   const lastFaceRef = useRef<Box | null>(null);
@@ -255,6 +256,18 @@ export function SelfieCapture({
     </button>
   );
 
+  /**
+   * A photo the member already has (ADR-081).
+   *
+   * Not every camera works, and not everybody wants to be photographed at a reception
+   * desk. Without this, a broken camera is the end of the form.
+   */
+  const choosePhotoButton = (
+    <button type="button" onClick={() => galleryRef.current?.click()} className={buttonVariants({ variant: 'outlineDark', size: regular, full: true })}>
+      {t('choosePhoto')}
+    </button>
+  );
+
   const canCapture = phase === 'live' && (check === 'unavailable' || steady);
   const guidance =
     check === 'ok' && steady ? t('faceFound') : check === 'multiple' ? t('oneFace') : check === 'small' ? t('closer') : check === 'none' || check === 'offCentre' ? t('moveInside') : null;
@@ -279,6 +292,8 @@ export function SelfieCapture({
         ) : null}
 
         <input ref={fileRef} type="file" accept="image/*" capture={facing} className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => void onFilePicked(e)} />
+        {/* The same handler without `capture`, so the phone offers the gallery instead. */}
+        <input ref={galleryRef} type="file" accept="image/*" className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => void onFilePicked(e)} />
 
         {phase === 'explainer' ? (
           <div className="mt-4 grid gap-4">
@@ -289,6 +304,7 @@ export function SelfieCapture({
               </button>
             ) : null}
             {phoneCameraButton(supported ? 'outlineDark' : 'primary')}
+            {choosePhotoButton}
           </div>
         ) : null}
 

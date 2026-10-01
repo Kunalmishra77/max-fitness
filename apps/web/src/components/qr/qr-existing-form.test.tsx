@@ -260,6 +260,6 @@ describe('QrExistingForm', () => {
     expect(idInputs.every((input) => (input as HTMLInputElement).type === 'file')).toBe(true);
     expect(screen.queryByLabelText(/Aadhaar number|ID number|PAN number/i)).toBeNull();
     // And the member is told, because "why do they want my Aadhaar" deserves an answer.
-    expect(screen.getByText(/never store the number/i)).toBeTruthy();
+    expect(screen.getByText(/never the number/i)).toBeTruthy();
   });
 });
