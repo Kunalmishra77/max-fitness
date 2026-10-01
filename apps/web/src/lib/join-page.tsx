@@ -7,6 +7,7 @@ import type { PriceLists } from '@/components/join/join-flow';
 import { MarketingShell } from '@/components/marketing/marketing-shell';
 import { getPathname } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
+import { qrClientMessages } from './qr-i18n';
 import { getSiteContext, type SiteContext } from './site-context';
 
 /**
@@ -43,11 +44,17 @@ export function legalHref(locale: Locale, slug: 'terms' | 'privacy'): string {
   return getPathname({ href: `/legal/${slug}`, locale });
 }
 
+/**
+ * `/qr/new` lives under this page too, and its form speaks the reception catalogues —
+ * so this sends the same set `QrPage` does rather than `signup` alone. Sending too few
+ * is how members were shown "qrExisting.fields.fullName" where a question belonged
+ * (ADR-076), and it happened twice.
+ */
 export async function JoinPage({ ctx, children }: { ctx: SiteContext; children: ReactNode }) {
   const messages = await getMessages({ locale: ctx.locale });
   return (
     <MarketingShell ctx={ctx} onHome={false}>
-      <NextIntlClientProvider messages={{ signup: messages['signup'] as Record<string, unknown> }}>{children}</NextIntlClientProvider>
+      <NextIntlClientProvider messages={qrClientMessages(messages)}>{children}</NextIntlClientProvider>
     </MarketingShell>
   );
 }

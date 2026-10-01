@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import en from '../../messages/en.json';
 import hi from '../../messages/hi.json';
 import { QrExistingForm } from '@/components/qr/qr-existing-form';
+import { QrNewForm } from '@/components/qr/qr-new-form';
 import { qrClientMessages } from './qr-i18n';
 
 /**
@@ -41,6 +42,30 @@ describe('the catalogues a QR page sends to the browser', () => {
     expect(screen.getByText('Full name')).toBeTruthy();
     expect(screen.getByText('Mobile number')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Next' })).toBeTruthy();
+  });
+
+  it('lets a new member read their questions too, on the page that joins them', () => {
+    // Both reception forms render through this same picking, and `/qr/new` lives under
+    // `JoinPage` rather than `QrPage` — which is how the keys leaked a second time.
+    render(
+      <NextIntlClientProvider locale="en" messages={qrClientMessages(en)} timeZone="Asia/Kolkata" onError={() => {}}>
+        <QrNewForm
+          today="2026-10-01"
+          minAge={16}
+          noticeVersion="1.0"
+          termsHref="/legal/terms"
+          privacyHref="/legal/privacy"
+          plans={[{ planId: 'plan_m1_male', durationMonths: 1, pricePaise: 150_000, gender: 'MALE' }]}
+          admissionFeePaise={0}
+          join={() => Promise.resolve({ ok: true, firstName: 'A', amountPaise: 0, reservedUntil: '' })}
+          Camera={() => null}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.getByText('Full name')).toBeTruthy();
+    expect(screen.getByText(/receipt and reminders/i)).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/qrExisting\.|qrNewForm\./);
   });
 
   it('leaves no key showing in either language', () => {

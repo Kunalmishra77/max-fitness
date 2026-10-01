@@ -7,7 +7,7 @@
  * which is what `/qr/existing` did in production: every question read
  * "qrExisting.fields.fullName".
  */
-export const QR_CLIENT_NAMESPACES = ['qr', 'signup', 'qrExisting'] as const;
+export const QR_CLIENT_NAMESPACES = ['qr', 'signup', 'qrExisting', 'qrNewForm'] as const;
 
 /** The catalogues above, picked out of the full set for `NextIntlClientProvider`. */
 export function qrClientMessages(all: Record<string, unknown>): Record<string, unknown> {
