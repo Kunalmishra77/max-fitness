@@ -118,8 +118,11 @@ describe('QrNewForm', () => {
     await user.click(screen.getByRole('button', { name: /Send to reception/i }));
 
     await waitFor(() => expect(join).toHaveBeenCalledOnce());
-    const sent = join.mock.calls[0]?.[0] as { form: FormData; planId: string };
+    const sent = join.mock.calls[0]?.[0] as { form: FormData; planId: string; startDate: string };
     expect(sent.planId).toBe('plan_m3_male');
+    // A sign-up must name its start date. Sending null is for a renewal, and doing it
+    // here made the order come back 400 while the registration stood (ADR-083).
+    expect(sent.startDate).toBe('2026-10-01');
     expect(sent.form.get('fullName')).toBe('Sanjay Tomar');
     expect(sent.form.get('source')).toBe('QR_NEW');
     expect(sent.form.get('trainingSlot')).toBe('MORNING');

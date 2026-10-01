@@ -10,7 +10,7 @@ import { QrNewForm, type QrJoinResult, type QrPlanCard } from './qr-new-form';
  * fails they are told, with the reference — the registration is not lost, and reception
  * can take it from there.
  */
-async function joinAtReception({ form, planId }: { form: FormData; planId: string }): Promise<QrJoinResult> {
+async function joinAtReception({ form, planId, startDate }: { form: FormData; planId: string; startDate: string }): Promise<QrJoinResult> {
   const envelope = async (response: Response) =>
     (await response.json().catch(() => ({}))) as {
       data?: Record<string, unknown>;
@@ -35,8 +35,9 @@ async function joinAtReception({ form, planId }: { form: FormData; planId: strin
     const held = await fetch('/api/v1/checkout/orders', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-registration-token': token },
-      // No start date: the desk starts the membership when the money is handed over.
-      body: JSON.stringify({ planId, startDate: null, payAtReception: true }),
+      // A sign-up must name its start date — `null` is for a renewal, and sending it
+      // here is what made the order come back 400 while the registration stood.
+      body: JSON.stringify({ planId, startDate, payAtReception: true }),
     });
     const heldBody = await envelope(held);
     if (!held.ok) return refusal(heldBody, held.status);

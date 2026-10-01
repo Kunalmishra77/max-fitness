@@ -30,7 +30,7 @@ export type QrJoinResult =
   | { readonly ok: true; readonly firstName: string; readonly amountPaise: number; readonly reservedUntil: string }
   | { readonly ok: false; readonly code: string; readonly fields?: readonly string[]; readonly requestId?: string | undefined; readonly minAge?: number | undefined };
 
-export type QrJoin = (input: { form: FormData; planId: string }) => Promise<QrJoinResult>;
+export type QrJoin = (input: { form: FormData; planId: string; startDate: string }) => Promise<QrJoinResult>;
 
 const GENDERS = ['MALE', 'FEMALE'] as const;
 
@@ -208,7 +208,8 @@ export function QrNewForm({
     if (govIdBack !== null) form.set('govIdBack', govIdBack, 'id-back.jpg');
 
     start(async () => {
-      const result = await join({ form, planId: chosen.planId });
+      // A sign-up needs a start date, and somebody standing at the desk starts today.
+      const result = await join({ form, planId: chosen.planId, startDate: today });
       if (result.ok) {
         setDone({ firstName: result.firstName, amountPaise: result.amountPaise });
         return;
