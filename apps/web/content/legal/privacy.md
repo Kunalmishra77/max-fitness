@@ -1,7 +1,7 @@
 <!-- updated: 2026-09-11 -->
 # Privacy policy
 
-This policy explains how Max Fitness Gym collects and uses personal data through this website, our sign-up and QR forms, WhatsApp, and the attendance phone at reception. It is written to follow India's Digital Personal Data Protection Act, 2023 and the DPDP Rules, 2025. Parts in [brackets] are waiting for the gym's details.
+This policy explains how Max Fitness Gym collects and uses personal data through this website, our sign-up and QR forms, WhatsApp, and the attendance phone at reception. It is written to follow India's Digital Personal Data Protection Act, 2023 and the DPDP Rules, 2025.
 
 ## Who is responsible
 
@@ -51,7 +51,9 @@ If a data breach affects you, we will tell you in plain language what happened, 
 
 ## Grievance officer
 
-[Grievance officer name], Max Fitness Gym · [email address] · [phone number]. We acknowledge complaints within 48 hours. If you are not satisfied with our answer, you can complain to the Data Protection Board of India.
+Ajay Kuliyal, Max Fitness Gym · [098714 06350](tel:+919871406350) · or ask for him in person at reception, Krishan Plaza, Plot No. 6, Nyay Khand I, Indirapuram, Ghaziabad 201014.
+
+He is the person to contact about anything to do with your personal data — to see what we hold, to correct it, to withdraw a consent or to complain. We acknowledge complaints within 48 hours. If you are not satisfied with our answer, you can complain to the Data Protection Board of India.
 
 ## Changes to this policy
 

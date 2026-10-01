@@ -19,9 +19,14 @@ describe('hasPlaceholders', () => {
     expect(hasPlaceholders('Fees are not refundable after seven days. Call 098714 06350.')).toBe(false);
   });
 
-  it('is not fooled by ordinary brackets or a markdown link', () => {
+  it('catches a lower-case one too, which is how "[minimum age]" stayed live', () => {
+    expect(hasPlaceholders('The minimum age to join is [minimum age] years.')).toBe(true);
+    expect(hasPlaceholders('Refunded [method: owner to confirm].')).toBe(true);
+  });
+
+  it('is not fooled by a markdown link', () => {
     expect(hasPlaceholders('Read the [privacy policy](/legal/privacy) for more.')).toBe(false);
-    expect(hasPlaceholders('Open 4:30 am [IST] daily.')).toBe(false);
+    expect(hasPlaceholders('See the [terms](/legal/terms) and the [refund policy](/legal/refund).')).toBe(false);
   });
 });
 

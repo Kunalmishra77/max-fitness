@@ -33,12 +33,13 @@ const UPDATED = /^<!--\s*updated:\s*(\d{4}-\d{2}-\d{2})\s*-->$/;
  * This asks the document instead: while "[Owner refund policy]" is in there the page
  * admits it, and the day the owner's words land the notice goes by itself.
  *
- * A markdown link's `[text](href)` is not a placeholder, and nor is a bracketed aside
- * in ordinary prose — only a bracket opening a capitalised phrase, which is the shape
- * every one of ours has.
+ * Anything in square brackets that is not a markdown link counts. An earlier version
+ * only matched a capitalised phrase and let "[minimum age]" sit on the live terms page,
+ * which is exactly the kind of thing this is supposed to find. These documents are ours
+ * and use brackets for nothing else.
  */
 export function hasPlaceholders(source: string): boolean {
-  return /\[[A-Z][^\]\n]{3,}\](?!\()/.test(source);
+  return /\[[^\]\n]{3,}\](?!\()/.test(source);
 }
 
 export function parseLegalMarkdown(source: string): LegalDocument {

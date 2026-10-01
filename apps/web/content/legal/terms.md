@@ -1,19 +1,19 @@
-<!-- updated: 2026-09-11 -->
+<!-- updated: 2026-10-01 -->
 # Terms of membership
 
-These terms apply to everyone who trains at Max Fitness Gym. Parts in [brackets] are waiting for the owner's confirmation.
+These terms apply to everyone who trains at Max Fitness Gym.
 
 ## Your membership
 
 - A membership is personal. It cannot be shared or transferred to someone else.
 - It runs for the plan you choose (1, 3, 6 or 12 months) from the start date on your receipt.
 - Current fees are shown on this website and at reception. The price you paid stays fixed for that membership.
-- [Pausing a membership: owner's policy.]
+- You can pause it for travel or illness — at least 7 days at a time, up to 30 days a year, told to us before the break starts. Your end date moves by the days paused.
 - Cancellations and refunds are covered by our [Refund & cancellation policy](/legal/refund).
 
 ## Age
 
-- The minimum age to join is [minimum age] years.
+- The minimum age to join is 16 years.
 - Members under 18 need a parent or guardian to sign at reception before their first workout.
 
 ## Health and safety
@@ -24,14 +24,15 @@ These terms apply to everyone who trains at Max Fitness Gym. Parts in [brackets]
 
 ## Conduct
 
-- Treat other members and staff with respect. Harassment, abuse or intimidation may lead to your membership being cancelled. [Owner's policy on refunds in that case.]
+- Treat other members and staff with respect. Harassment, abuse or intimidation may lead to your membership being cancelled, and fees are not returned in that case.
 - Wear clean indoor shoes and suitable clothing, and bring a small towel.
 - No smoking, alcohol or drugs on the premises.
 - Ask before you photograph or film other members.
 
 ## Lockers and belongings
 
-- [Locker availability and rules: owner to confirm.]
+- Lockers are for use while you are training, first come first served, and you bring your own lock.
+- Empty your locker before you leave. Anything left overnight is removed and kept at reception for a week.
 - Keep valuables with you. The gym is not responsible for lost or damaged belongings, except where the loss is caused by our negligence.
 
 ## Responsibility for injury
