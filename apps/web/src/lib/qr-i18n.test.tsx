@@ -38,7 +38,7 @@ describe('the catalogues a QR page sends to the browser', () => {
 
     expect(screen.getByText('Full name')).toBeTruthy();
     expect(screen.getByText('Joining date')).toBeTruthy();
-    expect(screen.getByText('Which ID are you showing?')).toBeTruthy();
+    expect(screen.getByText('Upload a Govt ID')).toBeTruthy();
     expect(screen.getByText('We keep only the photograph. We never store the number.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Send to reception' })).toBeTruthy();
   });

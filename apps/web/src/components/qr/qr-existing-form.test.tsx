@@ -34,6 +34,8 @@ function form(over: { submit?: QrSubmit; onDone?: (code: string) => void } = {})
             </button>
           ) : null
         }
+        // The real one needs a canvas; what matters here is that something smaller is sent.
+        shrinkId={(file) => Promise.resolve(new Blob([`small:${file.name}`], { type: 'image/jpeg' }))}
       />
     </WithIntl>,
   );
@@ -54,10 +56,10 @@ async function fillRequired() {
   await userEvent.click(screen.getByRole('button', { name: /Take the photo/i }));
   await userEvent.click(screen.getByRole('radio', { name: /3 months/i }));
   setDate(/Fees paid until/i, '2026-11-30');
-  await userEvent.selectOptions(screen.getByLabelText(/Which ID/i), 'AADHAAR');
+  await userEvent.selectOptions(screen.getByLabelText(/Upload a Govt ID/i), 'AADHAAR');
   const card = (name: string) => new File(['card'], name, { type: 'image/jpeg' });
-  await userEvent.upload(screen.getByLabelText(/front/i), card('front.jpg'));
-  await userEvent.upload(screen.getByLabelText(/back/i), card('back.jpg'));
+  await userEvent.upload(screen.getByLabelText(/Front of the card/i), card('front.jpg'));
+  await userEvent.upload(screen.getByLabelText(/Back of the card/i), card('back.jpg'));
   await userEvent.click(screen.getByRole('checkbox', { name: /Terms/i }));
 }
 
@@ -138,25 +140,40 @@ describe('QrExistingForm', () => {
     expect(screen.getByLabelText<HTMLInputElement>(/Full name/i).value).toBe('Sanjay Tomar');
   });
 
+  it('sends the shrunk card, not the four-megabyte one the phone took', async () => {
+    // A raw photo of an Aadhaar is several megabytes; a selfie and two of them were more
+    // than the request could carry, and reception met "HTTP 413" (ADR-080).
+    const submit = vi.fn<QrSubmit>().mockResolvedValue({ ok: true, referenceCode: 'Q-9' });
+    form({ submit });
+
+    await fillRequired();
+    await userEvent.click(screen.getByRole('button', { name: /Send to reception/i }));
+
+    await waitFor(() => expect(submit).toHaveBeenCalledOnce());
+    const sent = submit.mock.calls[0]?.[0] as FormData;
+    expect(await (sent.get('govIdFront') as Blob).text()).toBe('small:front.jpg');
+    expect(await (sent.get('govIdBack') as Blob).text()).toBe('small:back.jpg');
+  });
+
   it('asks for both sides of an Aadhaar and only the front of a PAN', async () => {
     form();
 
-    await userEvent.selectOptions(screen.getByLabelText(/Which ID/i), 'AADHAAR');
-    expect(screen.getByLabelText(/front/i)).toBeTruthy();
-    expect(screen.getByLabelText(/back/i)).toBeTruthy();
+    await userEvent.selectOptions(screen.getByLabelText(/Upload a Govt ID/i), 'AADHAAR');
+    expect(screen.getByLabelText(/Front of the card/i)).toBeTruthy();
+    expect(screen.getByLabelText(/Back of the card/i)).toBeTruthy();
 
-    await userEvent.selectOptions(screen.getByLabelText(/Which ID/i), 'PAN');
-    expect(screen.getByLabelText(/front/i)).toBeTruthy();
-    expect(screen.queryByLabelText(/back/i)).toBeNull();
+    await userEvent.selectOptions(screen.getByLabelText(/Upload a Govt ID/i), 'PAN');
+    expect(screen.getByLabelText(/Front of the card/i)).toBeTruthy();
+    expect(screen.queryByLabelText(/Back of the card/i)).toBeNull();
   });
 
   it('never asks for the ID number, and says so', async () => {
     form();
 
-    await userEvent.selectOptions(screen.getByLabelText(/Which ID/i), 'AADHAAR');
+    await userEvent.selectOptions(screen.getByLabelText(/Upload a Govt ID/i), 'AADHAAR');
 
     // The only ID inputs are the two photographs.
-    const idInputs = screen.getAllByLabelText(/front|back/i);
+    const idInputs = screen.getAllByLabelText(/of the card/i);
     expect(idInputs.every((input) => (input as HTMLInputElement).type === 'file')).toBe(true);
     expect(screen.queryByLabelText(/Aadhaar number|ID number|PAN number/i)).toBeNull();
     // And the member is told, because "why do they want my Aadhaar" deserves an answer.

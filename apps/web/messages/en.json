@@ -1505,8 +1505,7 @@
       "selfie": "Your photo",
       "plan": "Which plan do you have?",
       "endDate": "Fees paid until",
-      "amount": "How much did you pay?",
-      "govIdType": "Which ID are you showing?"
+      "govIdType": "Upload a Govt ID"
     },
     "gender": {
       "MALE": "Male",
@@ -1514,10 +1513,10 @@
       "OTHER": "Other"
     },
     "plans": {
-      "1": "1 month",
-      "3": "3 months",
-      "6": "6 months",
-      "12": "12 months",
+      "1": "Monthly",
+      "3": "3 Months",
+      "6": "6 Months",
+      "12": "12 Months",
       "unsure": "Not sure"
     },
     "govId": {
@@ -1526,8 +1525,11 @@
       "PAN": "PAN card",
       "DL": "Driving licence",
       "VOTER": "Voter ID",
-      "front": "Photo of the front",
-      "back": "Photo of the back",
+      "front": "Front of the card",
+      "back": "Back of the card",
+      "tapToAdd": "Tap to take a photo",
+      "added": "Photo added — tap to change",
+      "working": "Getting it ready…",
       "help": "We keep only the photograph. We never store the number."
     },
     "consent": {

@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition, type ComponentType, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { GOV_ID_TYPES, govIdSidesFor, type GovIdType } from '@mfp/core';
+import { renderIdPhoto } from '@/components/join/render-photo';
 import { SelfieCapture, type SelfieCaptureProps } from '@/components/join/selfie-capture';
 import { cn } from '@/lib/cn';
 
@@ -95,6 +96,7 @@ export function QrExistingForm({
   submit,
   onSubmitted,
   Camera = SelfieCapture,
+  shrinkId = renderIdPhoto,
 }: {
   readonly today: string;
   readonly minAge: number;
@@ -105,6 +107,8 @@ export function QrExistingForm({
   readonly onSubmitted: (referenceCode: string) => void;
   /** Injected in tests; the real sheet needs a camera. */
   readonly Camera?: ComponentType<SelfieCaptureProps>;
+  /** Injected in tests; the real one needs a canvas. */
+  readonly shrinkId?: (file: File) => Promise<Blob>;
 }) {
   const t = useTranslations('qrExisting');
   const locale = useLocale();
@@ -119,10 +123,12 @@ export function QrExistingForm({
   const [cameraOpen, setCameraOpen] = useState(false);
   const [plan, setPlan] = useState<(typeof PLANS)[number] | null>(null);
   const [endDate, setEndDate] = useState('');
-  const [amount, setAmount] = useState('');
   const [govIdType, setGovIdType] = useState<GovIdType | ''>('');
-  const [govIdFront, setGovIdFront] = useState<File | null>(null);
-  const [govIdBack, setGovIdBack] = useState<File | null>(null);
+  // Shrunk in the browser as soon as it is picked: a raw phone photo of an Aadhaar is
+  // several megabytes, and three of those are more than the request may carry (ADR-080).
+  const [govIdFront, setGovIdFront] = useState<Blob | null>(null);
+  const [govIdBack, setGovIdBack] = useState<Blob | null>(null);
+  const [shrinking, setShrinking] = useState(false);
   const [terms, setTerms] = useState(false);
   const [whatsapp, setWhatsapp] = useState(true);
   const [face, setFace] = useState(false);
@@ -141,6 +147,20 @@ export function QrExistingForm({
   };
 
   const sides = govIdType === '' ? [] : govIdSidesFor(govIdType);
+
+  /** Shrink the picked card; if the browser cannot decode it, send what we were given. */
+  const keepIdPhoto = (side: 'FRONT' | 'BACK', file: File | null) => {
+    const keep = side === 'FRONT' ? setGovIdFront : setGovIdBack;
+    if (file === null) {
+      keep(null);
+      return;
+    }
+    setShrinking(true);
+    void shrinkId(file)
+      .then((blob) => keep(blob))
+      .catch(() => keep(file))
+      .finally(() => setShrinking(false));
+  };
 
   /** Everything the gym insists on, checked here so nothing travels for nothing. */
   const missing = (): Record<string, string> => {
@@ -178,7 +198,6 @@ export function QrExistingForm({
     form.set('consents', JSON.stringify({ terms, privacy: terms, whatsappUpdates: whatsapp, faceAttendance: face }));
     form.set('declaredPlanMonths', plan === 'unsure' ? '' : plan);
     form.set('declaredEndDate', endDate);
-    form.set('declaredAmount', amount.replace(/\D/g, ''));
     form.set('selfie', photo.blob, 'selfie.jpg');
     if (email.trim() !== '') form.set('email', email.trim());
     if (joinedOn !== '') form.set('joinedOn', joinedOn);
@@ -302,9 +321,6 @@ export function QrExistingForm({
           <span className="mt-1 block text-small text-brand-stone">{t('endDateHelp')}</span>
         </Field>
 
-        <Field {...field('amount')} label={t('fields.amount')} optional>
-          <input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="numeric" className={inputClass} />
-        </Field>
       </section>
 
       <section className="grid gap-3">
@@ -329,18 +345,34 @@ export function QrExistingForm({
           <span className="mt-1 block text-small text-brand-stone">{t('govId.help')}</span>
         </Field>
 
-        {sides.map((side) => (
-          <label key={side} className="block">
-            <span className="text-body font-semibold text-brand-ink">{t(side === 'FRONT' ? 'govId.front' : 'govId.back')}</span>
+        {sides.map((side) => {
+          const chosen = side === 'FRONT' ? govIdFront : govIdBack;
+          return (
+          /* A big obvious target: a member at reception is holding a card in one hand. */
+          <label
+            key={side}
+            className={cn(
+              'block cursor-pointer rounded-panel border-2 border-dashed p-5 text-center',
+              chosen === null ? 'border-brand-stone/50 bg-white' : 'border-semantic-fee-paid bg-tint-fee-paid-bg',
+            )}
+          >
+            <span aria-hidden className="block text-[2.5rem] leading-none">{chosen === null ? '📷' : '✓'}</span>
+            <span className="mt-2 block text-body-l font-semibold text-brand-ink">
+              {t(side === 'FRONT' ? 'govId.front' : 'govId.back')}
+            </span>
+            <span className="mt-1 block text-small text-brand-stone">
+              {shrinking ? t('govId.working') : chosen === null ? t('govId.tapToAdd') : t('govId.added')}
+            </span>
             <input
               type="file"
               accept="image/*"
               capture="environment"
-              onChange={(e) => (side === 'FRONT' ? setGovIdFront(e.target.files?.[0] ?? null) : setGovIdBack(e.target.files?.[0] ?? null))}
-              className="mt-1 block w-full text-body"
+              onChange={(e) => keepIdPhoto(side, e.target.files?.[0] ?? null)}
+              className="sr-only"
             />
           </label>
-        ))}
+          );
+        })}
       </section>
 
       <section className="grid gap-3">

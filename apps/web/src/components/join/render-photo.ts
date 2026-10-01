@@ -1,3 +1,4 @@
+import { fitWithin } from './fit-within';
 import { squareCrop, type Box, type FrameSize } from './selfie-geometry';
 
 /**
@@ -30,6 +31,36 @@ export async function renderSquareJpeg(source: CanvasImageSource, frame: FrameSi
 
   const first = await toJpeg(canvas, 0.85);
   return first.size <= TARGET_BYTES ? first : toJpeg(canvas, 0.75);
+}
+
+/** An ID card is read, not cropped: the whole card, long edge at most this. */
+const ID_MAX_PX = 1600;
+const ID_TARGET_BYTES = 500 * 1024;
+
+/**
+ * A photograph of an ID card, shrunk in the browser before it is uploaded (ADR-080).
+ *
+ * The phone hands over four thousand pixels and four megabytes. A selfie and both sides
+ * of an Aadhaar at that size are more than the request may carry, and the member meets
+ * "HTTP 413" at reception. The whole card is kept — no crop, no change of shape — only
+ * fewer pixels.
+ */
+export async function renderIdPhoto(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  try {
+    const { width, height } = fitWithin(bitmap.width, bitmap.height, ID_MAX_PX);
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d');
+    if (context === null) throw new Error('Canvas is not available');
+    context.drawImage(bitmap, 0, 0, width, height);
+
+    const first = await toJpeg(canvas, 0.85);
+    return first.size <= ID_TARGET_BYTES ? first : toJpeg(canvas, 0.7);
+  } finally {
+    bitmap.close();
+  }
 }
 
 /** §2.5: a photo from the phone's camera app, upright per its EXIF orientation. */

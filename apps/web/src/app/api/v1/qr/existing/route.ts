@@ -8,7 +8,7 @@ import { loadGym } from '@/lib/gym';
 import { parseQrExistingForm } from '@/lib/qr-existing-form';
 import { qrOtpGate } from '@/lib/qr-otp-gate';
 import { clientIp, limiterKey, registrationLimiters } from '@/lib/rate-limit';
-import { MAX_SELFIE_BYTES, processGovIdImage, processSelfie } from '@/lib/selfie-image';
+import { MAX_GOV_ID_BYTES, MAX_SELFIE_BYTES, processGovIdImage, processSelfie } from '@/lib/selfie-image';
 import { hashIp } from '@/lib/signup-access';
 
 /**
@@ -24,7 +24,14 @@ import { hashIp } from '@/lib/signup-access';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const MAX_BODY_BYTES = MAX_SELFIE_BYTES + 64 * 1024;
+/**
+ * The selfie, both sides of an ID, and the fields — not the selfie alone (ADR-080).
+ *
+ * This was sized for a selfie and never raised when ID photographs were added, so every
+ * member who uploaded an Aadhaar was refused with 413 before a line of this ran. The
+ * browser shrinks each picture first; this is the ceiling, not the expected size.
+ */
+const MAX_BODY_BYTES = MAX_SELFIE_BYTES + 2 * MAX_GOV_ID_BYTES + 64 * 1024;
 const MAX_USER_AGENT = 300;
 
 export async function POST(request: NextRequest) {
