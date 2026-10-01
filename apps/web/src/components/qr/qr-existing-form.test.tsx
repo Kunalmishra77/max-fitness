@@ -49,7 +49,7 @@ const setDate = (label: RegExp, value: string) => fireEvent.change(screen.getByL
 const next = () => userEvent.click(screen.getByRole('button', { name: /Next/i }));
 
 /** Walk forward to a named screen, answering only what each one insists on. */
-async function walkTo(stop: 'dob' | 'selfie' | 'plan' | 'govId' | 'optional' | 'consent') {
+async function walkTo(stop: 'dob' | 'selfie' | 'plan' | 'slot' | 'govId' | 'optional' | 'consent') {
   await userEvent.type(screen.getByLabelText(/Full name/i), 'Sanjay Tomar');
   await userEvent.type(screen.getByLabelText(/Mobile number/i), '9876543210');
   await next();
@@ -67,6 +67,10 @@ async function walkTo(stop: 'dob' | 'selfie' | 'plan' | 'govId' | 'optional' | '
 
   await userEvent.click(screen.getByRole('radio', { name: /3 Months/i }));
   setDate(/Fees paid until/i, '2026-11-30');
+  await next();
+  if (stop === 'slot') return;
+
+  await userEvent.click(screen.getByRole('radio', { name: /^Morning$/i }));
   await next();
   if (stop === 'govId') return;
 
@@ -144,6 +148,8 @@ describe('QrExistingForm', () => {
     expect(sent.get('joinedOn')).toBe('2019-04-15');
     expect(sent.get('email')).toBe('sanjay@example.com');
     expect(sent.get('govIdType')).toBe('AADHAAR');
+    // The gym shuts at midday, so when a member comes is worth knowing (ADR-082).
+    expect(sent.get('trainingSlot')).toBe('MORNING');
     await waitFor(() => expect(onDone).toHaveBeenCalledWith('Q-4821'));
   });
 

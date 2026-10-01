@@ -47,6 +47,7 @@ export default async function CrmVerifyPage() {
       declaredAmountPaise: row.declaredAmountPaise,
       register: row.register === null ? null : { endDate: row.register.endDate, planMonths: row.register.planMonths },
       joinedOn: row.member.joinedOn,
+      trainingSlot: row.member.trainingSlot,
       govIdType: row.govIdType,
       govIdPhotos: await Promise.all(
         row.govIdPhotos.map(async (photo) => ({ side: photo.side, url: await storage.signedUrl(photo.storageKey, 300) })),

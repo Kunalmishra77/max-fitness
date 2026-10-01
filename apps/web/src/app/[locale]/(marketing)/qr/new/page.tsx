@@ -1,3 +1,4 @@
+import { sessionsForDay } from '@mfp/core';
 import { JoinDetails, JoinFrame } from '@/components/join/join-flow';
 import { GymAtAGlance } from '@/components/qr/gym-at-a-glance';
 import { JoinPage, joinContext, joinMetadata, legalHref, priceLists } from '@/lib/join-page';
@@ -21,8 +22,11 @@ export default async function QrNewPage({ params }: { params: Promise<{ locale: 
   const ctx = await joinContext(params);
   const { privacy, pricing, trust, hours } = ctx.data.settings;
 
-  const open = hours.find((day) => !day.closed);
-  const hoursLine = open === undefined ? null : `${open.open} – ${open.close}`;
+  // Every session, so somebody reading this at three in the afternoon is not told the
+  // gym is open when its shutters are down (ADR-082).
+  const openDay = hours.find((day) => !day.closed)?.day;
+  const sessions = openDay === undefined ? [] : sessionsForDay(hours, openDay);
+  const hoursLine = sessions.length === 0 ? null : sessions.map((session) => `${session.open} – ${session.close}`).join(', ');
 
   return (
     <JoinPage ctx={ctx}>

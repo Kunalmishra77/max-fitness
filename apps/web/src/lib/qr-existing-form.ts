@@ -1,4 +1,4 @@
-import { govIdSidesFor, isGovIdType, type GovIdType } from '@mfp/core';
+import { govIdSidesFor, isGovIdType, isTrainingSlot, type GovIdType, type TrainingSlot } from '@mfp/core';
 import { istDate, PLAN_DURATIONS, type ISTDate, type PlanDurationMonths, type RegistrationFields } from '@mfp/shared';
 import { parseRegistrationForm } from './registration-form';
 
@@ -20,6 +20,8 @@ export type QrExistingFormResult =
       readonly declaredAmountPaise: number | null;
       /** Optional: plenty of members will not remember the day they joined. */
       readonly joinedOn: ISTDate | null;
+      /** Morning, evening or both — the gym shuts between noon and five (ADR-082). */
+      readonly trainingSlot: TrainingSlot | null;
       /**
        * Pictures only. The parser never reads, and the form never asks for, a number.
        * Either photographs of each side, or the one file the member had (ADR-081).
@@ -85,6 +87,10 @@ export async function parseQrExistingForm(form: FormData): Promise<QrExistingFor
   const joinedOn = joinedText === '' ? null : realDate(joinedText);
   if (joinedText !== '' && joinedOn === null) fields['joinedOn'] = 'joinedOn';
 
+  const slotText = text(form, 'trainingSlot');
+  const trainingSlot = slotText === '' ? null : isTrainingSlot(slotText) ? slotText : undefined;
+  if (trainingSlot === undefined) fields['trainingSlot'] = 'trainingSlot';
+
   const govIdTypeText = text(form, 'govIdType');
   let govId: { type: GovIdType; images: RawGovIdImage[]; document: RawGovIdDocument | null } | null = null;
   if (govIdTypeText !== '') {
@@ -128,9 +134,10 @@ export async function parseQrExistingForm(form: FormData): Promise<QrExistingFor
     Object.keys(fields).length > 0 ||
     declaredEndDate === null ||
     declaredPlanMonths === undefined ||
-    declaredAmountPaise === undefined
+    declaredAmountPaise === undefined ||
+    trainingSlot === undefined
   ) {
     return { ok: false, fields };
   }
-  return { ok: true, fields: base.fields, selfie: base.selfie, declaredPlanMonths, declaredEndDate, declaredAmountPaise, joinedOn, govId };
+  return { ok: true, fields: base.fields, selfie: base.selfie, declaredPlanMonths, declaredEndDate, declaredAmountPaise, joinedOn, trainingSlot, govId };
 }

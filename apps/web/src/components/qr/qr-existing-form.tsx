@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition, type ComponentType, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { GOV_ID_TYPES, govIdSidesFor, type GovIdType } from '@mfp/core';
+import { GOV_ID_TYPES, govIdSidesFor, TRAINING_SLOTS, type GovIdType, type TrainingSlot } from '@mfp/core';
 import { renderIdPhoto } from '@/components/join/render-photo';
 import { SelfieCapture, type SelfieCaptureProps } from '@/components/join/selfie-capture';
 import { cn } from '@/lib/cn';
@@ -49,6 +49,7 @@ const STEP_KEYS: ReadonlyArray<readonly string[]> = [
   ['dob', 'gender'],
   ['selfie'],
   ['plan', 'endDate'],
+  ['slot'],
   ['govId'],
   [],
   ['terms'],
@@ -148,6 +149,7 @@ export function QrExistingForm({
   const [cameraOpen, setCameraOpen] = useState(false);
   const [plan, setPlan] = useState<(typeof PLANS)[number] | null>(null);
   const [endDate, setEndDate] = useState('');
+  const [slot, setSlot] = useState<TrainingSlot | null>(null);
   const [govIdType, setGovIdType] = useState<GovIdType | ''>('');
   // Shrunk in the browser as soon as it is picked: a raw phone photo of an Aadhaar is
   // several megabytes, and three of those are more than the request may carry (ADR-080).
@@ -246,6 +248,7 @@ export function QrExistingForm({
     if (photo === null) found['selfie'] = t('errors.selfie');
     if (plan === null) found['plan'] = t('errors.plan');
     if (endDate === '') found['endDate'] = t('errors.endDate');
+    if (slot === null) found['slot'] = t('errors.slot');
     if (govIdType === '') found['govId'] = t('errors.govIdType');
     else if (govIdFront === null || (sides.includes('BACK') && govIdBack === null)) found['govId'] = t('errors.govIdPhotos');
     if (!terms) found['terms'] = t('errors.terms');
@@ -272,6 +275,7 @@ export function QrExistingForm({
     form.set('consents', JSON.stringify({ terms, privacy: terms, whatsappUpdates: whatsapp, faceAttendance: face }));
     form.set('declaredPlanMonths', plan === 'unsure' ? '' : plan);
     form.set('declaredEndDate', endDate);
+    if (slot !== null) form.set('trainingSlot', slot);
     form.set('selfie', photo.blob, 'selfie.jpg');
     if (email.trim() !== '') form.set('email', email.trim());
     if (joinedOn !== '') form.set('joinedOn', joinedOn);
@@ -411,7 +415,37 @@ export function QrExistingForm({
       ),
     },
     {
+      // The gym shuts between noon and five, so this is a real question with a real use:
+      // it tells the owner when to have a trainer on the floor (ADR-082).
       keys: STEP_KEYS[4] ?? [],
+      body: (
+      <fieldset>
+        <legend className="text-body font-semibold text-brand-ink">{t('fields.slot')}</legend>
+        <p className="mt-1 text-small text-brand-stone">{t('slotHelp')}</p>
+        <div className="mt-3 grid gap-2">
+          {TRAINING_SLOTS.map((value) => (
+            <label
+              key={value}
+              className={cn(
+                'min-h-16 cursor-pointer rounded-button border-2 px-5 leading-[3.5rem] font-semibold',
+                slot === value ? 'border-brand-accent bg-brand-accent text-brand-white' : 'border-brand-stone/40 bg-white',
+              )}
+            >
+              <input type="radio" name="slot" value={value} checked={slot === value} onChange={() => setSlot(value)} className="sr-only" />
+              {t(`slots.${value}` as never)}
+            </label>
+          ))}
+        </div>
+        {problems['slot'] === undefined ? null : (
+          <p role="alert" className="mt-1 text-small font-semibold text-semantic-fee-expired">
+            {problems['slot']}
+          </p>
+        )}
+      </fieldset>
+      ),
+    },
+    {
+      keys: STEP_KEYS[5] ?? [],
       body: (
       <section className="grid gap-3">
         <Field {...field('govId')} label={t('fields.govIdType')}>
@@ -470,7 +504,7 @@ export function QrExistingForm({
     },
     {
       // Both optional, on a screen of their own so nobody is held up by them.
-      keys: STEP_KEYS[5] ?? [],
+      keys: STEP_KEYS[6] ?? [],
       body: (
       <div className="grid gap-4">
         <h2 className="text-body font-semibold text-brand-ink">{t('optionalTitle')}</h2>
@@ -486,7 +520,7 @@ export function QrExistingForm({
       ),
     },
     {
-      keys: STEP_KEYS[6] ?? [],
+      keys: STEP_KEYS[7] ?? [],
       body: (
       <section className="grid gap-3">
         <h2 className="text-body font-semibold text-brand-ink">{t('beforeSend')}</h2>

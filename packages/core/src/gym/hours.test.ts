@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { istDate, istTime } from '@mfp/shared';
-import { dayPeriod, hoursForDay, toTwelveHour, todayStatus, weekHours, yearsOperating, type HoursRow } from './hours';
+import { dayPeriod, groupHours, hoursForDay, sessionsForDay, toTwelveHour, todayStatus, weekHours, yearsOperating, type HoursRow } from './hours';
 
 const row = (day: number, open: string, close: string, closed = false): HoursRow => ({
   day,
@@ -56,12 +56,81 @@ describe('weekHours', () => {
   });
 
   it('skips days with no row', () => {
-    expect(weekHours([row(0, '06:00', '11:00')], SUNDAY)).toEqual([{ ...row(0, '06:00', '11:00'), isToday: true }]);
+    expect(weekHours([row(0, '06:00', '11:00')], SUNDAY)).toEqual([
+      { day: 0, closed: false, sessions: [{ open: '06:00', close: '11:00' }], isToday: true },
+    ]);
   });
 
   it('finds a row by day', () => {
     expect(hoursForDay(HOURS, 0)?.close).toBe('11:00');
     expect(hoursForDay([], 0)).toBeNull();
+  });
+});
+
+/**
+ * Max Fitness opens twice a day: 4:30–12:00, shut, then 17:00–22:00, and all day Sunday
+ * (owner, 2026-10-01). A single open/close said 4:30 am to 10 pm, which told every
+ * visitor the gym was open at two in the afternoon when its shutters are down.
+ */
+const TWICE: HoursRow[] = [1, 2, 3, 4, 5, 6].flatMap((d) => [row(d, '04:30', '12:00'), row(d, '17:00', '22:00')]).concat(row(0, '00:00', '00:00', true));
+
+describe('todayStatus, when the gym opens twice a day', () => {
+  it('is open in the morning and again in the evening', () => {
+    expect(todayStatus(TWICE, THURSDAY, istTime('06:00'))).toEqual({ kind: 'OPEN_NOW', closesAt: '12:00' });
+    expect(todayStatus(TWICE, THURSDAY, istTime('19:00'))).toEqual({ kind: 'OPEN_NOW', closesAt: '22:00' });
+  });
+
+  it('says when it opens again rather than "closed", during the afternoon break', () => {
+    // "Closed" at 3 pm would read as closed for the day, and a member would not come back.
+    expect(todayStatus(TWICE, THURSDAY, istTime('15:00'))).toEqual({ kind: 'OPENS_LATER', opensAt: '17:00', closesAt: '22:00' });
+  });
+
+  it('points at the first session before the gym has opened at all', () => {
+    expect(todayStatus(TWICE, THURSDAY, istTime('04:00'))).toEqual({ kind: 'OPENS_LATER', opensAt: '04:30', closesAt: '12:00' });
+  });
+
+  it('is done for the day after the last session', () => {
+    expect(todayStatus(TWICE, THURSDAY, istTime('22:00'))).toEqual({ kind: 'CLOSED_FOR_DAY' });
+  });
+
+  it('is closed on Sunday whatever the hour', () => {
+    expect(todayStatus(TWICE, SUNDAY, istTime('06:00'))).toEqual({ kind: 'CLOSED_TODAY' });
+  });
+});
+
+describe('sessionsForDay', () => {
+  it('gives every session that day, earliest first', () => {
+    expect(sessionsForDay(TWICE, 4).map((s) => `${s.open}-${s.close}`)).toEqual(['04:30-12:00', '17:00-22:00']);
+  });
+
+  it('gives nothing for a day that is closed or absent', () => {
+    expect(sessionsForDay(TWICE, 0)).toEqual([]);
+    expect(sessionsForDay([], 4)).toEqual([]);
+  });
+});
+
+describe('weekHours, with two sessions a day', () => {
+  it('gives one row per day carrying both sessions', () => {
+    const rows = weekHours(TWICE, THURSDAY);
+    expect(rows.map((r) => r.day)).toEqual([1, 2, 3, 4, 5, 6, 0]);
+    expect(rows.find((r) => r.day === 4)?.sessions.map((s) => s.open)).toEqual(['04:30', '17:00']);
+    expect(rows.find((r) => r.day === 0)?.closed).toBe(true);
+    expect(rows.filter((r) => r.isToday).map((r) => r.day)).toEqual([4]);
+  });
+});
+
+describe('groupHours, with two sessions a day', () => {
+  it('runs Monday to Saturday together and leaves Sunday on its own', () => {
+    const groups = groupHours(TWICE);
+    expect(groups).toHaveLength(2);
+    expect(groups[0]?.days).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(groups[0]?.sessions.map((s) => `${s.open}-${s.close}`)).toEqual(['04:30-12:00', '17:00-22:00']);
+    expect(groups[1]).toMatchObject({ days: [0], closed: true });
+  });
+
+  it('does not run two days together when only one of them shuts at midday', () => {
+    const mixed: HoursRow[] = [row(1, '04:30', '12:00'), row(1, '17:00', '22:00'), row(2, '04:30', '22:00')];
+    expect(groupHours(mixed).map((g) => g.days)).toEqual([[1], [2]]);
   });
 });
 

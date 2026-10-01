@@ -106,7 +106,10 @@ export async function getSiteContext(locale: Locale): Promise<SiteContext> {
           const dayText = group.days.length === 1 ? first : `${first}–${last}`;
           return {
             closed: group.closed,
-            text: group.closed ? `${dayText} ${tv('closed')}` : tv('dayRange', { day: dayText, range: range(group.open, group.close) }),
+            // Two sessions read as one phrase: "4:30 am – 12:00 pm, 5:00 – 10:00 pm".
+            text: group.closed
+              ? `${dayText} ${tv('closed')}`
+              : tv('dayRange', { day: dayText, range: group.sessions.map((s) => range(s.open, s.close)).join(', ') }),
           };
         });
 
@@ -140,7 +143,7 @@ export async function getSiteContext(locale: Locale): Promise<SiteContext> {
       rows: weekHours(settings.hours, today).map((row) => ({
         day: row.day,
         label: tv(`days.${row.day}`),
-        hours: row.closed ? null : range(row.open, row.close),
+        hours: row.closed ? null : row.sessions.map((session) => range(session.open, session.close)).join(', '),
       })),
       summary: groups.length === 0 ? null : groups.map((group) => group.text).join('; '),
       line: groups.find((group) => !group.closed)?.text ?? null,

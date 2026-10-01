@@ -418,6 +418,9 @@ model Member {
   /// When they first joined the gym, which may be long before this system existed.
   /// Optional: plenty of members will not remember (ADR-074).
   joinedOn                DateTime?    @db.Date
+  /// Which half of the day they train in — the gym shuts between noon and five, so
+  /// "MORNING", "EVENING" or "BOTH" is what tells the owner how to staff it (ADR-082).
+  trainingSlot            String?
   leftAt                  DateTime?    @db.Date
   leftReason              LeftReason?
   leftNote                String?

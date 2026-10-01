@@ -127,6 +127,7 @@ describe('submitExistingMember', () => {
       amountPaise: number | null;
       claimedMemberId: string;
       joinedOn: string | null;
+      trainingSlot: 'MORNING' | 'EVENING' | 'BOTH' | null;
       govId: { type: 'AADHAAR' | 'PAN' | 'DL' | 'VOTER'; images: Array<{ side: 'FRONT' | 'BACK'; body: Uint8Array; width: number; height: number }> } | null;
     }> = {},
   ) =>
@@ -138,6 +139,7 @@ describe('submitExistingMember', () => {
         declaredEndDate: istDate(declared.endDate ?? '2026-09-30'),
         declaredAmountPaise: declared.amountPaise === undefined ? 400_000 : declared.amountPaise,
         joinedOn: declared.joinedOn === undefined ? null : declared.joinedOn === null ? null : istDate(declared.joinedOn),
+        trainingSlot: declared.trainingSlot ?? null,
         govId: declared.govId === undefined ? null : declared.govId,
         ...(declared.claimedMemberId === undefined ? {} : { claimedMemberId: declared.claimedMemberId }),
       },
@@ -269,7 +271,8 @@ describe('submitExistingMember', () => {
     const failing = { transaction: () => Promise.reject(new Error('db down')) };
     await expect(
       submitExistingMember(
-        { fields, selfie, declaredPlanMonths: 3, declaredEndDate: istDate('2026-09-30'), declaredAmountPaise: null, joinedOn: null, govId: null },
+        { fields, selfie, declaredPlanMonths: 3, declaredEndDate: istDate('2026-09-30'), declaredAmountPaise: null, joinedOn: null,
+      trainingSlot: null, govId: null },
         { clock, uow: failing, storage, gymId: 'gym_1', minAge: 16, ipHash: null, userAgent: null },
       ),
     ).rejects.toThrow('db down');
@@ -333,6 +336,7 @@ describe('submitExistingMember', () => {
           declaredEndDate: istDate('2026-09-30'),
           declaredAmountPaise: null,
           joinedOn: null,
+      trainingSlot: null,
           govId: { type: 'AADHAAR', images: [card('FRONT'), card('BACK')] },
         },
         { clock, uow: failing, storage, gymId: 'gym_1', minAge: 16, ipHash: null, userAgent: null },

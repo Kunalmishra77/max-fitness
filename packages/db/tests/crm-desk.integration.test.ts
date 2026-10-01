@@ -784,6 +784,7 @@ suite('CRM fee desk against Postgres', () => {
           declaredEndDate: istDate(declaredEndDate),
           declaredAmountPaise: 400_000,
           joinedOn: extra.joinedOn === undefined ? null : istDate(extra.joinedOn),
+          trainingSlot: null,
           govId:
             extra.govIdType === undefined
               ? null

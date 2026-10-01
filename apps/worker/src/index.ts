@@ -3,7 +3,7 @@ import { PgBoss } from 'pg-boss';
 import { GymSettingsSchema, parseEnv, systemClock, WORKER_HEARTBEAT_STALE_SECONDS } from '@mfp/shared';
 import { createPrismaClient } from '@mfp/db';
 import { createStorageDriver } from '@mfp/integrations/storage';
-import { issueToken } from '@mfp/core';
+import { issueToken, sessionsForDay } from '@mfp/core';
 import { MetaCloudWhatsAppProvider, SimulatorWhatsAppProvider } from '@mfp/integrations/whatsapp';
 import { PrismaMessageLogWriter } from '@mfp/db';
 import { nightlyCallTasksHandler, registerReceiptPdfWorker, RECEIPT_PDF_QUEUE, startOutboxPoller, type Phase3Deps } from './jobs/phase3-jobs';
@@ -143,8 +143,11 @@ async function main(): Promise<void> {
     hoursLine: async () => {
       const gym = await prisma.gym.findUniqueOrThrow({ where: { slug: env.GYM_SLUG }, select: { settings: true } });
       const hours = GymSettingsSchema.parse(gym.settings).hours;
-      const open = hours.find((day) => !day.closed);
-      return open === undefined ? '' : `${open.open} – ${open.close}`;
+      // Every session of the first open day, so a gym that shuts at midday does not tell
+      // a new member it is open all afternoon (ADR-082).
+      const openDay = hours.find((day) => !day.closed)?.day;
+      const sessions = openDay === undefined ? [] : sessionsForDay(hours, openDay);
+      return sessions.map((session) => `${session.open} – ${session.close}`).join(', ');
     },
     unsubscribePayload: phase6.unsubscribePayload,
   };

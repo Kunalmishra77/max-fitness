@@ -26,6 +26,7 @@ const fresh: VerifyItem = {
   declaredAmountPaise: 400_000,
   register: null,
   joinedOn: null,
+  trainingSlot: null,
   govIdType: null,
   govIdPhotos: [],
 };
@@ -124,6 +125,7 @@ describe('VerifyQueue', () => {
       {
         ...fresh,
         joinedOn: '2019-04-15',
+        trainingSlot: 'MORNING',
         govIdType: 'AADHAAR',
         govIdPhotos: [
           { side: 'FRONT', url: '/api/v1/files?key=front' },
@@ -135,6 +137,8 @@ describe('VerifyQueue', () => {
 
     expect(within(card).getByText(/Aadhaar/)).toBeTruthy();
     expect(within(card).getByText(/15 Apr 2019/)).toBeTruthy();
+    // The gym shuts at midday, so when they come is on the card (ADR-082).
+    expect(within(card).getByText(/Comes in the morning/)).toBeTruthy();
     const front = within(card).getByRole('img', { name: 'Aadhaar — front' });
     const back = within(card).getByRole('img', { name: 'Aadhaar — back' });
     expect(front.getAttribute('src')).toBe('/api/v1/files?key=front');

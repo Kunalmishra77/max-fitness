@@ -27,6 +27,8 @@ export interface VerifyItem {
   readonly register: { readonly endDate: string; readonly planMonths: number | null } | null;
   /** What the member says, when they remembered; optional on the form. */
   readonly joinedOn: string | null;
+  /** "MORNING", "EVENING" or "BOTH" — when they train (ADR-082). */
+  readonly trainingSlot: string | null;
   readonly govIdType: string | null;
   /** One per side the card has, each a short-lived signed URL (ADR-074). */
   readonly govIdPhotos: readonly GovIdPhoto[];
@@ -116,6 +118,7 @@ function VerifyCard({ item, approve, reject }: { item: VerifyItem; approve: Appr
           <p className="text-small text-brand-stone">{item.mobileMasked}</p>
           <p className="mt-1 text-small">{item.planMonths === null ? t('planUnknown') : t('plan', { count: item.planMonths })}</p>
           {item.joinedOn === null ? null : <p className="text-small text-brand-stone">{t('joinedOn', { date: show(item.joinedOn) })}</p>}
+          {item.trainingSlot === null ? null : <p className="text-small text-brand-stone">{t(`slot.${item.trainingSlot}` as never)}</p>}
           <p className="mt-2 inline-flex items-baseline gap-2 rounded-input bg-brand-obsidian px-3 py-1 text-white">
             <span className="text-small">{t('reference')}</span>
             <span className="font-display text-title font-bold tracking-wider">{item.referenceCode}</span>

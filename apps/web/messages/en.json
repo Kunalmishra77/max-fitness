@@ -1248,6 +1248,11 @@
       "empty": "Nothing to check right now.",
       "noPhoto": "No photo",
       "joinedOn": "Joined {date}",
+      "slot": {
+        "MORNING": "Comes in the morning",
+        "EVENING": "Comes in the evening",
+        "BOTH": "Comes morning or evening"
+      },
       "govId": "ID shown",
       "govIdNone": "No ID photo",
       "govIdOpen": "Tap a photo to see it full size.",
@@ -1511,7 +1516,14 @@
       "selfie": "Your photo",
       "plan": "Which plan do you have?",
       "endDate": "Fees paid until",
+      "slot": "When do you usually train?",
       "govIdType": "Upload a Govt ID"
+    },
+    "slotHelp": "The gym is open 4:30 am – 12:00 pm and 5:00 – 10:00 pm.",
+    "slots": {
+      "MORNING": "Morning",
+      "EVENING": "Evening",
+      "BOTH": "Both, it varies"
     },
     "gender": {
       "MALE": "Male",
@@ -1558,6 +1570,7 @@
       "selfie": "Please take your photo.",
       "plan": "Please choose your plan.",
       "endDate": "Please give the date your fees are paid until.",
+      "slot": "Please choose when you usually come.",
       "amount": "Please write whole rupees, with no paise.",
       "govIdType": "Please choose which ID you are showing.",
       "govId": "Please add the photo of every side asked for.",

@@ -14,6 +14,7 @@ import {
   type RegistrationFields,
 } from '@mfp/shared';
 import { DomainError } from '../errors';
+import type { TrainingSlot } from '../gym/hours';
 import { validateGovId, type GovIdType, type GovIdUpload } from './gov-id';
 import type { StorageDriver, StoredObject } from '../ports/storage';
 import type { ConsentRecord, SelfieImage } from '../signup/registration.service';
@@ -60,6 +61,8 @@ export interface QrMemberRecord {
   readonly email: string | null;
   /** When they first joined, if they remember. Plenty will not (ADR-074). */
   readonly joinedOn: ISTDate | null;
+  /** Which half of the day they train in; the gym shuts at midday (ADR-082). */
+  readonly trainingSlot: TrainingSlot | null;
   readonly dob: ISTDate;
   readonly gender: Gender;
   readonly language: Language;
@@ -137,6 +140,8 @@ export async function submitExistingMember(
     readonly declaredAmountPaise: number | null;
     /** Optional: plenty of members will not remember the day they joined. */
     readonly joinedOn: ISTDate | null;
+    /** Morning, evening, or both — the gym is shut between noon and five (ADR-082). */
+    readonly trainingSlot: TrainingSlot | null;
     /**
      * Pictures only — the number is never asked for or stored (ADR-074). Either
      * photographs of each side, or the one file the member already has (ADR-081).
@@ -230,6 +235,7 @@ export async function submitExistingMember(
           mobile: fields.mobile,
           email: fields.email ?? null,
           joinedOn: input.joinedOn,
+          trainingSlot: input.trainingSlot,
           dob: fields.dob,
           gender: fields.gender,
           language: fields.language,

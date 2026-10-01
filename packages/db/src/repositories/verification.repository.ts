@@ -64,6 +64,7 @@ function existingMemberStore(tx: TransactionClient): ExistingMemberStore {
           mobile: record.mobile,
           email: record.email,
           ...(record.joinedOn === null ? {} : { joinedOn: toDbDate(record.joinedOn) }),
+          trainingSlot: record.trainingSlot,
           dob: toDbDate(record.dob),
           gender: record.gender,
           language: record.language,
@@ -333,6 +334,7 @@ export interface PendingVerification {
     readonly mobile: string;
     readonly photoKey: string | null;
     readonly joinedOn: ISTDate | null;
+    readonly trainingSlot: string | null;
   };
   /** What the paper register says, when the member was found in it. */
   readonly register: { readonly endDate: ISTDate; readonly planMonths: number | null; readonly memberCode: string | null } | null;
@@ -366,6 +368,7 @@ export class PrismaVerificationQueue {
             mobile: true,
             memberCode: true,
             joinedOn: true,
+            trainingSlot: true,
             photo: { select: { storageKey: true, deletedAt: true } },
             media: {
               where: { kind: 'GOV_ID', deletedAt: null },
@@ -405,6 +408,7 @@ export class PrismaVerificationQueue {
           mobile: row.member.mobile,
           photoKey: row.member.photo === null || row.member.photo.deletedAt !== null ? null : row.member.photo.storageKey,
           joinedOn: row.member.joinedOn === null ? null : fromDbDate(row.member.joinedOn),
+          trainingSlot: row.member.trainingSlot,
         },
         register:
           registerMembership === undefined

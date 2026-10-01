@@ -18,8 +18,8 @@ describe('groupHours', () => {
     const hours = [1, 2, 3, 4, 5, 6].map((day) => row(day, '05:00', '22:00')).concat(row(0, '06:00', '12:00'));
     const groups = groupHours(hours);
     expect(groups).toHaveLength(2);
-    expect(groups[0]).toMatchObject({ days: [1, 2, 3, 4, 5, 6], open: '05:00', close: '22:00', closed: false });
-    expect(groups[1]).toMatchObject({ days: [0], open: '06:00', close: '12:00' });
+    expect(groups[0]).toMatchObject({ days: [1, 2, 3, 4, 5, 6], closed: false, sessions: [{ open: '05:00', close: '22:00' }] });
+    expect(groups[1]).toMatchObject({ days: [0], sessions: [{ open: '06:00', close: '12:00' }] });
   });
 
   it('lists days in Monday-first order whatever order settings store them in', () => {
