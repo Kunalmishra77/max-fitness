@@ -1488,6 +1488,9 @@
   },
   "qrExisting": {
     "optional": "(optional)",
+    "next": "Next",
+    "back": "Back",
+    "optionalTitle": "Anything else? Both are optional.",
     "beforeSend": "Before you send",
     "takePhoto": "Take your photo",
     "retakePhoto": "Take it again",
@@ -1555,6 +1558,7 @@
       "govIdType": "Please choose which ID you are showing.",
       "govId": "Please add the photo of every side asked for.",
       "govIdPhotos": "Please add the photo of every side asked for.",
+      "govIdTooBig": "That photo is too large to send. Please take it again with the camera here, in less light if you can.",
       "terms": "Please agree to the terms to continue.",
       "underAge": "You must be at least {minAge} to join. Please talk to reception.",
       "rateLimited": "Too many attempts. Please wait a few minutes, or tell reception.",

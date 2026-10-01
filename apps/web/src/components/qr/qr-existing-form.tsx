@@ -29,6 +29,31 @@ export type QrSubmitResult =
 
 export type QrSubmit = (form: FormData) => Promise<QrSubmitResult>;
 
+/**
+ * The most one photograph may be once the browser has shrunk it.
+ *
+ * The host refuses a request over about 4.5 MB before our server runs, so a selfie and
+ * two cards have to leave room for each other. A shrunk card is nearer 400 KB; this is
+ * the line past which we say so rather than send something that will bounce (ADR-080).
+ */
+const MAX_UPLOAD_BYTES = 1_200_000;
+
+/**
+ * Which answers belong to which screen, in order.
+ *
+ * Declared here rather than read back out of the rendered steps, so a refusal that names
+ * an answer can send the member to the screen holding it without the render having run.
+ */
+const STEP_KEYS: ReadonlyArray<readonly string[]> = [
+  ['fullName', 'mobile'],
+  ['dob', 'gender'],
+  ['selfie'],
+  ['plan', 'endDate'],
+  ['govId'],
+  [],
+  ['terms'],
+];
+
 const PLANS = ['1', '3', '6', '12', 'unsure'] as const;
 const GENDERS = ['MALE', 'FEMALE', 'OTHER'] as const;
 
@@ -133,6 +158,9 @@ export function QrExistingForm({
   const [whatsapp, setWhatsapp] = useState(true);
   const [face, setFace] = useState(false);
 
+  // One question on the screen at a time: the gym watched members struggle with the whole
+  // form on a phone at reception and asked for this back (ADR-080).
+  const [step, setStep] = useState(0);
   const [problems, setProblems] = useState<Record<string, string>>({});
   const [failure, setFailure] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -148,17 +176,40 @@ export function QrExistingForm({
 
   const sides = govIdType === '' ? [] : govIdSidesFor(govIdType);
 
-  /** Shrink the picked card; if the browser cannot decode it, send what we were given. */
+  /**
+   * Shrink the picked card before it goes anywhere (ADR-080).
+   *
+   * If the browser cannot decode it — an old phone, an odd format — we keep the original
+   * only when it is small enough to arrive. Sending a four-megabyte photo is not a
+   * fallback: the host refuses it before our server sees it, and the member is left with
+   * a number instead of an answer, which is exactly what happened at reception.
+   */
   const keepIdPhoto = (side: 'FRONT' | 'BACK', file: File | null) => {
     const keep = side === 'FRONT' ? setGovIdFront : setGovIdBack;
+    const problem = (message: string | null) =>
+      setProblems((current) => {
+        const next = { ...current };
+        if (message === null) delete next['govId'];
+        else next['govId'] = message;
+        return next;
+      });
+
     if (file === null) {
       keep(null);
       return;
     }
     setShrinking(true);
     void shrinkId(file)
-      .then((blob) => keep(blob))
-      .catch(() => keep(file))
+      .catch(() => file)
+      .then((blob) => {
+        if (blob.size > MAX_UPLOAD_BYTES) {
+          keep(null);
+          problem(t('errors.govIdTooBig'));
+          return;
+        }
+        problem(null);
+        keep(blob);
+      })
       .finally(() => setShrinking(false));
   };
 
@@ -220,6 +271,12 @@ export function QrExistingForm({
       }
       if (result.code === 'UNDER_MINIMUM_AGE') beside['dob'] = t('errors.underAge', { minAge: result.minAge ?? minAge });
       setProblems(beside);
+      // A complaint about an answer two screens back is no use on the last screen.
+      const named = Object.keys(beside);
+      if (named.length > 0) {
+        const owner = STEP_KEYS.findIndex((keys) => keys.some((key) => named.includes(key)));
+        if (owner >= 0) setStep(owner);
+      }
 
       // And when it is not about an answer, say what it was — with the reference the
       // gym can quote, rather than a dead end that helps nobody.
@@ -233,8 +290,10 @@ export function QrExistingForm({
 
   const field = (name: string) => ({ problem: problems[name], optionalLabel: t('optional') });
 
-  return (
-    <div className="grid gap-6">
+  const steps: ReadonlyArray<{ readonly keys: readonly string[]; readonly body: ReactNode }> = [
+    {
+      keys: STEP_KEYS[0] ?? [],
+      body: (
       <div className="grid gap-4">
         <Field {...field('fullName')} label={t('fields.fullName')}>
           <input aria-required="true" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" className={inputClass} />
@@ -243,7 +302,13 @@ export function QrExistingForm({
         <Field {...field('mobile')} label={t('fields.mobile')}>
           <input aria-required="true" value={mobile} onChange={(e) => setMobile(e.target.value)} inputMode="numeric" autoComplete="tel" maxLength={12} className={inputClass} />
         </Field>
-
+      </div>
+      ),
+    },
+    {
+      keys: STEP_KEYS[1] ?? [],
+      body: (
+      <div className="grid gap-4">
         <Field {...field('dob')} label={t('fields.dob')}>
           <input aria-required="true" type="date" value={dob} max={today} onChange={(e) => setDob(e.target.value)} className={inputClass} />
         </Field>
@@ -264,17 +329,12 @@ export function QrExistingForm({
             </p>
           )}
         </fieldset>
-
-        <Field {...field('email')} label={t('fields.email')} optional>
-          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" autoComplete="email" className={inputClass} />
-        </Field>
-
-        <Field {...field('joinedOn')} label={t('fields.joinedOn')} optional>
-          <input type="date" value={joinedOn} max={today} onChange={(e) => setJoinedOn(e.target.value)} className={inputClass} />
-          <span className="mt-1 block text-small text-brand-stone">{t('joinedOnHelp')}</span>
-        </Field>
       </div>
-
+      ),
+    },
+    {
+      keys: STEP_KEYS[2] ?? [],
+      body: (
       <section className="grid gap-2">
         <h2 className="text-body font-semibold text-brand-ink">{t('fields.selfie')}</h2>
         <Camera open={cameraOpen} onOpenChange={setCameraOpen} onCaptured={keepPhoto} />
@@ -297,7 +357,11 @@ export function QrExistingForm({
           </p>
         )}
       </section>
-
+      ),
+    },
+    {
+      keys: STEP_KEYS[3] ?? [],
+      body: (
       <section className="grid gap-4">
         <fieldset>
           <legend className="text-body font-semibold text-brand-ink">{t('fields.plan')}</legend>
@@ -320,9 +384,12 @@ export function QrExistingForm({
           <input aria-required="true" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={inputClass} />
           <span className="mt-1 block text-small text-brand-stone">{t('endDateHelp')}</span>
         </Field>
-
       </section>
-
+      ),
+    },
+    {
+      keys: STEP_KEYS[4] ?? [],
+      body: (
       <section className="grid gap-3">
         <Field {...field('govId')} label={t('fields.govIdType')}>
           <select
@@ -374,7 +441,28 @@ export function QrExistingForm({
           );
         })}
       </section>
+      ),
+    },
+    {
+      // Both optional, on a screen of their own so nobody is held up by them.
+      keys: STEP_KEYS[5] ?? [],
+      body: (
+      <div className="grid gap-4">
+        <h2 className="text-body font-semibold text-brand-ink">{t('optionalTitle')}</h2>
+        <Field {...field('email')} label={t('fields.email')} optional>
+          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" autoComplete="email" className={inputClass} />
+        </Field>
 
+        <Field {...field('joinedOn')} label={t('fields.joinedOn')} optional>
+          <input type="date" value={joinedOn} max={today} onChange={(e) => setJoinedOn(e.target.value)} className={inputClass} />
+          <span className="mt-1 block text-small text-brand-stone">{t('joinedOnHelp')}</span>
+        </Field>
+      </div>
+      ),
+    },
+    {
+      keys: STEP_KEYS[6] ?? [],
+      body: (
       <section className="grid gap-3">
         <h2 className="text-body font-semibold text-brand-ink">{t('beforeSend')}</h2>
         <label className="flex items-start gap-3">
@@ -403,6 +491,35 @@ export function QrExistingForm({
           </p>
         )}
       </section>
+      ),
+    },
+  ];
+
+  const last = steps.length - 1;
+  const here = steps[Math.min(step, last)];
+
+  /** Only this screen's answers hold the member up; the rest are asked later. */
+  const goNext = () => {
+    setFailure(null);
+    const found = missing();
+    const mine = Object.fromEntries(Object.entries(found).filter(([key]) => here?.keys.includes(key)));
+    setProblems(mine);
+    if (Object.keys(mine).length > 0) return;
+    setStep((current) => Math.min(current + 1, last));
+  };
+
+  return (
+    <div className="grid gap-6">
+      <div>
+        <p className="text-small font-semibold text-brand-stone">
+          {step + 1} / {steps.length}
+        </p>
+        <div aria-hidden className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-brand-stone/20">
+          <span className="block h-full rounded-full bg-brand-accent transition-[width] duration-300" style={{ width: `${((step + 1) / steps.length) * 100}%` }} />
+        </div>
+      </div>
+
+      {here?.body}
 
       {failure === null ? null : (
         <p role="alert" className="rounded-panel bg-tint-fee-expired-bg p-4 text-body font-semibold text-semantic-fee-expired">
@@ -410,9 +527,22 @@ export function QrExistingForm({
         </p>
       )}
 
-      <button type="button" onClick={send} disabled={pending} className="min-h-16 rounded-button bg-brand-accent text-[1.25rem] font-bold text-brand-white disabled:opacity-60">
-        {pending ? t('sending') : t('send')}
-      </button>
+      <div className="flex gap-3">
+        {step === 0 ? null : (
+          <button type="button" onClick={() => setStep(step - 1)} className="min-h-16 rounded-button border-2 border-brand-stone/40 px-6 text-body-l font-semibold text-brand-ink">
+            {t('back')}
+          </button>
+        )}
+        {step === last ? (
+          <button type="button" onClick={send} disabled={pending} className="min-h-16 flex-1 rounded-button bg-brand-accent text-[1.25rem] font-bold text-brand-white disabled:opacity-60">
+            {pending ? t('sending') : t('send')}
+          </button>
+        ) : (
+          <button type="button" onClick={goNext} className="min-h-16 flex-1 rounded-button bg-brand-obsidian text-[1.25rem] font-bold text-brand-white">
+            {t('next')}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

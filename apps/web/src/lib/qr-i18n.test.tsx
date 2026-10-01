@@ -36,11 +36,11 @@ describe('the catalogues a QR page sends to the browser', () => {
   it('lets an English member read every question, rather than its key', () => {
     renderForm(en);
 
+    // The form asks one question at a time now, so this checks the screen it opens on —
+    // enough to catch the catalogue going missing, which is what this test is for.
     expect(screen.getByText('Full name')).toBeTruthy();
-    expect(screen.getByText('Joining date')).toBeTruthy();
-    expect(screen.getByText('Upload a Govt ID')).toBeTruthy();
-    expect(screen.getByText('We keep only the photograph. We never store the number.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Send to reception' })).toBeTruthy();
+    expect(screen.getByText('Mobile number')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeTruthy();
   });
 
   it('leaves no key showing in either language', () => {
