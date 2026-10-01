@@ -25,6 +25,22 @@ export type InlineToken =
 
 const UPDATED = /^<!--\s*updated:\s*(\d{4}-\d{2}-\d{2})\s*-->$/;
 
+/**
+ * Does this policy still carry a placeholder we left for the owner? (ADR-085)
+ *
+ * The draft notice on a legal page used to depend on `DEMO_MODE`, which is about there
+ * being no payment gateway and says nothing about whether a policy has been written.
+ * This asks the document instead: while "[Owner refund policy]" is in there the page
+ * admits it, and the day the owner's words land the notice goes by itself.
+ *
+ * A markdown link's `[text](href)` is not a placeholder, and nor is a bracketed aside
+ * in ordinary prose — only a bracket opening a capitalised phrase, which is the shape
+ * every one of ours has.
+ */
+export function hasPlaceholders(source: string): boolean {
+  return /\[[A-Z][^\]\n]{3,}\](?!\()/.test(source);
+}
+
 export function parseLegalMarkdown(source: string): LegalDocument {
   let title = '';
   let updated: string | null = null;

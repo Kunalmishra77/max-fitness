@@ -105,9 +105,10 @@ export const FACILITY_ZONES = ['strength', 'cardio', 'functional'] as const;
 export type FacilityZone = (typeof FACILITY_ZONES)[number];
 
 /**
- * "Also here" items. Personal training with a diet plan is stated by the owner on the
- * Google listing and in many reviews. A changing area is not listed: a 2025 review says
- * there is none. The rest await the owner.
+ * "Also here" items, every one of them confirmed by the owner (2026-10-01).
+ *
+ * A changing area is deliberately not listed: a 2025 review says there is none, and the
+ * owner has not said otherwise. Nothing goes on this list the gym cannot show somebody.
  */
 export const FACILITY_EXTRAS: ReadonlyArray<{
   readonly key: 'personalTraining' | 'dietPlans' | 'supplements' | 'lockers' | 'drinkingWater' | 'parking' | 'airConditioned';
@@ -115,12 +116,14 @@ export const FACILITY_EXTRAS: ReadonlyArray<{
 }> = [
   { key: 'personalTraining', confirmed: true },
   { key: 'dietPlans', confirmed: true },
-  // The owner confirmed the gym sells supplements at the counter (2026-10-01).
+  // All confirmed by the owner on 2026-10-01, so nothing on the floor is a guess any
+  // more: supplements at the counter, lockers, drinking water, parking and air
+  // conditioning all exist.
   { key: 'supplements', confirmed: true },
-  { key: 'lockers', confirmed: false },
-  { key: 'drinkingWater', confirmed: false },
-  { key: 'parking', confirmed: false },
-  { key: 'airConditioned', confirmed: false },
+  { key: 'lockers', confirmed: true },
+  { key: 'drinkingWater', confirmed: true },
+  { key: 'parking', confirmed: true },
+  { key: 'airConditioned', confirmed: true },
 ];
 
 export type FaqKey =
@@ -160,13 +163,17 @@ export const FAQ_ITEMS: ReadonlyArray<{ readonly key: FaqKey; readonly verified:
 ];
 
 /**
- * Whether unconfirmed content may appear, with its label.
+ * Whether unconfirmed content may appear, with its label (ADR-085).
  *
- * A deliberate demo deployment (DEMO_MODE on, even with NODE_ENV=production) is a
- * demo, so it shows labelled placeholders; a real production site does not.
- * DEMO_MODE defaults to on when unset (packages/shared env), so only an explicit
- * `false` counts as a real site.
+ * This used to follow `DEMO_MODE`, which was wrong once the gym went live: `DEMO_MODE`
+ * is on because there is no payment gateway and no WhatsApp number yet, and that has
+ * nothing to do with whether the gym has lockers. The gym's own members were reading
+ * "DEMO" on the website while standing at its reception desk.
+ *
+ * So it is its own switch, off unless something sets it. Local development still shows
+ * the labels, which is what they are for.
  */
 export function showUnconfirmedContent(): boolean {
-  return process.env['DEMO_MODE'] !== 'false' || process.env['NODE_ENV'] !== 'production';
+  if (process.env['SHOW_UNCONFIRMED_CONTENT'] === 'true') return true;
+  return process.env['NODE_ENV'] !== 'production';
 }

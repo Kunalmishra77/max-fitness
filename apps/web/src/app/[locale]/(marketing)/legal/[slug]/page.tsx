@@ -6,7 +6,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import { LegalBody } from '@/components/legal/legal-body';
 import { MarketingShell } from '@/components/marketing/marketing-shell';
 import type { Locale } from '@/i18n/routing';
-import { parseLegalMarkdown } from '@/lib/legal-markdown';
+import { hasPlaceholders, parseLegalMarkdown } from '@/lib/legal-markdown';
 import { alternatesFor } from '@/lib/seo';
 import { getSiteContext } from '@/lib/site-context';
 
@@ -35,7 +35,9 @@ function isLegalSlug(value: string): value is LegalSlug {
 async function loadDocument(slug: LegalSlug) {
   // next dev and next start both run from apps/web; next.config traces content/legal.
   const source = await readFile(path.join(process.cwd(), 'content', 'legal', `${slug}.md`), 'utf8');
-  return parseLegalMarkdown(source);
+  // The draft notice follows the document, not the deployment: while a placeholder we
+  // left for the owner is still in it, the page says so (ADR-085).
+  return { ...parseLegalMarkdown(source), isDraft: hasPlaceholders(source) };
 }
 
 type Params = Promise<{ locale: string; slug: string }>;
@@ -64,7 +66,7 @@ export default async function LegalPage({ params }: { params: Params }) {
     <MarketingShell ctx={ctx} onHome={false}>
       <div className="bg-brand-paper">
         <article className="mx-auto max-w-3xl px-5 py-12 md:py-16">
-          {ctx.showUnconfirmed ? (
+          {doc.isDraft ? (
             <p className="mb-8 rounded-panel border-2 border-semantic-fee-due-soon bg-tint-fee-due-soon-bg p-4 text-body font-semibold">
               {t('draft')}
             </p>

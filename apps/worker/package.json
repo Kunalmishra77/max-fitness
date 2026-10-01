@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "wipe:members": "tsx scripts/wipe-members.ts",
     "set:hours": "tsx scripts/set-hours.ts",
-    "set:prices": "tsx scripts/set-prices.ts"
+    "set:prices": "tsx scripts/set-prices.ts",
+    "clear:demo-promo": "tsx scripts/clear-demo-promo.ts"
   },
   "dependencies": {
     "@mfp/core": "workspace:*",

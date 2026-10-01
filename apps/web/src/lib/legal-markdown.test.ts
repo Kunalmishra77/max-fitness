@@ -1,5 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import { isSafeHref, parseInline, parseLegalMarkdown } from './legal-markdown';
+import { hasPlaceholders, isSafeHref, parseInline, parseLegalMarkdown } from './legal-markdown';
+
+/**
+ * Whether a policy is still ours rather than the gym's (ADR-085).
+ *
+ * The draft notice used to appear whenever DEMO_MODE was on, which tied it to payments
+ * having no gateway — nothing to do with whether the policy is written. Now it follows
+ * the document: while a square-bracket placeholder is in there, the page says so, and the
+ * day the owner's words land it stops saying it, with nobody having to remember.
+ */
+describe('hasPlaceholders', () => {
+  it('finds the brackets we leave for the owner', () => {
+    expect(hasPlaceholders('We refund as follows. [Owner refund policy]. Ask reception.')).toBe(true);
+    expect(hasPlaceholders('Contact [Grievance officer name] within 48 hours.')).toBe(true);
+  });
+
+  it('does not call a finished policy a draft', () => {
+    expect(hasPlaceholders('Fees are not refundable after seven days. Call 098714 06350.')).toBe(false);
+  });
+
+  it('is not fooled by ordinary brackets or a markdown link', () => {
+    expect(hasPlaceholders('Read the [privacy policy](/legal/privacy) for more.')).toBe(false);
+    expect(hasPlaceholders('Open 4:30 am [IST] daily.')).toBe(false);
+  });
+});
 
 describe('parseLegalMarkdown', () => {
   it('reads the title, the updated date, headings, paragraphs and lists', () => {
