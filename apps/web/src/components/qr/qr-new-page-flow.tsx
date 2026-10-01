@@ -10,7 +10,17 @@ import { QrNewForm, type QrJoinResult, type QrPlanCard } from './qr-new-form';
  * fails they are told, with the reference — the registration is not lost, and reception
  * can take it from there.
  */
-async function joinAtReception({ form, planId, startDate }: { form: FormData; planId: string; startDate: string }): Promise<QrJoinResult> {
+async function joinAtReception({
+  form,
+  planId,
+  ptPlanId,
+  startDate,
+}: {
+  form: FormData;
+  planId: string;
+  ptPlanId: string | null;
+  startDate: string;
+}): Promise<QrJoinResult> {
   const envelope = async (response: Response) =>
     (await response.json().catch(() => ({}))) as {
       data?: Record<string, unknown>;
@@ -37,7 +47,7 @@ async function joinAtReception({ form, planId, startDate }: { form: FormData; pl
       headers: { 'content-type': 'application/json', 'x-registration-token': token },
       // A sign-up must name its start date — `null` is for a renewal, and sending it
       // here is what made the order come back 400 while the registration stood.
-      body: JSON.stringify({ planId, startDate, payAtReception: true }),
+      body: JSON.stringify({ planId, ptPlanId, startDate, payAtReception: true }),
     });
     const heldBody = await envelope(held);
     if (!held.ok) return refusal(heldBody, held.status);
@@ -65,6 +75,7 @@ export function QrNewPageFlow(props: {
   termsHref: string;
   privacyHref: string;
   plans: readonly QrPlanCard[];
+  ptPlans: readonly QrPlanCard[];
   admissionFeePaise: number;
 }) {
   return <QrNewForm {...props} join={joinAtReception} />;

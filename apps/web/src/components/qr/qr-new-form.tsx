@@ -30,7 +30,7 @@ export type QrJoinResult =
   | { readonly ok: true; readonly firstName: string; readonly amountPaise: number; readonly reservedUntil: string }
   | { readonly ok: false; readonly code: string; readonly fields?: readonly string[]; readonly requestId?: string | undefined; readonly minAge?: number | undefined };
 
-export type QrJoin = (input: { form: FormData; planId: string; startDate: string }) => Promise<QrJoinResult>;
+export type QrJoin = (input: { form: FormData; planId: string; ptPlanId: string | null; startDate: string }) => Promise<QrJoinResult>;
 
 const GENDERS = ['MALE', 'FEMALE'] as const;
 
@@ -43,6 +43,7 @@ const FIELD_OF: Record<string, string> = {
   email: 'email',
   selfie: 'selfie',
   planId: 'plan',
+  ptPlanId: 'pt',
   govId: 'govId',
   govIdType: 'govId',
   trainingSlot: 'slot',
@@ -50,17 +51,11 @@ const FIELD_OF: Record<string, string> = {
   privacy: 'terms',
 };
 
-/** Which answers belong to which screen, in order. */
-const STEP_KEYS: ReadonlyArray<readonly string[]> = [
-  ['fullName', 'mobile'],
-  ['dob', 'gender'],
-  ['selfie'],
-  ['plan'],
-  ['slot'],
-  ['govId'],
-  [],
-  ['terms'],
-];
+/**
+ * Which answers belong to which screen is carried by the screens themselves (`steps`
+ * below), because the personal-training screen only exists when the gym sells it — an
+ * index-keyed list would have shifted under it (ADR-087).
+ */
 
 export function QrNewForm({
   today,
@@ -69,6 +64,7 @@ export function QrNewForm({
   termsHref,
   privacyHref,
   plans,
+  ptPlans = [],
   admissionFeePaise,
   join,
   Camera = SelfieCapture,
@@ -80,6 +76,8 @@ export function QrNewForm({
   readonly termsHref: string;
   readonly privacyHref: string;
   readonly plans: readonly QrPlanCard[];
+  /** Personal training on sale; empty means the question is never asked (ADR-087). */
+  readonly ptPlans?: readonly QrPlanCard[];
   readonly admissionFeePaise: number;
   readonly join: QrJoin;
   readonly Camera?: ComponentType<SelfieCaptureProps>;
@@ -98,6 +96,9 @@ export function QrNewForm({
   const [photo, setPhoto] = useState<{ blob: Blob; url: string } | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [planId, setPlanId] = useState<string | null>(null);
+  // "Do you need personal training?" — no, until they say otherwise (ADR-087).
+  const [wantsPt, setWantsPt] = useState(false);
+  const [ptPlanId, setPtPlanId] = useState<string | null>(null);
   const [slot, setSlot] = useState<TrainingSlot | null>(null);
   const [govIdType, setGovIdType] = useState<GovIdType | ''>('');
   const [govIdFront, setGovIdFront] = useState<Blob | null>(null);
@@ -162,8 +163,13 @@ export function QrNewForm({
   };
 
   /** Only the plans for the gender they gave: the rest are not theirs to choose. */
-  const myPlans = gender === null ? [] : plans.filter((plan) => plan.gender === gender).sort((a, b) => a.durationMonths - b.durationMonths);
+  const forGender = (list: readonly QrPlanCard[]) =>
+    gender === null ? [] : list.filter((plan) => plan.gender === gender).sort((a, b) => a.durationMonths - b.durationMonths);
+  const myPlans = forGender(plans);
   const chosen = myPlans.find((plan) => plan.planId === planId) ?? null;
+  // A trainer cannot be booked past the membership they are on (ADR-087).
+  const myPt = chosen === null ? [] : forGender(ptPlans).filter((card) => card.durationMonths <= chosen.durationMonths);
+  const ptChosen = myPt.find((card) => card.planId === ptPlanId) ?? null;
   const price = (paise: number) => formatINR(paise, { showPaise: false });
 
   const missing = (): Record<string, string> => {
@@ -174,62 +180,12 @@ export function QrNewForm({
     if (gender === null) found['gender'] = te('errors.gender');
     if (photo === null) found['selfie'] = te('errors.selfie');
     if (chosen === null) found['plan'] = t('errors.plan');
+    if (wantsPt && myPt.length > 0 && ptChosen === null) found['pt'] = t('errors.pt');
     if (slot === null) found['slot'] = te('errors.slot');
     if (govIdType === '') found['govId'] = te('errors.govIdType');
     else if (govIdFront === null || (!govIdIsFile && govIdType !== 'PAN' && govIdBack === null)) found['govId'] = te('errors.govIdPhotos');
     if (!terms) found['terms'] = te('errors.terms');
     return found;
-  };
-
-  const send = () => {
-    setFailure(null);
-    const found = missing();
-    setProblems(found);
-    if (Object.keys(found).length > 0) {
-      setFailure(te('errors.fillFirst'));
-      return;
-    }
-    if (photo === null || gender === null || chosen === null || govIdType === '' || slot === null) return;
-
-    const form = new FormData();
-    form.set('fullName', fullName.trim());
-    form.set('mobile', mobile.replace(/\D/g, ''));
-    form.set('dob', dob);
-    form.set('gender', gender);
-    form.set('language', locale === 'hi' ? 'hi' : 'en');
-    form.set('noticeVersion', noticeVersion);
-    form.set('consents', JSON.stringify({ terms, privacy: terms, whatsappUpdates: whatsapp, faceAttendance: false }));
-    form.set('selfie', photo.blob, 'selfie.jpg');
-    form.set('source', 'QR_NEW');
-    form.set('trainingSlot', slot);
-    if (email.trim() !== '') form.set('email', email.trim());
-    form.set('govIdType', govIdType);
-    if (govIdFront !== null) form.set('govIdFront', govIdFront, govIdIsFile ? 'id.pdf' : 'id-front.jpg');
-    if (govIdBack !== null) form.set('govIdBack', govIdBack, 'id-back.jpg');
-
-    start(async () => {
-      // A sign-up needs a start date, and somebody standing at the desk starts today.
-      const result = await join({ form, planId: chosen.planId, startDate: today });
-      if (result.ok) {
-        setDone({ firstName: result.firstName, amountPaise: result.amountPaise });
-        return;
-      }
-      const beside: Record<string, string> = {};
-      for (const name of result.fields ?? []) {
-        const key = FIELD_OF[name];
-        if (key !== undefined) beside[key] = key === 'plan' ? t('errors.plan') : te(`errors.${key}` as never);
-      }
-      if (result.code === 'UNDER_MINIMUM_AGE') beside['dob'] = te('errors.underAge', { minAge: result.minAge ?? minAge });
-      setProblems(beside);
-
-      const named = Object.keys(beside);
-      if (named.length > 0) {
-        const owner = STEP_KEYS.findIndex((keys) => keys.some((key) => named.includes(key)));
-        if (owner >= 0) setStep(owner);
-        setFailure(te('errors.checkMarked'));
-      } else if (result.code === 'RATE_LIMITED') setFailure(te('errors.rateLimited'));
-      else setFailure(te('errors.serverSaid', { code: result.code, reference: result.requestId ?? '—' }));
-    });
   };
 
   if (done !== null) {
@@ -242,13 +198,14 @@ export function QrNewForm({
     );
   }
 
+
   const field = (name: string) => ({ problem: problems[name], optionalLabel: te('optional') });
   const chip = (active: boolean) =>
     cn('min-h-16 cursor-pointer rounded-button border-2 px-5 font-semibold', active ? 'border-brand-accent bg-brand-accent text-brand-white' : 'border-brand-stone/40 bg-white');
 
   const steps: ReadonlyArray<{ readonly keys: readonly string[]; readonly body: ReactNode }> = [
     {
-      keys: STEP_KEYS[0] ?? [],
+      keys: ['fullName', 'mobile'],
       body: (
         <div className="grid gap-4">
           <Field {...field('fullName')} label={te('fields.fullName')}>
@@ -262,7 +219,7 @@ export function QrNewForm({
       ),
     },
     {
-      keys: STEP_KEYS[1] ?? [],
+      keys: ['dob', 'gender'],
       body: (
         <div className="grid gap-4">
           <Field {...field('dob')} label={te('fields.dob')}>
@@ -289,7 +246,7 @@ export function QrNewForm({
       ),
     },
     {
-      keys: STEP_KEYS[2] ?? [],
+      keys: ['selfie'],
       body: (
         <section className="grid gap-2">
           <h2 className="text-body font-semibold text-brand-ink">{te('fields.selfie')}</h2>
@@ -316,7 +273,7 @@ export function QrNewForm({
       ),
     },
     {
-      keys: STEP_KEYS[3] ?? [],
+      keys: ['plan'],
       body: (
         <fieldset>
           <legend className="text-body font-semibold text-brand-ink">{t('planTitle')}</legend>
@@ -339,8 +296,60 @@ export function QrNewForm({
         </fieldset>
       ),
     },
+    // Personal training, only when the gym sells it and only terms that fit inside the
+    // plan they just chose (ADR-087). "No" is the answer until they say otherwise.
+    ...(myPt.length === 0
+      ? []
+      : [
+          {
+            keys: ['pt'],
+            body: (
+              <fieldset>
+                <legend className="text-body font-semibold text-brand-ink">{t('ptTitle')}</legend>
+                <p className="mt-1 text-small text-brand-stone">{t('ptHelp')}</p>
+                <div className="mt-3 flex gap-2">
+                  {([false, true] as const).map((wants) => (
+                    <label key={String(wants)} className={cn(chip(wantsPt === wants), 'flex-1 text-center leading-[3.5rem]')}>
+                      <input
+                        type="radio"
+                        name="wants-pt"
+                        value={wants ? 'yes' : 'no'}
+                        checked={wantsPt === wants}
+                        onChange={() => {
+                          setWantsPt(wants);
+                          if (!wants) setPtPlanId(null);
+                        }}
+                        className="sr-only"
+                      />
+                      {t(wants ? 'ptYes' : 'ptNo')}
+                    </label>
+                  ))}
+                </div>
+                {!wantsPt ? null : (
+                  <div className="mt-3 grid gap-2">
+                    {myPt.map((card) => (
+                      <label key={card.planId} className={cn(chip(ptPlanId === card.planId), 'flex items-center justify-between py-4 text-left')}>
+                        <input type="radio" name="pt" value={card.planId} checked={ptPlanId === card.planId} onChange={() => setPtPlanId(card.planId)} className="sr-only" />
+                        <span>
+                          <span className="block">{t('months', { count: card.durationMonths })}</span>
+                          <span className="block text-small opacity-80">{t('ptPerMonth', { price: price(Math.round(card.pricePaise / card.durationMonths)) })}</span>
+                        </span>
+                        <span className="font-display text-title font-bold">{price(card.pricePaise)}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                {problems['pt'] === undefined ? null : (
+                  <p role="alert" className="mt-1 text-small font-semibold text-semantic-fee-expired">
+                    {problems['pt']}
+                  </p>
+                )}
+              </fieldset>
+            ),
+          },
+        ]),
     {
-      keys: STEP_KEYS[4] ?? [],
+      keys: ['slot'],
       body: (
         <fieldset>
           <legend className="text-body font-semibold text-brand-ink">{t('slotTitle')}</legend>
@@ -362,7 +371,7 @@ export function QrNewForm({
       ),
     },
     {
-      keys: STEP_KEYS[5] ?? [],
+      keys: ['govId'],
       body: (
         <GovIdStep
           type={govIdType}
@@ -382,7 +391,7 @@ export function QrNewForm({
       ),
     },
     {
-      keys: STEP_KEYS[6] ?? [],
+      keys: [],
       body: (
         <div className="grid gap-4">
           <h2 className="text-body font-semibold text-brand-ink">{te('optionalTitle')}</h2>
@@ -394,13 +403,23 @@ export function QrNewForm({
       ),
     },
     {
-      keys: STEP_KEYS[7] ?? [],
+      keys: ['terms'],
       body: (
         <section className="grid gap-3">
           <h2 className="text-body font-semibold text-brand-ink">{te('beforeSend')}</h2>
           {chosen === null ? null : (
             <div className="rounded-panel bg-tint-fee-none-bg p-4">
               <p className="text-body font-semibold text-brand-obsidian">{t('summary', { months: chosen.durationMonths, amount: price(chosen.pricePaise + admissionFeePaise) })}</p>
+              {/* Both amounts, and the total, before anything is handed over (PRD PT-04). */}
+              {ptChosen === null ? null : (
+                <p className="mt-1 text-body font-semibold text-brand-obsidian">
+                  {t('ptSummary', {
+                    months: ptChosen.durationMonths,
+                    pt: price(ptChosen.pricePaise),
+                    total: price(chosen.pricePaise + admissionFeePaise + ptChosen.pricePaise),
+                  })}
+                </p>
+              )}
               {/* The gym has no live gateway; the money is handed over at the counter. */}
               <p className="mt-1 text-small text-brand-stone">{t('payAtReception')}</p>
             </div>
@@ -441,6 +460,59 @@ export function QrNewForm({
     setProblems(mine);
     if (Object.keys(mine).length > 0) return;
     setStep((current) => Math.min(current + 1, last));
+  };
+
+  const send = () => {
+    setFailure(null);
+    const found = missing();
+    setProblems(found);
+    if (Object.keys(found).length > 0) {
+      setFailure(te('errors.fillFirst'));
+      return;
+    }
+    if (photo === null || gender === null || chosen === null || govIdType === '' || slot === null) return;
+
+    const form = new FormData();
+    form.set('fullName', fullName.trim());
+    form.set('mobile', mobile.replace(/\D/g, ''));
+    form.set('dob', dob);
+    form.set('gender', gender);
+    form.set('language', locale === 'hi' ? 'hi' : 'en');
+    form.set('noticeVersion', noticeVersion);
+    form.set('consents', JSON.stringify({ terms, privacy: terms, whatsappUpdates: whatsapp, faceAttendance: false }));
+    form.set('selfie', photo.blob, 'selfie.jpg');
+    form.set('source', 'QR_NEW');
+    form.set('trainingSlot', slot);
+    if (email.trim() !== '') form.set('email', email.trim());
+    form.set('govIdType', govIdType);
+    if (govIdFront !== null) form.set('govIdFront', govIdFront, govIdIsFile ? 'id.pdf' : 'id-front.jpg');
+    if (govIdBack !== null) form.set('govIdBack', govIdBack, 'id-back.jpg');
+
+    start(async () => {
+      // A sign-up needs a start date, and somebody standing at the desk starts today.
+      const result = await join({ form, planId: chosen.planId, ptPlanId: wantsPt ? (ptChosen?.planId ?? null) : null, startDate: today });
+      if (result.ok) {
+        setDone({ firstName: result.firstName, amountPaise: result.amountPaise });
+        return;
+      }
+      const beside: Record<string, string> = {};
+      for (const name of result.fields ?? []) {
+        const key = FIELD_OF[name];
+        if (key !== undefined) beside[key] = key === 'plan' || key === 'pt' ? t(`errors.${key}`) : te(`errors.${key}` as never);
+      }
+      if (result.code === 'UNDER_MINIMUM_AGE') beside['dob'] = te('errors.underAge', { minAge: result.minAge ?? minAge });
+      setProblems(beside);
+
+      const named = Object.keys(beside);
+      if (named.length > 0) {
+        // The screens themselves say which answers they hold, so a refusal lands where
+        // the member can act on it even though the PT screen comes and goes (ADR-087).
+        const owner = steps.findIndex((candidate) => candidate.keys.some((key) => named.includes(key)));
+        if (owner >= 0) setStep(owner);
+        setFailure(te('errors.checkMarked'));
+      } else if (result.code === 'RATE_LIMITED') setFailure(te('errors.rateLimited'));
+      else setFailure(te('errors.serverSaid', { code: result.code, reference: result.requestId ?? '—' }));
+    });
   };
 
   return (

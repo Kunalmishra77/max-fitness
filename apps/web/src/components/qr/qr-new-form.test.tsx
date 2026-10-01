@@ -22,7 +22,13 @@ const PLANS = [
 
 const ok: QrJoinResult = { ok: true, firstName: 'Sanjay', amountPaise: 400_000, reservedUntil: '2026-10-03T04:30:00.000Z' };
 
-function form(over: { result?: QrJoinResult } = {}) {
+const PT_PLANS = [
+  { planId: 'plan_pt1_male', durationMonths: 1, pricePaise: 500_000, gender: 'MALE' as const },
+  { planId: 'plan_pt3_male', durationMonths: 3, pricePaise: 1_350_000, gender: 'MALE' as const },
+  { planId: 'plan_pt12_male', durationMonths: 12, pricePaise: 3_600_000, gender: 'MALE' as const },
+];
+
+function form(over: { result?: QrJoinResult; ptPlans?: typeof PT_PLANS } = {}) {
   const join = vi.fn<QrJoin>().mockResolvedValue(over.result ?? ok);
   render(
     <WithIntl>
@@ -33,6 +39,7 @@ function form(over: { result?: QrJoinResult } = {}) {
         termsHref="/legal/terms"
         privacyHref="/legal/privacy"
         plans={PLANS}
+        ptPlans={over.ptPlans ?? []}
         admissionFeePaise={0}
         join={join}
         Camera={({ open, onCaptured }) =>
@@ -52,7 +59,7 @@ function form(over: { result?: QrJoinResult } = {}) {
 const next = () => userEvent.click(screen.getByRole('button', { name: /Next/i }));
 const setDate = (label: RegExp, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
 
-async function walk(stop: 'plan' | 'slot' | 'govId' | 'consent' = 'consent') {
+async function walk(stop: 'plan' | 'pt' | 'slot' | 'govId' | 'consent' = 'consent', { hasPt = false } = {}) {
   await userEvent.type(screen.getByLabelText(/Full name/i), 'Sanjay Tomar');
   await userEvent.type(screen.getByLabelText(/Mobile number/i), '9876543210');
   await next();
@@ -68,6 +75,12 @@ async function walk(stop: 'plan' | 'slot' | 'govId' | 'consent' = 'consent') {
 
   await userEvent.click(screen.getByRole('radio', { name: /3 Months/i }));
   await next();
+  if (stop === 'pt') return;
+
+  // The personal-training screen exists only when the gym sells it (ADR-087).
+  if (hasPt) {
+    await next();
+  }
   if (stop === 'slot') return;
 
   await userEvent.click(screen.getByRole('radio', { name: /^Morning$/i }));
@@ -137,6 +150,76 @@ describe('QrNewForm', () => {
     await user.click(screen.getByRole('button', { name: /Send to reception/i }));
 
     expect(await screen.findByText(/₹4,000/)).toBeTruthy();
+  });
+
+  describe('personal training', () => {
+    it('does not ask at all when the gym sells none', async () => {
+      form();
+      await walk('pt');
+      // Straight on to "when do you train?", with no empty screen in between.
+      expect(screen.queryByText(/personal training/i)).toBeNull();
+      expect(screen.getByText(/When will you train/i)).toBeTruthy();
+    });
+
+    it('asks after the plan, offering only terms that fit inside it', async () => {
+      form({ ptPlans: PT_PLANS });
+      await walk('pt');
+
+      expect(screen.getByText(/Do you need personal training/i)).toBeTruthy();
+      await userEvent.click(screen.getByRole('radio', { name: /^Yes$/i }));
+      // Twelve months of a trainer on a three-month membership is a mis-sale.
+      expect(screen.getByRole('radio', { name: /1 Month/i })).toBeTruthy();
+      expect(screen.getByRole('radio', { name: /3 Months/i })).toBeTruthy();
+      expect(screen.queryByRole('radio', { name: /12 Months/i })).toBeNull();
+    });
+
+    it('sends the chosen trainer with the plan, and the total to hand over', async () => {
+      const { join, user } = form({ ptPlans: PT_PLANS });
+      await walk('pt');
+
+      await user.click(screen.getByRole('radio', { name: /^Yes$/i }));
+      await user.click(screen.getByRole('radio', { name: /3 Months/i }));
+      await next();
+      await user.click(screen.getByRole('radio', { name: /^Morning$/i }));
+      await next();
+      await user.selectOptions(screen.getByLabelText(/Upload a Govt ID/i), 'PAN');
+      await user.upload(screen.getByLabelText(/Front of the card/i), new File(['c'], 'front.jpg', { type: 'image/jpeg' }));
+      await next();
+      await next();
+
+      // ₹4,000 membership + ₹13,500 trainer, before anything is handed over.
+      expect(screen.getByText(/₹17,500/)).toBeTruthy();
+
+      await user.click(screen.getByRole('checkbox', { name: /Terms/i }));
+      await user.click(screen.getByRole('button', { name: /Send to reception/i }));
+
+      await waitFor(() => expect(join).toHaveBeenCalledOnce());
+      expect((join.mock.calls[0]?.[0] as { ptPlanId: string | null }).ptPlanId).toBe('plan_pt3_male');
+    });
+
+    it('sends no trainer when the answer is no', async () => {
+      const { join, user } = form({ ptPlans: PT_PLANS });
+      await walk('consent', { hasPt: true });
+
+      await user.click(screen.getByRole('checkbox', { name: /Terms/i }));
+      await user.click(screen.getByRole('button', { name: /Send to reception/i }));
+
+      await waitFor(() => expect(join).toHaveBeenCalledOnce());
+      expect((join.mock.calls[0]?.[0] as { ptPlanId: string | null }).ptPlanId).toBeNull();
+    });
+
+    it('asks for a term when the member said yes and chose none', async () => {
+      const { user } = form({ ptPlans: PT_PLANS });
+      await walk('pt');
+
+      await user.click(screen.getByRole('radio', { name: /^Yes$/i }));
+      await next();
+
+      const alerts = screen.getAllByRole('alert');
+      expect(alerts.some((alert) => alert.textContent?.includes('personal training'))).toBe(true);
+      // Still on the same screen, not pushed forward.
+      expect(screen.getByText(/Do you need personal training/i)).toBeTruthy();
+    });
   });
 
   it('says what went wrong with a reference rather than a dead end', async () => {

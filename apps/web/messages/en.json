@@ -1720,8 +1720,15 @@
       "body": "Pay this at the reception desk and your membership starts straight away. Cash, UPI or card."
     },
     "errors": {
-      "plan": "Please choose a plan."
-    }
+      "plan": "Please choose a plan.",
+      "pt": "Choose a personal training plan, or answer No."
+    },
+    "ptTitle": "Do you need personal training?",
+    "ptHelp": "A trainer with you for every session, on top of your membership.",
+    "ptYes": "Yes",
+    "ptNo": "No",
+    "ptPerMonth": "{price} / month",
+    "ptSummary": "With {months, plural, one {1 month} other {# months}} of personal training {pt} — total {total}"
   },
   "qrNew": {
     "title": "Max Fitness Gym, at a glance",

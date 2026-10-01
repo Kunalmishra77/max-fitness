@@ -37,6 +37,10 @@ export default async function QrNewPage({ params }: { params: Promise<{ locale: 
   const plans: QrPlanCard[] = (['MALE', 'FEMALE'] as const).flatMap((gender) =>
     lists[gender].cards.map((card) => ({ planId: card.planId, durationMonths: card.durationMonths, pricePaise: card.pricePaise, gender })),
   );
+  // Personal training, the same way (ADR-087): empty and the question is never asked.
+  const ptPlans: QrPlanCard[] = (['MALE', 'FEMALE'] as const).flatMap((gender) =>
+    lists[gender].ptCards.map((card) => ({ planId: card.planId, durationMonths: card.durationMonths, pricePaise: card.pricePaise, gender })),
+  );
 
   return (
     <JoinPage ctx={ctx}>
@@ -57,6 +61,7 @@ export default async function QrNewPage({ params }: { params: Promise<{ locale: 
           termsHref={legalHref(ctx.locale, 'terms')}
           privacyHref={legalHref(ctx.locale, 'privacy')}
           plans={plans}
+          ptPlans={ptPlans}
           admissionFeePaise={pricing.admissionFeePaise}
         />
       </div>
