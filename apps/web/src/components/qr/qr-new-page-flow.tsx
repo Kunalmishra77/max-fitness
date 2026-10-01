@@ -13,11 +13,13 @@ import { QrNewForm, type QrJoinResult, type QrPlanCard } from './qr-new-form';
 async function joinAtReception({
   form,
   planId,
+  trialDays,
   ptPlanId,
   startDate,
 }: {
   form: FormData;
-  planId: string;
+  planId: string | null;
+  trialDays: number | null;
   ptPlanId: string | null;
   startDate: string;
 }): Promise<QrJoinResult> {
@@ -47,7 +49,7 @@ async function joinAtReception({
       headers: { 'content-type': 'application/json', 'x-registration-token': token },
       // A sign-up must name its start date — `null` is for a renewal, and sending it
       // here is what made the order come back 400 while the registration stood.
-      body: JSON.stringify({ planId, ptPlanId, startDate, payAtReception: true }),
+      body: JSON.stringify({ planId, trialDays, ptPlanId, startDate, payAtReception: true }),
     });
     const heldBody = await envelope(held);
     if (!held.ok) return refusal(heldBody, held.status);
@@ -76,6 +78,7 @@ export function QrNewPageFlow(props: {
   privacyHref: string;
   plans: readonly QrPlanCard[];
   ptPlans: readonly QrPlanCard[];
+  trialOptions: ReadonlyArray<{ days: number; totalPaise: number }>;
   admissionFeePaise: number;
 }) {
   return <QrNewForm {...props} join={joinAtReception} />;

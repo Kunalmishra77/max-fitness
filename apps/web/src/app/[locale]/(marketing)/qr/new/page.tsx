@@ -2,7 +2,7 @@ import { sessionsForDay } from '@mfp/core';
 import { GymAtAGlance } from '@/components/qr/gym-at-a-glance';
 import { QrNewPageFlow } from '@/components/qr/qr-new-page-flow';
 import type { QrPlanCard } from '@/components/qr/qr-new-form';
-import { JoinPage, joinContext, joinMetadata, legalHref, priceLists } from '@/lib/join-page';
+import { JoinPage, joinContext, joinMetadata, legalHref, priceLists, trialChoices } from '@/lib/join-page';
 
 /**
  * `/qr/new` — somebody new, standing at reception, after scanning the QR
@@ -62,6 +62,7 @@ export default async function QrNewPage({ params }: { params: Promise<{ locale: 
           privacyHref={legalHref(ctx.locale, 'privacy')}
           plans={plans}
           ptPlans={ptPlans}
+          trialOptions={trialChoices(ctx)}
           admissionFeePaise={pricing.admissionFeePaise}
         />
       </div>

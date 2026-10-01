@@ -28,7 +28,7 @@ const PT_PLANS = [
   { planId: 'plan_pt12_male', durationMonths: 12, pricePaise: 3_600_000, gender: 'MALE' as const },
 ];
 
-function form(over: { result?: QrJoinResult; ptPlans?: typeof PT_PLANS } = {}) {
+function form(over: { result?: QrJoinResult; ptPlans?: typeof PT_PLANS; trialOptions?: ReadonlyArray<{ days: number; totalPaise: number }> } = {}) {
   const join = vi.fn<QrJoin>().mockResolvedValue(over.result ?? ok);
   render(
     <WithIntl>
@@ -40,6 +40,7 @@ function form(over: { result?: QrJoinResult; ptPlans?: typeof PT_PLANS } = {}) {
         privacyHref="/legal/privacy"
         plans={PLANS}
         ptPlans={over.ptPlans ?? []}
+        trialOptions={over.trialOptions ?? []}
         admissionFeePaise={0}
         join={join}
         Camera={({ open, onCaptured }) =>
@@ -150,6 +151,40 @@ describe('QrNewForm', () => {
     await user.click(screen.getByRole('button', { name: /Send to reception/i }));
 
     expect(await screen.findByText(/₹4,000/)).toBeTruthy();
+  });
+
+  describe('the paid trial', () => {
+    const TRIAL = [
+      { days: 1, totalPaise: 10_000 },
+      { days: 3, totalPaise: 30_000 },
+    ];
+
+    it('is offered on the plan screen and sent instead of a plan', async () => {
+      // ADR-088: somebody who walked in off the street may want three days, not a month.
+      const { join, user } = form({ trialOptions: TRIAL });
+      await walk('plan');
+
+      await user.click(screen.getByRole('radio', { name: /3 day trial/i }));
+      await next();
+      await user.click(screen.getByRole('radio', { name: /^Morning$/i }));
+      await next();
+      await user.selectOptions(screen.getByLabelText(/Upload a Govt ID/i), 'PAN');
+      await user.upload(screen.getByLabelText(/Front of the card/i), new File(['c'], 'front.jpg', { type: 'image/jpeg' }));
+      await next();
+      await next();
+      await user.click(screen.getByRole('checkbox', { name: /Terms/i }));
+      await user.click(screen.getByRole('button', { name: /Send to reception/i }));
+
+      await waitFor(() => expect(join).toHaveBeenCalledOnce());
+      const sent = join.mock.calls[0]?.[0] as { planId: string | null; trialDays: number | null };
+      expect(sent).toMatchObject({ planId: null, trialDays: 3 });
+    });
+
+    it('is not offered when the gym has it switched off', async () => {
+      form();
+      await walk('plan');
+      expect(screen.queryByText(/try us first/i)).toBeNull();
+    });
   });
 
   describe('personal training', () => {

@@ -30,7 +30,14 @@ export type QrJoinResult =
   | { readonly ok: true; readonly firstName: string; readonly amountPaise: number; readonly reservedUntil: string }
   | { readonly ok: false; readonly code: string; readonly fields?: readonly string[]; readonly requestId?: string | undefined; readonly minAge?: number | undefined };
 
-export type QrJoin = (input: { form: FormData; planId: string; ptPlanId: string | null; startDate: string }) => Promise<QrJoinResult>;
+export type QrJoin = (input: {
+  form: FormData;
+  /** `null` with `trialDays` when they are buying a trial instead of a plan (ADR-088). */
+  planId: string | null;
+  trialDays: number | null;
+  ptPlanId: string | null;
+  startDate: string;
+}) => Promise<QrJoinResult>;
 
 const GENDERS = ['MALE', 'FEMALE'] as const;
 
@@ -65,6 +72,7 @@ export function QrNewForm({
   privacyHref,
   plans,
   ptPlans = [],
+  trialOptions = [],
   admissionFeePaise,
   join,
   Camera = SelfieCapture,
@@ -78,6 +86,8 @@ export function QrNewForm({
   readonly plans: readonly QrPlanCard[];
   /** Personal training on sale; empty means the question is never asked (ADR-087). */
   readonly ptPlans?: readonly QrPlanCard[];
+  /** The paid trial's lengths; empty means it is not offered here (ADR-088). */
+  readonly trialOptions?: ReadonlyArray<{ readonly days: number; readonly totalPaise: number }>;
   readonly admissionFeePaise: number;
   readonly join: QrJoin;
   readonly Camera?: ComponentType<SelfieCaptureProps>;
@@ -99,6 +109,8 @@ export function QrNewForm({
   // "Do you need personal training?" — no, until they say otherwise (ADR-087).
   const [wantsPt, setWantsPt] = useState(false);
   const [ptPlanId, setPtPlanId] = useState<string | null>(null);
+  /** Days of trial, chosen instead of a plan (ADR-088). */
+  const [trialDays, setTrialDays] = useState<number | null>(null);
   const [slot, setSlot] = useState<TrainingSlot | null>(null);
   const [govIdType, setGovIdType] = useState<GovIdType | ''>('');
   const [govIdFront, setGovIdFront] = useState<Blob | null>(null);
@@ -167,7 +179,8 @@ export function QrNewForm({
     gender === null ? [] : list.filter((plan) => plan.gender === gender).sort((a, b) => a.durationMonths - b.durationMonths);
   const myPlans = forGender(plans);
   const chosen = myPlans.find((plan) => plan.planId === planId) ?? null;
-  // A trainer cannot be booked past the membership they are on (ADR-087).
+  const trial = trialOptions.find((option) => option.days === trialDays) ?? null;
+  // A trainer cannot be booked past the membership they are on, and a trial carries none.
   const myPt = chosen === null ? [] : forGender(ptPlans).filter((card) => card.durationMonths <= chosen.durationMonths);
   const ptChosen = myPt.find((card) => card.planId === ptPlanId) ?? null;
   const price = (paise: number) => formatINR(paise, { showPaise: false });
@@ -179,7 +192,8 @@ export function QrNewForm({
     if (dob === '') found['dob'] = te('errors.dob');
     if (gender === null) found['gender'] = te('errors.gender');
     if (photo === null) found['selfie'] = te('errors.selfie');
-    if (chosen === null) found['plan'] = t('errors.plan');
+    // A plan or a trial: one of the two has to be chosen (ADR-088).
+    if (chosen === null && trial === null) found['plan'] = t('errors.plan');
     if (wantsPt && myPt.length > 0 && ptChosen === null) found['pt'] = t('errors.pt');
     if (slot === null) found['slot'] = te('errors.slot');
     if (govIdType === '') found['govId'] = te('errors.govIdType');
@@ -281,13 +295,54 @@ export function QrNewForm({
           <div className="mt-3 grid gap-2">
             {myPlans.map((plan) => (
               <label key={plan.planId} className={cn(chip(planId === plan.planId), 'flex items-center justify-between py-4 text-left')}>
-                <input type="radio" name="plan" value={plan.planId} checked={planId === plan.planId} onChange={() => setPlanId(plan.planId)} className="sr-only" />
+                <input
+                  type="radio"
+                  name="plan"
+                  value={plan.planId}
+                  checked={planId === plan.planId}
+                  onChange={() => {
+                    setPlanId(plan.planId);
+                    setTrialDays(null);
+                  }}
+                  className="sr-only"
+                />
                 <span>{t('months', { count: plan.durationMonths })}</span>
                 <span className="font-display text-title font-bold">{price(plan.pricePaise)}</span>
               </label>
             ))}
           </div>
           {admissionFeePaise > 0 ? <p className="mt-2 text-small text-brand-stone">{t('joiningFee', { amount: price(admissionFeePaise) })}</p> : null}
+
+          {/* Or a few days first (ADR-088). Below the plans, so they see what a month
+              costs before deciding to try three days. */}
+          {trialOptions.length === 0 ? null : (
+            <>
+              <p className="mt-5 text-body font-semibold text-brand-ink">{t('trialTitle')}</p>
+              <p className="mt-1 text-small text-brand-stone">{t('trialHelp')}</p>
+              <div className="mt-3 grid gap-2">
+                {trialOptions.map((option) => (
+                  <label key={option.days} className={cn(chip(trialDays === option.days), 'flex items-center justify-between py-4 text-left')}>
+                    <input
+                      type="radio"
+                      name="plan"
+                      value={`trial-${option.days}`}
+                      checked={trialDays === option.days}
+                      onChange={() => {
+                        setTrialDays(option.days);
+                        setPlanId(null);
+                        setPtPlanId(null);
+                        setWantsPt(false);
+                      }}
+                      className="sr-only"
+                    />
+                    <span>{t('trialDays', { count: option.days })}</span>
+                    <span className="font-display text-title font-bold">{price(option.totalPaise)}</span>
+                  </label>
+                ))}
+              </div>
+            </>
+          )}
+
           {problems['plan'] === undefined ? null : (
             <p role="alert" className="mt-1 text-small font-semibold text-semantic-fee-expired">
               {problems['plan']}
@@ -470,7 +525,7 @@ export function QrNewForm({
       setFailure(te('errors.fillFirst'));
       return;
     }
-    if (photo === null || gender === null || chosen === null || govIdType === '' || slot === null) return;
+    if (photo === null || gender === null || (chosen === null && trial === null) || govIdType === '' || slot === null) return;
 
     const form = new FormData();
     form.set('fullName', fullName.trim());
@@ -490,7 +545,13 @@ export function QrNewForm({
 
     start(async () => {
       // A sign-up needs a start date, and somebody standing at the desk starts today.
-      const result = await join({ form, planId: chosen.planId, ptPlanId: wantsPt ? (ptChosen?.planId ?? null) : null, startDate: today });
+      const result = await join({
+        form,
+        planId: chosen?.planId ?? null,
+        trialDays: trial?.days ?? null,
+        ptPlanId: chosen === null || !wantsPt ? null : (ptChosen?.planId ?? null),
+        startDate: today,
+      });
       if (result.ok) {
         setDone({ firstName: result.firstName, amountPaise: result.amountPaise });
         return;

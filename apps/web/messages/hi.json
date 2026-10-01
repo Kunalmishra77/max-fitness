@@ -1740,7 +1740,10 @@
     "ptYes": "हाँ",
     "ptNo": "नहीं",
     "ptPerMonth": "{price} / महीना",
-    "ptSummary": "{months, plural, one {1 महीने} other {# महीने}} की पर्सनल ट्रेनिंग {pt} के साथ — कुल {total}"
+    "ptSummary": "{months, plural, one {1 महीने} other {# महीने}} की पर्सनल ट्रेनिंग {pt} के साथ — कुल {total}",
+    "trialTitle": "या पहले देख लें",
+    "trialHelp": "₹100 प्रति दिन। प्लान लेने से पहले कुछ दिन आकर देख लें।",
+    "trialDays": "{count, plural, one {1 दिन का ट्रायल} other {# दिन का ट्रायल}}"
   },
   "qrNew": {
     "title": "Max Fitness Gym, एक नज़र में",

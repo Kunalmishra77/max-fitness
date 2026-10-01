@@ -1740,7 +1740,10 @@
     "ptYes": "Yes",
     "ptNo": "No",
     "ptPerMonth": "{price} / month",
-    "ptSummary": "With {months, plural, one {1 month} other {# months}} of personal training {pt} — total {total}"
+    "ptSummary": "With {months, plural, one {1 month} other {# months}} of personal training {pt} — total {total}",
+    "trialTitle": "Or try us first",
+    "trialHelp": "₹100 a day. Come in for a few days before deciding on a plan.",
+    "trialDays": "{count, plural, one {1 day trial} other {# day trial}}"
   },
   "qrNew": {
     "title": "Max Fitness Gym, at a glance",
