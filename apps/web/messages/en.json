@@ -802,7 +802,10 @@
       "viewReceipt": "View receipt",
       "backToMember": "Back to member",
       "failed": "The payment could not be recorded. Please try again.",
-      "notAllowed": "You are not allowed to take payments."
+      "notAllowed": "You are not allowed to take payments.",
+      "ptStep": "Personal training?",
+      "ptNone": "No trainer",
+      "ptBreakdown": "Membership {membership} + trainer {pt}"
     },
     "calls": {
       "title": "Calls today",
@@ -1030,7 +1033,11 @@
       "reminderLater": "Appears once WhatsApp reminders start",
       "showTable": "Show as table",
       "showChart": "Show as chart",
-      "tableHour": "Time"
+      "tableHour": "Time",
+      "pt": "Personal training",
+      "ptSubtitle": "Running now, and sold this month",
+      "ptRunning": "members with a trainer",
+      "ptSold": "{count, plural, one {from 1 sold this month} other {from # sold this month}}"
     },
     "settings": {
       "title": "Settings",

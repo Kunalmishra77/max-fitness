@@ -3,8 +3,15 @@ import { istDate, type E164Mobile } from '@mfp/shared';
 import type { CheckoutSettings } from '../checkout/checkout.rules';
 import type { MemberForCheckout } from '../checkout/checkout.service';
 import type { OutboxEventInput } from '../ports/outbox';
-import { buildPlan, fakeClockAt } from '../testing/builders';
-import { recordDeskPayment, type DeskMembershipRecord, type DeskPaymentRecord, type DeskPaymentStore } from './desk-payment';
+import type { Plan } from '../pricing/plans';
+import { buildPlan, buildPtPlan, fakeClockAt } from '../testing/builders';
+import {
+  recordDeskPayment,
+  type DeskMembershipRecord,
+  type DeskPaymentRecord,
+  type DeskPaymentStore,
+  type DeskPtEnrolmentRecord,
+} from './desk-payment';
 import type { CrmActor } from './permissions';
 
 const owner: CrmActor = { staffUserId: 'staff_1', gymId: 'gym_1', role: 'OWNER', elevatedUntil: null, receptionMayTakePayments: true };
@@ -30,7 +37,9 @@ class FakeDeskStore implements DeskPaymentStore {
   member: MemberForCheckout | null = activeMember;
   memberCode: string | null = 'MF-0112';
   readonly counters = new Map<string, number>();
+  plans: Plan[] = [maleQuarter, femaleMonthly];
   readonly memberships: DeskMembershipRecord[] = [];
+  readonly ptEnrolments: DeskPtEnrolmentRecord[] = [];
   readonly payments: DeskPaymentRecord[] = [];
   readonly activated: Array<{ memberId: string; memberCode: string }> = [];
   readonly closedTasks: string[] = [];
@@ -40,7 +49,11 @@ class FakeDeskStore implements DeskPaymentStore {
     return Promise.resolve(this.member?.id === memberId ? this.member : null);
   }
   getPlans() {
-    return Promise.resolve([maleQuarter, femaleMonthly]);
+    return Promise.resolve(this.plans);
+  }
+  createConfirmedPtEnrolment(record: DeskPtEnrolmentRecord) {
+    this.ptEnrolments.push(record);
+    return Promise.resolve(`pt_${this.ptEnrolments.length}`);
   }
   nextCounterValue(gymId: string, key: string) {
     const next = (this.counters.get(`${gymId}:${key}`) ?? 0) + 1;
@@ -91,6 +104,60 @@ describe('recordDeskPayment', () => {
       { memberId: 'mem_1', planId: maleQuarter.id, method: 'CASH', ...overrides },
       { actor, clock, uow: { transaction: (work) => work(store) }, settings },
     );
+
+  describe('with personal training', () => {
+    // ADR-087: the desk is where an existing member adds a trainer, so one payment has
+    // to cover both and the enrolment has to end up on the member's record.
+    const ptQuarter = buildPtPlan({ durationMonths: 3, gender: 'MALE' });
+
+    beforeEach(() => {
+      store.plans = [maleQuarter, femaleMonthly, ptQuarter];
+    });
+
+    it('takes both fees in one payment and starts the trainer with the membership', async () => {
+      const result = await record({ ptPlanId: ptQuarter.id });
+
+      expect(result.amountPaise).toBe(1_750_000);
+      expect(store.ptEnrolments[0]).toMatchObject({
+        gymId: 'gym_1',
+        memberId: 'mem_1',
+        planId: ptQuarter.id,
+        membershipId: 'ms_1',
+        durationMonths: 3,
+        startDate: '2026-09-15',
+        endDate: '2026-12-14',
+        pricePaise: 1_350_000,
+      });
+      expect(store.payments[0]?.ptEnrolmentId).toBe('pt_1');
+      expect(store.payments[0]?.amountPaise).toBe(1_750_000);
+    });
+
+    it('books no trainer when none was asked for', async () => {
+      await record();
+      expect(store.ptEnrolments).toEqual([]);
+      expect(store.payments[0]?.ptEnrolmentId).toBeNull();
+    });
+
+    it('refuses a trainer term longer than the membership being paid for', async () => {
+      const ptYear = buildPtPlan({ durationMonths: 12, gender: 'MALE' });
+      store.plans = [maleQuarter, ptYear];
+
+      await expect(record({ ptPlanId: ptYear.id })).rejects.toThrow(expect.objectContaining({ code: 'PT_LONGER_THAN_MEMBERSHIP' }) as Error);
+      expect(store.ptEnrolments).toEqual([]);
+      expect(store.payments).toEqual([]);
+    });
+
+    it('takes a discount off the two fees together, not off the membership alone', async () => {
+      const result = await record({ ptPlanId: ptQuarter.id, discountPaise: 50_000, discountReason: 'Diwali' });
+      expect(result.amountPaise).toBe(1_700_000);
+    });
+
+    it('refuses a discount larger than both fees together', async () => {
+      await expect(record({ ptPlanId: ptQuarter.id, discountPaise: 2_000_000, discountReason: 'typo' })).rejects.toThrow(
+        expect.objectContaining({ code: 'VALIDATION_FAILED' }) as Error,
+      );
+    });
+  });
 
   it('takes the money, numbers the receipt and chains the renewal on (BR-3.4)', async () => {
     const result = await record();

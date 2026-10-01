@@ -802,7 +802,10 @@
       "viewReceipt": "रसीद देखें",
       "backToMember": "मेंबर पर वापस",
       "failed": "फीस दर्ज नहीं हो पाई। फिर कोशिश करें।",
-      "notAllowed": "आपको फीस लेने की अनुमति नहीं है।"
+      "notAllowed": "आपको फीस लेने की अनुमति नहीं है।",
+      "ptStep": "पर्सनल ट्रेनिंग?",
+      "ptNone": "ट्रेनर नहीं",
+      "ptBreakdown": "मेंबरशिप {membership} + ट्रेनर {pt}"
     },
     "calls": {
       "title": "आज के कॉल",
@@ -1030,7 +1033,11 @@
       "reminderLater": "WhatsApp रिमाइंडर शुरू होने पर दिखेगा",
       "showTable": "टेबल में देखें",
       "showChart": "चार्ट में देखें",
-      "tableHour": "समय"
+      "tableHour": "समय",
+      "pt": "पर्सनल ट्रेनिंग",
+      "ptSubtitle": "अभी चल रही, और इस महीने बिकी",
+      "ptRunning": "मेंबर ट्रेनर के साथ",
+      "ptSold": "{count, plural, one {इस महीने 1 बिकी} other {इस महीने # बिकीं}}"
     },
     "settings": {
       "title": "सेटिंग",

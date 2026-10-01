@@ -20,6 +20,13 @@ export interface ReportInputs {
   readonly leftByReason: ReadonlyArray<{ readonly reason: string; readonly count: number }>;
   readonly activeByGender: ReadonlyArray<{ readonly gender: string; readonly count: number }>;
   readonly planMix: ReadonlyArray<{ readonly durationMonths: number; readonly count: number }>;
+  /** Personal training (ADR-087): running now, and what was sold this month. */
+  readonly pt: {
+    readonly running: number;
+    readonly mix: ReadonlyArray<{ readonly durationMonths: number; readonly count: number }>;
+    readonly soldThisMonth: number;
+    readonly revenueThisMonthPaise: number;
+  };
 }
 
 /** The first instant of an IST calendar day. */
@@ -43,7 +50,7 @@ export class PrismaReportsReader {
         select: { method: true, amountPaise: true },
       });
 
-    const [paidThisMonth, paidLastMonth, memberships, attendance, left, genders, plans] = await Promise.all([
+    const [paidThisMonth, paidLastMonth, memberships, attendance, left, genders, plans, ptRunning, ptSoldThisMonth] = await Promise.all([
       paidBetween(month.start, month.end),
       // Last month only up to the same day: a month so far is compared like with like.
       paidBetween(month.previousStart, month.previousToDate),
@@ -70,6 +77,20 @@ export class PrismaReportsReader {
         where: { gymId, status: 'CONFIRMED', durationMonths: { not: null }, confirmedAt: { gte: istStart(window.planMixFrom) } },
         _count: { _all: true },
       }),
+      // Personal training (ADR-087): who is on one now, and what it was sold for in the
+      // month. "Now" is by date rather than status, so a term that has run out is not
+      // counted as a trainer the gym is providing.
+      this.#prisma.ptEnrolment.groupBy({
+        by: ['durationMonths'],
+        where: { gymId, status: 'CONFIRMED', startDate: { lte: toDbDate(month.end) }, endDate: { gte: toDbDate(month.end) } },
+        _count: { _all: true },
+        _sum: { pricePaise: true },
+      }),
+      this.#prisma.ptEnrolment.aggregate({
+        where: { gymId, status: 'CONFIRMED', confirmedAt: { gte: istStart(month.start), lt: istStart(addDays(month.end, 1)) } },
+        _count: { _all: true },
+        _sum: { pricePaise: true },
+      }),
     ]);
 
     return {
@@ -86,6 +107,12 @@ export class PrismaReportsReader {
       planMix: plans
         .flatMap((row) => (row.durationMonths === null ? [] : [{ durationMonths: row.durationMonths, count: row._count._all }]))
         .sort((a, b) => a.durationMonths - b.durationMonths),
+      pt: {
+        running: ptRunning.reduce((total, row) => total + row._count._all, 0),
+        mix: ptRunning.map((row) => ({ durationMonths: row.durationMonths, count: row._count._all })).sort((a, b) => a.durationMonths - b.durationMonths),
+        soldThisMonth: ptSoldThisMonth._count._all,
+        revenueThisMonthPaise: ptSoldThisMonth._sum.pricePaise ?? 0,
+      },
     };
   }
 }

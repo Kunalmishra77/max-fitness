@@ -117,6 +117,35 @@ export default async function CrmReportsPage() {
           </Card>
         </div>
 
+        {/* Personal training (ADR-087). Hidden entirely when the gym has never sold any,
+            rather than showing a card of zeros. */}
+        {inputs.pt.running === 0 && inputs.pt.soldThisMonth === 0 ? null : (
+          <Card title={t('reports.pt')} subtitle={t('reports.ptSubtitle')}>
+            <div className="flex items-baseline gap-6">
+              <span>
+                <span className="block font-display text-[2.25rem] leading-none font-bold text-brand-obsidian tabular">{inputs.pt.running}</span>
+                <span className="mt-1 block text-small text-brand-stone">{t('reports.ptRunning')}</span>
+              </span>
+              <span>
+                <span className="block font-display text-[2.25rem] leading-none font-bold text-brand-obsidian tabular">
+                  {rupees(inputs.pt.revenueThisMonthPaise)}
+                </span>
+                <span className="mt-1 block text-small text-brand-stone">{t('reports.ptSold', { count: inputs.pt.soldThisMonth })}</span>
+              </span>
+            </div>
+            {inputs.pt.mix.length === 0 ? null : (
+              <ul className="mt-4 grid gap-1">
+                {inputs.pt.mix.map((row) => (
+                  <li key={row.durationMonths} className="flex justify-between text-small text-brand-ink">
+                    <span>{t('profile.ptMonths', { count: row.durationMonths })}</span>
+                    <span className="font-semibold">{row.count}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        )}
+
         <Card title={t('reports.renewalRate')}>
           {flow.renewalRate.percent === null ? (
             <p className="text-crm-body text-brand-stone">{t('reports.renewalRateNone')}</p>

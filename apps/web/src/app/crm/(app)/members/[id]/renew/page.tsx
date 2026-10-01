@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
-import { can, membershipEndDate, planCards, recordDeskPayment, renewalStartDate, type DeskPaymentMethod } from '@mfp/core';
+import { can, membershipEndDate, planCards, ptCards, recordDeskPayment, renewalStartDate, type DeskPaymentMethod } from '@mfp/core';
 import { CrmHeader } from '@/components/crm/crm-chrome';
 import { RenewFlow } from '@/components/crm/renew-flow';
 import { getContainer } from '@/lib/container';
@@ -38,13 +38,12 @@ export default async function CrmRenewPage({ params }: { params: Promise<{ id: s
 
   const planRows = await prisma.plan.findMany({
     where: { gymId: gym.id, isActive: true },
-    select: { id: true, code: true, durationMonths: true, gender: true, pricePaise: true, isActive: true, sortOrder: true },
+    select: { id: true, code: true, kind: true, durationMonths: true, gender: true, pricePaise: true, isActive: true, sortOrder: true },
   });
-  const cards = planCards(
-    planRows.map((row) => row as Parameters<typeof planCards>[0][number]),
-    member.gender,
-    gym.settings.pricing,
-  );
+  const allPlans = planRows.map((row) => row as Parameters<typeof planCards>[0][number]);
+  const cards = planCards(allPlans, member.gender, gym.settings.pricing);
+  // Personal training the desk can add to this payment (ADR-087).
+  const pt = ptCards(allPlans, member.gender, gym.settings.pricing);
 
   // The renewal chains on from the current end date within the grace window (BR-3.4).
   const startDate = renewalStartDate({
@@ -54,10 +53,10 @@ export default async function CrmRenewPage({ params }: { params: Promise<{ id: s
   });
   const isFirst = member.memberships.every((m) => m.status !== 'CONFIRMED');
 
-  async function takePayment(planId: string, method: DeskPaymentMethod) {
+  async function takePayment(planId: string, ptPlanId: string | null, method: DeskPaymentMethod) {
     'use server';
     const context = await requireCrmContext();
-    const result = await recordDeskPayment({ memberId: id, planId, method }, { actor: context.actor, ...deskPaymentDeps(context.gym) });
+    const result = await recordDeskPayment({ memberId: id, planId, ptPlanId, method }, { actor: context.actor, ...deskPaymentDeps(context.gym) });
     redirect(`/crm/members/${id}/renew?done=${result.paymentId}&receipt=${encodeURIComponent(result.receiptNo)}&code=${encodeURIComponent(result.memberCode)}&amount=${result.amountPaise}`);
   }
 
@@ -70,6 +69,12 @@ export default async function CrmRenewPage({ params }: { params: Promise<{ id: s
           planId: card.planId,
           durationMonths: card.durationMonths,
           pricePaise: card.pricePaise + (isFirst ? gym.settings.pricing.admissionFeePaise : 0),
+          endDate: membershipEndDate(startDate, card.durationMonths),
+        }))}
+        ptPlans={pt.map((card) => ({
+          planId: card.planId,
+          durationMonths: card.durationMonths,
+          pricePaise: card.pricePaise,
           endDate: membershipEndDate(startDate, card.durationMonths),
         }))}
         startDate={startDate}

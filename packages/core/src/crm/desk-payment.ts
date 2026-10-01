@@ -2,7 +2,9 @@ import { todayIST, type Clock, type ISTDate, type PlanDurationMonths } from '@mf
 import { planForMember, prepareRenewalCheckout, prepareSignupCheckout, type CheckoutSettings } from '../checkout/checkout.rules';
 import type { MemberForCheckout } from '../checkout/checkout.service';
 import { DomainError } from '../errors';
+import { membershipPeriod } from '../membership/dates';
 import { CALL_TASKS_CLOSED_BY_PAYMENT } from '../payments/confirm-payment';
+import { combinedQuote, ptPlanForMember } from '../pricing/personal-training';
 import { MEMBER_CODE_COUNTER_KEY, formatMemberCode, formatReceiptNumber, receiptCounterKey } from '../payments/receipt-number';
 import type { OutboxEventInput } from '../ports/outbox';
 import type { Plan } from '../pricing/plans';
@@ -38,10 +40,26 @@ export interface DeskMembershipRecord {
   readonly confirmedAt: Date;
 }
 
+/** Personal training taken at the desk, confirmed because the money is already in (ADR-087). */
+export interface DeskPtEnrolmentRecord {
+  readonly gymId: string;
+  readonly memberId: string;
+  readonly planId: string;
+  readonly membershipId: string;
+  readonly durationMonths: PlanDurationMonths;
+  readonly startDate: ISTDate;
+  readonly endDate: ISTDate;
+  readonly pricePaise: number;
+  readonly createdById: string;
+  readonly confirmedAt: Date;
+}
+
 export interface DeskPaymentRecord {
   readonly gymId: string;
   readonly memberId: string;
   readonly membershipId: string;
+  /** Set when the same payment also covers personal training (ADR-087). */
+  readonly ptEnrolmentId: string | null;
   readonly amountPaise: number;
   readonly method: DeskPaymentMethod;
   readonly receiptNo: string;
@@ -54,6 +72,7 @@ export interface DeskPaymentStore {
   getPlans(gymId: string): Promise<readonly Plan[]>;
   nextCounterValue(gymId: string, key: string): Promise<number>;
   createConfirmedMembership(record: DeskMembershipRecord): Promise<string>;
+  createConfirmedPtEnrolment(record: DeskPtEnrolmentRecord): Promise<string>;
   createPaidPayment(record: DeskPaymentRecord): Promise<string>;
   getMember(memberId: string): Promise<{ readonly id: string; readonly memberCode: string | null }>;
   activateMember(memberId: string, memberCode: string): Promise<void>;
@@ -68,6 +87,8 @@ export interface DeskPaymentUnitOfWork {
 export interface DeskPaymentRequest {
   readonly memberId: string;
   readonly planId: string;
+  /** Personal training taken at the same time; `null` or absent is none (ADR-087). */
+  readonly ptPlanId?: string | null;
   readonly method: DeskPaymentMethod;
   readonly discountPaise?: number;
   readonly discountReason?: string;
@@ -107,8 +128,9 @@ export async function recordDeskPayment(
     if (member.status === 'BLOCKED') throw new DomainError('MEMBER_BLOCKED', 'This member is blocked');
 
     const today = todayIST(deps.clock);
+    const plans = await store.getPlans(member.gymId);
     const plan = planForMember({
-      plans: await store.getPlans(member.gymId),
+      plans,
       planId: input.planId,
       memberGender: member.gender,
       otherGenderPricing: settings.pricing.otherGenderPricing,
@@ -119,10 +141,18 @@ export async function recordDeskPayment(
       ? prepareRenewalCheckout({ plan, today, currentEndDate: member.latestConfirmedEndDate, settings })
       : prepareSignupCheckout({ plan, today, requestedStartDate: today, isFirstMembership: true, settings });
 
-    if (discountPaise < 0 || discountPaise > quote.totalPaise) {
-      throw new DomainError('VALIDATION_FAILED', 'The discount cannot be more than the fee', { totalPaise: quote.totalPaise });
+    // Personal training alongside it, priced and length-checked here (ADR-087).
+    const ptPlan =
+      input.ptPlanId === undefined || input.ptPlanId === null
+        ? null
+        : ptPlanForMember({ plans, planId: input.ptPlanId, memberGender: member.gender, otherGenderPricing: settings.pricing.otherGenderPricing });
+    const combined = combinedQuote({ membership: quote, ptPlan, membershipMonths: quote.durationMonths });
+
+    // The discount comes off what the member is actually handing over, both fees together.
+    if (discountPaise < 0 || discountPaise > combined.totalPaise) {
+      throw new DomainError('VALIDATION_FAILED', 'The discount cannot be more than the fee', { totalPaise: combined.totalPaise });
     }
-    const amountPaise = quote.totalPaise - discountPaise;
+    const amountPaise = combined.totalPaise - discountPaise;
     if (amountPaise <= 0) throw new DomainError('VALIDATION_FAILED', 'The amount taken must be more than zero');
 
     const now = deps.clock.now();
@@ -144,10 +174,27 @@ export async function recordDeskPayment(
       confirmedAt: now,
     });
 
+    const ptEnrolmentId =
+      ptPlan === null
+        ? null
+        : await store.createConfirmedPtEnrolment({
+            gymId: member.gymId,
+            memberId: member.id,
+            planId: ptPlan.id,
+            membershipId,
+            durationMonths: ptPlan.durationMonths,
+            startDate: quote.startDate,
+            endDate: membershipPeriod(quote.startDate, ptPlan.durationMonths).endDate,
+            pricePaise: ptPlan.pricePaise,
+            createdById: actor.staffUserId,
+            confirmedAt: now,
+          });
+
     const paymentId = await store.createPaidPayment({
       gymId: member.gymId,
       memberId: member.id,
       membershipId,
+      ptEnrolmentId,
       amountPaise,
       method: input.method,
       receiptNo,

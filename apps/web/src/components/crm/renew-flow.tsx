@@ -33,20 +33,24 @@ const METHODS: ReadonlyArray<{ method: DeskPaymentMethod; icon: string }> = [
 export function RenewFlow({
   memberName,
   plans,
+  ptPlans = [],
   startDate,
   locale,
   action,
 }: {
   memberName: string;
   plans: readonly RenewPlanOption[];
+  /** Personal training on sale; empty means the question is never asked (ADR-087). */
+  ptPlans?: readonly RenewPlanOption[];
   startDate: string;
   locale: string;
-  action: (planId: string, method: DeskPaymentMethod) => Promise<void>;
+  action: (planId: string, ptPlanId: string | null, method: DeskPaymentMethod) => Promise<void>;
 }) {
   const t = useTranslations('crm.renew');
   const tp = useTranslations('crm.profile');
   const params = useSearchParams();
   const [plan, setPlan] = useState<RenewPlanOption | null>(null);
+  const [ptPlan, setPtPlan] = useState<RenewPlanOption | null>(null);
   const [method, setMethod] = useState<DeskPaymentMethod | null>(null);
   const [failed, setFailed] = useState(false);
   const [pending, start] = useTransition();
@@ -74,6 +78,9 @@ export function RenewFlow({
   }
 
   const money = (paise: number) => formatINR(paise, { showPaise: false });
+  // Only terms that fit inside the plan being paid for; the service refuses the rest.
+  const ptFits = plan === null ? [] : ptPlans.filter((option) => option.durationMonths <= plan.durationMonths);
+  const total = (plan?.pricePaise ?? 0) + (ptPlan?.pricePaise ?? 0);
 
   return (
     <div className="m-4 rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm lg:m-0 lg:p-6">
@@ -89,6 +96,8 @@ export function RenewFlow({
               setPlan(option);
               setMethod(null);
               setFailed(false);
+              // A shorter plan cannot carry a longer trainer term (ADR-087).
+              if (ptPlan !== null && ptPlan.durationMonths > option.durationMonths) setPtPlan(null);
             }}
             className={`min-h-24 rounded-panel border-2 p-3 text-left ${
               plan?.planId === option.planId ? 'border-brand-accent bg-brand-accent/[0.07]' : 'border-brand-stone/30 bg-white hover:border-brand-obsidian'
@@ -107,6 +116,36 @@ export function RenewFlow({
           <p className="mt-3 text-crm-body text-brand-stone">
             {t('newPlan', { start: formatISTDate(startDate as ISTDate, locale), end: formatISTDate(plan.endDate as ISTDate, locale) })}
           </p>
+
+          {ptFits.length === 0 ? null : (
+            <>
+              <h2 className="mt-5 text-crm-body font-bold">{t('ptStep')}</h2>
+              <div className="mt-2 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPtPlan(null)}
+                  className={`min-h-16 rounded-panel border-2 px-3 text-crm-body font-semibold ${
+                    ptPlan === null ? 'border-brand-accent bg-brand-accent/[0.07]' : 'border-brand-stone/30 bg-white hover:border-brand-obsidian'
+                  }`}
+                >
+                  {t('ptNone')}
+                </button>
+                {ptFits.map((option) => (
+                  <button
+                    key={option.planId}
+                    type="button"
+                    onClick={() => setPtPlan(option)}
+                    className={`min-h-16 rounded-panel border-2 p-3 text-left ${
+                      ptPlan?.planId === option.planId ? 'border-brand-accent bg-brand-accent/[0.07]' : 'border-brand-stone/30 bg-white hover:border-brand-obsidian'
+                    }`}
+                  >
+                    <span className="block text-crm-body font-semibold">{tp('ptMonths', { count: option.durationMonths })}</span>
+                    <span className="mt-1 block font-display text-title font-bold text-brand-accent-deep">{money(option.pricePaise)}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
 
           <h2 className="mt-5 text-crm-body font-bold">{t('step2')}</h2>
           <div className="mt-2 grid grid-cols-3 gap-3">
@@ -131,14 +170,20 @@ export function RenewFlow({
 
       {plan !== null && method !== null ? (
         <div className="mt-6 rounded-panel bg-brand-paper p-4">
-          <p className="text-crm-body font-semibold">{t('confirmQuestion', { amount: money(plan.pricePaise), method: t(`methods.${method}`) })}</p>
+          <p className="text-crm-body font-semibold">{t('confirmQuestion', { amount: money(total), method: t(`methods.${method}`) })}</p>
+          {ptPlan === null ? null : (
+            // Both lines, so "₹17,500 cash" cannot be mistaken for the membership alone.
+            <p className="mt-1 text-small text-brand-stone">
+              {t('ptBreakdown', { membership: money(plan.pricePaise), pt: money(ptPlan.pricePaise) })}
+            </p>
+          )}
           <button
             type="button"
             disabled={pending}
             onClick={() =>
               start(async () => {
                 try {
-                  await action(plan.planId, method);
+                  await action(plan.planId, ptPlan?.planId ?? null, method);
                 } catch (error) {
                   // A redirect from the action throws by design; anything else failed.
                   if ((error as { digest?: string }).digest?.startsWith('NEXT_REDIRECT') !== true) setFailed(true);

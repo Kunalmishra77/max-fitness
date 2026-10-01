@@ -96,6 +96,27 @@ function storeFor(tx: TransactionClient): DeskPaymentStore {
       return created.id;
     },
 
+    // The money is already in the drawer, so the trainer is confirmed, not held (ADR-087).
+    async createConfirmedPtEnrolment(record) {
+      const created = await tx.ptEnrolment.create({
+        data: {
+          gymId: record.gymId,
+          memberId: record.memberId,
+          planId: record.planId,
+          membershipId: record.membershipId,
+          durationMonths: record.durationMonths,
+          startDate: toDbDate(record.startDate),
+          endDate: toDbDate(record.endDate),
+          pricePaise: record.pricePaise,
+          status: 'CONFIRMED',
+          createdById: record.createdById,
+          confirmedAt: record.confirmedAt,
+        },
+        select: { id: true },
+      });
+      return created.id;
+    },
+
     async createPaidPayment(record) {
       const created = await tx.payment.create({
         data: {
