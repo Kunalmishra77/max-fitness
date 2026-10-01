@@ -87,7 +87,7 @@ describe('PayStep', () => {
       membership: MEMBERSHIP,
     });
     expect(seen).toEqual([
-      { path: '/api/v1/checkout/orders', token: 'reg_tok', body: { planId: 'plan_m3', ptPlanId: null, startDate: '2026-09-11', payAtReception: false } },
+      { path: '/api/v1/checkout/orders', token: 'reg_tok', body: { planId: 'plan_m3', trialDays: null, ptPlanId: null, startDate: '2026-09-11', payAtReception: false } },
       { path: '/api/v1/checkout/simulate', token: 'reg_tok', body: { providerOrderId: 'order_sim_abc', outcome: 'success' } },
       // Verify carries no token: the signature is the proof.
       { path: '/api/v1/checkout/verify', token: null, body: CALLBACK },
@@ -141,8 +141,8 @@ describe('PayStep', () => {
 
     await vi.waitFor(() => expect(onReserved).toHaveBeenCalled());
     expect(bodies).toEqual([
-      { planId: 'plan_m3', ptPlanId: null, startDate: '2026-09-11', payAtReception: true },
-      { planId: 'plan_m3', ptPlanId: null, startDate: '2026-09-12', payAtReception: true },
+      { planId: 'plan_m3', trialDays: null, ptPlanId: null, startDate: '2026-09-11', payAtReception: true },
+      { planId: 'plan_m3', trialDays: null, ptPlanId: null, startDate: '2026-09-12', payAtReception: true },
     ]);
   });
 
@@ -194,7 +194,7 @@ describe('PayStep', () => {
     await user.click(screen.getByRole('button', { name: 'Pay at reception' }));
 
     await vi.waitFor(() => expect(onReserved).toHaveBeenCalledWith({ amountPaise: 400_000, reservedUntil: '2026-09-13T04:30:00.000Z', membership: MEMBERSHIP }));
-    expect(body).toEqual({ planId: 'plan_m3', ptPlanId: null, startDate: '2026-09-11', payAtReception: true });
+    expect(body).toEqual({ planId: 'plan_m3', trialDays: null, ptPlanId: null, startDate: '2026-09-11', payAtReception: true });
   });
 
   it('keeps checking when the payment is not yet captured, then completes', async () => {

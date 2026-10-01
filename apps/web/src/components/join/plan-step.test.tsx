@@ -87,7 +87,53 @@ describe('PlanStep', () => {
 
     await user.click(screen.getByRole('radio', { name: /12 months/ }));
     await user.click(screen.getByRole('button', { name: 'Continue to payment' }));
-    expect(onContinue).toHaveBeenCalledWith({ planId: 'plan_m12', startDate: '2026-09-11', ptPlanId: null });
+    expect(onContinue).toHaveBeenCalledWith({ planId: 'plan_m12', trialDays: null, startDate: '2026-09-11', ptPlanId: null });
+  });
+
+  describe('the paid trial', () => {
+    // ADR-088: ₹100 a day, for somebody deciding whether to join at all.
+    const TRIAL = [
+      { days: 1, totalPaise: 10_000 },
+      { days: 3, totalPaise: 30_000 },
+      { days: 7, totalPaise: 70_000 },
+    ];
+
+    it('is not offered when the gym does not sell one', () => {
+      renderStep();
+      expect(screen.queryByText(/trying us out/i)).toBeNull();
+    });
+
+    it('is chosen instead of a plan, and carries the days', async () => {
+      const { onContinue, user } = renderStep({ trialOptions: TRIAL });
+
+      await user.click(screen.getByRole('radio', { name: /3 days/i }));
+      await user.click(screen.getByRole('button', { name: 'Continue to payment' }));
+
+      expect(onContinue).toHaveBeenCalledWith({ planId: null, trialDays: 3, startDate: '2026-09-11', ptPlanId: null });
+    });
+
+    it('clears a plan when the trial is chosen, and the trial when a plan is', async () => {
+      const { onContinue, user } = renderStep({ trialOptions: TRIAL });
+
+      await user.click(screen.getByRole('radio', { name: /12 months/ }));
+      await user.click(screen.getByRole('radio', { name: /7 days/i }));
+      await user.click(screen.getByRole('button', { name: 'Continue to payment' }));
+      expect(onContinue).toHaveBeenCalledWith({ planId: null, trialDays: 7, startDate: '2026-09-11', ptPlanId: null });
+
+      await user.click(screen.getByRole('radio', { name: /12 months/ }));
+      await user.click(screen.getByRole('button', { name: 'Continue to payment' }));
+      expect(onContinue).toHaveBeenLastCalledWith({ planId: 'plan_m12', trialDays: null, startDate: '2026-09-11', ptPlanId: null });
+    });
+
+    it('does not offer a trainer on a trial', async () => {
+      const { user } = renderStep({
+        trialOptions: TRIAL,
+        ptCards: [{ planId: 'plan_pt1', code: 'PT1_MALE', durationMonths: 1 as const, pricePaise: 500_000, perMonthPaise: 500_000 }],
+      });
+
+      await user.click(screen.getByRole('radio', { name: /3 days/i }));
+      expect(screen.queryByRole('group', { name: /personal training/i })).toBeNull();
+    });
   });
 
   describe('personal training', () => {
@@ -113,7 +159,7 @@ describe('PlanStep', () => {
       await user.click(screen.getByRole('radio', { name: /3 months/ }));
       await user.click(screen.getByRole('button', { name: 'Continue to payment' }));
 
-      expect(onContinue).toHaveBeenCalledWith({ planId: 'plan_m3', startDate: '2026-09-11', ptPlanId: null });
+      expect(onContinue).toHaveBeenCalledWith({ planId: 'plan_m3', trialDays: null, startDate: '2026-09-11', ptPlanId: null });
     });
 
     it('offers only trainer terms that fit inside the membership, and adds the cost up', async () => {
@@ -129,7 +175,7 @@ describe('PlanStep', () => {
       expect(screen.getByText('Membership ₹4,000 + personal training ₹13,500 = ₹17,500')).toBeTruthy();
 
       await user.click(screen.getByRole('button', { name: 'Continue to payment' }));
-      expect(onContinue).toHaveBeenCalledWith({ planId: 'plan_m3', startDate: '2026-09-11', ptPlanId: 'plan_pt3' });
+      expect(onContinue).toHaveBeenCalledWith({ planId: 'plan_m3', trialDays: null, startDate: '2026-09-11', ptPlanId: 'plan_pt3' });
     });
 
     it('drops a trainer term that no longer fits when the membership is shortened, and asks again', async () => {
@@ -149,7 +195,7 @@ describe('PlanStep', () => {
 
       await user.click(within(group).getByRole('radio', { name: /1 month personal training/i }));
       await user.click(screen.getByRole('button', { name: 'Continue to payment' }));
-      expect(onContinue).toHaveBeenCalledWith({ planId: 'plan_m1', startDate: '2026-09-11', ptPlanId: 'plan_pt1' });
+      expect(onContinue).toHaveBeenCalledWith({ planId: 'plan_m1', trialDays: null, startDate: '2026-09-11', ptPlanId: 'plan_pt1' });
     });
 
     it('asks for a choice when the member says yes and picks no term', async () => {
@@ -171,7 +217,7 @@ describe('PlanStep', () => {
     expect(screen.getByText('Ends on 19 Oct 2026')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: 'Continue to payment' }));
-    expect(onContinue).toHaveBeenCalledWith({ planId: 'plan_m1', startDate: '2026-09-20', ptPlanId: null });
+    expect(onContinue).toHaveBeenCalledWith({ planId: 'plan_m1', trialDays: null, startDate: '2026-09-20', ptPlanId: null });
   });
 
   it('mentions the admission fee and a desk-confirmed price when they apply', () => {

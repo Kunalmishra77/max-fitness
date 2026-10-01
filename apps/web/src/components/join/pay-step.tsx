@@ -76,7 +76,9 @@ export type RazorpayConstructor = new (options: RazorpayOptions) => { open(): vo
 
 export interface PayStepProps {
   readonly auth: { readonly kind: 'registration' | 'renew'; readonly token: string };
-  readonly planId: string;
+  /** `null` with `trialDays` when a trial is being bought instead of a plan (ADR-088). */
+  readonly planId: string | null;
+  readonly trialDays?: number | null;
   /** Personal training bought with it, or `null` (ADR-087). The server prices both. */
   readonly ptPlanId?: string | null;
   /** `null` for a renewal: the server applies BR-3.4. */
@@ -133,6 +135,7 @@ export function PayStep({
   auth,
   planId,
   ptPlanId = null,
+  trialDays = null,
   startDate,
   summary,
   phoneDisplay,
@@ -195,7 +198,7 @@ export function PayStep({
       const response = await fetch('/api/v1/checkout/orders', {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...authHeader },
-        body: JSON.stringify({ planId, ptPlanId, startDate: on, payAtReception }),
+        body: JSON.stringify({ planId, trialDays, ptPlanId, startDate: on, payAtReception }),
       });
       const body = (await response.json().catch(() => null)) as
         | { data?: unknown; error?: { code?: string; details?: { today?: string } }; meta?: { requestId?: string } }

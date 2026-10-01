@@ -87,6 +87,7 @@ class FakeDeskStore implements DeskPaymentStore {
 
 const settings: CheckoutSettings = {
   pricing: { admissionFeePaise: 50_000, otherGenderPricing: 'ASK_AT_DESK', allowDeskDiscounts: true },
+  trial: { trialEnabled: true, trialPerDayPaise: 10_000, trialDayOptions: [1, 2, 3, 5, 7] },
   maxStartDateDaysAhead: 15,
   renewalGraceDays: 5,
 };

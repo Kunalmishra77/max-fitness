@@ -530,7 +530,10 @@
       "ptPerMonth": "{price} / month",
       "ptTotal": "Membership {membership} + personal training {pt} = {total}",
       "ptChoose": "Choose a personal training plan, or answer No.",
-      "ptNeedsPlan": "Choose your membership first — personal training runs alongside it."
+      "ptNeedsPlan": "Choose your membership first — personal training runs alongside it.",
+      "trialHeading": "Just trying us out?",
+      "trialHelper": "Come in for a few days before you decide. ₹100 a day, paid once — it is not a membership.",
+      "trialDays": "{count, plural, one {1 day} other {# days}}"
     },
     "pay": {
       "summary": "{name}, {plan}, {start} to {end}",
@@ -739,7 +742,8 @@
       "tillShort": "till {date}",
       "seenToday": "Came today",
       "seenDaysAgo": "{count, plural, one {1 day ago} other {# days ago}}",
-      "neverSeen": "Never came"
+      "neverSeen": "Never came",
+      "trialDays": "{count, plural, one {Trial, 1 day} other {Trial, # days}}"
     },
     "profile": {
       "call": "Call",
@@ -779,7 +783,8 @@
       "ptMonths": "{count, plural, one {1 month} other {# months}} with a trainer",
       "ptRunning": "Running",
       "ptEnded": "Finished",
-      "ptUnpaid": "Not paid yet"
+      "ptUnpaid": "Not paid yet",
+      "trialDays": "{count, plural, one {Trial — 1 day} other {Trial — # days}}"
     },
     "renew": {
       "title": "Take fees",

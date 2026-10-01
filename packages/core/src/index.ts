@@ -35,6 +35,7 @@ export * from './tokens/signed-links';
 
 export * from './leads/lead.rules';
 export * from './leads/lead.service';
+export * from './trial/trial';
 export * from './gym/hours';
 export * from './gym/promo';
 

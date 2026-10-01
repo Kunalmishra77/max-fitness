@@ -3,6 +3,7 @@ import { DomainError } from '../errors';
 import { assertValidStartDate, membershipPeriod, renewalStartDate } from '../membership/dates';
 import { findPlanById, pricingGenderFor, type Plan } from '../pricing/plans';
 import { quoteMembership, type PricingSettingsInput } from '../pricing/pricing';
+import type { TrialSettings } from '../trial/trial';
 
 /**
  * Checkout rules (signup-and-payment-flow.md §4; BR-2, BR-3, BR-11.3).
@@ -14,6 +15,8 @@ import { quoteMembership, type PricingSettingsInput } from '../pricing/pricing';
 
 export interface CheckoutSettings {
   readonly pricing: PricingSettingsInput;
+  /** The paid trial a newcomer may buy instead of a plan (ADR-088). */
+  readonly trial: TrialSettings;
   /** BR-3.3, default 15. */
   readonly maxStartDateDaysAhead: number;
   /** BR-3.4, default 5. */

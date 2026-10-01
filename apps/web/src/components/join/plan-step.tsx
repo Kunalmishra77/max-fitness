@@ -1,6 +1,6 @@
 'use client';
 
-import type { PlanCardView, PtCardView } from '@mfp/core';
+import type { PlanCardView, PtCardView, TrialOption } from '@mfp/core';
 import { membershipEndDate } from '@mfp/core/membership';
 import { addDays, type ISTDate } from '@mfp/shared/time';
 import { formatINR } from '@mfp/shared/money';
@@ -22,7 +22,9 @@ import { formatISTDate } from '@mfp/shared/time';
  */
 
 export interface PlanChoice {
-  readonly planId: string;
+  /** `null` when a trial was chosen instead of a plan (ADR-088). */
+  readonly planId: string | null;
+  readonly trialDays: number | null;
   readonly startDate: ISTDate;
   /** `null` when the member said no to personal training (ADR-087). */
   readonly ptPlanId: string | null;
@@ -33,6 +35,8 @@ export interface PlanStepProps {
   readonly cards: readonly PlanCardView[];
   /** Personal training on this member's price list; empty when the gym sells none. */
   readonly ptCards?: readonly PtCardView[];
+  /** The paid trial's lengths and prices; empty when the gym offers none (ADR-088). */
+  readonly trialOptions?: readonly TrialOption[];
   readonly admissionPaise: number;
   readonly deskConfirmsPrice: boolean;
   readonly today: ISTDate;
@@ -51,6 +55,7 @@ const price = (paise: number) => formatINR(paise, { showPaise: false });
 export function PlanStep({
   cards,
   ptCards = [],
+  trialOptions = [],
   admissionPaise,
   deskConfirmsPrice,
   today,
@@ -90,12 +95,25 @@ export function PlanStep({
   const ptFits = chosen === undefined ? [] : ptCards.filter((card) => card.durationMonths <= chosen.durationMonths);
   const ptChosen = ptFits.find((card) => card.planId === ptPlanId);
 
+  // The trial is bought instead of a plan, never alongside one (ADR-088).
+  const [trialDays, setTrialDays] = useState<number | null>(null);
+
   const choose = (card: PlanCardView) => {
     setPlanId(card.planId);
+    setTrialDays(null);
     setMissing(false);
     // A shorter membership can carry a shorter trainer term, so an impossible choice goes.
     if (ptChosen !== undefined && ptChosen.durationMonths > card.durationMonths) setPtPlanId('');
     track('plan_selected', { plan: card.code });
+  };
+
+  const chooseTrial = (days: number) => {
+    setTrialDays(days);
+    setPlanId('');
+    setPtPlanId('');
+    setWantsPt(false);
+    setMissing(false);
+    track('plan_selected', { plan: `TRIAL_${days}` });
   };
 
   const option = (card: PlanCardView, large: boolean) => (
@@ -146,6 +164,11 @@ export function PlanStep({
       noValidate
       onSubmit={(event) => {
         event.preventDefault();
+        if (trialDays !== null) {
+          // A trial starts the day they come in; there is nothing else to choose.
+          onContinue({ planId: null, trialDays, startDate, ptPlanId: null });
+          return;
+        }
         if (chosen === undefined) {
           setMissing(true);
           return;
@@ -154,7 +177,7 @@ export function PlanStep({
           setPtMissing(true);
           return;
         }
-        onContinue({ planId: chosen.planId, startDate, ptPlanId: wantsPt ? (ptChosen?.planId ?? null) : null });
+        onContinue({ planId: chosen.planId, trialDays: null, startDate, ptPlanId: wantsPt ? (ptChosen?.planId ?? null) : null });
       }}
       className="grid gap-6"
     >
@@ -176,7 +199,39 @@ export function PlanStep({
         </fieldset>
       )}
 
-      {ptCards.length === 0 ? null : (
+      {/* The trial, after the plans, because it is the smaller commitment and the member
+          should see what a month costs before deciding to try three days (ADR-088). */}
+      {trialOptions.length === 0 ? null : (
+        <fieldset className="grid gap-2">
+          <legend className="font-display text-title text-brand-obsidian mb-2 font-bold">{t('trialHeading')}</legend>
+          <p className="text-body text-brand-ink/80 -mt-1 mb-1">{t('trialHelper')}</p>
+          {trialOptions.map((option) => (
+            <label
+              key={option.days}
+              className={cn(
+                'rounded-panel flex cursor-pointer items-center gap-3 border-2 p-4',
+                'has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2',
+                trialDays === option.days ? 'border-brand-obsidian bg-brand-obsidian/[0.04]' : 'border-brand-stone/30 bg-brand-white',
+              )}
+            >
+              <input
+                type="radio"
+                name={`${id}-trial`}
+                value={option.days}
+                checked={trialDays === option.days}
+                onChange={() => chooseTrial(option.days)}
+                className="accent-brand-obsidian size-5 shrink-0"
+              />
+              <span className="flex min-w-0 flex-1 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <span className="text-brand-ink font-semibold">{t('trialDays', { count: option.days })}</span>
+                <span className="font-display text-brand-accent-deep text-body-l font-bold">{price(option.totalPaise)}</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+      )}
+
+      {ptCards.length === 0 || trialDays !== null ? null : (
         <fieldset className="grid gap-2">
           <legend className="font-display text-title text-brand-obsidian mb-2 font-bold">{t('ptHeading')}</legend>
           <p className="text-body text-brand-ink/80 -mt-1 mb-1">{t('ptHelper')}</p>

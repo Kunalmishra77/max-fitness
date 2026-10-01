@@ -11,14 +11,19 @@ import { MEMBER_GENDERS } from './registration';
 
 export const CheckoutOrderSchema = z
   .object({
-    planId: z.string().trim().min(1).max(64),
+    /** A plan, or `null` with `trialDays` for the paid trial (ADR-088). */
+    planId: z.string().trim().min(1).max(64).nullable().default(null),
+    /** How many days of trial, instead of a plan. The server prices it. */
+    trialDays: z.number().int().positive().max(30).nullable().default(null),
     /** Personal training bought alongside it; `null` is "no thanks" (ADR-087). */
     ptPlanId: z.string().trim().min(1).max(64).nullable().default(null),
     /** Required for a sign-up; a renewal's start follows BR-3.4 and is left `null`. */
     startDate: z.string().refine(isISTDate, { message: 'startDate' }).nullable().default(null),
     payAtReception: z.boolean().default(false),
   })
-  .strict();
+  .strict()
+  // One or the other: both would be two memberships for one payment, neither is not an order.
+  .refine((order) => (order.planId === null) !== (order.trialDays === null), { message: 'planId' });
 export type CheckoutOrderInput = z.input<typeof CheckoutOrderSchema>;
 export type CheckoutOrder = z.output<typeof CheckoutOrderSchema>;
 

@@ -92,6 +92,17 @@ export const PricingSettingsSchema = z.object({
   receptionMayTakePayments: z.boolean().default(true),
   /** BR-11.1. Partial payments are disabled in 1.0. */
   allowPartialPayments: z.boolean().default(false),
+  /**
+   * The trial a new member can buy before committing to a month (ADR-088).
+   *
+   * It is called a free trial because that is what the gym calls it; it costs ₹100 a day.
+   * Priced per day rather than as a plan, because the lengths are days and the member
+   * picks how many — there is no catalogue row to point at.
+   */
+  trialEnabled: z.boolean().default(true),
+  trialPerDayPaise: z.number().int().positive().max(100_000).default(10_000),
+  /** How many days a newcomer may buy, shortest first. */
+  trialDayOptions: z.array(z.number().int().positive().max(30)).min(1).max(8).default([1, 2, 3, 5, 7]),
 });
 export type PricingSettings = z.infer<typeof PricingSettingsSchema>;
 

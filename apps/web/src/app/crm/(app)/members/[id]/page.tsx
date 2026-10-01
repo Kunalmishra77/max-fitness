@@ -57,9 +57,12 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
   const planLine =
     current === null
       ? null
-      : current.durationMonths === null
-        ? t('profile.planUnknownLength')
-        : t('profile.plan', { count: current.durationMonths });
+      : current.isTrial
+        ? // A trial is not a plan; calling it one would hide why it is three days long (ADR-088).
+          t('profile.trialDays', { count: current.trialDays ?? 0 })
+        : current.durationMonths === null
+          ? t('profile.planUnknownLength')
+          : t('profile.plan', { count: current.durationMonths });
   // "Settlement" is what the money behind this plan is: a payment taken here, or an
   // amount the member declared at the QR and the desk has yet to collect (ADR-086).
   const settlementLine =

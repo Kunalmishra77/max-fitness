@@ -1,9 +1,10 @@
-import { todayIST, type Clock, type E164Mobile, type Gender, type ISTDate, type MemberStatus } from '@mfp/shared';
+import { todayIST, type Clock, type E164Mobile, type Gender, type ISTDate, type MemberStatus, type PlanDurationMonths } from '@mfp/shared';
 import { DomainError } from '../errors';
 import { membershipPeriod } from '../membership/dates';
 import type { PaymentProvider } from '../ports/payments';
 import { combinedQuote, ptPlanForMember } from '../pricing/personal-training';
 import type { Plan } from '../pricing/plans';
+import { assertTrialAllowed, trialPeriod, trialQuote } from '../trial/trial';
 import {
   PAY_AT_RECEPTION_HOLD_HOURS,
   planForMember,
@@ -42,14 +43,17 @@ export interface MemberForCheckout {
 export interface PendingMembershipRecord {
   readonly gymId: string;
   readonly memberId: string;
-  readonly planId: string;
-  readonly durationMonths: number;
+  /** `null` for a trial, which is sold by the day rather than from the catalogue (ADR-088). */
+  readonly planId: string | null;
+  readonly durationMonths: number | null;
   readonly startDate: ISTDate;
   readonly endDate: ISTDate;
   /** Copied from the plan at purchase; later price changes never alter it (BR-2.8). */
   readonly pricePaise: number;
   readonly admissionPaise: number;
   readonly source: 'WEBSITE';
+  readonly isTrial: boolean;
+  readonly trialDays: number | null;
 }
 
 /**
@@ -93,6 +97,15 @@ export interface CheckoutStore {
   getPlans(gymId: string): Promise<readonly Plan[]>;
   /** An unpaid, uncancelled membership matching every field, created after `createdAfter`. */
   findReusablePendingMembership(query: ReusableMembershipQuery): Promise<{ readonly id: string; readonly createdAt: Date } | null>;
+  /**
+   * Whether anyone on this number is already a member, or has had a trial (ADR-088).
+   * Excludes the applicant's own row, which registration has just created.
+   */
+  trialHistoryForMobile(
+    gymId: string,
+    mobile: string,
+    exceptMemberId: string,
+  ): Promise<{ readonly membersOnThatMobile: number; readonly trialsOnThatMobile: number }>;
   createPendingMembership(record: PendingMembershipRecord): Promise<{ readonly id: string; readonly createdAt: Date }>;
   /** An unpaid, uncancelled enrolment for the same purchase, so a retry books one trainer. */
   findReusablePendingPtEnrolment(query: PendingPtEnrolmentRecord): Promise<{ readonly id: string } | null>;
@@ -117,7 +130,10 @@ export type CheckoutMode = 'signup' | 'renewal';
 
 export interface CreateCheckoutInput {
   readonly memberId: string;
-  readonly planId: string;
+  /** A plan, or `null` with `trialDays` for a trial — one or the other (ADR-088). */
+  readonly planId: string | null;
+  /** How many days of trial, instead of a plan. */
+  readonly trialDays?: number | null;
   /** Required for a sign-up; ignored for a renewal, whose start follows BR-3.4. */
   readonly startDate: ISTDate | null;
   /** "Do you need personal training?" — `null` is no (ADR-087). */
@@ -189,25 +205,71 @@ export async function createCheckoutOrder(input: CreateCheckoutInput, deps: Chec
     }
     assertCheckoutAllowed(member, input.mode);
 
-    const plan = planForMember({
-      plans: await store.getPlans(member.gymId),
-      planId: input.planId,
-      memberGender: member.gender,
-      otherGenderPricing: deps.settings.pricing.otherGenderPricing,
-    });
-    const quote = quoteFor(input, member, plan, today, deps.settings);
+    // A plan or a trial, never both and never neither (ADR-088).
+    const wantsTrial = input.trialDays !== undefined && input.trialDays !== null;
+    if (wantsTrial === (input.planId !== null)) {
+      throw new DomainError('VALIDATION_FAILED', 'An order is for a plan or for a trial', { field: wantsTrial ? 'trialDays' : 'planId' });
+    }
 
-    const record: PendingMembershipRecord = {
-      gymId: member.gymId,
-      memberId: member.id,
-      planId: plan.id,
-      durationMonths: quote.durationMonths,
-      startDate: quote.startDate,
-      endDate: quote.endDate,
-      pricePaise: quote.planPricePaise,
-      admissionPaise: quote.admissionPaise,
-      source: 'WEBSITE',
-    };
+    const wantsPt = input.ptPlanId !== undefined && input.ptPlanId !== null;
+    if (wantsTrial && wantsPt) {
+      // Three days with a trainer is not something the gym sells, and the PT term would
+      // outlive the trial by months.
+      throw new DomainError('VALIDATION_FAILED', 'Personal training cannot be bought with a trial', { field: 'ptPlanId' });
+    }
+
+    let record: PendingMembershipRecord;
+    let durationMonths: PlanDurationMonths | null;
+    let membershipTotalPaise: number;
+
+    if (wantsTrial) {
+      const days = input.trialDays ?? 0;
+      const history = await store.trialHistoryForMobile(member.gymId, member.mobile, member.id);
+      assertTrialAllowed(history);
+      const trial = trialQuote({ days, settings: deps.settings.trial });
+      // A trial starts when the newcomer is standing there, not on a date they pick.
+      const period = trialPeriod(today, days);
+      record = {
+        gymId: member.gymId,
+        memberId: member.id,
+        planId: null,
+        durationMonths: null,
+        startDate: period.startDate,
+        endDate: period.endDate,
+        pricePaise: trial.totalPaise,
+        // A trial is not joining, so the joining fee waits until they do (BR-2.6).
+        admissionPaise: 0,
+        source: 'WEBSITE',
+        isTrial: true,
+        trialDays: days,
+      };
+      durationMonths = null;
+      membershipTotalPaise = trial.totalPaise;
+    } else {
+      const plan = planForMember({
+        plans: await store.getPlans(member.gymId),
+        planId: input.planId ?? '',
+        memberGender: member.gender,
+        otherGenderPricing: deps.settings.pricing.otherGenderPricing,
+      });
+      const quote = quoteFor(input, member, plan, today, deps.settings);
+      record = {
+        gymId: member.gymId,
+        memberId: member.id,
+        planId: plan.id,
+        durationMonths: quote.durationMonths,
+        startDate: quote.startDate,
+        endDate: quote.endDate,
+        pricePaise: quote.planPricePaise,
+        admissionPaise: quote.admissionPaise,
+        source: 'WEBSITE',
+        isTrial: false,
+        trialDays: null,
+      };
+      durationMonths = quote.durationMonths;
+      membershipTotalPaise = quote.totalPaise;
+    }
+
     const holdStart = new Date(deps.clock.now().getTime() - PAY_AT_RECEPTION_HOLD_HOURS * 3_600_000);
     const membership =
       (await store.findReusablePendingMembership({ ...record, createdAfter: holdStart })) ??
@@ -215,16 +277,20 @@ export async function createCheckoutOrder(input: CreateCheckoutInput, deps: Chec
 
     // Personal training, if they asked for one. Priced and length-checked here, on the
     // server, for the same reason the membership is (BR-11.3, ADR-087).
-    const ptPlan =
-      input.ptPlanId === undefined || input.ptPlanId === null
-        ? null
-        : ptPlanForMember({
-            plans: await store.getPlans(member.gymId),
-            planId: input.ptPlanId,
-            memberGender: member.gender,
-            otherGenderPricing: deps.settings.pricing.otherGenderPricing,
-          });
-    const combined = combinedQuote({ membership: quote, ptPlan, membershipMonths: quote.durationMonths });
+    const ptPlan = !wantsPt
+      ? null
+      : ptPlanForMember({
+          plans: await store.getPlans(member.gymId),
+          planId: input.ptPlanId ?? '',
+          memberGender: member.gender,
+          otherGenderPricing: deps.settings.pricing.otherGenderPricing,
+        });
+    const combined = combinedQuote({
+      membership: { totalPaise: membershipTotalPaise },
+      ptPlan,
+      ...(durationMonths === null ? {} : { membershipMonths: durationMonths }),
+    });
+    const quote = { startDate: record.startDate, endDate: record.endDate };
 
     let ptEnrolmentId: string | null = null;
     if (ptPlan !== null) {

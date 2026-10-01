@@ -21,6 +21,8 @@ export interface JoinState {
   readonly planId?: string;
   /** Personal training chosen alongside the membership; absent means no (ADR-087). */
   readonly ptPlanId?: string;
+  /** Days of paid trial, chosen instead of a plan (ADR-088). */
+  readonly trialDays?: number;
   readonly startDate?: string;
   /** Set once an online payment is confirmed; the done page reads its status again. */
   readonly paymentId?: string;
@@ -42,6 +44,7 @@ const CHECKS: { [K in keyof JoinState]-?: (value: unknown) => boolean } = {
   whatsappUpdates: (value) => typeof value === 'boolean',
   planId: (value) => isString(value) && value.length <= 64,
   ptPlanId: (value) => isString(value) && value.length <= 64,
+  trialDays: (value) => typeof value === 'number' && Number.isSafeInteger(value) && value > 0 && value <= 30,
   startDate: (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value),
   paymentId: (value) => isString(value) && value.length <= 64,
   reservedUntil: (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && !Number.isNaN(Date.parse(value)),

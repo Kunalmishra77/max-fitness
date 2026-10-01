@@ -1,5 +1,5 @@
 import { JoinFrame, JoinPlan } from '@/components/join/join-flow';
-import { JoinPage, PlansUnavailable, joinContext, joinMetadata, priceLists } from '@/lib/join-page';
+import { JoinPage, PlansUnavailable, joinContext, joinMetadata, priceLists, trialChoices } from '@/lib/join-page';
 
 /** `/join/plan` — step 2: plan and start date. */
 
@@ -26,6 +26,7 @@ export default async function JoinPlanPage({
         {available ? (
           <JoinPlan
             prices={priceLists(ctx)}
+            trialOptions={trialChoices(ctx)}
             admissionPaise={settings.pricing.admissionFeePaise}
             today={ctx.today}
             maxStartDateDaysAhead={settings.membership.maxStartDateDaysAhead}

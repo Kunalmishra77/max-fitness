@@ -18,6 +18,10 @@ export const DOMAIN_ERROR_CODES = [
   'PLAN_KIND_MISMATCH',
   /** PT cannot run past the membership it rides on (ADR-087). */
   'PT_LONGER_THAN_MEMBERSHIP',
+  /** The trial (ADR-088): switched off, or not for this person. */
+  'TRIAL_NOT_OFFERED',
+  'TRIAL_NOT_FOR_MEMBERS',
+  'TRIAL_ALREADY_TAKEN',
 
   // Membership dates
   'INVALID_START_DATE',

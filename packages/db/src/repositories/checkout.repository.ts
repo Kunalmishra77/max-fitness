@@ -76,6 +76,8 @@ function storeFor(tx: TransactionClient): CheckoutStore {
           pricePaise: query.pricePaise,
           admissionPaise: query.admissionPaise,
           source: query.source,
+          isTrial: query.isTrial,
+          trialDays: query.trialDays,
           status: 'PENDING_PAYMENT',
           createdAt: { gt: query.createdAfter },
         },
@@ -96,10 +98,37 @@ function storeFor(tx: TransactionClient): CheckoutStore {
           pricePaise: record.pricePaise,
           admissionPaise: record.admissionPaise,
           source: record.source,
+          isTrial: record.isTrial,
+          trialDays: record.trialDays,
           status: 'PENDING_PAYMENT',
         },
         select: { id: true, createdAt: true },
       });
+    },
+
+    /**
+     * Who on this number has been here before (ADR-088).
+     *
+     * "A member" means somebody with a confirmed membership — not merely a registration,
+     * which an abandoned sign-up also leaves behind. The applicant's own row is excluded,
+     * because registration created it a moment ago.
+     */
+    async trialHistoryForMobile(gymId, mobile, exceptMemberId) {
+      const [membersOnThatMobile, trialsOnThatMobile] = await Promise.all([
+        tx.member.count({
+          where: {
+            gymId,
+            mobile,
+            deletedAt: null,
+            id: { not: exceptMemberId },
+            memberships: { some: { status: 'CONFIRMED', isTrial: false } },
+          },
+        }),
+        tx.membership.count({
+          where: { gymId, isTrial: true, status: { not: 'CANCELLED' }, member: { mobile, deletedAt: null } },
+        }),
+      ]);
+      return { membersOnThatMobile, trialsOnThatMobile };
     },
 
     // ADR-087: one trainer per purchase, so a retried checkout finds the held enrolment

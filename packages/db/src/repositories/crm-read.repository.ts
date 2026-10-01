@@ -41,6 +41,9 @@ export interface MemberListItem {
   readonly trainingSlot: string | null;
   /** Length of the newest plan, for the list's "Plan" column (ADR-086). */
   readonly planMonths: number | null;
+  /** The newest membership is a paid trial, which the list says instead of a plan (ADR-088). */
+  readonly onTrial: boolean;
+  readonly trialDays: number | null;
   /** Last check-in, so the list can say who has stopped coming without a second query. */
   readonly lastAttendanceAt: Date | null;
 }
@@ -61,6 +64,9 @@ export interface MemberProfile extends MemberListItem {
     readonly pricePaise: number;
     /** True when it came from the QR or the register rather than a payment. */
     readonly isDeclared: boolean;
+    /** A paid trial rather than a plan (ADR-088). */
+    readonly isTrial: boolean;
+    readonly trialDays: number | null;
   }>;
   /** Personal training this member has bought, newest first (ADR-087). */
   readonly ptEnrolments: ReadonlyArray<{
@@ -243,7 +249,7 @@ export class PrismaCrmReader {
         lastAttendanceAt: true,
         photo: { select: { storageKey: true, deletedAt: true } },
         // Newest plan only: the list shows what they are on now, not their history.
-        memberships: { select: { durationMonths: true }, orderBy: { endDate: 'desc' }, take: 1 },
+        memberships: { select: { durationMonths: true, isTrial: true, trialDays: true }, orderBy: { endDate: 'desc' }, take: 1 },
       },
       orderBy: { fullName: 'asc' },
       take: options.limit ?? 50,
@@ -267,6 +273,8 @@ export class PrismaCrmReader {
           joinedOn: row.joinedOn === null ? null : fromDbDate(row.joinedOn),
           trainingSlot: row.trainingSlot,
           planMonths: row.memberships[0]?.durationMonths ?? null,
+          onTrial: row.memberships[0]?.isTrial ?? false,
+          trialDays: row.memberships[0]?.trialDays ?? null,
           lastAttendanceAt: row.lastAttendanceAt,
         };
       })
@@ -303,7 +311,7 @@ export class PrismaCrmReader {
           select: { govIdType: true },
         },
         memberships: {
-          select: { id: true, durationMonths: true, startDate: true, endDate: true, status: true, pricePaise: true, isDeclared: true },
+          select: { id: true, durationMonths: true, startDate: true, endDate: true, status: true, pricePaise: true, isDeclared: true, isTrial: true, trialDays: true },
           orderBy: { endDate: 'desc' },
           take: 10,
         },
@@ -347,6 +355,8 @@ export class PrismaCrmReader {
       joinedOn: member.joinedOn === null ? null : fromDbDate(member.joinedOn),
       trainingSlot: member.trainingSlot,
       planMonths: member.memberships[0]?.durationMonths ?? null,
+      onTrial: member.memberships[0]?.isTrial ?? false,
+      trialDays: member.memberships[0]?.trialDays ?? null,
       lastAttendanceAt: member.lastAttendanceAt,
       whatsappOptIn: member.whatsappOptIn,
       isMinor: member.isMinor,
@@ -366,6 +376,8 @@ export class PrismaCrmReader {
         status: m.status,
         pricePaise: m.pricePaise,
         isDeclared: m.isDeclared,
+        isTrial: m.isTrial,
+        trialDays: m.trialDays,
       })),
       ptEnrolments: member.ptEnrolments.map((pt) => ({
         id: pt.id,

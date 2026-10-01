@@ -961,3 +961,31 @@ Pending / next:
 - The **free trial** (₹100/day), **AI diet plans**, the **WhatsApp bot settings**, and the dashboard/report additions from the second document.
 - Still blocked on the client: an **AI API key** (diet plans and the bot cannot run without one — the code can be built either way), **WhatsApp Cloud API approval and a worker host** for two-way conversations, and **Razorpay credentials plus Subscriptions/e-mandate** for online PT and trial payments.
 - Not built, deliberately: "add a new PT plan" and arbitrary plan durations — 1/3/6/12 is wired through membership dates, plan codes and reminder offsets (ADR-087).
+
+### Later the same session — personal training everywhere, and the paid trial
+
+**Personal training finished (ADR-087).** On top of the website sign-up and the CRM price
+section already noted above:
+- The **reception QR form for new members** asks after the plan, offering only terms that
+  fit inside it, and shows membership + trainer + total before anything is handed over.
+- **"Take fees"** has a trainer step: no trainer by default, a discount that comes off both
+  fees together, one payment, one receipt, both records confirmed in one transaction.
+- **Reports** gained a PT card — members with a trainer right now (by date, not status),
+  what was sold this month, and the mix by term. Absent, not zeroed, for a gym with none.
+
+**The paid trial (ADR-088)** — ₹100 a day, one to seven days, newcomers only:
+- Settings carry the rate, the lengths and an on/off switch; migration
+  `trial_membership` adds `Membership.isTrial` and `trialDays`.
+- Core: `trialOptions`, `trialQuote`, `trialPeriod` (inclusive of the first day) and
+  `assertTrialAllowed`.
+- Checkout takes a plan **or** a trial, never both; no trainer and no joining fee on a
+  trial; eligibility checked against the mobile number.
+- The website sign-up offers it under the plans, and the members list and profile say
+  "Trial — 3 days" where a plan would be.
+
+**Still owed on the trial:** the question on the reception QR form, the automated WhatsApp
+follow-ups during and after it, and the trial counts on the dashboard.
+
+**Still blocked on the client, unchanged:** an AI API key (diet plans, bot), WhatsApp Cloud
+API approval and a worker host (two-way conversations), Razorpay credentials and
+Subscriptions/e-mandate (online PT and trial payments, recurring billing).

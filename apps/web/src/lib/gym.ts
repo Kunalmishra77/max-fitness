@@ -38,6 +38,13 @@ export async function loadGym({ prisma, env }: Pick<Container, 'prisma' | 'env'>
 export function checkoutSettingsOf(settings: GymSettings): CheckoutSettings {
   return {
     pricing: settings.pricing,
+    // The trial lives under pricing in settings and is its own group here, because it is
+    // not priced from the plan catalogue (ADR-088).
+    trial: {
+      trialEnabled: settings.pricing.trialEnabled,
+      trialPerDayPaise: settings.pricing.trialPerDayPaise,
+      trialDayOptions: settings.pricing.trialDayOptions,
+    },
     maxStartDateDaysAhead: settings.membership.maxStartDateDaysAhead,
     renewalGraceDays: settings.membership.renewalGraceDays,
   };

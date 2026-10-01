@@ -1,6 +1,6 @@
 import { JoinPlan } from '@/components/join/join-flow';
 import { JoinModal } from '@/components/join/join-modal';
-import { JoinModalMessages, PlansUnavailable, joinContext, priceLists } from '@/lib/join-page';
+import { JoinModalMessages, PlansUnavailable, joinContext, priceLists, trialChoices } from '@/lib/join-page';
 
 /** `/join/plan` reached from the modal: step 2, still over the page behind it. */
 
@@ -23,6 +23,7 @@ export default async function JoinPlanModal({
         {available ? (
           <JoinPlan
             prices={priceLists(ctx)}
+            trialOptions={trialChoices(ctx)}
             admissionPaise={settings.pricing.admissionFeePaise}
             today={ctx.today}
             maxStartDateDaysAhead={settings.membership.maxStartDateDaysAhead}

@@ -1,4 +1,4 @@
-import { needsDeskPriceConfirmation, planCards, ptCards } from '@mfp/core';
+import { needsDeskPriceConfirmation, planCards, ptCards, trialOptions, type TrialOption } from '@mfp/core';
 import type { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
@@ -40,6 +40,16 @@ export function priceLists(ctx: SiteContext): PriceLists {
     deskConfirmsPrice: needsDeskPriceConfirmation(gender, settings.pricing.otherGenderPricing),
   });
   return { MALE: list('MALE'), FEMALE: list('FEMALE'), OTHER: list('OTHER') };
+}
+
+/** The paid trial's lengths and prices, from the gym's settings (ADR-088). */
+export function trialChoices(ctx: SiteContext): readonly TrialOption[] {
+  const { pricing } = ctx.data.settings;
+  return trialOptions({
+    trialEnabled: pricing.trialEnabled,
+    trialPerDayPaise: pricing.trialPerDayPaise,
+    trialDayOptions: pricing.trialDayOptions,
+  });
 }
 
 export function legalHref(locale: Locale, slug: 'terms' | 'privacy'): string {

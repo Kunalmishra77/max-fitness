@@ -530,7 +530,10 @@
       "ptPerMonth": "{price} / महीना",
       "ptTotal": "मेंबरशिप {membership} + पर्सनल ट्रेनिंग {pt} = {total}",
       "ptChoose": "पर्सनल ट्रेनिंग का प्लान चुनें, या \"नहीं\" चुनें।",
-      "ptNeedsPlan": "पहले मेंबरशिप चुनें — पर्सनल ट्रेनिंग उसके साथ चलती है।"
+      "ptNeedsPlan": "पहले मेंबरशिप चुनें — पर्सनल ट्रेनिंग उसके साथ चलती है।",
+      "trialHeading": "पहले देखना चाहते हैं?",
+      "trialHelper": "तय करने से पहले कुछ दिन आकर देख लें। ₹100 प्रति दिन, एक बार — यह मेंबरशिप नहीं है।",
+      "trialDays": "{count, plural, one {1 दिन} other {# दिन}}"
     },
     "pay": {
       "summary": "{name}, {plan}, {start} से {end}",
@@ -739,7 +742,8 @@
       "tillShort": "{date} तक",
       "seenToday": "आज आए",
       "seenDaysAgo": "{count, plural, one {1 दिन पहले} other {# दिन पहले}}",
-      "neverSeen": "कभी नहीं आए"
+      "neverSeen": "कभी नहीं आए",
+      "trialDays": "{count, plural, one {ट्रायल, 1 दिन} other {ट्रायल, # दिन}}"
     },
     "profile": {
       "call": "कॉल",
@@ -779,7 +783,8 @@
       "ptMonths": "{count, plural, one {1 महीना} other {# महीने}} ट्रेनर के साथ",
       "ptRunning": "चल रही है",
       "ptEnded": "पूरी हो गई",
-      "ptUnpaid": "पेमेंट बाक़ी"
+      "ptUnpaid": "पेमेंट बाक़ी",
+      "trialDays": "{count, plural, one {ट्रायल — 1 दिन} other {ट्रायल — # दिन}}"
     },
     "renew": {
       "title": "फीस लें",

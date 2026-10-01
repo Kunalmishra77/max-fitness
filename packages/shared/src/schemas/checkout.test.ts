@@ -5,11 +5,19 @@ describe('CheckoutOrderSchema', () => {
   it('accepts a plan and a start date, defaulting to online payment', () => {
     expect(CheckoutOrderSchema.parse({ planId: 'cm1plan000001', startDate: '2026-09-11' })).toEqual({
       planId: 'cm1plan000001',
-      // No personal training unless it is asked for by name (ADR-087).
+      // No personal training unless it is asked for by name (ADR-087), and no trial
+      // unless the order is a trial instead of a plan (ADR-088).
       ptPlanId: null,
+      trialDays: null,
       startDate: '2026-09-11',
       payAtReception: false,
     });
+  });
+
+  it('takes a trial instead of a plan, and refuses both or neither', () => {
+    expect(CheckoutOrderSchema.parse({ trialDays: 3, startDate: '2026-09-11' })).toMatchObject({ planId: null, trialDays: 3 });
+    expect(CheckoutOrderSchema.safeParse({ planId: 'cm1plan000001', trialDays: 3 }).success).toBe(false);
+    expect(CheckoutOrderSchema.safeParse({ startDate: '2026-09-11' }).success).toBe(false);
   });
 
   it('carries a personal training plan when one was chosen', () => {

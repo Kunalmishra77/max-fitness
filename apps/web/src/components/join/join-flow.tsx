@@ -1,8 +1,8 @@
 'use client';
 
-import type { PlanCardView, PtCardView } from '@mfp/core';
+import type { PlanCardView, PtCardView, TrialOption } from '@mfp/core';
 import { membershipEndDate } from '@mfp/core/membership';
-import type { ISTDate } from '@mfp/shared/time';
+import { addDays, type ISTDate } from '@mfp/shared/time';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState, type ReactNode } from 'react';
 import { buttonVariants } from '@/components/ui/button';
@@ -123,7 +123,15 @@ export function JoinDetails(props: {
   );
 }
 
-export function JoinPlan(props: { prices: PriceLists; admissionPaise: number; today: ISTDate; maxStartDateDaysAhead: number; planCode: string | null }) {
+export function JoinPlan(props: {
+  prices: PriceLists;
+  admissionPaise: number;
+  today: ISTDate;
+  maxStartDateDaysAhead: number;
+  planCode: string | null;
+  /** The paid trial's lengths; empty when the gym offers none (ADR-088). */
+  trialOptions: readonly TrialOption[];
+}) {
   const router = useRouter();
   const state = useJoinState();
   if (state === null) return <Placeholder />;
@@ -134,6 +142,7 @@ export function JoinPlan(props: { prices: PriceLists; admissionPaise: number; to
     <PlanStep
       cards={list.cards}
       ptCards={list.ptCards}
+      trialOptions={props.trialOptions}
       deskConfirmsPrice={list.deskConfirmsPrice}
       admissionPaise={props.admissionPaise}
       today={props.today}
@@ -142,24 +151,33 @@ export function JoinPlan(props: { prices: PriceLists; admissionPaise: number; to
       {...(state.planId === undefined ? {} : { initialPlanId: state.planId })}
       {...(state.startDate === undefined ? {} : { initialStartDate: state.startDate })}
       onContinue={(choice) => {
-        updateJoinState({ planId: choice.planId, startDate: choice.startDate, ptPlanId: choice.ptPlanId ?? undefined });
+        updateJoinState({
+          planId: choice.planId ?? undefined,
+          trialDays: choice.trialDays ?? undefined,
+          startDate: choice.startDate,
+          ptPlanId: choice.ptPlanId ?? undefined,
+        });
         router.push('/join/pay');
       }}
     />
   );
 }
 
-export function JoinPay(props: { prices: PriceLists; admissionPaise: number; phoneDisplay: string }) {
+export function JoinPay(props: { prices: PriceLists; admissionPaise: number; phoneDisplay: string; trialOptions: readonly TrialOption[] }) {
   const t = useTranslations('signup');
+  const tp = useTranslations('signup.plan');
   const router = useRouter();
   const label = usePlanLabel();
   const ptLabel = usePtLabel();
+  const trialLabel = (days: number) => tp('trialDays', { count: days });
   const state = useJoinState();
   if (state === null) return <Placeholder />;
   if (state.registrationToken === undefined || state.gender === undefined || state.firstName === undefined) return <StartAgain />;
 
+  const trialDays = state.trialDays;
+  const trial = trialDays === undefined ? undefined : props.trialOptions.find((option) => option.days === trialDays);
   const card = props.prices[state.gender].cards.find((c) => c.planId === state.planId);
-  if (card === undefined || state.startDate === undefined) {
+  if ((card === undefined && trial === undefined) || state.startDate === undefined) {
     return (
       <Link href="/join/plan" className={buttonVariants({ variant: 'primary', full: true })}>
         {t('steps.plan')}
@@ -168,12 +186,44 @@ export function JoinPay(props: { prices: PriceLists; admissionPaise: number; pho
   }
 
   const startDate = state.startDate as ISTDate;
+
+  // A trial: priced by the day, inclusive of the first, and no trainer and no joining fee.
+  if (trial !== undefined) {
+    return (
+      <PayStep
+        auth={{ kind: 'registration', token: state.registrationToken }}
+        planId={null}
+        trialDays={trial.days}
+        startDate={startDate}
+        summary={{
+          firstName: state.firstName,
+          planLabel: trialLabel(trial.days),
+          startDate,
+          endDate: addDays(startDate, trial.days - 1),
+          planPricePaise: trial.totalPaise,
+          admissionPaise: 0,
+        }}
+        phoneDisplay={props.phoneDisplay}
+        receptionOnly={state.fromQr === true}
+        onPaid={(result) => {
+          updateJoinState({ paymentId: result.paymentId, reservedUntil: undefined, reservedAmountPaise: undefined });
+          router.push('/join/done');
+        }}
+        onReserved={(reserved) => {
+          updateJoinState({ reservedUntil: reserved.reservedUntil, reservedAmountPaise: reserved.amountPaise, paymentId: undefined });
+          router.push('/join/done');
+        }}
+      />
+    );
+  }
+  if (card === undefined) return null;
   const ptCard = props.prices[state.gender].ptCards.find((c) => c.planId === state.ptPlanId);
   return (
     <PayStep
       auth={{ kind: 'registration', token: state.registrationToken }}
       planId={card.planId}
       ptPlanId={ptCard?.planId ?? null}
+      trialDays={null}
       startDate={startDate}
       summary={{
         firstName: state.firstName,

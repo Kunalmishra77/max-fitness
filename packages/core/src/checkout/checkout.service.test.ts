@@ -47,6 +47,12 @@ class FakeCheckoutStore implements CheckoutStore {
     this.memberships.push(created);
     return Promise.resolve({ id: created.id, createdAt: created.createdAt });
   }
+  membersOnThatMobile = 0;
+  trialsOnThatMobile = 0;
+
+  trialHistoryForMobile() {
+    return Promise.resolve({ membersOnThatMobile: this.membersOnThatMobile, trialsOnThatMobile: this.trialsOnThatMobile });
+  }
   findReusablePendingPtEnrolment(query: PendingPtEnrolmentRecord) {
     const found = this.ptEnrolments.find(
       (pt) => pt.memberId === query.memberId && pt.planId === query.planId && pt.startDate === query.startDate && pt.pricePaise === query.pricePaise,
@@ -71,6 +77,7 @@ class FakeCheckoutStore implements CheckoutStore {
 
 const settings: CheckoutSettings = {
   pricing: { admissionFeePaise: 0, otherGenderPricing: 'ASK_AT_DESK', allowDeskDiscounts: true },
+  trial: { trialEnabled: true, trialPerDayPaise: 10_000, trialDayOptions: [1, 2, 3, 5, 7] },
   maxStartDateDaysAhead: 15,
   renewalGraceDays: 5,
 };
@@ -117,6 +124,69 @@ describe('createCheckoutOrder', () => {
       { memberId: 'mem_1', planId: maleQuarter.id, startDate: istDate('2026-09-11'), payAtReception: false, mode: 'signup', ...overrides },
       deps,
     );
+
+  describe('a trial', () => {
+    // ADR-088: the gym's "free trial" costs ₹100 a day. It is bought by the day, becomes
+    // an ordinary membership with `isTrial`, and is only for somebody who is not a member.
+    const trial = (overrides: Partial<Parameters<typeof createCheckoutOrder>[0]> = {}) =>
+      createCheckoutOrder({ memberId: 'mem_1', planId: null, trialDays: 3, startDate: istDate('2026-09-11'), payAtReception: false, mode: 'signup', ...overrides }, deps);
+
+    it('holds three days from today and charges the day rate', async () => {
+      const result = await trial();
+
+      expect(store.memberships).toEqual([
+        expect.objectContaining({
+          memberId: 'mem_1',
+          planId: null,
+          isTrial: true,
+          trialDays: 3,
+          durationMonths: null,
+          startDate: '2026-09-11',
+          // Inclusive: three days is the 11th, 12th and 13th.
+          endDate: '2026-09-13',
+          pricePaise: 30_000,
+          admissionPaise: 0,
+        }),
+      ]);
+      expect(result.amountPaise).toBe(30_000);
+    });
+
+    it('can be paid for at the desk like anything else', async () => {
+      const result = await trial({ payAtReception: true });
+      expect(result.kind).toBe('PAY_AT_RECEPTION');
+      expect(result.amountPaise).toBe(30_000);
+      expect(store.payments).toEqual([]);
+    });
+
+    it('refuses somebody whose number already belongs to a member', async () => {
+      store.membersOnThatMobile = 1;
+      expect(await codeOf(trial())).toBe('TRIAL_NOT_FOR_MEMBERS');
+      expect(store.memberships).toEqual([]);
+    });
+
+    it('refuses a second trial on the same number', async () => {
+      store.trialsOnThatMobile = 1;
+      expect(await codeOf(trial())).toBe('TRIAL_ALREADY_TAKEN');
+    });
+
+    it('refuses a length the gym does not sell, and refuses it at all when switched off', async () => {
+      expect(await codeOf(trial({ trialDays: 4 }))).toBe('VALIDATION_FAILED');
+      deps = { ...deps, settings: { ...settings, trial: { ...settings.trial, trialEnabled: false } } };
+      expect(await codeOf(trial())).toBe('TRIAL_NOT_OFFERED');
+    });
+
+    it('refuses a trial and a plan in the same order', async () => {
+      // One or the other. Both would be two memberships for one payment.
+      expect(await codeOf(trial({ planId: maleQuarter.id }))).toBe('VALIDATION_FAILED');
+      expect(await codeOf(trial({ planId: null, trialDays: null }))).toBe('VALIDATION_FAILED');
+    });
+
+    it('refuses personal training on a trial', async () => {
+      // Three days with a trainer is not a thing the gym sells, and the PT term would
+      // outlive the trial by months.
+      expect(await codeOf(trial({ ptPlanId: 'plan-PT1_MALE' }))).toBe('VALIDATION_FAILED');
+    });
+  });
 
   describe('with personal training', () => {
     // ADR-087: PT is bought alongside the membership, in one payment, and must end up as

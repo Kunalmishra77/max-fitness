@@ -77,8 +77,15 @@ async function MemberListRow({ entry, today }: { entry: MemberListEntry; today: 
           : t('feeState.overdue', { count: Math.abs(days) });
 
   const dash = '—';
-  const plan =
-    member.planMonths === null ? dash : member.planMonths === 1 ? t('profile.monthly') : t('profile.months', { count: member.planMonths });
+  // A trial is not a plan, and saying "—" where the plan goes makes a trial member look
+  // like a record somebody forgot to finish (ADR-088).
+  const plan = member.onTrial
+    ? t('members.trialDays', { count: member.trialDays ?? 0 })
+    : member.planMonths === null
+      ? dash
+      : member.planMonths === 1
+        ? t('profile.monthly')
+        : t('profile.months', { count: member.planMonths });
   const paidTill = member.effectiveEndDate === null ? dash : formatISTDate(member.effectiveEndDate, locale);
   const joined = member.joinedOn === null ? dash : formatISTDate(member.joinedOn, locale);
   const slot = member.trainingSlot === null ? dash : t(`members.slotShort.${member.trainingSlot}` as never);

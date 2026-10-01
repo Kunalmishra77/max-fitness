@@ -514,6 +514,9 @@ model Membership {
   source          MemberSource
   /// true when created from QR/import declaration rather than a payment in this system
   isDeclared      Boolean          @default(false)
+  /// A paid trial bought by a newcomer, priced per day rather than from a plan (ADR-088).
+  isTrial         Boolean          @default(false)
+  trialDays       Int?
   declaredEndDate DateTime?        @db.Date
   createdById     String?
   confirmedAt     DateTime?        @db.Timestamptz
