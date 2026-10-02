@@ -31,6 +31,14 @@ export const CRM_CAPABILITIES = [
   'member.export',
   'member.erase',
   'member.import',
+  /**
+   * Starting a diet plan, and reading one (ADR-089).
+   *
+   * A trainer may do this: it is the floor's job, not the till's. It messages the member,
+   * so it is its own capability rather than riding on `member.edit` — the point of a
+   * capability is that one day the owner may want it narrowed without narrowing editing.
+   */
+  'diet.manage',
 ] as const;
 export type CrmCapability = (typeof CRM_CAPABILITIES)[number];
 
@@ -64,6 +72,7 @@ const ROLES: Record<CrmCapability, readonly CrmRole[]> = {
   'member.export': ['OWNER', 'SUPER_ADMIN'],
   'member.erase': ['OWNER', 'SUPER_ADMIN'],
   'member.import': ['OWNER', 'SUPER_ADMIN'],
+  'diet.manage': ['OWNER', 'RECEPTION', 'TRAINER', 'SUPER_ADMIN'],
 };
 
 /** Actions that need a PIN entered in the last few minutes, whatever the role. */

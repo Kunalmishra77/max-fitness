@@ -75,6 +75,15 @@ enum PlanKind {
   PT
 }
 
+/// ADR-089. COLLECTING while the member is still answering; SUPERSEDED once a newer plan exists.
+enum DietPlanStatus {
+  COLLECTING
+  GENERATING
+  READY
+  FAILED
+  SUPERSEDED
+}
+
 enum PtEnrolmentStatus {
   PENDING_PAYMENT
   CONFIRMED
@@ -273,6 +282,9 @@ model Gym {
   members       Member[]
   memberships   Membership[]
   ptEnrolments  PtEnrolment[]
+  dietProfiles  DietProfile[]
+  dietPlans     DietPlan[]
+  dietFollowUps DietFollowUp[]
   payments      Payment[]
   leads         Lead[]
   verifications VerificationRequest[]
@@ -410,6 +422,94 @@ model Plan {
   @@index([gymId, kind, gender, isActive])
 }
 
+/// What a member has told us about their body, their goal and their food (ADR-089).
+///
+/// One row per member, updated as they answer and reused for every later plan, so nobody
+/// is asked their height twice. `pendingQuestion` is what we are waiting on right now —
+/// it is also how an inbound message is recognised as an answer rather than a question.
+model DietProfile {
+  id              String    @id @default(cuid())
+  gymId           String
+  memberId        String    @unique
+  weightGrams     Int?
+  heightCm        Int?
+  ageYears        Int?
+  goal            String?
+  dietType        String?
+  allergies       String?
+  mealsPerDay     Int?
+  activityLevel   String?
+  workoutsPerWeek Int?
+  /// The question the member is being asked, or null when we are not waiting on them.
+  pendingQuestion String?
+  /// How many times we have asked without an answer, so the nudges stop (ADR-089).
+  nudgesSent      Int       @default(0)
+  askedAt         DateTime? @db.Timestamptz
+  lastReplyAt     DateTime? @db.Timestamptz
+  completedAt     DateTime? @db.Timestamptz
+  createdAt       DateTime  @default(now()) @db.Timestamptz
+  updatedAt       DateTime  @updatedAt @db.Timestamptz
+
+  gym    Gym    @relation(fields: [gymId], references: [id])
+  member Member @relation(fields: [memberId], references: [id])
+
+  @@index([gymId, pendingQuestion])
+}
+
+/// One generated diet plan (ADR-089). The answers are copied in, so editing the profile
+/// later never rewrites a plan the member already has.
+model DietPlan {
+  id            String         @id @default(cuid())
+  gymId         String
+  memberId      String
+  version       Int
+  status        DietPlanStatus
+  /// The answers as they stood when this was written.
+  answers       Json
+  /// BMI × 10, an integer for the same reason money is paise.
+  bmiTenths     Int?
+  /// The plan itself, in the shape `DietPlanDocSchema` describes. Null until it is written.
+  doc           Json?
+  /// Which model wrote it, so a bad batch can be traced to one.
+  model         String?
+  /// Why it could not be sent: a parse failure, or a safety check it did not pass.
+  failureReason String?
+  pdfMediaId    String?
+  requestedById String?
+  generatedAt   DateTime?      @db.Timestamptz
+  sentAt        DateTime?      @db.Timestamptz
+  createdAt     DateTime       @default(now()) @db.Timestamptz
+  updatedAt     DateTime       @updatedAt @db.Timestamptz
+
+  gym       Gym             @relation(fields: [gymId], references: [id])
+  member    Member          @relation(fields: [memberId], references: [id])
+  followUps DietFollowUp[]
+
+  @@unique([memberId, version])
+  @@index([gymId, status, createdAt])
+}
+
+/// A monthly check on how the plan is going (ADR-089). The answers steer the next plan.
+model DietFollowUp {
+  id              String    @id @default(cuid())
+  gymId           String
+  memberId        String
+  dietPlanId      String
+  /// Which question is outstanding, same idea as on the profile.
+  pendingQuestion String?
+  /// Keyed answers as they come in.
+  answers         Json
+  askedAt         DateTime  @default(now()) @db.Timestamptz
+  completedAt     DateTime? @db.Timestamptz
+
+  gym      Gym      @relation(fields: [gymId], references: [id])
+  member   Member   @relation(fields: [memberId], references: [id])
+  dietPlan DietPlan @relation(fields: [dietPlanId], references: [id])
+
+  @@index([gymId, completedAt])
+  @@index([memberId])
+}
+
 /// Personal training bought by a member, alongside the membership it rides on (ADR-087).
 model PtEnrolment {
   id             String            @id @default(cuid())
@@ -481,6 +581,9 @@ model Member {
   photo         MediaFile?            @relation("MemberPhoto", fields: [photoMediaId], references: [id])
   memberships   Membership[]
   ptEnrolments  PtEnrolment[]
+  dietProfile   DietProfile?
+  dietPlans     DietPlan[]
+  dietFollowUps DietFollowUp[]
   payments      Payment[]
   media         MediaFile[]           @relation("MemberMedia")
   faceTemplates FaceTemplate[]

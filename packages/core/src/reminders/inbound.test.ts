@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { classifyInboundText, parseWhatsAppWebhook, verifyMetaSignature } from './inbound';
+import { classifyInboundText, routeInboundReply, parseWhatsAppWebhook, verifyMetaSignature } from './inbound';
 
 /**
  * What arrives back from WhatsApp (whatsapp-automation-engine §7; security-plan §3.1).
@@ -123,5 +123,32 @@ describe('classifyInboundText', () => {
     for (const word of ['thanks', 'फीस कितनी है', '']) {
       expect(classifyInboundText(word)).toBe('OTHER');
     }
+  });
+});
+
+describe('routeInboundReply', () => {
+  /**
+   * Who gets a member's reply (ADR-089).
+   *
+   * The order is the point. "Stop" has to work mid-questionnaire — a member must always be
+   * able to make the messages end, whatever conversation we think we are having with them.
+   * After that, if we asked them a question, their reply is the answer to it. Everything
+   * else is for a person to read.
+   */
+  it('lets a member stop even while a diet question is waiting on them', () => {
+    expect(routeInboundReply({ text: 'STOP', pendingDietQuestion: 'weight' })).toEqual({ to: 'STOP' });
+    expect(routeInboundReply({ text: 'band karo', pendingDietQuestion: 'goal' })).toEqual({ to: 'STOP' });
+    expect(routeInboundReply({ text: 'chalu', pendingDietQuestion: 'goal' })).toEqual({ to: 'RESTART' });
+  });
+
+  it('treats a reply as the answer to the question we asked', () => {
+    expect(routeInboundReply({ text: '72 kg', pendingDietQuestion: 'weight' })).toEqual({ to: 'DIET_ANSWER', question: 'weight' });
+    // Even one that looks like nothing: refusing it is the questionnaire's job, not this.
+    expect(routeInboundReply({ text: 'hmm', pendingDietQuestion: 'weight' })).toEqual({ to: 'DIET_ANSWER', question: 'weight' });
+  });
+
+  it('hands anything else to a person', () => {
+    expect(routeInboundReply({ text: 'what time do you open', pendingDietQuestion: null })).toEqual({ to: 'HUMAN' });
+    expect(routeInboundReply({ text: '', pendingDietQuestion: null })).toEqual({ to: 'HUMAN' });
   });
 });

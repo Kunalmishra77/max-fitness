@@ -18,7 +18,12 @@ export type OutboxEventType =
   | 'kiosk.gallery_changed'
   | 'kiosk.enroll'
   | 'calltask.create'
-  | 'receipt.pdf';
+  | 'receipt.pdf'
+  // The diet plan (ADR-089): ask the member something, write the plan, send it.
+  | 'whatsapp.diet_question'
+  | 'diet.generate'
+  | 'whatsapp.diet_plan'
+  | 'diet.pdf';
 
 export interface OutboxEventInput {
   readonly type: OutboxEventType;

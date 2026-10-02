@@ -155,3 +155,28 @@ export function classifyInboundText(message: string): 'STOP' | 'RESTART' | 'OTHE
   if (/(^|\s)(restart|start|chalu|चालू)(\s|$|\W)/u.test(normalised)) return 'RESTART';
   return 'OTHER';
 }
+
+export type InboundRoute =
+  | { readonly to: 'STOP' }
+  | { readonly to: 'RESTART' }
+  /** The reply answers the diet question we are waiting on (ADR-089). */
+  | { readonly to: 'DIET_ANSWER'; readonly question: string }
+  /** Nobody automatic owns this; the owner is told and a person answers. */
+  | { readonly to: 'HUMAN' };
+
+/**
+ * Who gets a member's reply (ADR-089).
+ *
+ * The order is the point. **"Stop" wins over everything**, including a questionnaire we
+ * are in the middle of: a member must always be able to make the messages end, whatever
+ * conversation we think we are having. After that, if we asked them something, their reply
+ * is the answer to it — whether it is readable is the questionnaire's problem, not this
+ * function's. Anything else goes to a person.
+ */
+export function routeInboundReply(input: { readonly text: string; readonly pendingDietQuestion: string | null }): InboundRoute {
+  const intent = classifyInboundText(input.text);
+  if (intent === 'STOP') return { to: 'STOP' };
+  if (intent === 'RESTART') return { to: 'RESTART' };
+  if (input.pendingDietQuestion !== null) return { to: 'DIET_ANSWER', question: input.pendingDietQuestion };
+  return { to: 'HUMAN' };
+}

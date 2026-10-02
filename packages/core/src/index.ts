@@ -38,6 +38,7 @@ export * from './leads/lead.service';
 export * from './trial/trial';
 export * from './diet/questionnaire';
 export * from './diet/plan';
+export * from './diet/diet.service';
 export * from './gym/hours';
 export * from './gym/promo';
 
