@@ -1199,3 +1199,47 @@ been honestly red about it the whole time.
 free-membership hole is shut; `db: "ok"` with real plan prices served; robots allows crawling
 and names the right sitemap; the page title, description, canonical, `index, follow` and the
 4.8-from-231 `aggregateRating` are all on the live HTML.
+
+## 2026-10-02 (evening) — A pass over every CRM screen, in a real browser
+
+The owner reported that the three-dot menu on a member's profile showed nothing, and that
+"several places" were like it. So every CRM screen was walked in Chrome at 1440 and at 360 —
+twenty-eight page loads — rather than reasoned about from the source.
+
+**The reported bug.** The header carries `lg:overflow-hidden`, which was there so the accent
+line beneath it would follow the panel's rounded corners. The actions menu is positioned
+absolutely inside that header, so a desktop browser clipped it. Measured on the live site:
+a menu 240 by 120 pixels, of which 240 by **10** was painted. The line rounds its own corners
+now and the header clips nothing.
+
+That shape of fault is worth naming, because it is why "it passed the tests" was not an
+answer: the menu rendered, both its items were in the DOM, and its bounding box was the full
+120 pixels. Clipping by an ancestor changes what is painted and not what is measured. It took
+walking the ancestors and intersecting their clip rectangles in a browser to see it.
+
+**What else the walk found**, none of which a unit test could have:
+- `crm.add.camera.choosePhoto` did not exist, so reception saw a raw message id where the
+  button is that rescues a member when the camera will not open.
+- The fee card printed "No plan" twice — the state and the line under it resolve to the same
+  sentence when there is no membership.
+- Filter chips rendered "All14" and "Fees due0": they are flex containers, and a flex
+  container collapses away the whitespace written between its children.
+- "Waiting to be checked" truncated to "Waiting to…" in every row of the status column.
+- An empty call list stretched to match the taller column beside it — three hundred pixels
+  of white space under one line of text.
+
+**And one found by reading the code rather than the screen**, which matters more than all of
+them: `members()` applied the fee filter in JavaScript **after** `take`, so asking for expired
+members returned only the expired ones among the alphabetically-first page. Invisible at
+fourteen members; at a hundred and fifty, reception taps "Expired" and the people from N
+onwards are simply not there. Fixed in the query, with an integration test that pins it.
+
+**`pnpm --filter @mfp/web smoke:crm`** is the walk itself, kept because it found these. It
+reads and never writes. The e2e suite proper creates members and payments, and its dev server
+points at the live database — so that suite must not be aimed at production, which is why it
+was not run here.
+
+**Features added in the same pass:** the week's arrivals on Home; the fee state on every
+arrival in today's list, because a lapsed member walking through the door is the easiest
+collection of the day; counts on every filter chip and tab; a month picker on Reports;
+sign-in by email; WhatsApp buttons that open with the sentence reception was going to type.
