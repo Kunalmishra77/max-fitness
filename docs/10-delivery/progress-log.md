@@ -1243,3 +1243,54 @@ was not run here.
 arrival in today's list, because a lapsed member walking through the door is the easiest
 collection of the day; counts on every filter chip and tab; a month picker on Reports;
 sign-in by email; WhatsApp buttons that open with the sentence reception was going to type.
+
+## 2026-10-02 (night) → 2026-10-03 — The register emptied, and the rest of the screens walked
+
+**The register was emptied at the owner's request**, because the members in it had arrived
+through the QR with half their details and were not worth keeping. Two scripts exist now
+because a wipe cannot be taken back:
+
+- `check:members` says what is in there first — which rows are real people who signed
+  themselves up, which are leftovers from a test run, and **whether the money attached is
+  real or `SIMULATED`**. That last one decided it: the register showed ₹3,000 that had never
+  left anybody's pocket, both payments made through DEMO_MODE's pretend gateway.
+- `backup:members` writes every member and everything attached to them to one JSON file
+  before anything is deleted. It lands in `backups/`, newly gitignored, because it holds
+  real names and phone numbers. Thirty-two members and their numbers are in
+  `backups/members-2026-10-02T17-53-16.json`; the people in it scanned a poster and typed
+  their details in, and losing them is losing the gym's enquiries.
+
+Then: 32 members, 5 memberships, 2 payments, 33 stored files, 13 alerts, counters reset.
+
+**A finding of my own making, worth recording.** Among those 32 were seventeen rows named
+"Trend 01".."Trend 08" and "Aaaa Stranger" — fixtures from the integration tests I had
+written that day. `TEST_DATABASE_URL` is the same database as `DATABASE_URL`, and one run's
+teardown failed on a foreign key before I fixed it, so its rows stayed. The tests clean up
+after themselves now, but the arrangement is wrong: integration tests should not be able to
+write to the register the gym is looking at.
+
+**The remaining screens were walked**, settings and staff and import and the rest. Two
+faults:
+
+- The owner's reminder settings listed three rules as `TRIAL_MID`, `TRIAL_LAST` and
+  `TRIAL_AFTER` — added to the domain in ADR-088, never named in the catalogue, live since
+  the trial shipped. Nothing could have caught it, so now something does (ADR-100): the
+  catalogue is tested against the domain, in both languages, with blanks refused.
+- The reports' men/women card drew an empty bar under its own title where every neighbour
+  said something in words.
+
+**And the back arrow was invisible on desktop** — `lg:hidden`, on the reasoning that the
+sidebar is navigation enough. Twenty-two screens pass a back target and not one of them
+showed it on a computer (ADR-099).
+
+**The last emoji are gone from the whole application**, including the two ID-upload tiles a
+member sees at the QR, which are a stranger's first impression of the gym.
+
+### Pending
+- **The worker still has no host.** Nothing in the reminder engine, the outbox or the diet
+  follow-ups fires in production, and nothing will until it has somewhere to run. This is a
+  cost decision and therefore the client's.
+- **Integration tests share the production database.** They clean up after themselves and
+  that is not the same as being unable to damage it.
+- Still the client's: Razorpay keys, the AI key, WhatsApp Cloud API approval.
+- `pnpm lint` has still never completed on this machine.

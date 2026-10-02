@@ -404,3 +404,27 @@ Format: `ADR-NNN — Title` · Date · Status (Proposed/Accepted/Superseded) · 
 **(4) `aggregateRating` is stated only when reviews stand behind it.** The gym's 4.8 from 231 Google reviews now rides in the `ExerciseGym` structured data so a search result can carry the stars. With a review count of zero the field is omitted entirely: a rating out of nothing is a claim, not a fact.
 
 **Said to the owner:** the supplied meta description is 185 characters and Google truncates near 160, so "Visit us today!" will not appear in a search result. It was used as given — their words, their call — and the measurement was reported rather than the text quietly trimmed.
+
+## ADR-099 — Edit, download, remove: three plain verbs, each of them complete (owner, 2026-10-02)
+2026-10-02 · Accepted · **Context:** the member profile's corner menu offered "Correct details" and "Data and privacy". The owner asked for the three actions to be named instead.
+
+**(1) "Data and privacy" was accurate and useless.** It was a heading that told nobody what was behind it, and it filed a **download** and an **irreversible deletion** under the same word. The menu names three things now. Removing a member sits last, under a divider, in the colour of a warning, and still opens the panel with the PIN gate — the other two should be quick and that one should be slow.
+
+**(2) Edit covers three things it never did.** When a member joined, what the desk wrote about them, and whether they may be messaged were all shown on the profile and were on no form, so a wrong one could only be fixed in the database. Consent especially, which is withdrawn at a counter as often as it is given.
+
+**(3) Those three fields are required by the schema, not defaulted.** A default of `null` for `notes` would let a stale page silently wipe a note it never knew existed. A form that forgets a field should fail loudly. This costs one line in each caller and buys back the certainty that an absent field is a bug rather than an erasure.
+
+**(4) "Everything held about this member" now is that.** The export was missing their personal training, their diet plans, when they joined, their training slot, the desk's notes and which ID card was shown. The diet plans go in **whole** — the answers they gave and the document that came out of it — because it is the most personal thing in the file and the thing a member is most likely to actually want their copy of.
+
+**(5) The back arrow is no longer hidden on desktop.** It carried `lg:hidden`, on the reasoning that a sidebar is navigation enough. It is not: a sidebar says where you can go, not where you came from. Twenty-two screens pass a `back` target; none of them showed it on a computer.
+
+## ADR-100 — Holding the message catalogue to the domain (2026-10-03)
+2026-10-03 · Accepted · **Context:** the owner's settings screen listed three of its reminder rules as `TRIAL_MID`, `TRIAL_LAST` and `TRIAL_AFTER`. The rules were added to the domain in ADR-088; the catalogue was never told about them.
+
+**The point is that nothing could have caught it.** The key is built from a string at the point of lookup, so the types never see it. No test rendered that row with those codes. A missing message is found by somebody looking at the screen, or it is not found — and this one had been live since the trial shipped.
+
+So the catalogue is now tested against the domain rather than against itself: every reminder rule code, gender, training slot and language must have words in **both** languages, and the two files must have the same keys throughout. A key present in English and missing in Hindi is the same bug for the half of this gym who read Hindi, and Hindi is the CRM's default language.
+
+Blank messages are refused for the same reason — they render as a gap rather than as an error. One exception is listed with its reason: the "the Hindi translation is being reviewed" notice appears on the Hindi page only, so its English twin is deliberately empty and never rendered. Listing it is what keeps the difference between a decision and an oversight visible.
+
+**Three more of these were found the same day** by walking the screens in a browser rather than reasoning about the source: `crm.add.camera.choosePhoto` did not exist at all, and the member list and reports each had a card that drew nothing where every neighbouring card said something.
