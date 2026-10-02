@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { formatISTDate, toISTDate, type ISTDate } from '@mfp/shared';
-import { can } from '@mfp/core';
+import { attendanceTrend, can } from '@mfp/core';
 import { PrismaAnnouncements, PrismaBirthdays } from '@mfp/db';
 import { sendBirthdayWishAction, setCrmLanguageAction } from '@/app/crm/actions';
+import { AttendanceChart } from '@/components/crm/attendance-chart';
 import { BirthdayList } from '@/components/crm/birthday-list';
 import { AutoRefresh } from '@/components/crm/auto-refresh';
 import { BottomNav, CrmHeader, FEE_TONE, MemberRow, rupees } from '@/components/crm/crm-chrome';
@@ -41,12 +42,18 @@ export default async function CrmHomePage() {
   const { clock } = getContainer();
   const now = clock.now();
 
-  const [counts, calls, birthdays, latest] = await Promise.all([
+  const [counts, calls, birthdays, latest, arrivals] = await Promise.all([
     reader.dashboard(gym.id, today, monthStart(today), previousMonthStart(today)),
     reader.callTasks(gym.id, today, 5),
     new PrismaBirthdays(getContainer().prisma).today(gym.id, today),
     new PrismaAnnouncements(getContainer().prisma).latest(gym.id),
+    // The last week of arrivals: "23 today" means nothing without the week around it (ADR-095).
+    reader.attendanceByDay(gym.id, today, 7),
   ]);
+  const trend = attendanceTrend({ counts: arrivals, today, days: 7 });
+  // Short weekday names in the reading language; 4 January 1970 was a Sunday.
+  const weekdays = new Intl.DateTimeFormat(locale === 'hi' ? 'hi-IN' : 'en-IN', { weekday: 'short', timeZone: 'UTC' });
+  const dayNames = trend.bars.map((bar) => weekdays.format(new Date(`${bar.date}T00:00:00Z`)));
   const showMoney = can(actor, 'money.view', now);
 
   const tiles: ReadonlyArray<{ key: 'totalMembers' | 'attendedToday' | 'dueThisWeek' | 'expired'; value: number; href: string; icon: CrmIconName; tone: string; note?: string }> = [
@@ -228,7 +235,26 @@ export default async function CrmHomePage() {
             )}
           </section>
 
-          <div className="grid content-start gap-6">
+          <div className="grid content-start gap-4 lg:gap-6">
+            {/* The week's arrivals, above the day's: the shape is what tells the owner
+                whether today is going well (ADR-095). */}
+            <section aria-labelledby="week-heading" className="rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm lg:p-5">
+              <div className="flex gap-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-accent/10 text-brand-accent">
+                  <CrmIcon name="attendance" className="size-5" />
+                </span>
+                <div>
+                  <h2 id="week-heading" className="text-crm-body font-bold text-brand-obsidian">
+                    {t('home.week')}
+                  </h2>
+                  <p className="text-small text-brand-stone">{t('home.weekHelp')}</p>
+                </div>
+              </div>
+              <div className="mt-4">
+                <AttendanceChart trend={trend} dayNames={dayNames} />
+              </div>
+            </section>
+
             <section aria-labelledby="birthdays-heading" className="rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm">
               <div className="flex gap-3">
                 <span className="flex size-9 items-center justify-center rounded-full bg-tint-birthday-bg text-semantic-birthday">

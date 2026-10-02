@@ -61,6 +61,7 @@ export * from './payments/receipt-pdf';
 export * from './calls/signup-not-paid';
 export * from './crm/permissions';
 export * from './crm/login';
+export * from './crm/attendance-trend';
 export * from './crm/add-member';
 export * from './crm/desk-payment';
 export * from './crm/elevate';

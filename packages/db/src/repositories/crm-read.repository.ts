@@ -517,6 +517,26 @@ export class PrismaCrmReader {
     return rows;
   }
 
+  /**
+   * How many distinct members came in on each of the last `days` business days (ADR-095).
+   *
+   * Distinct per day, because one member scanning twice is one arrival, and keyed on
+   * `attendanceDate` — the IST business date the check-in counts for — so a 1 am visit
+   * lands on the night it belongs to rather than the morning after.
+   */
+  async attendanceByDay(gymId: string, today: ISTDate, days: number): Promise<Array<{ date: ISTDate; count: number }>> {
+    const rows = await this.#prisma.$queryRaw<Array<{ date: Date; count: bigint }>>`
+      SELECT "attendanceDate" AS date, COUNT(DISTINCT "memberId")::bigint AS count
+      FROM "AttendanceEvent"
+      WHERE "gymId" = ${gymId}
+        AND "voidedAt" IS NULL
+        AND "attendanceDate" > ${toDbDate(today)}::date - ${days}::int
+        AND "attendanceDate" <= ${toDbDate(today)}::date
+      GROUP BY "attendanceDate"
+    `;
+    return rows.map((row) => ({ date: row.date.toISOString().slice(0, 10) as ISTDate, count: Number(row.count) }));
+  }
+
   /** Today's call list, most urgent first (BR-7 priority, then oldest). */
   async callTasks(gymId: string, today: ISTDate, limit = 25): Promise<CallTaskItem[]> {
     const [tasks, fees] = await Promise.all([

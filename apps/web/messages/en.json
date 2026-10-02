@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "Max Fitness Gym, Indirapuram | Owner-coached gym in Nyay Khand 1",
-    "description": "Gym in Nyay Khand 1, Indirapuram since 2000. Owner-led coaching and beginner-friendly trainers, rated 4.8 on Google. Open 4:30 am–10 pm. Monthly from ₹1,200."
+    "title": "Max Fitness Gym Indirapuram | Best Gym & Personal Training",
+    "description": "Join Max Fitness Gym in Indirapuram, Ghaziabad. Get expert trainer guidance, personal training, diet plans, cardio and strength training at affordable membership prices. Visit us today!"
   },
   "common": {
     "gymName": "Max Fitness Gym",
@@ -697,7 +697,11 @@
       "trials": "Trials",
       "trialsRunning": "on a trial today",
       "trialsFinishedNotJoined": "finished, not joined",
-      "trialsConvertedThisMonth": "joined this month"
+      "trialsConvertedThisMonth": "joined this month",
+      "week": "This week",
+      "weekHelp": "How many came in each day — the shape matters more than the number.",
+      "weekArrivals": "visits in seven days",
+      "weekAverage": "Usually {count} a day"
     },
     "feeState": {
       "PAID": "Fees paid",
