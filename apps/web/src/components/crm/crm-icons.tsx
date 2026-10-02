@@ -28,6 +28,10 @@ export type CrmIconName =
   | 'cake'
   | 'diet'
   | 'bot'
+  | 'cash'
+  | 'upi'
+  | 'card'
+  | 'success'
   | 'gallery'
   | 'whatsapp'
   | 'search';
@@ -55,6 +59,15 @@ const PATHS: Record<CrmIconName, string> = {
   chevron: 'm9 5 7 7-7 7',
   cake: 'M4 21h16M5 21v-7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7M5 16.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 5 0M12 12V8M12 5.5c.8 0 1.2-.7 1.2-1.3 0-.9-1.2-2.2-1.2-2.2s-1.2 1.3-1.2 2.2c0 .6.4 1.3 1.2 1.3Z',
   whatsapp: 'M4 20l1.2-3.6A8 8 0 1 1 8 19l-4 1ZM9 8.5c0 3.5 3 6.5 6.5 6.5l1-1.5-2-1-1 .8A5 5 0 0 1 11 10.8l.8-1-1-2-1.8.7Z',
+  // The three ways money is taken at the desk (ADR-062 replaced the emoji these were).
+  // A banknote with a coin on it: cash.
+  cash: 'M3 7h18v10H3zM12 14.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5M6 10h.01M18 14h.01',
+  // A phone with a rupee on its screen: UPI.
+  upi: 'M7 2.5h10a1.5 1.5 0 0 1 1.5 1.5v16a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 20V4A1.5 1.5 0 0 1 7 2.5ZM9.5 7h5M9.5 10h5M13.5 16 10 12.5h1.5a2.5 2.5 0 0 0 0-5M9.5 12.5h2',
+  // A card with its magnetic stripe: the POS machine.
+  card: 'M3 6h18v12H3zM3 10h18M6.5 14.5h3',
+  // A tick inside a circle: something finished, where a bare tick would read as a checkbox.
+  success: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM8 12.5l2.5 2.5L16 9.5',
   // A head with an aerial: the assistant, distinct from the gym's own WhatsApp messages.
   bot: 'M7 9h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2ZM12 9V6M12 4.5h.01M9.5 13h.01M14.5 13h.01M9.5 16.5h5',
   // A framed photograph with a hill and a sun: the website's gallery.

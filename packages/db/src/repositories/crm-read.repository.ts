@@ -103,6 +103,9 @@ export interface AttendanceTodayItem {
   readonly memberCode: string | null;
   readonly capturedAt: Date;
   readonly method: string;
+  /** What they owe, so the desk can ask while they are standing there (ADR-097). */
+  readonly feeState: FeeState;
+  readonly daysLeft: number | null;
 }
 
 export interface AbsentMemberItem {
@@ -255,6 +258,23 @@ export class PrismaCrmReader {
   }
 
   /** Members with their fee state, newest first, filtered by a search box and fee state. */
+  /**
+   * How many members are in each fee state (ADR-097).
+   *
+   * One pass over the same function the list uses, so the filter chips can carry numbers
+   * without a query each. "Expired" with a 12 beside it saves reception a tap and, more
+   * to the point, tells them there is something to do before they go looking.
+   */
+  async memberCounts(gymId: string, today: ISTDate): Promise<{ total: number } & Record<FeeState, number>> {
+    const rows = await this.#feeStates(gymId, today);
+    const counts = { total: rows.length, PAID: 0, DUE_SOON: 0, EXPIRED: 0, NONE: 0 };
+    for (const row of rows) {
+      const state = row.feeState as FeeState;
+      if (state in counts) counts[state] += 1;
+    }
+    return counts;
+  }
+
   async members(
     gymId: string,
     today: ISTDate,
@@ -262,10 +282,19 @@ export class PrismaCrmReader {
   ): Promise<MemberListItem[]> {
     const search = (options.search ?? '').trim();
     const digits = search.replace(/\D/g, '');
-    const rows = await this.#prisma.member.findMany({
+
+    // The fee states come first so the filter can go **into** the query (ADR-097). It used
+    // to run in JavaScript after `take`, which meant asking for expired members returned
+    // only the expired ones among the alphabetically-first page — at a hundred and fifty
+    // members that silently hides people who owe money, which is what this screen is for.
+    const fees = new Map((await this.#feeStates(gymId, today)).map((f) => [f.memberId, f]));
+    const matching = options.feeState === undefined ? null : [...fees.entries()].filter(([, f]) => f.feeState === options.feeState).map(([id]) => id);
+
+    const rows = matching !== null && matching.length === 0 ? [] : await this.#prisma.member.findMany({
       where: {
         gymId,
         deletedAt: null,
+        ...(matching === null ? {} : { id: { in: matching } }),
         ...(options.status === undefined ? {} : { status: options.status }),
         ...(search === ''
           ? {}
@@ -295,7 +324,6 @@ export class PrismaCrmReader {
       take: options.limit ?? 50,
     });
 
-    const fees = new Map((await this.#feeStates(gymId, today)).map((f) => [f.memberId, f]));
     return rows
       .map((row) => {
         const fee = fees.get(row.id);
@@ -317,8 +345,7 @@ export class PrismaCrmReader {
           trialDays: row.memberships[0]?.trialDays ?? null,
           lastAttendanceAt: row.lastAttendanceAt,
         };
-      })
-      .filter((member) => options.feeState === undefined || member.feeState === options.feeState);
+      });
   }
 
   async member(gymId: string, memberId: string, today: ISTDate): Promise<MemberProfile | null> {
@@ -433,22 +460,38 @@ export class PrismaCrmReader {
   }
 
   /** Who came in today, most recent first (crm-ux-blueprint §11). Voided check-ins are gone. */
+  /**
+   * Today's arrivals, each with what they owe (ADR-097).
+   *
+   * The fee state rides along because a member whose membership has lapsed walking through
+   * the door is the easiest collection the gym will get all day — and the list used to show
+   * a name and a time, which told reception nothing they could act on.
+   */
   async attendanceToday(gymId: string, today: ISTDate, limit = 200): Promise<AttendanceTodayItem[]> {
-    const rows = await this.#prisma.attendanceEvent.findMany({
-      where: { gymId, attendanceDate: toDbDate(today), voidedAt: null },
-      select: { id: true, memberId: true, capturedAt: true, method: true, member: { select: { fullName: true, memberCode: true } } },
-      orderBy: { capturedAt: 'desc' },
-      take: limit,
-    });
+    const [rows, fees] = await Promise.all([
+      this.#prisma.attendanceEvent.findMany({
+        where: { gymId, attendanceDate: toDbDate(today), voidedAt: null },
+        select: { id: true, memberId: true, capturedAt: true, method: true, member: { select: { fullName: true, memberCode: true } } },
+        orderBy: { capturedAt: 'desc' },
+        take: limit,
+      }),
+      this.#feeStates(gymId, today),
+    ]);
+    const feeByMember = new Map(fees.map((f) => [f.memberId, f]));
 
-    return rows.map((row) => ({
-      id: row.id,
-      memberId: row.memberId,
-      fullName: row.member.fullName,
-      memberCode: row.member.memberCode,
-      capturedAt: row.capturedAt,
-      method: row.method,
-    }));
+    return rows.map((row) => {
+      const fee = feeByMember.get(row.memberId);
+      return {
+        id: row.id,
+        memberId: row.memberId,
+        fullName: row.member.fullName,
+        memberCode: row.member.memberCode,
+        capturedAt: row.capturedAt,
+        method: row.method,
+        feeState: (fee?.feeState ?? 'NONE') as FeeState,
+        daysLeft: fee?.daysLeft ?? null,
+      };
+    });
   }
 
   /**

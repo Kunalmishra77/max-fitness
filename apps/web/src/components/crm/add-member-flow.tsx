@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useId, useMemo, useRef, useState, useTransition, type ComponentType } from 'react';
 import { SelfieCapture, type SelfieCaptureProps } from '@/components/join/selfie-capture';
+import { CrmIcon } from './crm-icons';
 
 /**
  * Add a member at the desk (crm-ux-blueprint §7).
@@ -153,9 +154,7 @@ export function AddMemberFlow({
   if (done !== null) {
     return (
       <div className="grid gap-4 p-6 text-center">
-        <p aria-hidden className="text-6xl">
-          ✅
-        </p>
+        <CrmIcon name="success" className="mx-auto size-16 text-semantic-fee-paid" />
         <h2 className="font-display text-display-m font-bold text-brand-obsidian">{t('done')}</h2>
         <p className="text-crm-body">{fullName.trim()}</p>
         {done.possibleDuplicate ? (

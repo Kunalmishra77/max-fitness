@@ -5,6 +5,7 @@ import { useId, useState, useTransition, type ChangeEvent } from 'react';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
 import { MAX_IMPORT_BYTES, type ImportCommitResult, type ImportPreviewResult } from '@/lib/import-types';
+import { CrmIcon } from './crm-icons';
 
 /**
  * Import the paper register (crm-module-spec §7; ADR-056).
@@ -103,9 +104,7 @@ export function ImportWizard({
   if (done !== null) {
     return (
       <div className="grid gap-4 p-6 text-center">
-        <p aria-hidden className="text-6xl">
-          ✅
-        </p>
+        <CrmIcon name="success" className="mx-auto size-16 text-semantic-fee-paid" />
         <h2 className="font-display text-display-m font-bold text-brand-obsidian">{t('done', { count: done.created })}</h2>
         {done.skipped > 0 ? <p className="text-crm-body text-brand-stone">{t('doneSkipped', { count: done.skipped })}</p> : null}
         <a href="/crm/members" className="flex min-h-16 items-center justify-center rounded-panel bg-brand-accent text-crm-body font-bold text-brand-white">

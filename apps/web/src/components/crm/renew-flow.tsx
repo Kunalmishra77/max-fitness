@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useState, useTransition } from 'react';
 import type { DeskPaymentMethod } from '@mfp/core';
 import { formatINR, formatISTDate, type ISTDate } from '@mfp/shared';
-import { CrmIcon } from '@/components/crm/crm-icons';
+import { CrmIcon, type CrmIconName } from '@/components/crm/crm-icons';
 import { buttonVariants } from '@/components/ui/button';
 
 /**
@@ -24,10 +24,10 @@ export interface RenewPlanOption {
   readonly endDate: string;
 }
 
-const METHODS: ReadonlyArray<{ method: DeskPaymentMethod; icon: string }> = [
-  { method: 'CASH', icon: '💵' },
-  { method: 'UPI_DIRECT', icon: '📱' },
-  { method: 'CARD_POS', icon: '💳' },
+const METHODS: ReadonlyArray<{ method: DeskPaymentMethod; icon: CrmIconName }> = [
+  { method: 'CASH', icon: 'cash' },
+  { method: 'UPI_DIRECT', icon: 'upi' },
+  { method: 'CARD_POS', icon: 'card' },
 ];
 
 export function RenewFlow({
@@ -158,9 +158,7 @@ export function RenewFlow({
                   method === option.method ? 'border-brand-accent bg-brand-accent/[0.07]' : 'border-brand-stone/30 bg-white hover:border-brand-obsidian'
                 }`}
               >
-                <span aria-hidden className="text-2xl">
-                  {option.icon}
-                </span>
+                <CrmIcon name={option.icon} className="size-7" />
                 {t(`methods.${option.method}`)}
               </button>
             ))}

@@ -75,6 +75,7 @@ suite('attendanceByDay against Postgres', () => {
   afterAll(async () => {
     if (prisma === undefined) return;
     await prisma.attendanceEvent.deleteMany({ where: { gymId } });
+    await prisma.membership.deleteMany({ where: { gymId } });
     await prisma.member.deleteMany({ where: { gymId } });
     await prisma.gym.deleteMany({ where: { id: gymId } });
     await prisma.$disconnect();
@@ -143,5 +144,39 @@ suite('attendanceByDay against Postgres', () => {
     await prisma.attendanceEvent.deleteMany({ where: { gymId: otherGym } });
     await prisma.member.deleteMany({ where: { gymId: otherGym } });
     await prisma.gym.deleteMany({ where: { id: otherGym } });
+  });
+
+  it('says what each arrival owes, so the desk can ask while they are standing there', async () => {
+    // A member whose fee has lapsed walking through the door is the easiest collection the
+    // gym will get all day, and the list used to show only a name and a time (ADR-097).
+    const owing = await member('07');
+    await prisma.membership.create({
+      data: {
+        gymId,
+        memberId: owing,
+        status: 'CONFIRMED',
+        source: 'WALK_IN',
+        startDate: toDbDate(istDate('2026-07-01')),
+        endDate: toDbDate(istDate('2026-09-20')),
+        pricePaise: 150000,
+        durationMonths: 1,
+      },
+    });
+    await checkIn(owing, '2026-09-30');
+
+    const arrivals = await reader.attendanceToday(gymId, TODAY);
+    const row = arrivals.find((a) => a.memberId === owing);
+
+    expect(row?.feeState).toBe('EXPIRED');
+    expect(row?.daysLeft).toBe(-10);
+  });
+
+  it('calls a member with no membership at all NONE rather than guessing', async () => {
+    const never = await member('08');
+    await checkIn(never, '2026-09-30');
+
+    const row = (await reader.attendanceToday(gymId, TODAY)).find((a) => a.memberId === never);
+    expect(row?.feeState).toBe('NONE');
+    expect(row?.daysLeft).toBeNull();
   });
 });

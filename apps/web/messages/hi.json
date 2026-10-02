@@ -753,7 +753,8 @@
       "seenToday": "आज आए",
       "seenDaysAgo": "{count, plural, one {1 दिन पहले} other {# दिन पहले}}",
       "neverSeen": "कभी नहीं आए",
-      "trialDays": "{count, plural, one {ट्रायल, 1 दिन} other {ट्रायल, # दिन}}"
+      "trialDays": "{count, plural, one {ट्रायल, 1 दिन} other {ट्रायल, # दिन}}",
+      "countOf": "{total} में से {shown} मेंबर — बाक़ी देखने के लिए खोज छाँटें"
     },
     "profile": {
       "call": "कॉल",

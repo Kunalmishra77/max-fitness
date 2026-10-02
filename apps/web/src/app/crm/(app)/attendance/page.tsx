@@ -5,6 +5,7 @@ import { markAttendanceAction, undoAttendanceAction } from '@/app/crm/actions';
 import { AttendanceMarker } from '@/components/crm/attendance-marker';
 import { AutoRefresh } from '@/components/crm/auto-refresh';
 import { BottomNav, CrmHeader, FEE_TONE, CRM_CARD, pillClass } from '@/components/crm/crm-chrome';
+import { CrmIcon } from '@/components/crm/crm-icons';
 import { cn } from '@/lib/cn';
 import { MemberSearch } from '@/components/crm/member-search';
 import { getContainer } from '@/lib/container';
@@ -30,9 +31,11 @@ export default async function CrmAttendancePage({ searchParams }: { searchParams
   const search = (q ?? '').trim();
   const absent = tab === 'absent';
 
+  // Both tabs are counted whichever is open: a tab label that says how many is the
+  // difference between reception checking and reception knowing (ADR-097).
   const [events, absentMembers, matches] = await Promise.all([
-    absent ? Promise.resolve([]) : reader.attendanceToday(gym.id, today),
-    absent ? reader.absentMembers(gym.id, today, gym.settings.attendance.absentDaysThreshold) : Promise.resolve([]),
+    reader.attendanceToday(gym.id, today),
+    reader.absentMembers(gym.id, today, gym.settings.attendance.absentDaysThreshold),
     search === '' ? Promise.resolve([]) : reader.members(gym.id, today, { search, limit: 10 }),
   ]);
 
@@ -71,10 +74,10 @@ export default async function CrmAttendancePage({ searchParams }: { searchParams
 
       <div className="flex gap-2 px-4 py-3">
         <Link href="/crm/attendance" className={tabClass(!absent)}>
-          {t('attendance.tabToday')}
+          {t('attendance.tabToday')} <span className="tabular opacity-70">{events.length}</span>
         </Link>
         <Link href="/crm/attendance?tab=absent" className={tabClass(absent)}>
-          {t('attendance.tabAbsent')}
+          {t('attendance.tabAbsent')} <span className="tabular opacity-70">{absentMembers.length}</span>
         </Link>
       </div>
 
@@ -95,9 +98,10 @@ export default async function CrmAttendancePage({ searchParams }: { searchParams
                 </span>
                 <a
                   href={`tel:${member.mobile}`}
-                  className="flex min-h-14 shrink-0 items-center justify-center rounded-panel bg-brand-obsidian px-4 text-crm-body font-semibold text-white"
+                  className="flex min-h-14 shrink-0 items-center justify-center gap-2 rounded-panel bg-brand-obsidian px-4 text-crm-body font-semibold text-white"
                 >
-                  📞 {t('profile.call')}
+                  <CrmIcon name="calls" className="size-5" />
+                  {t('profile.call')}
                 </a>
               </li>
             ))}
@@ -118,8 +122,21 @@ export default async function CrmAttendancePage({ searchParams }: { searchParams
                     </Link>
                     <span className="block text-small text-brand-stone">{event.memberCode ?? '—'}</span>
                   </span>
-                  <span className="shrink-0 text-small text-brand-stone">
-                    {time(event.capturedAt)} · {t(`attendance.method${event.method}` as never)}
+                  <span className="flex shrink-0 flex-col items-end gap-1">
+                    <span className="text-small text-brand-stone">
+                      {time(event.capturedAt)} · {t(`attendance.method${event.method}` as never)}
+                    </span>
+                    {event.feeState === 'PAID' ? null : (
+                      <span className={cn('rounded-full px-2 py-0.5 text-small font-semibold', FEE_TONE[event.feeState].chip)}>
+                        {event.feeState === 'NONE' || event.daysLeft === null
+                          ? t(`feeState.${event.feeState}`)
+                          : event.daysLeft < 0
+                            ? t('feeState.overdue', { count: Math.abs(event.daysLeft) })
+                            : event.daysLeft === 0
+                              ? t('feeState.dueToday')
+                              : t('feeState.daysLeft', { count: event.daysLeft })}
+                      </span>
+                    )}
                   </span>
                 </li>
               ))}

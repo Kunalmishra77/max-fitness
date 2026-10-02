@@ -29,12 +29,22 @@ export default async function CrmMembersPage({ searchParams }: { searchParams: P
   const waiting = can(actor, 'verification.approve', getContainer().clock.now()) ? await verificationDeps().queue.count(gym.id) : 0;
 
   const feeState = FEE_FILTERS.includes(fee as FeeState) ? (fee as FeeState) : undefined;
-  const members = await reader.members(gym.id, today, {
-    ...(q === undefined ? {} : { search: q }),
-    ...(feeState === undefined ? {} : { feeState }),
-    ...(status === 'ACTIVE' ? { status: 'ACTIVE' as MemberStatus } : {}),
-    limit: 100,
-  });
+  const LIMIT = 100;
+  const [members, counts] = await Promise.all([
+    reader.members(gym.id, today, {
+      ...(q === undefined ? {} : { search: q }),
+      ...(feeState === undefined ? {} : { feeState }),
+      ...(status === 'ACTIVE' ? { status: 'ACTIVE' as MemberStatus } : {}),
+      limit: LIMIT,
+    }),
+    // Numbers for the filter chips (ADR-097). They answer "is there anything to do?"
+    // before reception has to tap anything to find out.
+    reader.memberCounts(gym.id, today),
+  ]);
+  // The chips count the whole gym; a search narrows the list but not what is out there.
+  const searching = (q ?? '').trim() !== '';
+  const totalForFilter = feeState === undefined ? counts.total : counts[feeState];
+  const truncated = !searching && members.length >= LIMIT && totalForFilter > members.length;
 
   // Signing is a local HMAC, not a request to Supabase, so a hundred thumbnails cost
   // nothing; each link lapses in five minutes like every other private file (CLAUDE.md §2.8).
@@ -55,11 +65,11 @@ export default async function CrmMembersPage({ searchParams }: { searchParams: P
         <MemberSearch placeholder={t('members.search')} initial={q ?? ''} />
         <div className="mt-3 flex flex-wrap gap-2">
           <Link href="/crm/members" className={chip(feeState === undefined)}>
-            {t('members.filterAll')}
+            {t('members.filterAll')} <span className="tabular opacity-70">{counts.total}</span>
           </Link>
           {FEE_FILTERS.map((state) => (
             <Link key={state} href={`/crm/members?fee=${state}`} className={chip(feeState === state, FEE_TONE[state].chip)}>
-              {t(`feeState.${state}`)}
+              {t(`feeState.${state}`)} <span className="tabular opacity-70">{counts[state]}</span>
             </Link>
           ))}
         </div>
@@ -74,7 +84,10 @@ export default async function CrmMembersPage({ searchParams }: { searchParams: P
         </Link>
       )}
 
-      <p className="px-4 py-2 text-small text-brand-stone">{t('members.count', { count: members.length })}</p>
+      {/* Say when the list is cut short rather than letting the number read as the whole gym. */}
+      <p className="px-4 py-2 text-small text-brand-stone">
+        {truncated ? t('members.countOf', { shown: members.length, total: totalForFilter }) : t('members.count', { count: members.length })}
+      </p>
       {members.length === 0 ? (
         <p className="px-4 py-8 text-center text-crm-body text-brand-stone">{t('members.empty')}</p>
       ) : (

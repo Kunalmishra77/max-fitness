@@ -753,7 +753,8 @@
       "seenToday": "Came today",
       "seenDaysAgo": "{count, plural, one {1 day ago} other {# days ago}}",
       "neverSeen": "Never came",
-      "trialDays": "{count, plural, one {Trial, 1 day} other {Trial, # days}}"
+      "trialDays": "{count, plural, one {Trial, 1 day} other {Trial, # days}}",
+      "countOf": "{shown} of {total} members — refine the search to see the rest"
     },
     "profile": {
       "call": "Call",
