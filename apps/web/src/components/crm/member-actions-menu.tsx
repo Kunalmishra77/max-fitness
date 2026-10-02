@@ -9,15 +9,18 @@ import { MemberDataSection } from '@/components/crm/member-data';
 import type { EraseResult, UnlockResult } from '@/lib/settings-types';
 
 /**
- * The member profile's own actions, top right (ADR-086).
+ * The member profile's own actions, top right (ADR-086, ADR-099).
  *
  * Call, WhatsApp and Take Fees are the three things staff do all day, so they stay as big
- * buttons on the card. Editing details, exporting a member's data and erasing them are
- * occasional and, in two cases, irreversible — they belong behind one menu in the corner,
- * not as a wall of buttons under the profile where "Erase" sat next to "Take fees".
+ * buttons on the card. What is left is occasional and, in one case, irreversible.
  *
- * Export and erasure keep the panel that already works, PIN gate and all; the menu only
- * decides when it is on screen.
+ * It names the three of them plainly — **edit, download, remove** — rather than filing two
+ * of them under "Data and privacy" (owner, 2026-10-02). That heading was accurate and told
+ * nobody what was behind it, and it put a download and a deletion behind the same word.
+ *
+ * Download is a link and nothing else: the file is the answer, so there is no panel to
+ * read first. Removing someone opens the panel that already works, PIN gate and all,
+ * because that one should be slow.
  */
 export function MemberActionsMenu({
   memberId,
@@ -76,26 +79,38 @@ export function MemberActionsMenu({
       </button>
 
       {open ? (
-        <div role="menu" className="absolute end-0 top-14 z-30 w-60 overflow-hidden rounded-panel bg-white py-1 shadow-[0_18px_40px_-12px_rgb(11_11_12/0.45)]">
+        <div role="menu" className="absolute end-0 top-14 z-30 w-64 overflow-hidden rounded-panel bg-white py-1 shadow-[0_18px_40px_-12px_rgb(11_11_12/0.45)]">
           {mayEdit ? (
             <Link role="menuitem" href={`/crm/members/${memberId}/edit`} className={item} onClick={() => setOpen(false)}>
               <CrmIcon name="settings" className="size-5 shrink-0 text-brand-stone" />
               {t('edit')}
             </Link>
           ) : null}
+
           {mayManageData ? (
-            <button
-              role="menuitem"
-              type="button"
-              className={item}
-              onClick={() => {
-                setOpen(false);
-                setDataOpen(true);
-              }}
-            >
-              <CrmIcon name="import" className="size-5 shrink-0 text-brand-stone" />
-              {t('dataAndPrivacy')}
-            </button>
+            <>
+              {/* The owner has already entered a PIN to get this far on most visits; when
+                  they have not, the link lands on the export route, which asks for one. */}
+              <a role="menuitem" href={`/crm/members/${memberId}/export`} download className={item} onClick={() => setOpen(false)}>
+                <CrmIcon name="import" className="size-5 shrink-0 text-brand-stone" />
+                {t('download')}
+              </a>
+
+              <button
+                role="menuitem"
+                type="button"
+                // Removing a member is the one thing here that cannot be undone, so it is
+                // marked as such and sits last, under a divider.
+                className={`${item} border-t border-brand-stone/15 text-semantic-fee-expired`}
+                onClick={() => {
+                  setOpen(false);
+                  setDataOpen(true);
+                }}
+              >
+                <CrmIcon name="logout" className="size-5 shrink-0" />
+                {t('remove')}
+              </button>
+            </>
           ) : null}
         </div>
       ) : null}

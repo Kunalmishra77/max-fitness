@@ -30,6 +30,9 @@ const onFile: MemberForEdit = {
   gender: 'MALE',
   language: 'hi',
   trainingSlot: 'MORNING',
+  joinedOn: null,
+  notes: null,
+  whatsappOptIn: false,
   deletedAt: null,
 };
 
@@ -41,6 +44,9 @@ const values = (overrides: Partial<MemberEditValues> = {}): MemberEditValues => 
   gender: onFile.gender,
   language: onFile.language,
   trainingSlot: onFile.trainingSlot,
+  joinedOn: onFile.joinedOn,
+  notes: onFile.notes,
+  whatsappOptIn: onFile.whatsappOptIn,
   ...overrides,
 });
 
@@ -150,5 +156,40 @@ describe('editMember', () => {
     await expect(editMember({ memberId: 'mem_1', values: values({ fullName: 'कोई और' }) }, deps(store))).rejects.toThrow(
       expect.objectContaining({ code: 'CONFLICT' }) as Error,
     );
+  });
+
+  it('saves the three details the desk had no way to correct (ADR-099)', async () => {
+    // When they joined, what the desk wrote about them, and whether they agreed to be
+    // messaged. All three were shown on the profile and were on no form, so a wrong one
+    // stayed wrong.
+    const store = new FakeStore();
+
+    const result = await editMember(
+      { memberId: 'mem_1', values: values({ joinedOn: istDate('2024-03-01'), notes: 'Knee injury — no heavy squats', whatsappOptIn: true }) },
+      deps(store),
+    );
+
+    expect(result.changed).toEqual(expect.arrayContaining(['joinedOn', 'notes', 'whatsappOptIn']));
+    expect(store.saved[0]?.values.joinedOn).toBe('2024-03-01');
+    expect(store.saved[0]?.values.notes).toBe('Knee injury — no heavy squats');
+    expect(store.saved[0]?.values.whatsappOptIn).toBe(true);
+  });
+
+  it('counts messaging being turned off as a change, because consent going is the point', async () => {
+    const store = new FakeStore();
+    store.member = { ...onFile, whatsappOptIn: true };
+
+    const result = await editMember({ memberId: 'mem_1', values: values({ whatsappOptIn: false }) }, deps(store));
+
+    expect(result.changed).toContain('whatsappOptIn');
+    expect(store.saved[0]?.values.whatsappOptIn).toBe(false);
+  });
+
+  it('saves nothing when the new fields are left as they were', async () => {
+    const store = new FakeStore();
+    const result = await editMember({ memberId: 'mem_1', values: values() }, deps(store));
+
+    expect(result.changed).toEqual([]);
+    expect(store.saved).toEqual([]);
   });
 });

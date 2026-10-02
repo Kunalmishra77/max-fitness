@@ -17,6 +17,9 @@ const good = {
   gender: 'MALE',
   language: 'hi',
   trainingSlot: 'MORNING',
+  joinedOn: '',
+  notes: '',
+  whatsappOptIn: false,
 };
 
 describe('MemberEditSchema', () => {
@@ -48,5 +51,34 @@ describe('MemberEditSchema', () => {
 
   it('lowercases and trims an email that was typed with capitals and a space', () => {
     expect(MemberEditSchema.parse({ ...good, email: ' Suresh@Example.COM ' }).email).toBe('suresh@example.com');
+  });
+
+  it('takes when they joined, what the desk wrote, and whether they may be messaged (ADR-099)', () => {
+    const parsed = MemberEditSchema.parse({ ...good, joinedOn: '2024-03-01', notes: '  Knee injury  ', whatsappOptIn: true });
+    expect(parsed.joinedOn).toBe('2024-03-01');
+    expect(parsed.notes).toBe('Knee injury');
+    expect(parsed.whatsappOptIn).toBe(true);
+  });
+
+  it('keeps a blank joining date and a blank note blank rather than inventing them', () => {
+    // Members off the paper register joined years before this system and nobody remembers.
+    const parsed = MemberEditSchema.parse(good);
+    expect(parsed.joinedOn).toBeNull();
+    expect(parsed.notes).toBeNull();
+  });
+
+  it('refuses a joining date that is not a date, and a note nobody will read', () => {
+    const codes = (patch: Record<string, unknown>) => {
+      const result = MemberEditSchema.safeParse({ ...good, ...patch });
+      return result.success ? [] : result.error.issues.map((issue) => issue.message);
+    };
+    expect(codes({ joinedOn: '2026-02-30' })).toContain('joinedOn');
+    expect(codes({ notes: 'x'.repeat(501) })).toContain('notes');
+  });
+
+  it('insists on being told about the notes field rather than defaulting it away', () => {
+    // A default of null here would let a stale form wipe a note it never knew about.
+    const { notes: _dropped, ...withoutNotes } = good;
+    expect(MemberEditSchema.safeParse(withoutNotes).success).toBe(false);
   });
 });

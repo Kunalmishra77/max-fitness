@@ -788,7 +788,7 @@
         "status": "Status"
       },
       "actions": "More for this member",
-      "edit": "Correct details",
+      "edit": "Edit member",
       "dataAndPrivacy": "Data and privacy",
       "pt": "Personal training",
       "ptMonths": "{count, plural, one {1 month} other {# months}} with a trainer",
@@ -825,7 +825,9 @@
       },
       "whatsappPrefillDue": "Namaste {name}, this is Max Fitness Gym. Your membership is due on {date}. Shall we renew it?",
       "whatsappPrefillOverdue": "Namaste {name}, this is Max Fitness Gym. Your membership ended on {date}. Shall we renew it?",
-      "whatsappPrefillPlain": "Namaste {name}, this is Max Fitness Gym."
+      "whatsappPrefillPlain": "Namaste {name}, this is Max Fitness Gym.",
+      "download": "Download everything",
+      "remove": "Remove this member"
     },
     "renew": {
       "title": "Take fees",
@@ -1651,8 +1653,16 @@
         "FORBIDDEN": "Your login cannot change member details.",
         "NOT_FOUND": "This member is no longer in the register.",
         "ERASED": "This member's data has been erased and cannot be edited.",
-        "generic": "That could not be saved. Try again."
-      }
+        "generic": "That could not be saved. Try again.",
+        "joinedOn": "Use a real date, or leave it blank.",
+        "notes": "That is too long — keep it under 500 letters."
+      },
+      "joinedOn": "Joined the gym",
+      "joinedOnHelper": "Leave blank if nobody remembers.",
+      "notes": "Notes",
+      "notesHelper": "An injury, a preference, anything the next person at the desk should know.",
+      "whatsappOptIn": "May be messaged on WhatsApp",
+      "whatsappOptInHelper": "Turn this off and every reminder to them stops."
     },
     "diet": {
       "title": "Diet plans",

@@ -39,11 +39,17 @@ export function memberPrivacyStore(db: Db): MemberPrivacyStore {
           whatsappOptIn: true,
           faceConsent: true,
           photoMediaId: true,
+          joinedOn: true,
+          trainingSlot: true,
+          isMinor: true,
+          notes: true,
+          // The most recent check is the one that says which card the desk saw.
+          verifications: { orderBy: { createdAt: 'desc' }, take: 1, select: { govIdType: true } },
         },
       });
       if (member === null) return null;
 
-      const [memberships, payments, attendance, consents, messages, callTasks, faceTemplates] = await Promise.all([
+      const [memberships, payments, attendance, consents, messages, callTasks, faceTemplates, ptEnrolments, dietPlans] = await Promise.all([
         db.membership.findMany({
           where: { memberId },
           select: { startDate: true, endDate: true, durationMonths: true, pricePaise: true, status: true },
@@ -63,6 +69,18 @@ export function memberPrivacyStore(db: Db): MemberPrivacyStore {
         db.messageLog.findMany({ where: { memberId }, select: { purpose: true, status: true, sentAt: true, bodyPreview: true }, orderBy: { createdAt: 'asc' } }),
         db.callTask.findMany({ where: { memberId }, select: { reason: true, status: true, outcome: true, note: true, createdAt: true }, orderBy: { createdAt: 'asc' } }),
         db.faceTemplate.count({ where: { memberId } }),
+        db.ptEnrolment.findMany({
+          where: { memberId },
+          select: { startDate: true, endDate: true, durationMonths: true, pricePaise: true, status: true },
+          orderBy: { endDate: 'asc' },
+        }),
+        // The whole document, not a count: a diet plan is the thing a member is most
+        // likely to want their copy of (ADR-089).
+        db.dietPlan.findMany({
+          where: { memberId },
+          select: { version: true, status: true, bmiTenths: true, answers: true, doc: true, failureReason: true, generatedAt: true, sentAt: true, createdAt: true },
+          orderBy: { version: 'asc' },
+        }),
       ]);
 
       return {
@@ -81,6 +99,11 @@ export function memberPrivacyStore(db: Db): MemberPrivacyStore {
           whatsappOptIn: member.whatsappOptIn,
           faceConsent: member.faceConsent,
           hasPhoto: member.photoMediaId !== null,
+          joinedOn: member.joinedOn === null ? null : fromDbDate(member.joinedOn),
+          trainingSlot: member.trainingSlot,
+          isMinor: member.isMinor,
+          notes: member.notes,
+          govIdType: member.verifications[0]?.govIdType ?? null,
         },
         memberships: memberships.map((row) => ({
           startDate: row.startDate === null ? null : fromDbDate(row.startDate),
@@ -101,6 +124,24 @@ export function memberPrivacyStore(db: Db): MemberPrivacyStore {
         })),
         messages: messages.map((row) => ({ purpose: row.purpose, status: row.status, sentAt: iso(row.sentAt), text: row.bodyPreview })),
         callTasks: callTasks.map((row) => ({ reason: row.reason, status: row.status, outcome: row.outcome, note: row.note, createdAt: row.createdAt.toISOString() })),
+        ptEnrolments: ptEnrolments.map((row) => ({
+          startDate: fromDbDate(row.startDate),
+          endDate: fromDbDate(row.endDate),
+          durationMonths: row.durationMonths,
+          pricePaise: row.pricePaise,
+          status: row.status,
+        })),
+        dietPlans: dietPlans.map((row) => ({
+          version: row.version,
+          status: row.status,
+          bmiTenths: row.bmiTenths,
+          answers: row.answers,
+          plan: row.doc,
+          failureReason: row.failureReason,
+          generatedAt: iso(row.generatedAt),
+          sentAt: iso(row.sentAt),
+          createdAt: row.createdAt.toISOString(),
+        })),
         faceTemplates: { count: faceTemplates },
       };
     },

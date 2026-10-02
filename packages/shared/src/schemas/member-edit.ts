@@ -16,7 +16,7 @@ import { MEMBER_GENDERS, NAME_PATTERN } from './registration';
  * Each message is a short code the UI looks up under `crm.edit.errors.<code>`.
  */
 
-export const MEMBER_EDIT_ERROR_CODES = ['fullName', 'mobile', 'email', 'dob', 'gender', 'language', 'trainingSlot'] as const;
+export const MEMBER_EDIT_ERROR_CODES = ['fullName', 'mobile', 'email', 'dob', 'gender', 'language', 'trainingSlot', 'joinedOn', 'notes'] as const;
 export type MemberEditErrorCode = (typeof MEMBER_EDIT_ERROR_CODES)[number];
 
 /** `''` means "not recorded" everywhere a form posts a cleared field. */
@@ -41,6 +41,12 @@ export const MemberEditSchema = z
     gender: z.enum(MEMBER_GENDERS, { message: 'gender' }),
     language: z.enum(LANGUAGES, { message: 'language' }),
     trainingSlot: blankToNull(z.enum(TRAINING_SLOTS, { message: 'trainingSlot' })),
+    // Members imported from the paper register joined years before this system; the date
+    // may be unknown, and must stay blank rather than being invented.
+    joinedOn: blankToNull(z.string().refine(isISTDate, { message: 'joinedOn' })),
+    notes: blankToNull(z.string().trim().max(500, { message: 'notes' })),
+    // A checkbox posts nothing when it is clear, so absent means off.
+    whatsappOptIn: z.coerce.boolean().default(false),
   })
   .strict();
 

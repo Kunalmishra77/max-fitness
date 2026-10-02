@@ -39,6 +39,14 @@ export interface MemberExport {
     readonly whatsappOptIn: boolean;
     readonly faceConsent: boolean;
     readonly hasPhoto: boolean;
+    /** When they first joined the gym, which may be long before this system existed. */
+    readonly joinedOn: string | null;
+    readonly trainingSlot: string | null;
+    readonly isMinor: boolean;
+    /** What the desk wrote about them; part of their data, so part of their copy. */
+    readonly notes: string | null;
+    /** Which card was shown at the desk. The photographs of it are files, not JSON. */
+    readonly govIdType: string | null;
   };
   readonly memberships: ReadonlyArray<{
     readonly startDate: string | null;
@@ -69,6 +77,31 @@ export interface MemberExport {
     readonly status: string;
     readonly outcome: string | null;
     readonly note: string | null;
+    readonly createdAt: string;
+  }>;
+  readonly ptEnrolments: ReadonlyArray<{
+    readonly startDate: string;
+    readonly endDate: string;
+    readonly durationMonths: number;
+    readonly pricePaise: number;
+    readonly status: string;
+  }>;
+  /**
+   * Their diet plans, each one whole (ADR-089).
+   *
+   * The answers they gave and the plan that came out of it are the most personal thing in
+   * here, and the thing the member is most likely to actually want a copy of — so the
+   * document goes in as it stands rather than as a count or a link.
+   */
+  readonly dietPlans: ReadonlyArray<{
+    readonly version: number;
+    readonly status: string;
+    readonly bmiTenths: number | null;
+    readonly answers: unknown;
+    readonly plan: unknown;
+    readonly failureReason: string | null;
+    readonly generatedAt: string | null;
+    readonly sentAt: string | null;
     readonly createdAt: string;
   }>;
   readonly faceTemplates: { readonly count: number };

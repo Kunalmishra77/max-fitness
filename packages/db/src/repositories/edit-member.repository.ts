@@ -18,7 +18,20 @@ export function memberEditStore(db: Db): MemberEditStore {
     async findMemberForEdit(gymId: string, memberId: string): Promise<MemberForEdit | null> {
       const member = await db.member.findFirst({
         where: { id: memberId, gymId },
-        select: { id: true, fullName: true, mobile: true, email: true, dob: true, gender: true, language: true, trainingSlot: true, deletedAt: true },
+        select: {
+          id: true,
+          fullName: true,
+          mobile: true,
+          email: true,
+          dob: true,
+          gender: true,
+          language: true,
+          trainingSlot: true,
+          joinedOn: true,
+          notes: true,
+          whatsappOptIn: true,
+          deletedAt: true,
+        },
       });
       if (member === null) return null;
       return {
@@ -30,6 +43,9 @@ export function memberEditStore(db: Db): MemberEditStore {
         gender: member.gender,
         language: member.language,
         trainingSlot: isTrainingSlot(member.trainingSlot) ? member.trainingSlot : null,
+        joinedOn: member.joinedOn === null ? null : fromDbDate(member.joinedOn),
+        notes: member.notes,
+        whatsappOptIn: member.whatsappOptIn,
         deletedAt: member.deletedAt,
       };
     },
@@ -49,6 +65,9 @@ export function memberEditStore(db: Db): MemberEditStore {
           gender: values.gender,
           language: values.language,
           trainingSlot: values.trainingSlot,
+          joinedOn: values.joinedOn === null ? null : toDbDate(values.joinedOn),
+          notes: values.notes,
+          whatsappOptIn: values.whatsappOptIn,
         },
       });
     },

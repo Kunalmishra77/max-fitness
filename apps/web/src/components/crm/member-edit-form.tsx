@@ -25,6 +25,9 @@ export interface MemberEditValuesInput {
   readonly gender: string;
   readonly language: string;
   readonly trainingSlot: string;
+  readonly joinedOn: string;
+  readonly notes: string;
+  readonly whatsappOptIn: boolean;
 }
 
 export type MemberEditOutcome =
@@ -54,6 +57,11 @@ export function MemberEditForm({
   const [pending, start] = useTransition();
 
   const set = (field: keyof MemberEditValuesInput) => (next: string) => {
+    setValues((was) => ({ ...was, [field]: next }));
+    setError(null);
+  };
+
+  const setFlag = (field: keyof MemberEditValuesInput) => (next: boolean) => {
     setValues((was) => ({ ...was, [field]: next }));
     setError(null);
   };
@@ -188,6 +196,53 @@ export function MemberEditForm({
             ))}
           </select>
           <p className="mt-1 text-small text-brand-stone">{t('languageHelper')}</p>
+        </div>
+
+        {/* When they joined: on the profile since ADR-074 and on no form until now, so a
+            wrong one could only be fixed in the database. */}
+        <div>
+          <label htmlFor={`${id}-joined`} className={label}>
+            {t('joinedOn')}
+          </label>
+          <input
+            id={`${id}-joined`}
+            type="date"
+            value={values.joinedOn}
+            onChange={(event) => set('joinedOn')(event.target.value)}
+            className={`${FIELD} ${invalid('joinedOn')}`}
+          />
+          <p className="mt-1 text-small text-brand-stone">{t('joinedOnHelper')}</p>
+        </div>
+
+        <div className="sm:col-span-2">
+          <label htmlFor={`${id}-notes`} className={label}>
+            {t('notes')}
+          </label>
+          <textarea
+            id={`${id}-notes`}
+            rows={3}
+            maxLength={500}
+            value={values.notes}
+            onChange={(event) => set('notes')(event.target.value)}
+            className={`${FIELD} py-3 ${invalid('notes')}`}
+          />
+          <p className="mt-1 text-small text-brand-stone">{t('notesHelper')}</p>
+        </div>
+
+        {/* Consent is withdrawn at the counter as often as it is given. */}
+        <div className="sm:col-span-2">
+          <label className="flex items-start gap-3 text-crm-body">
+            <input
+              type="checkbox"
+              checked={values.whatsappOptIn}
+              onChange={(event) => setFlag('whatsappOptIn')(event.target.checked)}
+              className="mt-1 size-6 shrink-0 accent-brand-obsidian"
+            />
+            <span>
+              <span className="font-semibold text-brand-obsidian">{t('whatsappOptIn')}</span>
+              <span className="mt-0.5 block text-small text-brand-stone">{t('whatsappOptInHelper')}</span>
+            </span>
+          </label>
         </div>
       </div>
 

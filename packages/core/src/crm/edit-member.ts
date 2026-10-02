@@ -26,6 +26,17 @@ export interface MemberEditValues {
   readonly gender: Gender;
   readonly language: Language;
   readonly trainingSlot: TrainingSlot | null;
+  /** When they first joined the gym, which may be long before this system existed. */
+  readonly joinedOn: ISTDate | null;
+  /** What the desk wrote about them — an injury, a preference, a thing to remember. */
+  readonly notes: string | null;
+  /**
+   * Whether they agreed to be messaged (ADR-099).
+   *
+   * Editable here because consent is withdrawn at the counter as often as it is given, and
+   * until now the desk could see it on the profile and had no way to change it.
+   */
+  readonly whatsappOptIn: boolean;
 }
 
 export interface MemberForEdit extends MemberEditValues {
@@ -66,7 +77,7 @@ export interface MemberEditResult {
   readonly sharesMobileWith: number;
 }
 
-const FIELDS: readonly MemberEditField[] = ['fullName', 'mobile', 'email', 'dob', 'gender', 'language', 'trainingSlot'];
+const FIELDS: readonly MemberEditField[] = ['fullName', 'mobile', 'email', 'dob', 'gender', 'language', 'trainingSlot', 'joinedOn', 'notes', 'whatsappOptIn'];
 
 export async function editMember(
   input: { readonly memberId: string; readonly values: MemberEditValues },

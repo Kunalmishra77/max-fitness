@@ -49,6 +49,9 @@ export default async function CrmEditMemberPage({ params }: { params: Promise<{ 
           gender: member.gender,
           language: member.language,
           trainingSlot: member.trainingSlot ?? '',
+          joinedOn: member.joinedOn ?? '',
+          notes: member.notes ?? '',
+          whatsappOptIn: member.whatsappOptIn,
         }}
         save={editMemberAction}
       />
