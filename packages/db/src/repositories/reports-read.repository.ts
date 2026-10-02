@@ -27,6 +27,24 @@ export interface ReportInputs {
     readonly soldThisMonth: number;
     readonly revenueThisMonthPaise: number;
   };
+  /** The paid trial (ADR-088): sold this month, what it brought in, and who joined after one. */
+  readonly trial: {
+    readonly soldThisMonth: number;
+    readonly revenueThisMonthPaise: number;
+    readonly convertedThisMonth: number;
+  };
+  /** Diet plans (ADR-089) and the assistant (ADR-090), this month. */
+  readonly diet: {
+    readonly plansThisMonth: number;
+    readonly active: number;
+    readonly awaitingAnswers: number;
+    readonly followUpsOpen: number;
+  };
+  readonly bot: {
+    readonly askedThisMonth: number;
+    readonly answeredThisMonth: number;
+    readonly escalatedThisMonth: number;
+  };
 }
 
 /** The first instant of an IST calendar day. */
@@ -50,7 +68,24 @@ export class PrismaReportsReader {
         select: { method: true, amountPaise: true },
       });
 
-    const [paidThisMonth, paidLastMonth, memberships, attendance, left, genders, plans, ptRunning, ptSoldThisMonth] = await Promise.all([
+    const [
+      paidThisMonth,
+      paidLastMonth,
+      memberships,
+      attendance,
+      left,
+      genders,
+      plans,
+      ptRunning,
+      ptSoldThisMonth,
+      trialSold,
+      trialConverted,
+      dietPlansThisMonth,
+      dietActive,
+      dietAwaiting,
+      dietFollowUpsOpen,
+      botByStatus,
+    ] = await Promise.all([
       paidBetween(month.start, month.end),
       // Last month only up to the same day: a month so far is compared like with like.
       paidBetween(month.previousStart, month.previousToDate),
@@ -91,6 +126,33 @@ export class PrismaReportsReader {
         _count: { _all: true },
         _sum: { pricePaise: true },
       }),
+      // The trial (ADR-088): sold this month, and who went on to buy a plan afterwards.
+      this.#prisma.membership.aggregate({
+        where: { gymId, isTrial: true, status: 'CONFIRMED', confirmedAt: { gte: istStart(month.start), lt: istStart(addDays(month.end, 1)) } },
+        _count: { _all: true },
+        _sum: { pricePaise: true },
+      }),
+      this.#prisma.membership.findMany({
+        where: {
+          gymId,
+          isTrial: false,
+          status: 'CONFIRMED',
+          confirmedAt: { gte: istStart(month.start), lt: istStart(addDays(month.end, 1)) },
+          member: { memberships: { some: { isTrial: true, status: 'CONFIRMED' } } },
+        },
+        select: { memberId: true },
+        distinct: ['memberId'],
+      }),
+      // Diet plans (ADR-089) and the assistant (ADR-090).
+      this.#prisma.dietPlan.count({ where: { gymId, generatedAt: { gte: istStart(month.start), lt: istStart(addDays(month.end, 1)) } } }),
+      this.#prisma.dietPlan.count({ where: { gymId, status: 'READY' } }),
+      this.#prisma.dietProfile.count({ where: { gymId, pendingQuestion: { not: null } } }),
+      this.#prisma.dietFollowUp.count({ where: { gymId, completedAt: null } }),
+      this.#prisma.botReply.groupBy({
+        by: ['status'],
+        where: { gymId, isTest: false, createdAt: { gte: istStart(month.start), lt: istStart(addDays(month.end, 1)) } },
+        _count: { _all: true },
+      }),
     ]);
 
     return {
@@ -112,6 +174,22 @@ export class PrismaReportsReader {
         mix: ptRunning.map((row) => ({ durationMonths: row.durationMonths, count: row._count._all })).sort((a, b) => a.durationMonths - b.durationMonths),
         soldThisMonth: ptSoldThisMonth._count._all,
         revenueThisMonthPaise: ptSoldThisMonth._sum.pricePaise ?? 0,
+      },
+      trial: {
+        soldThisMonth: trialSold._count._all,
+        revenueThisMonthPaise: trialSold._sum.pricePaise ?? 0,
+        convertedThisMonth: trialConverted.length,
+      },
+      diet: {
+        plansThisMonth: dietPlansThisMonth,
+        active: dietActive,
+        awaitingAnswers: dietAwaiting,
+        followUpsOpen: dietFollowUpsOpen,
+      },
+      bot: {
+        askedThisMonth: botByStatus.reduce((total, row) => total + row._count._all, 0),
+        answeredThisMonth: botByStatus.find((row) => row.status === 'ANSWERED')?._count._all ?? 0,
+        escalatedThisMonth: botByStatus.find((row) => row.status === 'ESCALATED')?._count._all ?? 0,
       },
     };
   }

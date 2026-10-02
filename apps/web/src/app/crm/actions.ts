@@ -5,13 +5,17 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import {
   addStaff,
+  addGalleryPhoto,
   advanceLead,
   answerMemberQuestion,
   approveVerification,
   can,
   deleteBotDocument,
+  deleteGalleryPhoto,
+  moveGalleryPhoto,
   saveBotConfig,
   saveBotDocument,
+  setGalleryPhotoPublished,
   type BotConfigInput,
   type BotDocumentInput,
   commitMemberImport,
@@ -38,7 +42,7 @@ import {
   voidPayment,
   type LeadStatus,
 } from '@mfp/core';
-import { PrismaAnnouncementUnitOfWork, PrismaBirthdays, PrismaKioskDevices } from '@mfp/db';
+import { PrismaAnnouncementUnitOfWork, PrismaBirthdays, PrismaGallery, PrismaKioskDevices } from '@mfp/db';
 import { revalidateLandingContent } from '@/lib/revalidate-landing';
 import type {
   EraseResult,
@@ -65,6 +69,7 @@ import {
 import type { MemberEditOutcome, MemberEditValuesInput } from '@/components/crm/member-edit-form';
 import type { DietStartOutcome } from '@/components/crm/diet-board';
 import type { BotTestOutcome } from '@/components/crm/bot-console';
+import type { GalleryResult } from '@/components/crm/gallery-manager';
 import type { AnnouncementActionResult, AnnouncementInput } from '@/components/crm/announcement-composer';
 import type { AddMemberErrorCode, AddMemberFields, AddMemberResult } from '@/components/crm/add-member-flow';
 import type { MarkResult, UndoResult } from '@/components/crm/attendance-marker';
@@ -216,6 +221,84 @@ export async function editMemberAction(memberId: string, values: MemberEditValue
     console.error(`[crm] edit member failed: ${code ?? (error instanceof Error ? error.name : 'Error')}`);
     return { ok: false, code: 'generic' };
   }
+}
+
+/**
+ * The gym's own photos on its own website (ADR-091).
+ *
+ * The file arrives already shrunk by the browser; the dimensions come with it because the
+ * uploader has measured them and a server-side image library would be a dependency for one
+ * number. Publishing the first photo replaces the built-in set on the landing page, so the
+ * cached landing content is revalidated.
+ */
+export async function addGalleryPhotoAction(form: FormData): Promise<GalleryResult> {
+  const { actor } = await requireCrmContext();
+  const { clock, storage, prisma } = getContainer();
+
+  const file = form.get('photo');
+  const width = Number(form.get('width'));
+  const height = Number(form.get('height'));
+  if (!(file instanceof Blob)) return { ok: false, code: 'generic' };
+
+  try {
+    await addGalleryPhoto(
+      { body: new Uint8Array(await file.arrayBuffer()), width, height },
+      { actor, clock, store: new PrismaGallery(prisma), storage },
+    );
+    revalidatePath('/crm/gallery');
+    revalidateLandingContent();
+    return { ok: true };
+  } catch (error) {
+    return galleryFailure(error, 'add gallery photo');
+  }
+}
+
+export async function deleteGalleryPhotoAction(id: string): Promise<GalleryResult> {
+  const { actor } = await requireCrmContext();
+  const { clock, storage, prisma } = getContainer();
+  try {
+    await deleteGalleryPhoto({ id }, { actor, clock, store: new PrismaGallery(prisma), storage });
+    revalidatePath('/crm/gallery');
+    revalidateLandingContent();
+    return { ok: true };
+  } catch (error) {
+    return galleryFailure(error, 'delete gallery photo');
+  }
+}
+
+export async function setGalleryPhotoPublishedAction(id: string, isPublished: boolean): Promise<GalleryResult> {
+  const { actor } = await requireCrmContext();
+  const { clock, storage, prisma } = getContainer();
+  try {
+    await setGalleryPhotoPublished({ id, isPublished }, { actor, clock, store: new PrismaGallery(prisma), storage });
+    revalidatePath('/crm/gallery');
+    revalidateLandingContent();
+    return { ok: true };
+  } catch (error) {
+    return galleryFailure(error, 'publish gallery photo');
+  }
+}
+
+export async function moveGalleryPhotoAction(id: string, direction: 'UP' | 'DOWN'): Promise<GalleryResult> {
+  const { actor } = await requireCrmContext();
+  const { clock, storage, prisma } = getContainer();
+  try {
+    await moveGalleryPhoto({ id, direction }, { actor, clock, store: new PrismaGallery(prisma), storage });
+    revalidatePath('/crm/gallery');
+    revalidateLandingContent();
+    return { ok: true };
+  } catch (error) {
+    return galleryFailure(error, 'move gallery photo');
+  }
+}
+
+function galleryFailure(error: unknown, what: string): GalleryResult {
+  const code = (error as { code?: string }).code;
+  if (code === 'FORBIDDEN') return { ok: false, code: 'FORBIDDEN' };
+  if (code === 'VALIDATION_FAILED') return { ok: false, code: 'TOO_SMALL' };
+  if (code === 'NOT_FOUND') return { ok: false, code: 'generic' };
+  console.error(`[crm] ${what} failed: ${code ?? (error instanceof Error ? error.name : 'Error')}`);
+  return { ok: false, code: 'generic' };
 }
 
 /**

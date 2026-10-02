@@ -26,6 +26,8 @@ export type MessagePurpose =
   | 'RESTART_CONFIRM'
   /** The diet questionnaire and the plan that comes out of it (ADR-089). */
   | 'DIET'
+  /** What the WhatsApp assistant answered a member by itself (ADR-090). */
+  | 'BOT'
   | 'OTHER';
 
 export interface MessageLogEntry {

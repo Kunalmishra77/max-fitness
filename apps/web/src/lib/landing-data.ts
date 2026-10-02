@@ -32,6 +32,14 @@ export interface LandingData {
   readonly gym: LandingGym | null;
   readonly settings: GymSettings;
   readonly plans: Plan[];
+  /** The gym's own gallery photos, in display order; empty keeps the built-in set (ADR-091). */
+  readonly galleryPhotos?: ReadonlyArray<{
+    readonly id: string;
+    readonly width: number;
+    readonly height: number;
+    readonly captionEn: string | null;
+    readonly captionHi: string | null;
+  }>;
 }
 
 const loadFromDatabase = unstable_cache(
@@ -51,11 +59,20 @@ const loadFromDatabase = unstable_cache(
       console.error('[landing] gym settings failed validation; using defaults');
     }
 
-    const planRows = await prisma.plan.findMany({
-      where: { gymId: gym.id, isActive: true },
-      orderBy: [{ gender: 'asc' }, { durationMonths: 'asc' }],
-      select: { id: true, code: true, kind: true, durationMonths: true, gender: true, pricePaise: true, isActive: true, sortOrder: true },
-    });
+    const [planRows, galleryPhotos] = await Promise.all([
+      prisma.plan.findMany({
+        where: { gymId: gym.id, isActive: true },
+        orderBy: [{ gender: 'asc' }, { durationMonths: 'asc' }],
+        select: { id: true, code: true, kind: true, durationMonths: true, gender: true, pricePaise: true, isActive: true, sortOrder: true },
+      }),
+      // The gym's own gallery (ADR-091); empty keeps the built-in photos.
+      prisma.galleryPhoto.findMany({
+        where: { gymId: gym.id, isPublished: true },
+        orderBy: { sortOrder: 'asc' },
+        take: 12,
+        select: { id: true, width: true, height: true, captionEn: true, captionHi: true },
+      }),
+    ]);
 
     return {
       available: true,
@@ -78,6 +95,7 @@ const loadFromDatabase = unstable_cache(
         isActive: row.isActive,
         sortOrder: row.sortOrder,
       })),
+      galleryPhotos,
     };
   },
   ['landing-data-v1'],

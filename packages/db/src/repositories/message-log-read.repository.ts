@@ -9,6 +9,19 @@ import type { PrismaClient } from '../client';
  * said, how far it got, and the reason it stopped.
  */
 
+/** One member's thread, as the Messages screen lists it (ADR-091). */
+export interface MessageConversation {
+  readonly memberId: string;
+  readonly memberName: string | null;
+  readonly lastAt: Date;
+  readonly lastPreview: string | null;
+  readonly lastDirection: 'OUTBOUND' | 'INBOUND';
+  readonly lastStatus: MessageStatus;
+  readonly messages: number;
+  /** True when the member has written back: that is where a person may be needed. */
+  readonly hasInbound: boolean;
+}
+
 export interface MessageLogRow {
   readonly id: string;
   readonly memberId: string | null;
@@ -81,6 +94,49 @@ export class PrismaMessageLogReader {
   readonly #prisma: PrismaClient;
   constructor(prisma: PrismaClient) {
     this.#prisma = prisma;
+  }
+
+  /**
+   * One line per member, newest first: who was last written to, what it said, and how many
+   * messages that conversation holds (ADR-091).
+   *
+   * The log read as one long list answered "what went out today" and nothing about any one
+   * person. A gym thinks in people — "what have we sent Suresh?" — so the screen opens on the
+   * conversations and the full list is still a tap away.
+   */
+  async conversations(gymId: string, limit = 50): Promise<MessageConversation[]> {
+    const rows = await this.#prisma.messageLog.findMany({
+      where: { gymId, memberId: { not: null } },
+      orderBy: { createdAt: 'desc' },
+      // Enough recent messages to build a page of conversations without a second query.
+      take: 600,
+      select: { memberId: true, createdAt: true, direction: true, bodyPreview: true, status: true, member: { select: { fullName: true } } },
+    });
+
+    const byMember = new Map<string, MessageConversation>();
+    for (const row of rows) {
+      if (row.memberId === null) continue;
+      const existing = byMember.get(row.memberId);
+      if (existing === undefined) {
+        byMember.set(row.memberId, {
+          memberId: row.memberId,
+          memberName: row.member?.fullName ?? null,
+          lastAt: row.createdAt,
+          lastPreview: row.bodyPreview,
+          lastDirection: row.direction === 'INBOUND' ? 'INBOUND' : 'OUTBOUND',
+          lastStatus: row.status as MessageStatus,
+          messages: 1,
+          // A member who wrote back is where a person is needed; that sorts to the top.
+          hasInbound: row.direction === 'INBOUND',
+        });
+        continue;
+      }
+      byMember.set(row.memberId, { ...existing, messages: existing.messages + 1, hasInbound: existing.hasInbound || row.direction === 'INBOUND' });
+    }
+
+    return [...byMember.values()]
+      .sort((a, b) => Number(b.hasInbound) - Number(a.hasInbound) || b.lastAt.getTime() - a.lastAt.getTime())
+      .slice(0, limit);
   }
 
   /** The gym's messages, newest first, optionally narrowed to one member or one state. */

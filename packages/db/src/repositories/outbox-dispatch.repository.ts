@@ -22,7 +22,11 @@ export class PrismaOutboxDispatchStore implements OutboxDispatchStore {
         SELECT "id", "gymId", "type", "payload", "dedupeKey", "attempts"
         FROM "OutboxEvent"
         WHERE "status" = 'PENDING' AND "availableAt" <= ${now} AND "type" = ANY(${[...types]}::text[])
-        ORDER BY "availableAt"
+        -- createdAt breaks the tie, and ties are the normal case rather than the odd one:
+        -- every event claimed in one batch is leased to the same instant, so after a lease
+        -- lapses they all share an "availableAt" and the order would otherwise be whatever
+        -- the planner felt like. Oldest first is what an outbox promises.
+        ORDER BY "availableAt", "createdAt"
         LIMIT ${limit}
         FOR UPDATE SKIP LOCKED
       `;

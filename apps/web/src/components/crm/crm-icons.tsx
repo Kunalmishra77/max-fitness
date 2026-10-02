@@ -27,6 +27,8 @@ export type CrmIconName =
   | 'chevron'
   | 'cake'
   | 'diet'
+  | 'bot'
+  | 'gallery'
   | 'whatsapp'
   | 'search';
 
@@ -53,6 +55,10 @@ const PATHS: Record<CrmIconName, string> = {
   chevron: 'm9 5 7 7-7 7',
   cake: 'M4 21h16M5 21v-7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7M5 16.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 5 0M12 12V8M12 5.5c.8 0 1.2-.7 1.2-1.3 0-.9-1.2-2.2-1.2-2.2s-1.2 1.3-1.2 2.2c0 .6.4 1.3 1.2 1.3Z',
   whatsapp: 'M4 20l1.2-3.6A8 8 0 1 1 8 19l-4 1ZM9 8.5c0 3.5 3 6.5 6.5 6.5l1-1.5-2-1-1 .8A5 5 0 0 1 11 10.8l.8-1-1-2-1.8.7Z',
+  // A head with an aerial: the assistant, distinct from the gym's own WhatsApp messages.
+  bot: 'M7 9h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2ZM12 9V6M12 4.5h.01M9.5 13h.01M14.5 13h.01M9.5 16.5h5',
+  // A framed photograph with a hill and a sun: the website's gallery.
+  gallery: 'M4 5h16v14H4zM4 16l4.5-4.5 3 3L15 11l5 5M15.5 8.5h.01',
   // An apple: a diet plan, without resorting to a plate of emoji.
   diet: 'M12 7.5c-1-2-3-2.5-4.5-1.5C5.5 7.3 5 10 6 13c.9 2.8 3 7 6 7s5.1-4.2 6-7c1-3 .5-5.7-1.5-7-1.5-1-3.5-.5-4.5 1.5ZM12 7.5V4M12 4c1.2 0 2.4-.8 3-2',
   search: 'M10.5 18a7.5 7.5 0 1 0 0-15 7.5 7.5 0 0 0 0 15ZM21 21l-5.2-5.2',

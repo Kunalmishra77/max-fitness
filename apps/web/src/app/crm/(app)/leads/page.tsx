@@ -93,6 +93,22 @@ export default async function CrmLeadsPage({ searchParams }: { searchParams: Pro
                 </a>
               </div>
 
+              {/*
+                "Make them a member" (ADR-091). The enquiry closes itself: adding a member on
+                the same number converts every recent lead on it, which is the rule that was
+                already there (BR-10.2) — this is the shortcut to it, with the name and number
+                carried over so nobody retypes what the gym already wrote down.
+              */}
+              {mayWork && lead.status !== 'CONVERTED' ? (
+                <Link
+                  href={`/crm/members/new?name=${encodeURIComponent(lead.name)}&mobile=${encodeURIComponent(lead.mobile)}`}
+                  className="mt-3 flex min-h-14 items-center justify-center gap-2 rounded-panel bg-brand-accent text-crm-body font-semibold text-brand-white transition-transform hover:-translate-y-0.5"
+                >
+                  <CrmIcon name="plus" className="size-5" />
+                  {t('leads.makeMember')}
+                </Link>
+              ) : null}
+
               {mayWork && lead.status !== 'CONVERTED' && lead.status !== 'LOST' ? (
                 <LeadActions leadId={lead.id} status={lead.status as LeadStatus} action={advanceLeadAction} />
               ) : null}

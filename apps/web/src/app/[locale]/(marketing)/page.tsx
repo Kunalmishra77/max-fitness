@@ -79,7 +79,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         whatsappHref={contact.whatsappHref}
       />
       <TestimonialsSection reviews={ctx.reviews} googleReviewsUrl={googleReviewsHref()} />
-      <Gallery />
+      {/* The gym's own photos when the owner has published any, else the built-in set (ADR-091). */}
+      <Gallery own={ctx.galleryPhotos} />
       <VisitSection
         rows={ctx.hours.rows}
         address={contact.address}

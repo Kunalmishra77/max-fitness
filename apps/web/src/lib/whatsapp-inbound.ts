@@ -30,6 +30,12 @@ export interface InboundDeps {
   /** Who at this number is part-way through this month's check on their plan (ADR-089). */
   readonly pendingFollowUpQuestion: (mobile: E164Mobile) => Promise<{ readonly memberId: string; readonly question: string } | null>;
   readonly recordFollowUpReply: (memberId: string, text: string) => Promise<void>;
+  /**
+   * The assistant's go at a question nobody automatic owns (ADR-090). `true` means it
+   * replied and the owner need not be woken; anything else — switched off, escalated,
+   * no key, a model that could not be reached — is `false`, and the owner is told.
+   */
+  readonly botAnswer?: (asked: { readonly mobile: E164Mobile; readonly text: string; readonly providerMessageId: string }) => Promise<boolean>;
 }
 
 /** `UNSUB.<token>` / `RESTART.<token>`: the prefix says what, the token says who. */
@@ -68,7 +74,17 @@ async function handleReply(reply: ParsedWebhook['replies'][number], deps: Inboun
     return;
   }
   if (route.to === 'HUMAN') {
-    await deps.alertOwner('MEMBER_REPLIED', { from: reply.from, text: reply.value.slice(0, 120) });
+    // The assistant gets first refusal (ADR-090). It answers only when the owner has turned
+    // both switches on and the knowledge base covers the question; every other outcome falls
+    // through to the owner, including the assistant breaking — a member waiting on an answer
+    // nobody knows about is the one thing this must never do.
+    let answered = false;
+    try {
+      answered = (await deps.botAnswer?.({ mobile: reply.from, text: reply.value, providerMessageId: reply.providerMessageId })) ?? false;
+    } catch (error) {
+      console.error(`[whatsapp-inbound] assistant failed: ${error instanceof Error ? error.message.split(':')[0] : 'Error'}`);
+    }
+    if (!answered) await deps.alertOwner('MEMBER_REPLIED', { from: reply.from, text: reply.value.slice(0, 120) });
     return;
   }
   const meaning = route.to;

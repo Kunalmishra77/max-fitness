@@ -116,6 +116,36 @@ describe('handleInboundWhatsApp', () => {
     expect(d.calls).toEqual(['alert:MEMBER_REPLIED']);
   });
 
+  it('lets the assistant answer the question instead of waking the owner (ADR-090)', async () => {
+    const d = deps({
+      botAnswer: (asked) => {
+        d.calls.push(`bot:${asked.text}`);
+        expect(asked.mobile).toBe(MOBILE);
+        expect(asked.providerMessageId).toBe('wamid.1');
+        return Promise.resolve(true);
+      },
+    });
+    await handleInboundWhatsApp(reply('फीस कितनी है', 'TEXT'), d);
+    expect(d.calls).toEqual(['bot:फीस कितनी है']);
+  });
+
+  it('still tells the owner when the assistant is off or escalates', async () => {
+    const d = deps({
+      botAnswer: () => {
+        d.calls.push('bot:no');
+        return Promise.resolve(false);
+      },
+    });
+    await handleInboundWhatsApp(reply('क्या आप आज खुले हैं', 'TEXT'), d);
+    expect(d.calls).toEqual(['bot:no', 'alert:MEMBER_REPLIED']);
+  });
+
+  it('tells the owner when the assistant itself breaks', async () => {
+    const d = deps({ botAnswer: () => Promise.reject(new Error('AI_UNREACHABLE')) });
+    await handleInboundWhatsApp(reply('timing', 'TEXT'), d);
+    expect(d.calls).toEqual(['alert:MEMBER_REPLIED']);
+  });
+
   it('pauses the post-expiry chasing when Meta signals a quality problem (§9)', async () => {
     const d = deps();
     await handleInboundWhatsApp(

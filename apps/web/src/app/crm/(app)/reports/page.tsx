@@ -146,6 +146,56 @@ export default async function CrmReportsPage() {
           </Card>
         )}
 
+        {/* The trial, the diet plans and the assistant (ADR-088, 089, 090). Each card is
+            absent rather than zeroed when the gym has never used that part. */}
+        {inputs.trial.soldThisMonth === 0 && inputs.trial.convertedThisMonth === 0 ? null : (
+          <Card title={t('reports.trial')} subtitle={t('reports.thisMonth')}>
+            <div className="flex items-baseline gap-6">
+              <span>
+                <span className="block font-display text-[2.25rem] leading-none font-bold text-brand-obsidian tabular">{inputs.trial.soldThisMonth}</span>
+                <span className="mt-1 block text-small text-brand-stone">{t('reports.trialSold')}</span>
+              </span>
+              <span>
+                <span className="block font-display text-[2.25rem] leading-none font-bold text-brand-obsidian tabular">{rupees(inputs.trial.revenueThisMonthPaise)}</span>
+                <span className="mt-1 block text-small text-brand-stone">{t('reports.trialRevenue')}</span>
+              </span>
+              <span>
+                <span className="block font-display text-[2.25rem] leading-none font-bold text-brand-obsidian tabular">{inputs.trial.convertedThisMonth}</span>
+                <span className="mt-1 block text-small text-brand-stone">{t('reports.trialConverted')}</span>
+              </span>
+            </div>
+          </Card>
+        )}
+
+        {inputs.diet.plansThisMonth === 0 && inputs.diet.active === 0 && inputs.diet.awaitingAnswers === 0 ? null : (
+          <Card title={t('reports.diet')} subtitle={t('reports.dietSubtitle')}>
+            <ul className="grid gap-1">
+              {(
+                [
+                  ['dietPlansThisMonth', inputs.diet.plansThisMonth],
+                  ['dietActive', inputs.diet.active],
+                  ['dietAwaiting', inputs.diet.awaitingAnswers],
+                  ['dietFollowUps', inputs.diet.followUpsOpen],
+                ] as ReadonlyArray<readonly [string, number]>
+              ).map(([key, value]) => (
+                <li key={key} className="flex justify-between text-crm-body text-brand-ink">
+                  <span>{t(`reports.${key}` as never)}</span>
+                  <span className="font-semibold tabular">{value}</span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+
+        {inputs.bot.askedThisMonth === 0 ? null : (
+          <Card title={t('reports.bot')} subtitle={t('reports.thisMonth')}>
+            <p className="font-display text-[2.25rem] leading-none font-bold text-brand-obsidian tabular">{inputs.bot.askedThisMonth}</p>
+            <p className="mt-2 text-small text-brand-stone">
+              {t('reports.botSplit', { answered: inputs.bot.answeredThisMonth, escalated: inputs.bot.escalatedThisMonth })}
+            </p>
+          </Card>
+        )}
+
         <Card title={t('reports.renewalRate')}>
           {flow.renewalRate.percent === null ? (
             <p className="text-crm-body text-brand-stone">{t('reports.renewalRateNone')}</p>

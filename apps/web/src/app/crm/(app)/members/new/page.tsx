@@ -16,9 +16,11 @@ import { requireCrmContext } from '@/lib/crm';
 
 export const dynamic = 'force-dynamic';
 
-export default async function CrmAddMemberPage() {
+export default async function CrmAddMemberPage({ searchParams }: { searchParams: Promise<{ name?: string; mobile?: string }> }) {
   const { actor } = await requireCrmContext();
   const t = await getTranslations('crm');
+  // Arrives from an enquiry: "Make them a member" carries what they already told us (ADR-091).
+  const { name, mobile } = await searchParams;
 
   if (!can(actor, 'member.edit', getContainer().clock.now())) {
     return (
@@ -34,7 +36,13 @@ export default async function CrmAddMemberPage() {
   return (
     <>
       <CrmHeader title={t('add.title')} back="/crm/members" />
-      <AddMemberFlow action={addMemberAction} />
+      <AddMemberFlow
+        action={addMemberAction}
+        prefill={{
+          ...(name === undefined ? {} : { fullName: name.slice(0, 60) }),
+          ...(mobile === undefined ? {} : { mobile: mobile.replace(/\D/g, '').slice(-10) }),
+        }}
+      />
     </>
   );
 }

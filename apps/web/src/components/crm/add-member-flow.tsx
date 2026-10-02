@@ -43,9 +43,15 @@ const pad = (value: string) => value.padStart(2, '0');
 
 export function AddMemberFlow({
   action,
+  prefill,
   Camera = SelfieCapture,
 }: {
   action: (fields: AddMemberFields, photo: FormData | null) => Promise<AddMemberResult>;
+  /**
+   * What an enquiry already told us (ADR-091). Typing a name and number the gym has had
+   * written down for a week is the sort of thing that makes staff stop using the pipeline.
+   */
+  prefill?: { readonly fullName?: string; readonly mobile?: string };
   /** Injected in tests; the real sheet needs a camera. */
   Camera?: ComponentType<SelfieCaptureProps>;
 }) {
@@ -71,8 +77,8 @@ export function AddMemberFlow({
     },
     [],
   );
-  const [fullName, setFullName] = useState('');
-  const [mobile, setMobile] = useState('');
+  const [fullName, setFullName] = useState(prefill?.fullName ?? '');
+  const [mobile, setMobile] = useState(prefill?.mobile ?? '');
   const [gender, setGender] = useState<AddMemberFields['gender'] | null>(null);
   const [dob, setDob] = useState({ day: '', month: '', year: '' });
   const [terms, setTerms] = useState(false);

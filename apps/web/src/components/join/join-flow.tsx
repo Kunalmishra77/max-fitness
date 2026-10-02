@@ -163,7 +163,14 @@ export function JoinPlan(props: {
   );
 }
 
-export function JoinPay(props: { prices: PriceLists; admissionPaise: number; phoneDisplay: string; trialOptions: readonly TrialOption[] }) {
+export function JoinPay(props: {
+  prices: PriceLists;
+  admissionPaise: number;
+  phoneDisplay: string;
+  trialOptions: readonly TrialOption[];
+  /** False means reserve and pay at reception, because no money would actually move (ADR-093). */
+  onlinePayments: boolean;
+}) {
   const t = useTranslations('signup');
   const tp = useTranslations('signup.plan');
   const router = useRouter();
@@ -204,7 +211,7 @@ export function JoinPay(props: { prices: PriceLists; admissionPaise: number; pho
           admissionPaise: 0,
         }}
         phoneDisplay={props.phoneDisplay}
-        receptionOnly={state.fromQr === true}
+        receptionOnly={state.fromQr === true || !props.onlinePayments}
         onPaid={(result) => {
           updateJoinState({ paymentId: result.paymentId, reservedUntil: undefined, reservedAmountPaise: undefined });
           router.push('/join/done');
@@ -236,7 +243,7 @@ export function JoinPay(props: { prices: PriceLists; admissionPaise: number; pho
         ...(ptCard === undefined ? {} : { ptLabel: ptLabel(ptCard), ptPricePaise: ptCard.pricePaise }),
       }}
       phoneDisplay={props.phoneDisplay}
-      receptionOnly={state.fromQr === true}
+      receptionOnly={state.fromQr === true || !props.onlinePayments}
       onPaid={(result) => {
         updateJoinState({ paymentId: result.paymentId, reservedUntil: undefined, reservedAmountPaise: undefined });
         router.push('/join/done');

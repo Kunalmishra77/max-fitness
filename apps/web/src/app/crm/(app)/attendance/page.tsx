@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { can } from '@mfp/core';
 import { markAttendanceAction, undoAttendanceAction } from '@/app/crm/actions';
 import { AttendanceMarker } from '@/components/crm/attendance-marker';
+import { AutoRefresh } from '@/components/crm/auto-refresh';
 import { BottomNav, CrmHeader, FEE_TONE, CRM_CARD, pillClass } from '@/components/crm/crm-chrome';
 import { cn } from '@/lib/cn';
 import { MemberSearch } from '@/components/crm/member-search';
@@ -43,6 +44,8 @@ export default async function CrmAttendancePage({ searchParams }: { searchParams
 
   return (
     <>
+      {/* Arrivals land here from the kiosk, not from this screen (ADR-092). */}
+      <AutoRefresh seconds={30} />
       <CrmHeader title={t('attendance.title')} subtitle={t('menu.attendance.desc')} back="/crm" />
 
       {mayMark ? (

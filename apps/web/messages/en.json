@@ -994,7 +994,8 @@
       "failed": "Could not save. Please try again.",
       "cancel": "Cancel",
       "notAllowed": "You are not allowed to change enquiries.",
-      "addMember": "Add as member"
+      "addMember": "Add as member",
+      "makeMember": "Make them a member"
     },
     "reports": {
       "title": "Reports",
@@ -1058,7 +1059,19 @@
       "pt": "Personal training",
       "ptSubtitle": "Running now, and sold this month",
       "ptRunning": "members with a trainer",
-      "ptSold": "{count, plural, one {from 1 sold this month} other {from # sold this month}}"
+      "ptSold": "{count, plural, one {from 1 sold this month} other {from # sold this month}}",
+      "trial": "Trials",
+      "trialSold": "sold",
+      "trialRevenue": "taken",
+      "trialConverted": "joined after one",
+      "diet": "Diet plans",
+      "dietSubtitle": "Written, running, and waiting",
+      "dietPlansThisMonth": "Written this month",
+      "dietActive": "Members on a plan",
+      "dietAwaiting": "Still answering questions",
+      "dietFollowUps": "Monthly checks open",
+      "bot": "Assistant",
+      "botSplit": "{answered} answered, {escalated} passed to a person"
     },
     "settings": {
       "title": "Settings",
@@ -1459,6 +1472,10 @@
       "bot": {
         "label": "WhatsApp assistant",
         "desc": "Set up what it knows and how it answers"
+      },
+      "gallery": {
+        "label": "Website photos",
+        "desc": "What the gym looks like on the site"
       }
     },
     "shell": {
@@ -1520,7 +1537,12 @@
         "NO_MOBILE": "No mobile number on file",
         "ALREADY_SENT": "It had already been sent",
         "DUPLICATE_IDEMPOTENCY_KEY": "It had already been sent"
-      }
+      },
+      "filterPeople": "By person",
+      "noPeople": "No conversations yet.",
+      "unknownMember": "Unknown member",
+      "count": "{count, plural, one {1 message} other {# messages}}",
+      "replied": "replied"
     },
     "simulator": {
       "title": "Message plan",
@@ -1719,6 +1741,28 @@
         "PIN_REQUIRED": "Enter your PIN again to save this.",
         "VALIDATION_FAILED": "Check what you typed — something is too long or missing.",
         "generic": "That could not be saved. Try again."
+      }
+    },
+    "gallery": {
+      "title": "Website photos",
+      "notAllowed": "Only the owner can change the website photos.",
+      "addTitle": "Add photos",
+      "addHelp": "These are the first thing a stranger sees of the gym. Take them in daylight if you can, and show the floor rather than the ceiling. Up to ten at a time.",
+      "choose": "Choose photos",
+      "uploading": "Uploading…",
+      "listTitle": "On the website",
+      "listHelp": "The first photo is the big one. Use the arrows to change the order.",
+      "empty": "No photos yet — the website is showing the ones from the gym’s Google listing.",
+      "moveUp": "Move earlier",
+      "moveDown": "Move later",
+      "hide": "Take off the site",
+      "show": "Put on the site",
+      "delete": "Delete",
+      "errors": {
+        "FORBIDDEN": "Only the owner can do that.",
+        "TOO_SMALL": "That picture is too small or too large to use. A normal phone photo works.",
+        "couldNotRead": "That file could not be read as a photo.",
+        "generic": "That could not be done. Try again."
       }
     }
   },

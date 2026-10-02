@@ -45,6 +45,7 @@ export * from './bot/answer';
 export * from './bot/bot.service';
 export * from './bot/bot-settings';
 export * from './gym/hours';
+export * from './gym/gallery';
 export * from './gym/promo';
 
 export * from './signup/registration.rules';

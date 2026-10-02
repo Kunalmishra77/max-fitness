@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { parseWhatsAppWebhook, recordDietReply, recordFollowUpReply, restartReminders, unsubscribeMember, verifyMetaSignature } from '@mfp/core';
-import { PrismaDietFollowUps, PrismaDietInbox, PrismaDietUnitOfWork, PrismaMessageLogWriter, PrismaUnsubscribeUnitOfWork } from '@mfp/db';
+import { answerMemberQuestion, parseWhatsAppWebhook, recordDietReply, recordFollowUpReply, restartReminders, unsubscribeMember, verifyMetaSignature } from '@mfp/core';
+import { PrismaBot, PrismaDietFollowUps, PrismaDietInbox, PrismaDietUnitOfWork, PrismaMessageLogWriter, PrismaUnsubscribeUnitOfWork } from '@mfp/db';
 import type { E164Mobile } from '@mfp/shared';
 import { newRequestId } from '@/lib/api';
 import { getContainer } from '@/lib/container';
@@ -94,6 +94,42 @@ export async function POST(request: NextRequest) {
         pendingFollowUpQuestion: (mobile: E164Mobile) => new PrismaDietFollowUps(prisma).pendingAtMobile(gym.id, mobile),
         recordFollowUpReply: async (memberId, text) => {
           await recordFollowUpReply({ gymId: gym.id, memberId, text }, { clock, uow: new PrismaDietFollowUps(prisma) });
+        },
+        // A question nobody automatic owns goes to the assistant first (ADR-090). It is
+        // allowed a plain-text reply because the member's own message opened the 24-hour
+        // service window (BR-6.3), and the send is keyed to their message id so a
+        // redelivery cannot answer twice.
+        botAnswer: async ({ mobile, text, providerMessageId }) => {
+          const member = await prisma.member.findFirst({
+            where: { gymId: gym.id, mobile, deletedAt: null },
+            orderBy: { createdAt: 'asc' },
+            select: { id: true, fullName: true, language: true },
+          });
+          const answer = await answerMemberQuestion(
+            {
+              gymId: gym.id,
+              question: text,
+              member: {
+                memberId: member?.id ?? null,
+                firstName: member === null ? '' : (member.fullName.split(' ')[0] ?? member.fullName),
+                language: member?.language ?? 'hi',
+                mobile,
+              },
+            },
+            { clock, ai: container.ai, store: new PrismaBot(prisma).store },
+          );
+          if (answer.outcome !== 'ANSWER') return false;
+
+          const sent = await container.whatsapp.sendText({
+            to: mobile,
+            body: answer.text,
+            idempotencyKey: `bot:${providerMessageId}`,
+            purpose: 'BOT',
+            memberId: member?.id ?? null,
+          });
+          // Simulated counts as answered — in DEMO_MODE the owner reads it in the Simulator,
+          // and waking them for a question the assistant handled would defeat the feature.
+          return sent.status === 'SENT' || sent.status === 'SIMULATED';
         },
         updateStatus: (providerMessageId, status, at, error) =>
           messageLog.updateStatus(providerMessageId, status as Parameters<PrismaMessageLogWriter['updateStatus']>[1], at, error ?? undefined),

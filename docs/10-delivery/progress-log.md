@@ -1066,3 +1066,53 @@ oldest first") failed twice under a full parallel run against the remote databas
 alone and in a db-only run, twice. Its data is isolated by a random run id, so this is timing
 against Supabase under load rather than cross-test pollution — but it is the kind of thing that
 erodes trust in a suite, and it should be made order-independent rather than left to chance.
+
+## 2026-10-02 — The owner's own photos, the assistant answering live, and screens that keep up
+
+**The website gallery is the owner's now (ADR-091).** `/crm/gallery`, behind the PIN.
+- Upload one photo and the website shows yours; delete them all and the Google ones come back.
+  A mixed gallery is the worst outcome, so his set replaces the built-in one rather than joining it.
+- Shrunk in the browser before it is sent — 1,600px long edge, about 420KB — because the upload
+  is happening from a phone on gym wifi, and because the page can then reserve the right box.
+- Reorder (the first photo is the big one), hide, show, delete. A failed row deletes its own bytes.
+- The public route serves published rows only, with a year-long immutable cache.
+
+**The assistant answers members live (ADR-092).** This closes the gap left open in ADR-090.
+- A reply nobody automatic owns now goes to the assistant first, and **only a message that was
+  actually sent counts as answered** — off, no key, escalated, unreachable, failed send, or the
+  assistant itself throwing all fall through to the owner's alert.
+- Plain text inside the member's own 24-hour service window, so no new template approval is
+  needed, keyed to their message id so a Meta redelivery cannot answer twice.
+- New `MessagePurpose.BOT` (one migration) so the message log says which replies were the machine's.
+
+**Screens stop going stale (ADR-092).** Home, arrivals, the message log and the call list re-ask
+the server for themselves on a timer — a server-component refresh, so typing, dialogs and scroll
+position survive. Nothing polls while the tab is hidden; it catches up the instant it is looked at
+again. Home is also tighter on a phone and unchanged at desktop width.
+
+**Also done, from the same list:** reports now carry the trial, diet and assistant numbers;
+`/crm/messages?view=people` gives the message log a per-member thread view; "make them a member"
+on a lead carries the name and number into the add-member form; and the outbox flake recorded last
+session was a real non-deterministic `ORDER BY` after a lease, fixed in the query — `createdAt`
+now breaks the tie, because with a batch leased to one instant the tie is the normal case.
+
+### Pending
+- **Razorpay live + e-mandate** — needs credentials. **Server-rendered branded PDF** — needs a
+  Devanagari font asset (~400KB) committed. **PDF/DOCX knowledge imports** — needs two
+  dependencies. All three are waiting on the client, not on engineering.
+- Still blocked on the client: the **AI key**, **WhatsApp Cloud API approval and a worker host**,
+  **Razorpay credentials**, and the **domain** to point at Vercel.
+
+**The website stops offering to take money it cannot take (ADR-093).** The client has bought
+`maxfitnessgym.co.in` and wants it live today, and in `DEMO_MODE` the pay window completes the
+order without any money moving — fine on a demo URL, a free membership on a real one. `/join`
+and `/renew` now offer online payment only when payments are real **and** a gateway secret
+exists; otherwise they reserve the place and ask the member to pay at reception, which is the
+path every QR arrival already takes. Adding the live Razorpay keys turns it on by itself, so
+there is nothing to remember at deploy time.
+
+**On hosting (the client asked):** Hostinger **shared** hosting cannot run this — it serves PHP
+against MySQL, and this is a long-lived Node process against PostgreSQL with a worker, using
+Postgres enums and array columns MySQL has no equivalent for. The domain is separate: it stays
+registered at Hostinger with its DNS pointed at whatever host runs the app. A Hostinger VPS
+could run it later; the shared plan cannot, at any amount of effort.

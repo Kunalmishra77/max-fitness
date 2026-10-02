@@ -1,5 +1,6 @@
 import { JoinFrame, JoinPay } from '@/components/join/join-flow';
 import { JoinPage, PlansUnavailable, joinContext, joinMetadata, priceLists, trialChoices } from '@/lib/join-page';
+import { onlinePaymentsLive } from '@/lib/online-payments';
 
 /** `/join/pay` — step 3: pay online or reserve and pay at reception. */
 
@@ -21,6 +22,7 @@ export default async function JoinPayPage({ params }: { params: Promise<{ locale
             trialOptions={trialChoices(ctx)}
             admissionPaise={ctx.data.settings.pricing.admissionFeePaise}
             phoneDisplay={ctx.contact.phoneDisplay}
+            onlinePayments={onlinePaymentsLive()}
           />
         ) : (
           <PlansUnavailable ctx={ctx} />

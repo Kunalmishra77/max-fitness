@@ -21,6 +21,7 @@ export type CrmNavKey =
   | 'diet'
   | 'announce'
   | 'bot'
+  | 'gallery'
   | 'reports'
   | 'import'
   | 'staff'
@@ -56,7 +57,9 @@ export function crmNavItems(actor: CrmActor, now: Date): CrmNavItem[] {
     // One message to every member is the owner's, and needs the PIN on the way in (ADR-079).
     afterPin('settings.manage') && { key: 'announce', href: '/crm/announcements', icon: 'whatsapp', group: 'business' },
     // What the assistant says is what the gym says, so it sits with the owner's settings (ADR-090).
-    afterPin('settings.manage') && { key: 'bot', href: '/crm/bot', icon: 'whatsapp', group: 'business' },
+    afterPin('settings.manage') && { key: 'bot', href: '/crm/bot', icon: 'bot', group: 'business' },
+    // The website's photos are the first thing a stranger sees of the gym (ADR-091).
+    afterPin('settings.manage') && { key: 'gallery', href: '/crm/gallery', icon: 'gallery', group: 'business' },
     may('money.view') && { key: 'reports', href: '/crm/reports', icon: 'reports', group: 'business' },
     afterPin('member.import') && { key: 'import', href: '/crm/import', icon: 'import', group: 'business' },
     afterPin('settings.manage') && { key: 'staff', href: '/crm/settings/staff', icon: 'staff', group: 'business' },

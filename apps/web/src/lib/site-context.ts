@@ -55,6 +55,8 @@ export interface SiteContext {
   /** Google rating as printed ("4.8") and its review count, from settings. */
   readonly rating: { readonly google: string; readonly googleReviews: number };
   readonly reviews: readonly ReviewItem[];
+  /** The gym's own gallery photos; empty means the built-in set stays (ADR-091). */
+  readonly galleryPhotos: readonly { readonly id: string; readonly width: number; readonly height: number; readonly caption: string | null }[];
   readonly navSections: readonly NavSection[];
 }
 
@@ -121,6 +123,15 @@ export async function getSiteContext(locale: Locale): Promise<SiteContext> {
   const reviews = REAL_REVIEWS.length > 0 ? REAL_REVIEWS : showUnconfirmed ? DEMO_REVIEWS : [];
   const promo = activePromos(settings.promo, today, locale);
 
+  // The gym's own gallery (ADR-091). Cached with the rest of the landing read, and
+  // revalidated when the owner adds, hides or deletes a photo.
+  const galleryPhotos = (data.galleryPhotos ?? []).map((photo) => ({
+    id: photo.id,
+    width: photo.width,
+    height: photo.height,
+    caption: locale === 'hi' ? (photo.captionHi ?? photo.captionEn) : (photo.captionEn ?? photo.captionHi),
+  }));
+
   return {
     locale,
     data,
@@ -151,6 +162,7 @@ export async function getSiteContext(locale: Locale): Promise<SiteContext> {
     monthly: { men: monthlyFor('MALE'), women: monthlyFor('FEMALE') },
     rating: { google: settings.trust.googleRating.toFixed(1), googleReviews: settings.trust.googleReviews },
     reviews,
+    galleryPhotos,
     navSections: ['about', 'facilities', 'plans', 'owner', ...(reviews.length > 0 ? (['reviews'] as const) : []), 'contact'],
   };
 }

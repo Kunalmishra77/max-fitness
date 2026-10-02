@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server';
 import { can } from '@mfp/core';
 import { recordCallOutcomeAction } from '@/app/crm/actions';
 import { CallOutcomeButtons } from '@/components/crm/call-outcome';
+import { AutoRefresh } from '@/components/crm/auto-refresh';
 import { BottomNav, CrmHeader, FEE_TONE } from '@/components/crm/crm-chrome';
 import { CrmIcon } from '@/components/crm/crm-icons';
 import { getContainer } from '@/lib/container';
@@ -25,6 +26,8 @@ export default async function CrmCallsPage() {
 
   return (
     <>
+      {/* The engine adds tasks while the list is open (ADR-092). */}
+      <AutoRefresh seconds={60} />
       <CrmHeader title={t('calls.title')} subtitle={t('menu.calls.desc')} back="/crm" />
       {tasks.length === 0 ? (
         <p className="px-4 py-10 text-center text-crm-body text-brand-stone">{t('calls.empty')}</p>

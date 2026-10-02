@@ -5,6 +5,7 @@ import { can } from '@mfp/core';
 import { PrismaAnnouncements, PrismaBirthdays } from '@mfp/db';
 import { sendBirthdayWishAction, setCrmLanguageAction } from '@/app/crm/actions';
 import { BirthdayList } from '@/components/crm/birthday-list';
+import { AutoRefresh } from '@/components/crm/auto-refresh';
 import { BottomNav, CrmHeader, FEE_TONE, MemberRow, rupees } from '@/components/crm/crm-chrome';
 import { CrmIcon, type CrmIconName } from '@/components/crm/crm-icons';
 import { LanguageSwitch } from '@/components/crm/language-switch';
@@ -73,6 +74,8 @@ export default async function CrmHomePage() {
 
   return (
     <>
+      {/* Today's numbers move as the floor does (ADR-092). */}
+      <AutoRefresh seconds={60} />
       <CrmHeader
         brand
         title={`${t('home.greeting')}, ${actor.name}`}
@@ -90,7 +93,7 @@ export default async function CrmHomePage() {
         }
       />
 
-      <div className="grid gap-6 p-4 lg:p-0">
+      <div className="grid gap-4 p-4 lg:gap-6 lg:p-0">
         {/* On a phone the language switch sits under the top bar; on a computer it is in the sidebar. */}
         <div className="flex justify-end lg:hidden">
           <LanguageSwitch current={locale} change={setCrmLanguageAction} tone="light" />
@@ -140,7 +143,7 @@ export default async function CrmHomePage() {
               <Link
                 href={tile.href}
                 className={cn(
-                  'flex h-full min-h-36 flex-col justify-between gap-3 rounded-panel p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md lg:p-5',
+                  'flex h-full min-h-28 flex-col justify-between gap-2 rounded-panel p-4 lg:min-h-36 lg:gap-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md lg:p-5',
                   tile.tone,
                 )}
               >
@@ -149,7 +152,7 @@ export default async function CrmHomePage() {
                   <CrmIcon name={tile.icon} className="size-6 opacity-80" />
                 </span>
                 <span>
-                  <span className="block font-display text-[2.75rem] leading-none font-bold tabular">{tile.value}</span>
+                  <span className="block font-display text-[2.25rem] leading-none font-bold tabular lg:text-[2.75rem]">{tile.value}</span>
                   <span className="mt-1 block text-small opacity-80">{tile.note ?? t(`home.help.${tile.key}`)}</span>
                 </span>
               </Link>
@@ -182,7 +185,7 @@ export default async function CrmHomePage() {
           </section>
         )}
 
-        <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+        <div className="grid gap-4 lg:gap-6 lg:grid-cols-[1.4fr_1fr]">
           <section aria-labelledby="calls-heading" className="overflow-hidden rounded-panel border border-brand-stone/15 bg-white shadow-sm">
             <div className="flex items-start justify-between gap-3 border-b border-brand-stone/15 px-4 py-3">
               <div className="flex gap-3">

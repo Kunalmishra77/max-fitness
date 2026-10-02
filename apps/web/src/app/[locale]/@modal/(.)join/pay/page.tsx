@@ -1,6 +1,7 @@
 import { JoinPay } from '@/components/join/join-flow';
 import { JoinModal } from '@/components/join/join-modal';
 import { JoinModalMessages, PlansUnavailable, joinContext, priceLists, trialChoices } from '@/lib/join-page';
+import { onlinePaymentsLive } from '@/lib/online-payments';
 
 /**
  * `/join/pay` reached from the modal: step 3. The confirmation at `/join/done` is a full
@@ -21,6 +22,7 @@ export default async function JoinPayModal({ params }: { params: Promise<{ local
             trialOptions={trialChoices(ctx)}
             admissionPaise={ctx.data.settings.pricing.admissionFeePaise}
             phoneDisplay={ctx.contact.phoneDisplay}
+            onlinePayments={onlinePaymentsLive()}
           />
         ) : (
           <PlansUnavailable ctx={ctx} />

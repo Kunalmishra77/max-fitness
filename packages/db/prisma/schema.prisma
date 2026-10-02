@@ -206,6 +206,8 @@ enum MessagePurpose {
   RESTART_CONFIRM
   /// The diet questionnaire and the plan it produces (ADR-089).
   DIET
+  /// What the WhatsApp assistant answered a member by itself (ADR-090).
+  BOT
   OTHER
 }
 
@@ -290,6 +292,7 @@ model Gym {
   botConfig     BotConfig?
   botDocuments  BotDocument[]
   botReplies    BotReply[]
+  galleryPhotos GalleryPhoto[]
   payments      Payment[]
   leads         Lead[]
   verifications VerificationRequest[]
@@ -425,6 +428,32 @@ model Plan {
 
   @@unique([gymId, code])
   @@index([gymId, kind, gender, isActive])
+}
+
+/// A photo the gym put on its own website (ADR-091).
+///
+/// The landing page shipped with the gym's Google Business Profile uploads built in. These
+/// are the owner's own, uploaded from Max Register, and they replace the built-in set as
+/// soon as there is one published — so the site is never half one and half the other.
+model GalleryPhoto {
+  id          String   @id @default(cuid())
+  gymId       String
+  storageKey  String
+  /// Shown under the photo and used as its alt text, in both languages.
+  captionEn   String?
+  captionHi   String?
+  /// Natural size, measured in the browser before upload, so the page reserves the space.
+  width       Int
+  height      Int
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+  uploadedById String?
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  gym Gym @relation(fields: [gymId], references: [id])
+
+  @@index([gymId, isPublished, sortOrder])
 }
 
 /// The WhatsApp assistant's settings — one row per gym (ADR-090).

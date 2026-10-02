@@ -18,11 +18,48 @@ import { SitePhoto } from './site-photo';
 
 const GalleryLightbox = dynamic(() => import('./gallery-lightbox').then((mod) => mod.GalleryLightbox), { ssr: false });
 
-export function Gallery() {
+/** A photo the owner uploaded from Max Register (ADR-091). */
+export interface OwnGalleryPhoto {
+  readonly id: string;
+  readonly width: number;
+  readonly height: number;
+  readonly caption: string | null;
+}
+
+export function Gallery({ own = [] }: { readonly own?: readonly OwnGalleryPhoto[] }) {
   const t = useTranslations('gallery');
   const tp = useTranslations('photos');
   const [open, setOpen] = useState<number | null>(null);
   const opener = useRef<HTMLButtonElement | null>(null);
+
+  // The gym's own photos replace the built-in set entirely once there is one, rather than
+  // mixing the two — a gallery half from last year and half from today looks like a mistake.
+  if (own.length > 0) {
+    return (
+      <Section tone="navy" labelledBy="gallery-heading">
+        <SectionHeading id="gallery-heading" eyebrow={t('eyebrow')} onDark>
+          {t('h2')}
+        </SectionHeading>
+        <ul className="mt-10 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+          {own.slice(0, 8).map((photo, i) => (
+            <li key={photo.id} className={cn(i === 0 && 'col-span-2 md:row-span-2')}>
+              {/* Served by our own public route; next/image would only re-cache a file we
+                  already serve immutably, and the id changes whenever the photo does. */}
+              <img
+                src={`/api/v1/gallery/${photo.id}`}
+                alt={photo.caption ?? ''}
+                width={photo.width}
+                height={photo.height}
+                loading={i === 0 ? 'eager' : 'lazy'}
+                className={cn('w-full rounded-photo object-cover', i === 0 ? 'aspect-[4/3] md:h-full' : 'aspect-[4/3]')}
+              />
+            </li>
+          ))}
+        </ul>
+      </Section>
+    );
+  }
+
   const total = GALLERY_PHOTOS.length;
 
   return (

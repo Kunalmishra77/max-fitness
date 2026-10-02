@@ -32,6 +32,8 @@ export interface RenewFlowProps {
   readonly today: ISTDate;
   readonly phoneDisplay: string;
   readonly directionsHref: string;
+  /** False means reserve and pay at reception, because no money would actually move (ADR-093). */
+  readonly onlinePayments: boolean;
 }
 
 type Stage =
@@ -129,6 +131,7 @@ export function RenewFlow(props: RenewFlowProps) {
               admissionPaise: 0,
             }}
             phoneDisplay={props.phoneDisplay}
+            receptionOnly={!props.onlinePayments}
             onPaid={(result) => {
               track('renew_paid');
               setStage({ kind: 'paid', card: stage.card, result });

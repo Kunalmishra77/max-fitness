@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
 import { isDomainError } from '@mfp/core';
 import { RenewFlow } from '@/components/join/renew-flow';
+import { onlinePaymentsLive } from '@/lib/online-payments';
 import { buttonVariants } from '@/components/ui/button';
 import { getContainer } from '@/lib/container';
 import { JoinPage, joinContext } from '@/lib/join-page';
@@ -64,6 +65,7 @@ export default async function RenewPage({ params }: { params: Promise<{ locale: 
                 today={ctx.today}
                 phoneDisplay={ctx.contact.phoneDisplay}
                 directionsHref={ctx.contact.directionsHref}
+                onlinePayments={onlinePaymentsLive()}
               />
             </NextIntlClientProvider>
           )}
