@@ -414,6 +414,7 @@ export function buildDataset(rows: readonly DemoMemberRow[], ctx: SeedContext): 
 
   const reminderRules: ReminderRule[] = DEFAULT_REMINDER_RULES.map((r) => ({
     code: r.code,
+    appliesTo: r.appliesTo ?? 'MEMBERSHIP',
     offsetDays: r.offsetDays,
     offsetDaysTo: r.code === 'POST' ? ctx.postExpiryMaxDays : r.offsetDaysTo,
     slots: r.slots,

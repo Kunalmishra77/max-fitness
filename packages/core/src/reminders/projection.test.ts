@@ -15,10 +15,10 @@ const SLOTS = ['10:00', '19:00'];
 const TODAY = istDate('2026-09-23');
 
 const rules: ReminderRule[] = [
-  { code: 'PRE_7', offsetDays: -7, offsetDaysTo: -7, slots: ['10:00'], templateName: 'mf_renewal_due', isEnabled: true },
-  { code: 'PRE_1', offsetDays: -1, offsetDaysTo: -1, slots: ['10:00'], templateName: 'mf_renewal_due', isEnabled: true },
-  { code: 'DUE_TODAY', offsetDays: 0, offsetDaysTo: 0, slots: ['10:00'], templateName: 'mf_renewal_due_today', isEnabled: true },
-  { code: 'POST', offsetDays: 1, offsetDaysTo: 3, slots: ['19:00'], templateName: 'mf_membership_expired', isEnabled: true },
+  { code: 'PRE_7', offsetDays: -7, offsetDaysTo: -7, slots: ['10:00'], templateName: 'mf_renewal_due', isEnabled: true, appliesTo: 'MEMBERSHIP' },
+  { code: 'PRE_1', offsetDays: -1, offsetDaysTo: -1, slots: ['10:00'], templateName: 'mf_renewal_due', isEnabled: true, appliesTo: 'MEMBERSHIP' },
+  { code: 'DUE_TODAY', offsetDays: 0, offsetDaysTo: 0, slots: ['10:00'], templateName: 'mf_renewal_due_today', isEnabled: true, appliesTo: 'MEMBERSHIP' },
+  { code: 'POST', offsetDays: 1, offsetDaysTo: 3, slots: ['19:00'], templateName: 'mf_membership_expired', isEnabled: true, appliesTo: 'MEMBERSHIP' },
 ];
 
 const member = (over: Partial<ProjectionMember> = {}): ProjectionMember => ({
@@ -28,6 +28,7 @@ const member = (over: Partial<ProjectionMember> = {}): ProjectionMember => ({
   mobile: '+919876543210' as E164Mobile,
   language: 'hi',
   endDate: istDate('2026-09-30'),
+  isTrial: false,
   status: 'ACTIVE',
   whatsappOptIn: true,
   remindersUnsubscribedAt: null,

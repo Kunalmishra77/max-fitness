@@ -1,4 +1,4 @@
-import { diffDays, type ISTDate, type ISTTime, type ReminderRuleCode, type WhatsAppTemplateName } from '@mfp/shared';
+import { diffDays, type ISTDate, type ISTTime, type ReminderAppliesTo, type ReminderRuleCode, type WhatsAppTemplateName } from '@mfp/shared';
 
 /**
  * Which reminder rule fires on which day (BR-5.1).
@@ -14,6 +14,8 @@ import { diffDays, type ISTDate, type ISTTime, type ReminderRuleCode, type Whats
 
 export interface ReminderRule {
   readonly code: ReminderRuleCode;
+  /** Whether this rule is about a plan or a trial (ADR-088). */
+  readonly appliesTo: ReminderAppliesTo;
   readonly offsetDays: number;
   /** Inclusive upper bound for a range rule. `null` = uncapped. Equals `offsetDays` for single-day rules. */
   readonly offsetDaysTo: number | null;

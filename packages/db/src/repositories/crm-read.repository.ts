@@ -22,6 +22,10 @@ export interface DashboardCounts {
   readonly unreadAlerts: number;
   readonly collectedThisMonthPaise: number;
   readonly collectedLastMonthPaise: number;
+  /** The trial (ADR-088): on one today, finished and not joined, and converted this month. */
+  readonly trialsRunning: number;
+  readonly trialsFinishedNotJoined: number;
+  readonly trialsConvertedThisMonth: number;
 }
 
 export interface MemberListItem {
@@ -157,7 +161,7 @@ export class PrismaCrmReader {
   async dashboard(gymId: string, today: ISTDate, monthStart: ISTDate, lastMonthStart: ISTDate): Promise<DashboardCounts> {
     const [day, month] = [Number(today.slice(8, 10)), Number(today.slice(5, 7))];
 
-    const [fees, activeMembers, attendance, callsToday, birthdaysToday, verificationsPending, unreadAlerts, thisMonth, lastMonth, dueSoonPlans] =
+    const [fees, activeMembers, attendance, callsToday, birthdaysToday, verificationsPending, unreadAlerts, thisMonth, lastMonth, dueSoonPlans, trials] =
       await Promise.all([
         this.#feeStates(gymId, today),
         this.#prisma.member.count({ where: { gymId, status: 'ACTIVE', deletedAt: null } }),
@@ -189,6 +193,27 @@ export class PrismaCrmReader {
           select: { memberId: true, pricePaise: true, endDate: true },
           orderBy: { endDate: 'desc' },
         }),
+        // Every confirmed trial, with whether that member has ever bought a plan. Three
+        // numbers come out of it: on a trial today, finished without joining, and joined
+        // this month after one (ADR-088).
+        this.#prisma.membership.findMany({
+          where: { gymId, isTrial: true, status: 'CONFIRMED' },
+          select: {
+            memberId: true,
+            startDate: true,
+            endDate: true,
+            member: {
+              select: {
+                memberships: {
+                  where: { isTrial: false, status: 'CONFIRMED' },
+                  select: { confirmedAt: true },
+                  orderBy: { confirmedAt: 'asc' },
+                  take: 1,
+                },
+              },
+            },
+          },
+        }),
       ]);
 
     const dueSoon = fees.filter((f) => f.feeState === 'DUE_SOON');
@@ -198,6 +223,18 @@ export class PrismaCrmReader {
     for (const membership of dueSoonPlans) {
       if (dueSoonIds.has(membership.memberId) && !expected.has(membership.memberId)) expected.set(membership.memberId, membership.pricePaise);
     }
+
+    // "Running" is by date, not status: a trial whose last day has passed is finished,
+    // whatever the row still says. "Converted" counts the plan they bought after it.
+    const monthStartDate = toDbDate(monthStart);
+    const todayDate = toDbDate(today);
+    const joinedAt = (trial: (typeof trials)[number]) => trial.member.memberships[0]?.confirmedAt ?? null;
+    const trialsRunning = trials.filter((trial) => trial.startDate !== null && trial.startDate <= todayDate && trial.endDate >= todayDate).length;
+    const trialsFinishedNotJoined = trials.filter((trial) => trial.endDate < todayDate && joinedAt(trial) === null).length;
+    const trialsConvertedThisMonth = trials.filter((trial) => {
+      const joined = joinedAt(trial);
+      return joined !== null && joined >= monthStartDate;
+    }).length;
 
     return {
       activeMembers,
@@ -211,6 +248,9 @@ export class PrismaCrmReader {
       unreadAlerts,
       collectedThisMonthPaise: thisMonth._sum.amountPaise ?? 0,
       collectedLastMonthPaise: lastMonth._sum.amountPaise ?? 0,
+      trialsRunning,
+      trialsFinishedNotJoined,
+      trialsConvertedThisMonth,
     };
   }
 

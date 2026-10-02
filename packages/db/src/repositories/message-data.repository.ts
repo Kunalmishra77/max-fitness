@@ -16,7 +16,10 @@ export interface ReceiptData {
   readonly language: Language;
   readonly mobile: E164Mobile;
   readonly amountPaise: number;
-  readonly durationMonths: number;
+  /** `null` for a trial, which is sold by the day (ADR-088). */
+  readonly durationMonths: number | null;
+  readonly isTrial: boolean;
+  readonly trialDays: number | null;
   readonly startDate: ISTDate;
   readonly endDate: ISTDate;
   readonly receiptNo: string;
@@ -48,15 +51,17 @@ export class PrismaMessageData {
         amountPaise: true,
         receiptNo: true,
         status: true,
-        membership: { select: { id: true, durationMonths: true, startDate: true, endDate: true } },
+        membership: { select: { id: true, durationMonths: true, startDate: true, endDate: true, isTrial: true, trialDays: true } },
         member: { select: { id: true, fullName: true, language: true, mobile: true, deletedAt: true } },
       },
     });
     if (payment === null || payment.status !== 'PAID' || payment.receiptNo === null) return null;
     if (payment.member === null || payment.member.deletedAt !== null || payment.membership === null || payment.membership.startDate === null) return null;
-    // A membership without a duration is a declared one from the paper register; a receipt
-    // is only ever sent for a plan the desk or the website sold.
-    if (payment.membership.durationMonths === null) return null;
+    // A membership with neither a duration nor a trial length is a declared one from the
+    // paper register; a receipt is only ever sent for something this system sold. A trial
+    // has no duration in months and is still a sale, which is why the trial is named here
+    // rather than falling through this guard and getting no receipt at all (ADR-088).
+    if (payment.membership.durationMonths === null && !payment.membership.isTrial) return null;
 
     return {
       memberId: payment.member.id,
@@ -65,6 +70,8 @@ export class PrismaMessageData {
       mobile: payment.member.mobile as E164Mobile,
       amountPaise: payment.amountPaise,
       durationMonths: payment.membership.durationMonths,
+      isTrial: payment.membership.isTrial,
+      trialDays: payment.membership.trialDays,
       startDate: fromDbDate(payment.membership.startDate),
       endDate: fromDbDate(payment.membership.endDate),
       receiptNo: payment.receiptNo,

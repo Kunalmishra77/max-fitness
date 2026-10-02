@@ -271,6 +271,70 @@ const ANNOUNCEMENT: TemplateDefinition = {
   footer: FOOTER,
 };
 
+/**
+ * T13–T16 — the trial, start to finish (ADR-088).
+ *
+ * All four are UTILITY: each one follows from something the member did — they paid for a
+ * trial — and none of them advertises anything. The last one comes closest, so it asks a
+ * question and names no price: "shall we set it up" is a service message, "50% off this
+ * week" would not be.
+ *
+ * None of them says "renew", because a trial is not a membership running out. The member
+ * has not joined yet, and telling them to renew something they never had reads as a
+ * mistake — which is the whole reason trials have their own rules.
+ */
+const TRIAL_WELCOME: TemplateDefinition = {
+  name: 'mf_trial_welcome',
+  category: 'UTILITY',
+  variables: ['firstName', 'days', 'startDate', 'endDate'],
+  body: {
+    en: [
+      'Welcome to Max Fitness Gym, {{1}}. Your {{2}} trial is booked: {{3}} to {{4}}.',
+      '',
+      'Come in any time we are open and tell reception your name. Bring a towel and water.',
+    ].join('\n'),
+    hi: [
+      'Max Fitness Gym में स्वागत है, {{1}}। आपका {{2}} का ट्रायल बुक हो गया है: {{3}} से {{4}} तक।',
+      '',
+      'जिम खुलने के किसी भी समय आ जाइए और रिसेप्शन पर अपना नाम बता दीजिए। तौलिया और पानी साथ लाइए।',
+    ].join('\n'),
+  },
+  footer: FOOTER,
+};
+
+const TRIAL_CHECK_IN: TemplateDefinition = {
+  name: 'mf_trial_check_in',
+  category: 'UTILITY',
+  variables: ['firstName'],
+  body: {
+    en: 'Hi {{1}}, how are you finding Max Fitness Gym so far? If anything is missing — a machine, a timing, help with your form — reply here and we will sort it out.',
+    hi: 'नमस्ते {{1}}, Max Fitness Gym अभी तक कैसा लग रहा है? कोई चीज़ चाहिए — कोई मशीन, कोई टाइमिंग, या फ़ॉर्म में मदद — तो यहीं जवाब दे दीजिए, हम देख लेंगे।',
+  },
+  footer: FOOTER,
+};
+
+const TRIAL_LAST_DAY: TemplateDefinition = {
+  name: 'mf_trial_last_day',
+  category: 'UTILITY',
+  variables: ['firstName'],
+  body: {
+    en: 'Hi {{1}}, today is the last day of your trial. How was it? Tell us one thing you liked and one thing you did not — we read every reply.',
+    hi: 'नमस्ते {{1}}, आज आपके ट्रायल का आख़िरी दिन है। कैसा रहा? एक चीज़ जो अच्छी लगी और एक जो नहीं — बता दीजिए, हम हर जवाब पढ़ते हैं।',
+  },
+  footer: FOOTER,
+};
+
+const TRIAL_JOIN: TemplateDefinition = {
+  name: 'mf_trial_join',
+  category: 'UTILITY',
+  variables: ['firstName'],
+  body: {
+    en: 'Hi {{1}}, your trial at Max Fitness Gym is done. Would you like to carry on with a membership? Reply here or come to reception and we will set it up.',
+    hi: 'नमस्ते {{1}}, आपका Max Fitness Gym का ट्रायल पूरा हो गया। आगे मेंबरशिप लेना चाहेंगे? यहीं जवाब दे दीजिए या रिसेप्शन पर आ जाइए, हम कर देंगे।',
+  },
+  footer: FOOTER,
+};
+
 export const TEMPLATES: Readonly<Record<WhatsAppTemplateName, TemplateDefinition>> = {
   mf_renewal_due: RENEWAL_DUE,
   mf_renewal_due_today: RENEWAL_DUE_TODAY,
@@ -283,6 +347,10 @@ export const TEMPLATES: Readonly<Record<WhatsAppTemplateName, TemplateDefinition
   mf_owner_alert: OWNER_ALERT,
   mf_birthday_wish: BIRTHDAY_WISH,
   mf_announcement: ANNOUNCEMENT,
+  mf_trial_welcome: TRIAL_WELCOME,
+  mf_trial_check_in: TRIAL_CHECK_IN,
+  mf_trial_last_day: TRIAL_LAST_DAY,
+  mf_trial_join: TRIAL_JOIN,
 };
 
 export function templateDefinition(name: WhatsAppTemplateName): TemplateDefinition {

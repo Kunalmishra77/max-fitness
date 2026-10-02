@@ -761,7 +761,9 @@ model AttendanceEvent {
 model ReminderRule {
   id           String   @id @default(cuid())
   gymId        String
-  code         String // PRE_7 | PRE_3 | PRE_2 | PRE_1 | DUE_TODAY | POST
+  code         String // PRE_7 | PRE_3 | PRE_2 | PRE_1 | DUE_TODAY | POST | TRIAL_*
+  /// MEMBERSHIP or TRIAL: a three-day trial must never be told to renew (ADR-088).
+  appliesTo    String   @default("MEMBERSHIP")
   /// days relative to endDate; for POST this is the first day (+1)
   offsetDays   Int
   /// for POST: last offset (null = no limit); otherwise equals offsetDays

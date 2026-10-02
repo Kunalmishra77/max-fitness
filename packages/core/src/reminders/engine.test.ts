@@ -17,6 +17,7 @@ const rule = (over: Partial<ReminderRule> & Pick<ReminderRule, 'code' | 'offsetD
   slots: ['10:00'],
   templateName: 'mf_renewal_due',
   isEnabled: true,
+  appliesTo: 'MEMBERSHIP',
   ...over,
 });
 
@@ -34,6 +35,7 @@ const candidate = (over: Partial<ReminderCandidate> = {}): ReminderCandidate => 
   mobile: '+919000000001' as E164Mobile,
   language: 'en',
   endDate: istDate('2026-09-30'),
+  isTrial: false,
   ...over,
 });
 
@@ -138,5 +140,35 @@ describe('relativeDayPhrase', () => {
     expect(relativeDayPhrase(-1, 'hi')).toBe('कल');
     expect(relativeDayPhrase(0, 'hi')).toBe('आज');
     expect(relativeDayPhrase(3, 'hi')).toBe('3 दिन पहले');
+  });
+});
+
+describe('planSlot for a trial', () => {
+  // ADR-088: a three-day trial must never get "renew your membership" copy, and a member
+  // on a plan must never be asked how they are finding the place on their last paid day.
+  const TRIAL_RULES: ReminderRule[] = [
+    ...RULES,
+    rule({ code: 'TRIAL_LAST', offsetDays: 0, appliesTo: 'TRIAL', templateName: 'mf_trial_last_day' }),
+    rule({ code: 'TRIAL_AFTER', offsetDays: 2, appliesTo: 'TRIAL', templateName: 'mf_trial_join' }),
+  ];
+
+  it('sends the trial message, not the renewal one, on the last day', () => {
+    const { intents } = plan({ today: '2026-09-30', rules: TRIAL_RULES, candidates: [candidate({ isTrial: true })] });
+    expect(intents.map((intent) => [intent.ruleCode, intent.templateName])).toEqual([['TRIAL_LAST', 'mf_trial_last_day']]);
+  });
+
+  it('sends the renewal message to a member on a plan on the same day', () => {
+    const { intents } = plan({ today: '2026-09-30', rules: TRIAL_RULES, candidates: [candidate()] });
+    expect(intents.map((intent) => [intent.ruleCode, intent.templateName])).toEqual([['DUE_TODAY', 'mf_renewal_due_today']]);
+  });
+
+  it('asks a finished trial whether they want to join, never the expiry chase', () => {
+    const { intents } = plan({ today: '2026-10-02', rules: TRIAL_RULES, candidates: [candidate({ isTrial: true })] });
+    expect(intents.map((intent) => intent.ruleCode)).toEqual(['TRIAL_AFTER']);
+  });
+
+  it('sends a trial nothing on a day only the plan rules cover', () => {
+    const { intents } = plan({ today: '2026-09-23', rules: TRIAL_RULES, candidates: [candidate({ isTrial: true })] });
+    expect(intents).toEqual([]);
   });
 });

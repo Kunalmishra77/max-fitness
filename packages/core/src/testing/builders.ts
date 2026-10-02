@@ -123,6 +123,7 @@ function shiftDate(date: ISTDate, days: number): ISTDate {
 export function buildReminderRule(overrides: Partial<ReminderRule> = {}): ReminderRule {
   return {
     code: 'PRE_7',
+    appliesTo: 'MEMBERSHIP',
     offsetDays: -7,
     offsetDaysTo: -7,
     slots: ['10:00'],

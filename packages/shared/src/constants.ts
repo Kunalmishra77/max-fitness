@@ -92,8 +92,28 @@ export const DEFAULT_PT_PRICES_PAISE: Readonly<Record<PlanDurationMonths, number
 };
 
 // ── Reminder rules (BR-5.1) ───────────────────────────────────────────────────
-export const REMINDER_RULE_CODES = ['PRE_7', 'PRE_3', 'PRE_2', 'PRE_1', 'DUE_TODAY', 'POST'] as const;
+export const REMINDER_RULE_CODES = [
+  'PRE_7',
+  'PRE_3',
+  'PRE_2',
+  'PRE_1',
+  'DUE_TODAY',
+  'POST',
+  // The trial's own follow-ups (ADR-088). A three-day trial must never be told to renew.
+  'TRIAL_MID',
+  'TRIAL_LAST',
+  'TRIAL_AFTER',
+] as const;
 export type ReminderRuleCode = (typeof REMINDER_RULE_CODES)[number];
+
+/**
+ * Which kind of membership a reminder rule is about (ADR-088).
+ *
+ * The rules all fire off a membership's end date, and a trial is a membership — so
+ * without this a trial member would get "your fees run out today" on day three.
+ */
+export const REMINDER_APPLIES_TO = ['MEMBERSHIP', 'TRIAL'] as const;
+export type ReminderAppliesTo = (typeof REMINDER_APPLIES_TO)[number];
 
 export const WHATSAPP_TEMPLATES = {
   renewalDue: 'mf_renewal_due',
@@ -107,11 +127,18 @@ export const WHATSAPP_TEMPLATES = {
   ownerAlert: 'mf_owner_alert',
   birthdayWish: 'mf_birthday_wish',
   announcement: 'mf_announcement',
+  // The trial, start to finish (ADR-088).
+  trialWelcome: 'mf_trial_welcome',
+  trialCheckIn: 'mf_trial_check_in',
+  trialLastDay: 'mf_trial_last_day',
+  trialJoin: 'mf_trial_join',
 } as const;
 export type WhatsAppTemplateName = (typeof WHATSAPP_TEMPLATES)[keyof typeof WHATSAPP_TEMPLATES];
 
 export interface ReminderRuleDefault {
   readonly code: ReminderRuleCode;
+  /** Memberships unless it says otherwise, which is what every pre-trial rule meant. */
+  readonly appliesTo?: ReminderAppliesTo;
   /** Days relative to `endDate`; negative is before. For POST this is the first day (+1). */
   readonly offsetDays: number;
   /** Last offset for a range rule; equals `offsetDays` for single-day rules. `null` = no cap. */
@@ -137,6 +164,17 @@ export const DEFAULT_REMINDER_RULES: readonly ReminderRuleDefault[] = [
     slots: ['19:00'],
     templateName: 'mf_membership_expired',
   },
+  /**
+   * The trial's three follow-ups (ADR-088), all off its own end date.
+   *
+   * `TRIAL_MID` lands the day before the last one, so a one-day trial never gets it —
+   * its offset falls before the trial began, and the candidate query finds nobody.
+   * `TRIAL_AFTER` waits two days, so "would you like to join?" is not asked in the same
+   * breath as "today is your last day".
+   */
+  { code: 'TRIAL_MID', appliesTo: 'TRIAL', offsetDays: -1, offsetDaysTo: -1, slots: ['19:00'], templateName: 'mf_trial_check_in' },
+  { code: 'TRIAL_LAST', appliesTo: 'TRIAL', offsetDays: 0, offsetDaysTo: 0, slots: ['19:00'], templateName: 'mf_trial_last_day' },
+  { code: 'TRIAL_AFTER', appliesTo: 'TRIAL', offsetDays: 2, offsetDaysTo: 2, slots: ['10:00'], templateName: 'mf_trial_join' },
 ];
 
 /** Every distinct slot the worker must schedule a cron for. */

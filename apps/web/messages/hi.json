@@ -691,7 +691,11 @@
       "wishSent": "बधाई भेजी",
       "noWhatsApp": "WhatsApp पर नहीं",
       "wishFailed": "यह नहीं गई। दोबारा कोशिश कीजिए।",
-      "wishQueued": "बधाई भेजी जा रही है"
+      "wishQueued": "बधाई भेजी जा रही है",
+      "trials": "ट्रायल",
+      "trialsRunning": "आज ट्रायल पर",
+      "trialsFinishedNotJoined": "पूरा हुआ, जॉइन नहीं",
+      "trialsConvertedThisMonth": "इस महीने जॉइन किया"
     },
     "feeState": {
       "PAID": "फीस जमा है",

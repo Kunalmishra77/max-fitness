@@ -4,6 +4,7 @@ import {
   buildBirthdayWish,
   buildReceiptMessage,
   buildVerificationApprovedMessage,
+  buildTrialWelcomeMessage,
   buildWelcomeMessage,
   confirmationText,
   type ClaimedOutboxEvent,
@@ -133,7 +134,19 @@ export function messageOutboxHandlers(deps: MessageJobDeps): OutboxHandlers {
         return;
       }
 
-      const planLabel = receipt.durationMonths === 1 ? (receipt.language === 'hi' ? '1 महीना' : '1 month') : receipt.language === 'hi' ? `${receipt.durationMonths} महीने` : `${receipt.durationMonths} months`;
+      // What the member paid for, in words: months for a plan, days for a trial (ADR-088).
+      const hindi = receipt.language === 'hi';
+      const planLabel = receipt.isTrial
+        ? hindi
+          ? `${receipt.trialDays ?? 0} दिन का ट्रायल`
+          : `${receipt.trialDays ?? 0}-day trial`
+        : receipt.durationMonths === 1
+          ? hindi
+            ? '1 महीना'
+            : '1 month'
+          : hindi
+            ? `${receipt.durationMonths} महीने`
+            : `${receipt.durationMonths} months`;
       await sendTemplate(
         deps,
         buildReceiptMessage({ paymentId, firstName: receipt.firstName, language: receipt.language, amountPaise: receipt.amountPaise, planLabel, startDate: receipt.startDate, endDate: receipt.endDate, receiptNo: receipt.receiptNo }),
@@ -144,6 +157,25 @@ export function messageOutboxHandlers(deps: MessageJobDeps): OutboxHandlers {
 
       // BR: the welcome follows the first receipt, and only the first.
       if (await data().isFirstMembership(receipt.memberId, receipt.membershipId)) {
+        // A trial member gets the trial's own welcome: they have not joined, so there is
+        // no member code to quote at them (ADR-088).
+        if (receipt.isTrial) {
+          await sendTemplate(
+            deps,
+            buildTrialWelcomeMessage({
+              memberId: receipt.memberId,
+              firstName: receipt.firstName,
+              language: receipt.language,
+              days: receipt.trialDays ?? 0,
+              startDate: receipt.startDate,
+              endDate: receipt.endDate,
+            }),
+            receipt.mobile,
+            receipt.memberId,
+            receipt.membershipId,
+          );
+          return;
+        }
         const member = await data().member(receipt.memberId);
         if (member?.memberCode != null) {
           await sendTemplate(deps, buildWelcomeMessage({ memberId: member.memberId, firstName: member.firstName, language: member.language, memberCode: member.memberCode, hoursLine: await deps.hoursLine() }), member.mobile, member.memberId, receipt.membershipId);

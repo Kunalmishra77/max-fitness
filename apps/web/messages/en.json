@@ -691,7 +691,11 @@
       "wishSent": "Wish sent",
       "noWhatsApp": "Not on WhatsApp",
       "wishFailed": "That did not go. Please try again.",
-      "wishQueued": "Wish on its way"
+      "wishQueued": "Wish on its way",
+      "trials": "Trials",
+      "trialsRunning": "on a trial today",
+      "trialsFinishedNotJoined": "finished, not joined",
+      "trialsConvertedThisMonth": "joined this month"
     },
     "feeState": {
       "PAID": "Fees paid",

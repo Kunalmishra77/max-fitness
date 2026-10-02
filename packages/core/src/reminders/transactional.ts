@@ -55,6 +55,37 @@ export function buildWelcomeMessage(input: { memberId: string; firstName: string
   };
 }
 
+/**
+ * The first message a trial member gets (ADR-088).
+ *
+ * Not the member welcome: they have not joined, so there is no member code to give them,
+ * and quoting one would be wrong twice over. What they need is the two dates and what to
+ * do when they walk in.
+ */
+export function buildTrialWelcomeMessage(input: {
+  memberId: string;
+  firstName: string;
+  language: Language;
+  days: number;
+  startDate: ISTDate;
+  endDate: ISTDate;
+}): TransactionalMessage {
+  const days =
+    input.language === 'hi' ? `${input.days} दिन` : input.days === 1 ? '1 day' : `${input.days} days`;
+  return {
+    templateName: 'mf_trial_welcome',
+    language: input.language,
+    idempotencyKey: `trial-welcome:${input.memberId}`,
+    purpose: 'WELCOME',
+    variables: {
+      firstName: input.firstName,
+      days,
+      startDate: formatISTDate(input.startDate, input.language),
+      endDate: formatISTDate(input.endDate, input.language),
+    },
+  };
+}
+
 export function buildVerificationApprovedMessage(input: { verificationId: string; firstName: string; language: Language; endDate: ISTDate }): TransactionalMessage {
   return {
     templateName: 'mf_verification_approved',

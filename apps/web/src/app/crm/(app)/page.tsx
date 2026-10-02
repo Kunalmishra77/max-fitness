@@ -157,6 +157,31 @@ export default async function CrmHomePage() {
           ))}
         </ul>
 
+        {/* The trial, when there is any (ADR-088). Three numbers the owner actually asks
+            about: who is in on one today, who finished and never joined — that is the
+            follow-up list — and how many joined this month after one. */}
+        {counts.trialsRunning === 0 && counts.trialsFinishedNotJoined === 0 && counts.trialsConvertedThisMonth === 0 ? null : (
+          <section aria-labelledby="trials-heading" className="rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm lg:p-5">
+            <h2 id="trials-heading" className="text-crm-body font-bold text-brand-obsidian">
+              {t('home.trials')}
+            </h2>
+            <dl className="mt-3 grid grid-cols-3 gap-3">
+              {(
+                [
+                  ['trialsRunning', counts.trialsRunning],
+                  ['trialsFinishedNotJoined', counts.trialsFinishedNotJoined],
+                  ['trialsConvertedThisMonth', counts.trialsConvertedThisMonth],
+                ] as const
+              ).map(([key, value]) => (
+                <div key={key}>
+                  <dd className="font-display text-[2rem] leading-none font-bold text-brand-obsidian tabular">{value}</dd>
+                  <dt className="mt-1 text-small text-brand-stone">{t(`home.${key}`)}</dt>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
+
         <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
           <section aria-labelledby="calls-heading" className="overflow-hidden rounded-panel border border-brand-stone/15 bg-white shadow-sm">
             <div className="flex items-start justify-between gap-3 border-b border-brand-stone/15 px-4 py-3">

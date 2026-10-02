@@ -27,6 +27,7 @@ type Row = {
   remindersUnsubscribedAt: Date | null;
   remindersPausedUntil: Date | null;
   latestMembershipId: string | null;
+  isTrial: boolean;
 };
 
 export class PrismaReminderProjection {
@@ -47,9 +48,11 @@ export class PrismaReminderProjection {
              mem."whatsappOptIn"                      AS "whatsappOptIn",
              mem."remindersUnsubscribedAt"            AS "remindersUnsubscribedAt",
              mem."remindersPausedUntil"               AS "remindersPausedUntil",
-             f."latestMembershipId"                   AS "latestMembershipId"
+             f."latestMembershipId"                   AS "latestMembershipId",
+             ms."isTrial"                             AS "isTrial"
       FROM "member_fee_at"(${toDbDate(today)}::date) f
       JOIN "Member" mem ON mem."id" = f."memberId"
+      JOIN "Membership" ms ON ms."id" = f."latestMembershipId"
       WHERE f."gymId" = ${gymId}
         AND mem."deletedAt" IS NULL
         AND f."latestMembershipId" IS NOT NULL
@@ -70,6 +73,7 @@ export class PrismaReminderProjection {
       remindersUnsubscribedAt: row.remindersUnsubscribedAt,
       remindersPausedUntil: row.remindersPausedUntil === null ? null : fromDbDate(row.remindersPausedUntil),
       latestConfirmedMembershipId: row.latestMembershipId,
+      isTrial: row.isTrial,
     }));
   }
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { istDate } from '@mfp/shared';
-import { buildReceiptMessage, buildVerificationApprovedMessage, buildWelcomeMessage, confirmationText } from './transactional';
+import { buildReceiptMessage, buildTrialWelcomeMessage, buildVerificationApprovedMessage, buildWelcomeMessage, confirmationText } from './transactional';
 
 /**
  * The messages a member gets because something happened, not because a clock struck
@@ -94,5 +94,53 @@ describe('confirmationText', () => {
   it('confirms a restart too', () => {
     expect(confirmationText('RESTARTED', 'en')).toContain('reminders are on again');
     expect(confirmationText('RESTARTED', 'hi')).toContain('फिर से');
+  });
+});
+
+describe('buildTrialWelcomeMessage', () => {
+  // ADR-088: a trial member is not told "your member code is …" — they have not joined,
+  // and they have no code. What they need is the dates and what to do when they arrive.
+  it('names the length and both dates, in the member language', () => {
+    expect(
+      buildTrialWelcomeMessage({
+        memberId: 'mem_9',
+        firstName: 'Sanjay',
+        language: 'en',
+        days: 3,
+        startDate: istDate('2026-10-02'),
+        endDate: istDate('2026-10-04'),
+      }),
+    ).toEqual({
+      templateName: 'mf_trial_welcome',
+      language: 'en',
+      // One trial, one welcome, however many times the outbox is dispatched.
+      idempotencyKey: 'trial-welcome:mem_9',
+      purpose: 'WELCOME',
+      variables: { firstName: 'Sanjay', days: '3 days', startDate: '2 Oct 2026', endDate: '4 Oct 2026' },
+    });
+  });
+
+  it('says one day, not 1 days', () => {
+    const message = buildTrialWelcomeMessage({
+      memberId: 'mem_9',
+      firstName: 'Sanjay',
+      language: 'en',
+      days: 1,
+      startDate: istDate('2026-10-02'),
+      endDate: istDate('2026-10-02'),
+    });
+    expect(message.variables['days']).toBe('1 day');
+  });
+
+  it('writes the length in Hindi for a Hindi member', () => {
+    const message = buildTrialWelcomeMessage({
+      memberId: 'mem_9',
+      firstName: 'Sanjay',
+      language: 'hi',
+      days: 3,
+      startDate: istDate('2026-10-02'),
+      endDate: istDate('2026-10-04'),
+    });
+    expect(message.variables['days']).toBe('3 दिन');
   });
 });

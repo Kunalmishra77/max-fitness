@@ -1,4 +1,12 @@
-import { formatISTDate, type E164Mobile, type ISTDate, type Language, type ReminderRuleCode, type WhatsAppTemplateName } from '@mfp/shared';
+import {
+  formatISTDate,
+  type E164Mobile,
+  type ISTDate,
+  type Language,
+  type ReminderAppliesTo,
+  type ReminderRuleCode,
+  type WhatsAppTemplateName,
+} from '@mfp/shared';
 import { offsetFromEndDate, ruleCoversOffset, ruleCoversSlot, type ReminderRule } from './rules';
 
 /**
@@ -20,6 +28,8 @@ export interface ReminderCandidate {
   readonly language: Language;
   /** The last day the membership covers. */
   readonly endDate: ISTDate;
+  /** A paid trial rather than a plan: it gets its own follow-ups (ADR-088). */
+  readonly isTrial: boolean;
 }
 
 export interface ReminderButtons {
@@ -87,8 +97,11 @@ function buildVariables(candidate: ReminderCandidate, offsetDays: number): Recor
  * overlap must not become two messages: the rule whose own day is nearest to today
  * wins, so the day after expiry is POST and the last day is DUE_TODAY.
  */
-function ruleForDay(rules: readonly ReminderRule[], offsetDays: number, slot: string): ReminderRule | undefined {
-  const matching = rules.filter((rule) => rule.isEnabled && ruleCoversSlot(rule, slot) && ruleCoversOffset(rule, offsetDays));
+function ruleForDay(rules: readonly ReminderRule[], offsetDays: number, slot: string, isTrial: boolean): ReminderRule | undefined {
+  const kind: ReminderAppliesTo = isTrial ? 'TRIAL' : 'MEMBERSHIP';
+  const matching = rules.filter(
+    (rule) => rule.appliesTo === kind && rule.isEnabled && ruleCoversSlot(rule, slot) && ruleCoversOffset(rule, offsetDays),
+  );
   return matching.reduce<ReminderRule | undefined>(
     (best, rule) => (best === undefined || rule.offsetDays > best.offsetDays ? rule : best),
     undefined,
@@ -117,7 +130,7 @@ export function planSlot(
 
   for (const candidate of input.candidates) {
     const offsetDays = offsetFromEndDate(input.today, candidate.endDate);
-    const rule = ruleForDay(input.rules, offsetDays, input.slot);
+    const rule = ruleForDay(input.rules, offsetDays, input.slot, candidate.isTrial);
     if (rule === undefined) continue;
 
     const idempotencyKey = `rem:${candidate.memberId}:${candidate.membershipId}:${rule.code}:${input.today}:${input.slot}`;

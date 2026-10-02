@@ -29,10 +29,12 @@ export class PrismaReminderRules {
     const rows = await this.#prisma.reminderRule.findMany({
       where: { gymId },
       orderBy: { offsetDays: 'asc' },
-      select: { code: true, offsetDays: true, offsetDaysTo: true, slots: true, templateName: true, isEnabled: true },
+      select: { code: true, appliesTo: true, offsetDays: true, offsetDaysTo: true, slots: true, templateName: true, isEnabled: true },
     });
     return rows.map((row) => ({
       code: row.code as ReminderRuleCode,
+      // A value written before the column existed, or by hand, is a membership rule.
+      appliesTo: row.appliesTo === 'TRIAL' ? 'TRIAL' : 'MEMBERSHIP',
       offsetDays: row.offsetDays,
       offsetDaysTo: row.offsetDaysTo,
       slots: row.slots,
@@ -72,6 +74,7 @@ export class PrismaReminderCandidates {
         language: string;
         endDate: Date;
         ruleCode: string;
+        isTrial: boolean;
       }>
     >`
       SELECT f."memberId"                                  AS "memberId",
@@ -80,10 +83,17 @@ export class PrismaReminderCandidates {
              mem."mobile"                                  AS "mobile",
              mem."language"                                AS "language",
              f."effectiveEndDate"                          AS "endDate",
-             r."code"                                      AS "ruleCode"
+             r."code"                                      AS "ruleCode",
+             ms."isTrial"                                  AS "isTrial"
       FROM "member_fee_at"(${toDbDate(today)}::date) f
       JOIN "Member" mem ON mem."id" = f."memberId"
-      JOIN "ReminderRule" r ON r."gymId" = f."gymId" AND r."isEnabled" AND ${slot} = ANY(r."slots")
+      JOIN "Membership" ms ON ms."id" = f."latestMembershipId"
+      -- A trial only ever matches a trial rule, and a plan only a plan rule (ADR-088).
+      JOIN "ReminderRule" r
+        ON r."gymId" = f."gymId"
+       AND r."isEnabled"
+       AND ${slot} = ANY(r."slots")
+       AND r."appliesTo" = CASE WHEN ms."isTrial" THEN 'TRIAL' ELSE 'MEMBERSHIP' END
       WHERE f."gymId" = ${gymId}
         AND mem."deletedAt" IS NULL
         AND mem."status" = 'ACTIVE'
@@ -105,6 +115,7 @@ export class PrismaReminderCandidates {
       language: row.language as Language,
       endDate: fromDbDate(row.endDate),
       ruleCode: row.ruleCode as ReminderRuleCode,
+      isTrial: row.isTrial,
     }));
   }
 }

@@ -12,6 +12,7 @@
     "set:hours": "tsx scripts/set-hours.ts",
     "set:prices": "tsx scripts/set-prices.ts",
     "set:pt": "tsx scripts/set-pt-plans.ts",
+    "set:trial-rules": "tsx scripts/set-trial-rules.ts",
     "clear:demo-promo": "tsx scripts/clear-demo-promo.ts",
     "set:staff": "tsx scripts/set-staff.ts"
   },

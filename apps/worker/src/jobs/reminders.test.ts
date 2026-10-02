@@ -18,7 +18,7 @@ const TODAY = istDate('2026-09-23');
 const MOBILE = '+919000000001' as E164Mobile;
 
 const rules: ReminderRule[] = [
-  { code: 'PRE_7', offsetDays: -7, offsetDaysTo: -7, slots: ['10:00'], templateName: 'mf_renewal_due', isEnabled: true },
+  { code: 'PRE_7', appliesTo: 'MEMBERSHIP', offsetDays: -7, offsetDaysTo: -7, slots: ['10:00'], templateName: 'mf_renewal_due', isEnabled: true },
 ];
 
 const candidate: ReminderCandidate = {
@@ -28,6 +28,7 @@ const candidate: ReminderCandidate = {
   mobile: MOBILE,
   language: 'en',
   endDate: istDate('2026-09-30'),
+  isTrial: false,
 };
 
 const settings = {
