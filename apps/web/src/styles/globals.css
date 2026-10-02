@@ -255,6 +255,27 @@
   animation-play-state: paused;
 }
 
+/* The reviews, in one line that drifts past rather than a wall of cards (client request).
+   Slower than the facilities band because these are sentences, not single words, and
+   paused on hover or keyboard focus so a review can actually be finished. */
+.marquee-reviews {
+  animation: marquee 80s linear infinite;
+}
+.marquee:hover .marquee-reviews,
+.marquee:focus-within .marquee-reviews {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Motion off: the line becomes an ordinary strip the reader swipes themselves, rather
+     than freezing halfway through the duplicate copy. */
+  .marquee-reviews {
+    animation: none !important;
+  }
+  .marquee-reviews-wrap {
+    overflow-x: auto;
+  }
+}
+
 /* Outlined display type for big numbers and background words. */
 .text-outline {
   color: transparent;

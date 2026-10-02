@@ -41,11 +41,9 @@ export default async function CrmHomePage() {
   const { clock } = getContainer();
   const now = clock.now();
 
-  const showVerify = can(actor, 'verification.approve', now);
-  const [counts, calls, waiting, birthdays, latest] = await Promise.all([
+  const [counts, calls, birthdays, latest] = await Promise.all([
     reader.dashboard(gym.id, today, monthStart(today), previousMonthStart(today)),
     reader.callTasks(gym.id, today, 5),
-    showVerify ? verificationDeps().queue.count(gym.id) : Promise.resolve(0),
     new PrismaBirthdays(getContainer().prisma).today(gym.id, today),
     new PrismaAnnouncements(getContainer().prisma).latest(gym.id),
   ]);
@@ -65,11 +63,13 @@ export default async function CrmHomePage() {
     { key: 'expired', value: counts.expired, href: '/crm/members?fee=EXPIRED', icon: 'bell', tone: FEE_TONE.EXPIRED.chip },
   ];
 
+  // "Check QR members" was a fourth destination for people who are already members: they
+  // arrive through the QR, land in Members, and are dealt with there. Home no longer sends
+  // anybody to a separate queue (client, ADR-094).
   const quick: ReadonlyArray<{ key: string; href: string; icon: CrmIconName; badge?: number }> = [
     { key: 'addMember', href: '/crm/members/new', icon: 'plus' },
     { key: 'takeFees', href: '/crm/members?fee=EXPIRED', icon: 'fees' },
     { key: 'markAttendance', href: '/crm/attendance', icon: 'attendance' },
-    ...(showVerify ? [{ key: 'verify', href: '/crm/verify', icon: 'verify' as const, ...(waiting > 0 ? { badge: waiting } : {}) }] : []),
   ];
 
   return (

@@ -4,12 +4,20 @@ import { ContentFlag, Stars } from './brand';
 import { Section, SectionHeading } from './section';
 
 /**
- * Testimonials (PRD LP-12, wireframe §10).
+ * Testimonials (PRD LP-12, wireframe §10; one line by client request).
  *
  * Real Google reviews only, first name and initial, star rating, excerpt. Demo
  * placeholders appear only where unconfirmed content is allowed and each carries a
  * visible "Demo review" label. With nothing to show, the section is omitted rather
  * than rendered empty.
+ *
+ * They drift past in a single line instead of filling the page with cards. Three
+ * consequences were wanted: the section stops being the tallest thing on a phone, a
+ * visitor sees that there are many reviews rather than three, and the eye is drawn
+ * without a carousel's buttons. The line **pauses on hover and on keyboard focus**, so
+ * a review that catches the eye can be finished; the whole list is written twice so the
+ * loop has no seam, and the second copy is hidden from assistive tech. With reduced
+ * motion the animation is off and the strip is swiped by hand instead.
  */
 export async function TestimonialsSection({
   reviews,
@@ -21,42 +29,38 @@ export async function TestimonialsSection({
   if (reviews.length === 0) return null;
   const t = await getTranslations('reviews');
 
+  const line = (hidden: boolean) => (
+    <ul aria-hidden={hidden || undefined} className="flex shrink-0 items-center">
+      {reviews.map((review) => (
+        <li
+          key={review.id}
+          className="mx-2 flex min-h-14 shrink-0 items-center gap-3 rounded-full border border-brand-stone/20 bg-brand-white px-5 py-3 whitespace-nowrap shadow-sm"
+        >
+          <Stars rating={review.rating} label={t('rating', { count: review.rating })} />
+          <span className="text-body leading-none text-brand-obsidian">“{review.text}”</span>
+          <span className="text-small font-semibold text-brand-stone">— {review.author}</span>
+          {review.demo ? <ContentFlag tone="onChalk">{t('demoLabel')}</ContentFlag> : null}
+        </li>
+      ))}
+    </ul>
+  );
+
   return (
     <Section id="reviews" tone="chalk" labelledBy="reviews-heading">
       <SectionHeading id="reviews-heading" eyebrow={t('eyebrow')} className="text-brand-obsidian">
         {t('h2')}
       </SectionHeading>
 
-      {/* Swipeable on phones; focusable so keyboard users can scroll it too (WCAG 2.1.1). */}
-      <ul
-        tabIndex={0}
+      {/* Full-bleed: the line should run off both edges rather than stop at the gutter. */}
+      <div
         aria-label={t('h2')}
-        className="-mx-5 mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 md:mx-0 md:grid md:grid-cols-2 md:gap-6 lg:grid-cols-3 md:overflow-visible md:px-0"
+        className="marquee marquee-reviews-wrap -mx-5 mt-10 overflow-hidden md:-mx-8 lg:-mx-12"
       >
-        {reviews.map((review) => (
-          <li
-            key={review.id}
-            className="card-lift relative flex w-[85%] shrink-0 snap-start flex-col overflow-hidden rounded-panel border border-brand-stone/20 bg-brand-white p-6 md:w-auto"
-          >
-            <span aria-hidden className="absolute -top-6 right-4 font-display text-[7rem] leading-none font-bold text-brand-accent/10 select-none">
-              ”
-            </span>
-            <div className="flex items-center justify-between gap-3">
-              <Stars rating={review.rating} label={t('rating', { count: review.rating })} />
-              {review.demo ? <ContentFlag tone="onChalk">{t('demoLabel')}</ContentFlag> : null}
-            </div>
-            <blockquote className="mt-4 flex-1 text-body leading-body">“{review.text}”</blockquote>
-            <p className="mt-5 flex items-center gap-3 border-t border-brand-stone/15 pt-4 text-small font-semibold text-brand-obsidian">
-              <span aria-hidden className="flex size-9 items-center justify-center rounded-full bg-brand-obsidian font-display text-body font-bold text-brand-white">
-                {review.author.charAt(0)}
-              </span>
-              <span>
-                {review.author} <span className="font-medium text-brand-stone">· {t('source')}</span>
-              </span>
-            </p>
-          </li>
-        ))}
-      </ul>
+        <div className="marquee-reviews flex w-max py-1">
+          {line(false)}
+          {line(true)}
+        </div>
+      </div>
 
       {googleReviewsUrl === null ? null : (
         <a
