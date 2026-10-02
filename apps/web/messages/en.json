@@ -1439,6 +1439,10 @@
       "messages": {
         "label": "Messages",
         "desc": "What WhatsApp messages went out, and what happened"
+      },
+      "diet": {
+        "label": "Diet plans",
+        "desc": "Ask members their details and send a plan"
       }
     },
     "shell": {
@@ -1577,6 +1581,67 @@
         "NOT_FOUND": "This member is no longer in the register.",
         "ERASED": "This member's data has been erased and cannot be edited.",
         "generic": "That could not be saved. Try again."
+      }
+    },
+    "diet": {
+      "title": "Diet plans",
+      "notAllowed": "Your login cannot manage diet plans.",
+      "noKey": "No AI key is configured yet, so plans cannot be written. The questions still go out and the answers are saved — add the key and press Write the plan.",
+      "askTitle": "Ask members for their details",
+      "askHelp": "Each member gets the questions on WhatsApp, one at a time. The plan is written once they have answered.",
+      "search": "Search by name or member code",
+      "noneFound": "Nobody matches that.",
+      "ask": "{count, plural, =0 {Choose members first} one {Ask 1 member} other {Ask # members}}",
+      "asking": "Sending…",
+      "asked": "{count, plural, one {Asked 1 member.} other {Asked # members.}}",
+      "skipped": "{count, plural, one {1 was skipped — not reachable on WhatsApp.} other {# were skipped — not reachable on WhatsApp.}}",
+      "listTitle": "Plans and questionnaires",
+      "listEmpty": "Nobody has been asked yet.",
+      "waitingOn": "Waiting: {question}",
+      "ready": "Plan v{version} ready",
+      "writing": "Writing…",
+      "failed": "Could not write: {reason}",
+      "superseded": "Replaced by a newer plan",
+      "nothingYet": "Not asked yet",
+      "generate": "Write the plan",
+      "again": "Write again",
+      "bmi": "BMI {value}",
+      "questions": {
+        "weight": "weight",
+        "height": "height",
+        "age": "age",
+        "goal": "goal",
+        "dietType": "what they eat",
+        "allergies": "allergies",
+        "mealsPerDay": "meals a day",
+        "activityLevel": "daily activity",
+        "workoutsPerWeek": "gym days"
+      },
+      "goals": {
+        "MUSCLE_GAIN": "Muscle gain",
+        "FAT_LOSS": "Fat loss",
+        "WEIGHT_GAIN": "Weight gain",
+        "WEIGHT_LOSS": "Weight loss",
+        "GENERAL_FITNESS": "General fitness",
+        "RECOMP": "Muscle and fat loss"
+      },
+      "reasons": {
+        "NO_AI_KEY": "no AI key is set",
+        "AI_UNREACHABLE": "the AI service could not be reached",
+        "AI_REFUSED": "the AI service refused the request",
+        "AI_EMPTY": "the AI sent nothing back",
+        "AI_FAILED": "the AI could not write it",
+        "NOT_THE_SHAPE": "the answer was not a usable plan",
+        "CALORIES_TOO_LOW": "the calories were too low to be safe",
+        "CALORIES_TOO_HIGH": "the calories were too high",
+        "PROTEIN_TOO_HIGH": "the protein was far too high",
+        "CONTRADICTS_DIET_TYPE": "it contained food this member does not eat",
+        "CONTAINS_ALLERGEN": "it contained something they are allergic to",
+        "generic": "something went wrong"
+      },
+      "errors": {
+        "FORBIDDEN": "Your login cannot do that.",
+        "generic": "That could not be done. Try again."
       }
     }
   },
@@ -1763,5 +1828,27 @@
     "includes": "Included",
     "includesList": "Cardio, weights, functional training, and trainers on the floor.",
     "payAtReception": "Fill this in, then pay at reception — cash, UPI or card. You will get a receipt on the spot."
+  },
+  "dietPlan": {
+    "metaTitle": "Your diet plan — Max Fitness Gym",
+    "h1": "{name}, here is your diet plan",
+    "written": "written {date}",
+    "version": "plan {version}",
+    "gone": "This plan link is no longer valid, or there is no plan on it yet. Call the gym and we will send it again:",
+    "labels": {
+      "calories": "A day",
+      "protein": "Protein",
+      "meals": "Meals",
+      "bmi": "BMI"
+    },
+    "caloriesValue": "{value} kcal",
+    "proteinValue": "{value} g",
+    "bmiNote": "BMI is only a rough screening figure. It says nothing about how much of you is muscle, and this plan is built from your goal and your measurements, not from this number.",
+    "mealsHeading": "Your day",
+    "hydration": "Water",
+    "portions": "How much",
+    "advice": "A few things that help",
+    "disclaimer": "This is general wellness guidance from your gym, not medical advice. If you have a medical condition, are pregnant, or take regular medication, please check with a doctor or a qualified nutritionist before following it.",
+    "seeProfessional": "Please go through this with a doctor or a qualified nutritionist before following it — from what you told us, your diet should be planned by a professional. This is general guidance from your gym, not medical advice."
   }
 }

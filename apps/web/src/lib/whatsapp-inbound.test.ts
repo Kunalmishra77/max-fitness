@@ -18,6 +18,12 @@ const MOBILE = toE164('9000000001');
 
 const token = (purpose: 'unsub' | 'restart', memberId: string) => issueToken({ purpose, subject: memberId, ttlSeconds: 3600, secret: SECRET, clock });
 
+/** A member's own reply to a question, and the one thing that still outranks it. */
+const textMessage = (value: string) => ({
+  statuses: [],
+  replies: [{ providerMessageId: 'wamid.1', from: MOBILE, kind: 'TEXT' as const, value, at: clock.now() }],
+});
+
 function deps(over: Partial<InboundDeps> = {}): InboundDeps & { calls: string[] } {
   const calls: string[] = [];
   return {
@@ -40,6 +46,12 @@ function deps(over: Partial<InboundDeps> = {}): InboundDeps & { calls: string[] 
     },
     alertOwner: (kind: 'SHARED_NUMBER_STOP' | 'MEMBER_REPLIED') => {
       calls.push(`alert:${kind}`);
+      return Promise.resolve();
+    },
+    // Nobody is mid-questionnaire unless a test says so (ADR-089).
+    pendingDietQuestion: () => Promise.resolve(null),
+    recordDietReply: (memberId: string, text: string) => {
+      calls.push(`diet:${memberId}:${text}`);
       return Promise.resolve();
     },
     qualityGuard: {
@@ -146,5 +158,21 @@ describe('handleInboundWhatsApp', () => {
       ),
     ).resolves.toBeUndefined();
     expect(d.calls).toContain('status:wamid.9:READ');
+  });
+});
+
+describe('a reply while a diet question is waiting', () => {
+  const asking = { memberId: 'mem_1', question: 'weight' };
+
+  it('is recorded as the answer, and does not bother the owner', async () => {
+    const d = deps({ pendingDietQuestion: () => Promise.resolve(asking) });
+    await handleInboundWhatsApp(textMessage('72 kg'), d);
+    expect(d.calls).toEqual(['diet:mem_1:72 kg']);
+  });
+
+  it('still lets the member stop, which outranks the questionnaire', async () => {
+    const d = deps({ pendingDietQuestion: () => Promise.resolve(asking) });
+    await handleInboundWhatsApp(textMessage('STOP'), d);
+    expect(d.calls).toEqual(['unsub:mem_1']);
   });
 });

@@ -9,6 +9,9 @@ import {
   PrismaDeskPaymentUnitOfWork,
   PrismaElevationStore,
   PrismaLeadPipelineUnitOfWork,
+  PrismaDietPlans,
+  PrismaDietReader,
+  PrismaDietUnitOfWork,
   PrismaMemberEdit,
   PrismaMemberImport,
   PrismaVerificationQueue,
@@ -204,6 +207,17 @@ export function memberPrivacy() {
   const container = getContainer();
   const privacy = new PrismaMemberPrivacy(container.prisma);
   return { clock: container.clock, storage: container.storage, uow: privacy, store: privacy.store };
+}
+
+/** The diet questionnaire and the plans it produces (ADR-089). */
+export function dietDeps() {
+  const container = getContainer();
+  return { clock: container.clock, uow: new PrismaDietUnitOfWork(container.prisma) };
+}
+
+export function dietReader() {
+  const { prisma } = getContainer();
+  return { overview: new PrismaDietReader(prisma), plans: new PrismaDietPlans(prisma) };
 }
 
 /** Correcting a member's own details (crm-ux-blueprint §5). */

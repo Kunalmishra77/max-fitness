@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { parseWhatsAppWebhook, restartReminders, unsubscribeMember, verifyMetaSignature } from '@mfp/core';
-import { PrismaMessageLogWriter, PrismaUnsubscribeUnitOfWork } from '@mfp/db';
+import { parseWhatsAppWebhook, recordDietReply, restartReminders, unsubscribeMember, verifyMetaSignature } from '@mfp/core';
+import { PrismaDietInbox, PrismaDietUnitOfWork, PrismaMessageLogWriter, PrismaUnsubscribeUnitOfWork } from '@mfp/db';
 import type { E164Mobile } from '@mfp/shared';
 import { newRequestId } from '@/lib/api';
 import { getContainer } from '@/lib/container';
@@ -86,6 +86,11 @@ export async function POST(request: NextRequest) {
         restart: (memberId) => restartReminders({ memberId, restartWindowDays: gym.settings.reminders.restartWindowDays }, { clock, gymId: gym.id, uow }),
         membersOnNumber: (mobile: E164Mobile) =>
           prisma.member.findMany({ where: { gymId: gym.id, mobile, deletedAt: null, status: { in: ['ACTIVE', 'PENDING_PAYMENT', 'PENDING_VERIFICATION'] } }, select: { id: true, fullName: true } }),
+        // A reply to a diet question is an answer, not a message for the owner (ADR-089).
+        pendingDietQuestion: (mobile: E164Mobile) => new PrismaDietInbox(prisma).pendingAtMobile(gym.id, mobile),
+        recordDietReply: async (memberId, text) => {
+          await recordDietReply({ memberId, text }, { clock, gymId: gym.id, uow: new PrismaDietUnitOfWork(prisma) });
+        },
         updateStatus: (providerMessageId, status, at, error) =>
           messageLog.updateStatus(providerMessageId, status as Parameters<PrismaMessageLogWriter['updateStatus']>[1], at, error ?? undefined),
         alertOwner: async (kind, context) => {

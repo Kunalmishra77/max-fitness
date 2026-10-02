@@ -18,6 +18,7 @@ export type CrmNavKey =
   | 'calls'
   | 'messages'
   | 'leads'
+  | 'diet'
   | 'announce'
   | 'reports'
   | 'import'
@@ -46,6 +47,8 @@ export function crmNavItems(actor: CrmActor, now: Date): CrmNavItem[] {
     { key: 'calls', href: '/crm/calls', icon: 'calls', group: 'today' },
     { key: 'leads', href: '/crm/leads', icon: 'leads', group: 'people' },
     { key: 'messages', href: '/crm/messages', icon: 'whatsapp', group: 'business' },
+    // A diet plan is the floor's job, so a trainer sees it too (ADR-089).
+    may('diet.manage') && { key: 'diet', href: '/crm/diet', icon: 'diet', group: 'people' },
     // "Check QR members" was its own menu entry, which made QR arrivals feel like a
     // separate kind of person. They are members; the Members screen says how many are
     // waiting and opens the queue (ADR-086). `/crm/verify` still exists.

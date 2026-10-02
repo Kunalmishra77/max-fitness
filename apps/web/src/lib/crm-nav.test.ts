@@ -17,7 +17,7 @@ describe('crmNavItems', () => {
   it('gives the owner every place, grouped for the day, the members and the business', () => {
     const items = crmNavItems(actor('OWNER'), now);
     expect(items.map((item) => item.key)).toEqual([
-      'home', 'members', 'fees', 'attendance', 'calls', 'leads', 'messages', 'announce', 'reports', 'import', 'staff', 'settings', 'pin',
+      'home', 'members', 'fees', 'attendance', 'calls', 'leads', 'messages', 'diet', 'announce', 'reports', 'import', 'staff', 'settings', 'pin',
     ]);
     expect(new Set(items.map((item) => item.group))).toEqual(new Set(['today', 'people', 'business', 'account']));
   });
@@ -30,7 +30,11 @@ describe('crmNavItems', () => {
 
   it('keeps money, settings, staff, the register import and the announcement from reception', () => {
     // One message to every member is the owner's alone (ADR-079).
-    expect(keys('RECEPTION')).toEqual(['home', 'members', 'fees', 'attendance', 'calls', 'leads', 'messages', 'pin']);
+    expect(keys('RECEPTION')).toEqual(['home', 'members', 'fees', 'attendance', 'calls', 'leads', 'messages', 'diet', 'pin']);
     expect(keys('RECEPTION')).not.toContain('announce');
+  });
+
+  it('shows diet plans to a trainer, whose job the gym floor is (ADR-089)', () => {
+    expect(keys('TRAINER')).toContain('diet');
   });
 });

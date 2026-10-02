@@ -1,4 +1,4 @@
-import { classifyInboundText, pauseOnQualitySignal, verifyToken, type ParsedWebhook, type QualityGuardStore, type RestartResult, type UnsubscribeResult } from '@mfp/core';
+import { pauseOnQualitySignal, routeInboundReply, verifyToken, type ParsedWebhook, type QualityGuardStore, type RestartResult, type UnsubscribeResult } from '@mfp/core';
 import type { Clock, E164Mobile } from '@mfp/shared';
 
 /**
@@ -24,6 +24,9 @@ export interface InboundDeps {
   readonly alertOwner: (kind: 'SHARED_NUMBER_STOP' | 'MEMBER_REPLIED', context: Record<string, string>) => Promise<void>;
   /** §9: a quality signal from Meta pauses the post-expiry rule and tells the owner. */
   readonly qualityGuard: QualityGuardStore;
+  /** Who at this number is mid-questionnaire, if anybody (ADR-089). */
+  readonly pendingDietQuestion: (mobile: E164Mobile) => Promise<{ readonly memberId: string; readonly question: string } | null>;
+  readonly recordDietReply: (memberId: string, text: string) => Promise<void>;
 }
 
 /** `UNSUB.<token>` / `RESTART.<token>`: the prefix says what, the token says who. */
@@ -45,11 +48,19 @@ async function handleReply(reply: ParsedWebhook['replies'][number], deps: Inboun
     return;
   }
 
-  const meaning = classifyInboundText(reply.value);
-  if (meaning === 'OTHER') {
+  // A diet question we are waiting on beats "someone replied, tell the owner" — but never
+  // beats "stop", which `routeInboundReply` puts first (ADR-089).
+  const pending = await deps.pendingDietQuestion(reply.from);
+  const route = routeInboundReply({ text: reply.value, pendingDietQuestion: pending === null ? null : pending.question });
+  if (route.to === 'DIET_ANSWER' && pending !== null) {
+    await deps.recordDietReply(pending.memberId, reply.value);
+    return;
+  }
+  if (route.to === 'HUMAN') {
     await deps.alertOwner('MEMBER_REPLIED', { from: reply.from, text: reply.value.slice(0, 120) });
     return;
   }
+  const meaning = route.to;
 
   const members = await deps.membersOnNumber(reply.from);
   if (members.length === 0) {

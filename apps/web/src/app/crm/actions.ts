@@ -25,6 +25,7 @@ import {
   sendAnnouncement,
   sendBirthdayWish,
   setPlanActive,
+  startDietPlans,
   undoAttendance,
   updateGymSettings,
   updatePlanPrices,
@@ -56,6 +57,7 @@ import {
   type PlanDurationMonths,
 } from '@mfp/shared';
 import type { MemberEditOutcome, MemberEditValuesInput } from '@/components/crm/member-edit-form';
+import type { DietStartOutcome } from '@/components/crm/diet-board';
 import type { AnnouncementActionResult, AnnouncementInput } from '@/components/crm/announcement-composer';
 import type { AddMemberErrorCode, AddMemberFields, AddMemberResult } from '@/components/crm/add-member-flow';
 import type { MarkResult, UndoResult } from '@/components/crm/attendance-marker';
@@ -76,6 +78,8 @@ import {
   deskRegistrationDeps,
   elevate,
   leadPipelineDeps,
+  dietDeps,
+  dietReader,
   memberEditDeps,
   memberImport,
   memberPrivacy,
@@ -202,6 +206,62 @@ export async function editMemberAction(memberId: string, values: MemberEditValue
     if (code === 'NOT_FOUND') return { ok: false, code: 'NOT_FOUND' };
     if (code === 'CONFLICT') return { ok: false, code: 'ERASED' };
     console.error(`[crm] edit member failed: ${code ?? (error instanceof Error ? error.name : 'Error')}`);
+    return { ok: false, code: 'generic' };
+  }
+}
+
+/**
+ * Ask these members for what a diet plan needs (ADR-089).
+ *
+ * The questions go out over WhatsApp — in DEMO_MODE, into the Message Simulator — and the
+ * answers come back to the webhook. Nothing is generated until a member has answered
+ * everything, so this is the start of a conversation rather than a button that makes a plan.
+ */
+export async function startDietPlansAction(memberIds: readonly string[]): Promise<DietStartOutcome> {
+  const { actor } = await requireCrmContext();
+  if (memberIds.length === 0 || memberIds.length > 50) return { ok: false, code: 'generic' };
+
+  try {
+    const result = await startDietPlans({ memberIds }, { actor, ...dietDeps() });
+    revalidatePath('/crm/diet');
+    return { ok: true, started: result.started.length, skipped: result.skipped };
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    if (code === 'FORBIDDEN') return { ok: false, code: 'FORBIDDEN' };
+    console.error(`[crm] start diet plans failed: ${code ?? (error instanceof Error ? error.name : 'Error')}`);
+    return { ok: false, code: 'generic' };
+  }
+}
+
+/**
+ * Write the plan again (ADR-089).
+ *
+ * Used when a plan failed, or when the member's answers have changed. The key carries the
+ * version it will become, so pressing the button twice is one generation but a genuinely
+ * new one later is not swallowed.
+ */
+export async function regenerateDietPlanAction(memberId: string): Promise<DietStartOutcome> {
+  const { actor, gym } = await requireCrmContext();
+  const { clock, prisma } = getContainer();
+  if (!can(actor, 'diet.manage', clock.now())) return { ok: false, code: 'FORBIDDEN' };
+
+  try {
+    const latest = await dietReader().plans.latest(gym.id, memberId);
+    await prisma.outboxEvent.createMany({
+      data: [
+        {
+          gymId: gym.id,
+          type: 'diet.generate',
+          payload: { memberId },
+          dedupeKey: `diet-generate:${memberId}:${(latest?.version ?? 0) + 1}`,
+        },
+      ],
+      skipDuplicates: true,
+    });
+    revalidatePath('/crm/diet');
+    return { ok: true, started: 1, skipped: [] };
+  } catch (error) {
+    console.error(`[crm] regenerate diet plan failed: ${error instanceof Error ? error.name : 'Error'}`);
     return { ok: false, code: 'generic' };
   }
 }
