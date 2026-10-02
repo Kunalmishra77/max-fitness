@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useState, type ReactNode } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { CrmIcon } from '@/components/crm/crm-icons';
 
 /**
  * A photograph or an ID, opened where the member's record is (ADR-086).
@@ -40,7 +41,7 @@ export function PhotoViewer({
           <DialogTitle className="text-crm-body font-bold text-brand-obsidian">{alt}</DialogTitle>
           {isFile ? (
             <a href={url} target="_blank" rel="noreferrer" className="mt-4 block cursor-pointer rounded-panel bg-tint-fee-none-bg p-8 text-center text-crm-body font-semibold text-brand-obsidian">
-              <span aria-hidden className="block text-4xl leading-none">📄</span>
+              <CrmIcon name="document" className="mx-auto size-10 text-brand-stone" />
               <span className="mt-2 block">{t('govIdOpenFile')}</span>
             </a>
           ) : (

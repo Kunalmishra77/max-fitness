@@ -6,6 +6,7 @@ import { GOV_ID_TYPES, govIdSidesFor, TRAINING_SLOTS, type GovIdType, type Train
 import { renderIdPhoto } from '@/components/join/render-photo';
 import { SelfieCapture, type SelfieCaptureProps } from '@/components/join/selfie-capture';
 import { cn } from '@/lib/cn';
+import { CrmIcon } from '@/components/crm/crm-icons';
 
 /**
  * "I am already a member", on one page (client decision, ADR-075).
@@ -480,7 +481,10 @@ export function QrExistingForm({
               chosen === null ? 'border-brand-stone/50 bg-white' : 'border-semantic-fee-paid bg-tint-fee-paid-bg',
             )}
           >
-            <span aria-hidden className="block text-[2.5rem] leading-none">{chosen === null ? '📷' : govIdIsFile && side === 'FRONT' ? '📄' : '✓'}</span>
+            <CrmIcon
+              name={chosen === null ? 'camera' : govIdIsFile && side === 'FRONT' ? 'document' : 'success'}
+              className={cn('mx-auto size-10', chosen === null ? 'text-brand-stone' : 'text-semantic-fee-paid')}
+            />
             <span className="mt-2 block text-body-l font-semibold text-brand-ink">
               {govIdIsFile && side === 'FRONT' ? t('govId.wholeCard') : t(side === 'FRONT' ? 'govId.front' : 'govId.back')}
             </span>

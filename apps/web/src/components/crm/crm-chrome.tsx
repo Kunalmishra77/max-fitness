@@ -48,7 +48,7 @@ export async function CrmHeader({
           <Link
             href={back}
             aria-label={t('back')}
-            className="-ml-2 flex size-12 items-center justify-center rounded-full text-brand-paper hover:bg-brand-white/10 lg:hidden"
+            className="-ml-2 flex size-12 shrink-0 items-center justify-center rounded-full text-brand-paper hover:bg-brand-white/10"
           >
             <CrmIcon name="back" className="size-6" />
           </Link>

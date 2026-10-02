@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { GOV_ID_TYPES, govIdSidesFor, type GovIdType } from '@mfp/core';
 import { cn } from '@/lib/cn';
+import { CrmIcon } from '@/components/crm/crm-icons';
 
 /**
  * The pieces both reception forms are made of (ADR-083).
@@ -128,7 +129,10 @@ export function GovIdStep({
               chosen === null ? 'border-brand-stone/50 bg-white' : 'border-semantic-fee-paid bg-tint-fee-paid-bg',
             )}
           >
-            <span aria-hidden className="block text-[2.5rem] leading-none">{chosen === null ? '📷' : isFile && side === 'FRONT' ? '📄' : '✓'}</span>
+            <CrmIcon
+              name={chosen === null ? 'camera' : isFile && side === 'FRONT' ? 'document' : 'success'}
+              className={cn('mx-auto size-10', chosen === null ? 'text-brand-stone' : 'text-semantic-fee-paid')}
+            />
             <span className="mt-2 block text-body-l font-semibold text-brand-ink">
               {isFile && side === 'FRONT' ? t('govId.wholeCard') : t(side === 'FRONT' ? 'govId.front' : 'govId.back')}
             </span>

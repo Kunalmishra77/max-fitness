@@ -187,9 +187,7 @@ export function AddMemberFlow({
             <h2 className="font-display text-title font-bold text-brand-obsidian">{t('photoTitle')}</h2>
             {photo === null ? (
               <>
-                <p aria-hidden className="mt-6 text-6xl">
-                  📷
-                </p>
+                <CrmIcon name="camera" className="mx-auto mt-6 size-16 text-brand-stone" />
                 <button type="button" onClick={() => setCameraOpen(true)} className={`mt-6 ${secondary}`}>
                   {t('photoTake')}
                 </button>

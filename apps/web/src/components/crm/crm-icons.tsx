@@ -32,6 +32,8 @@ export type CrmIconName =
   | 'upi'
   | 'card'
   | 'success'
+  | 'camera'
+  | 'document'
   | 'gallery'
   | 'whatsapp'
   | 'search';
@@ -66,6 +68,10 @@ const PATHS: Record<CrmIconName, string> = {
   upi: 'M7 2.5h10a1.5 1.5 0 0 1 1.5 1.5v16a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 20V4A1.5 1.5 0 0 1 7 2.5ZM9.5 7h5M9.5 10h5M13.5 16 10 12.5h1.5a2.5 2.5 0 0 0 0-5M9.5 12.5h2',
   // A card with its magnetic stripe: the POS machine.
   card: 'M3 6h18v12H3zM3 10h18M6.5 14.5h3',
+  // A camera body with its lens and viewfinder bump: the member's photo.
+  camera: 'M3 8.5h3.2l1.6-2.5h8.4l1.6 2.5H21v10H3zM12 16.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z',
+  // A sheet with a folded corner: a PDF or a scan, where a photograph was expected.
+  document: 'M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7l-4-4ZM14 3v4h4M9 12h6M9 16h6',
   // A tick inside a circle: something finished, where a bare tick would read as a checkbox.
   success: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM8 12.5l2.5 2.5L16 9.5',
   // A head with an aerial: the assistant, distinct from the gym's own WhatsApp messages.

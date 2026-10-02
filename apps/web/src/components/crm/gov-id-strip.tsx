@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { PhotoViewer } from './photo-viewer';
+import { CrmIcon } from '@/components/crm/crm-icons';
 
 export interface GovIdPhoto {
   /** "FRONT", "BACK", or "FILE" when the member gave the whole card as one file. */
@@ -41,7 +42,7 @@ export function GovIdStrip({ type, photos }: { type: string | null; photos: read
               <PhotoViewer url={photo.url} alt={alt} isFile={photo.side === 'FILE'}>
                 {photo.side === 'FILE' ? (
                   <span className="flex h-24 w-36 flex-col items-center justify-center rounded-panel border border-brand-stone/30 bg-tint-fee-none-bg">
-                    <span aria-hidden className="text-2xl leading-none">📄</span>
+                    <CrmIcon name="document" className="size-7 text-brand-stone" />
                     <span className="mt-1 text-small font-semibold text-brand-obsidian">{t('govIdOpenFile')}</span>
                   </span>
                 ) : (

@@ -39,6 +39,9 @@ const SCREENS = [
   ['member-new', '/crm/members/new'],
 ];
 
+/** A member id to walk the per-member screens with, found at run time. */
+let someMemberId = null;
+
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: WIDTH, height: 900 } });
 
@@ -64,6 +67,17 @@ try {
   await page.waitForURL(/\/crm(\?|$|\/)/, { timeout: 30_000 });
   await page.waitForLoadState('networkidle');
   console.log(`signed in — ${WIDTH}px\n`);
+
+  // The member screens need a member, and which members exist is not knowable up front.
+  await page.goto(`${BASE}/crm/members`, { waitUntil: 'networkidle' });
+  if (!page.url().includes('/crm/members')) await page.goto(`${BASE}/crm/members`, { waitUntil: 'networkidle' });
+  const found = await page
+    .locator('a')
+    .evaluateAll((links) => links.map((l) => l.getAttribute('href')).filter((h) => h !== null && h.startsWith('/crm/members/') && h !== '/crm/members/new'));
+  someMemberId = found[0]?.split('/').pop() ?? null;
+  if (someMemberId !== null) {
+    SCREENS.push(['member-profile', `/crm/members/${someMemberId}`], ['member-edit', `/crm/members/${someMemberId}/edit`]);
+  }
 
   for (const [name, path] of SCREENS) {
     problems.length = 0;
@@ -98,6 +112,42 @@ try {
     flags.push(...problems);
 
     console.log(`${flags.length === 0 ? 'ok  ' : 'FLAG'} ${name.padEnd(20)} "${heading.slice(0, 40)}"${flags.length === 0 ? '' : `\n       ${flags.join('\n       ')}`}`);
+
+    // The actions menu only exists once opened, and it is where a clipping ancestor hid
+    // every item behind ten pixels. So it is opened, counted, and measured against what
+    // its ancestors actually paint.
+    if (name === 'member-profile') {
+      const dots = page.locator('header button[aria-haspopup="menu"]');
+      if ((await dots.count()) > 0) {
+        await dots.click();
+        const menu = page.locator('[role="menu"]');
+        await menu.waitFor({ state: 'attached', timeout: 10_000 });
+        const items = (await page.locator('[role="menuitem"]').allTextContents()).map((text) => text.trim());
+        const box = await menu.boundingBox();
+        const painted = await menu.evaluate((el) => {
+          const rect = el.getBoundingClientRect();
+          let clip = { top: 0, left: 0, bottom: window.innerHeight, right: window.innerWidth };
+          for (let node = el.parentElement; node !== null; node = node.parentElement) {
+            const style = getComputedStyle(node);
+            if (style.overflow === 'hidden' || style.overflowY === 'hidden' || style.overflowX === 'hidden') {
+              const r = node.getBoundingClientRect();
+              clip = {
+                top: Math.max(clip.top, r.top),
+                left: Math.max(clip.left, r.left),
+                bottom: Math.min(clip.bottom, r.bottom),
+                right: Math.min(clip.right, r.right),
+              };
+            }
+          }
+          return Math.round(Math.max(0, Math.min(rect.bottom, clip.bottom) - Math.max(rect.top, clip.top)));
+        });
+        const height = Math.round(box?.height ?? 0);
+        const clipped = painted < height - 1;
+        await page.screenshot({ path: `${OUTDIR}/${WIDTH}-member-menu.png` });
+        console.log(`${clipped ? 'FLAG' : 'ok  '} ${'member-menu'.padEnd(20)} ${items.length} items: ${items.join(' / ')}`);
+        if (clipped) console.log(`       painted only ${painted}px of ${height}px — an ancestor is clipping it`);
+      }
+    }
   }
 } finally {
   await browser.close();

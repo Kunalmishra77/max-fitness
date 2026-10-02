@@ -16,7 +16,9 @@
     "clear:demo-promo": "tsx scripts/clear-demo-promo.ts",
     "set:staff": "tsx scripts/set-staff.ts",
     "set:staff-logins": "tsx scripts/set-staff-logins.ts",
-    "check:go-live": "tsx scripts/check-go-live.ts"
+    "check:go-live": "tsx scripts/check-go-live.ts",
+    "check:members": "tsx scripts/check-members.ts",
+    "backup:members": "tsx scripts/backup-members.ts"
   },
   "dependencies": {
     "@mfp/core": "workspace:*",
@@ -36,4 +38,3 @@
     "typescript": "catalog:"
   }
 }
-
