@@ -6,8 +6,14 @@ import { redirect } from 'next/navigation';
 import {
   addStaff,
   advanceLead,
+  answerMemberQuestion,
   approveVerification,
   can,
+  deleteBotDocument,
+  saveBotConfig,
+  saveBotDocument,
+  type BotConfigInput,
+  type BotDocumentInput,
   commitMemberImport,
   editMember,
   eraseMember,
@@ -58,6 +64,7 @@ import {
 } from '@mfp/shared';
 import type { MemberEditOutcome, MemberEditValuesInput } from '@/components/crm/member-edit-form';
 import type { DietStartOutcome } from '@/components/crm/diet-board';
+import type { BotTestOutcome } from '@/components/crm/bot-console';
 import type { AnnouncementActionResult, AnnouncementInput } from '@/components/crm/announcement-composer';
 import type { AddMemberErrorCode, AddMemberFields, AddMemberResult } from '@/components/crm/add-member-flow';
 import type { MarkResult, UndoResult } from '@/components/crm/attendance-marker';
@@ -78,6 +85,7 @@ import {
   deskRegistrationDeps,
   elevate,
   leadPipelineDeps,
+  botDeps,
   dietDeps,
   dietReader,
   memberEditDeps,
@@ -208,6 +216,63 @@ export async function editMemberAction(memberId: string, values: MemberEditValue
     console.error(`[crm] edit member failed: ${code ?? (error instanceof Error ? error.name : 'Error')}`);
     return { ok: false, code: 'generic' };
   }
+}
+
+/**
+ * The assistant's own settings (ADR-090).
+ *
+ * The owner's words become the bot's words, so this is behind the PIN like prices are, and
+ * every change is audited by the service itself.
+ */
+export async function saveBotConfigAction(input: BotConfigInput): Promise<SettingsResult> {
+  return settingsSave(async (deps) => {
+    await saveBotConfig(input, { actor: deps.actor, clock: deps.clock, uow: botDeps().uow });
+    revalidatePath('/crm/bot');
+    return true;
+  });
+}
+
+export async function saveBotDocumentAction(input: BotDocumentInput): Promise<SettingsResult> {
+  return settingsSave(async (deps) => {
+    await saveBotDocument(input, { actor: deps.actor, clock: deps.clock, uow: botDeps().uow });
+    revalidatePath('/crm/bot');
+    return true;
+  });
+}
+
+export async function deleteBotDocumentAction(id: string): Promise<SettingsResult> {
+  return settingsSave(async (deps) => {
+    await deleteBotDocument({ id }, { actor: deps.actor, clock: deps.clock, uow: botDeps().uow });
+    revalidatePath('/crm/bot');
+    return true;
+  });
+}
+
+/**
+ * The owner's test chat (ADR-090).
+ *
+ * Answers from exactly what a member would get — the same persona, the same knowledge base,
+ * the same escalation rule — so testing it means something. Logged as a test, so the owner's
+ * own trials do not look like member questions.
+ */
+export async function testBotAction(question: string): Promise<BotTestOutcome> {
+  const { actor, gym } = await requireCrmContext();
+  const { clock } = getContainer();
+  if (!can(actor, 'settings.manage', clock.now())) return { ok: false, code: 'FORBIDDEN' };
+
+  const deps = botDeps();
+  const result = await answerMemberQuestion(
+    {
+      gymId: gym.id,
+      question,
+      // The owner's own name and number: the log says plainly that this was a test.
+      member: { memberId: null, firstName: actor.name, language: actor.language, mobile: 'test' },
+      isTest: true,
+    },
+    { clock, ai: deps.ai, store: deps.store },
+  );
+  revalidatePath('/crm/bot');
+  return { ok: true, result };
 }
 
 /**

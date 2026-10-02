@@ -287,6 +287,9 @@ model Gym {
   dietProfiles  DietProfile[]
   dietPlans     DietPlan[]
   dietFollowUps DietFollowUp[]
+  botConfig     BotConfig?
+  botDocuments  BotDocument[]
+  botReplies    BotReply[]
   payments      Payment[]
   leads         Lead[]
   verifications VerificationRequest[]
@@ -422,6 +425,82 @@ model Plan {
 
   @@unique([gymId, code])
   @@index([gymId, kind, gender, isActive])
+}
+
+/// The WhatsApp assistant's settings — one row per gym (ADR-090).
+///
+/// Off until the owner turns it on, and `autoReply` is a second switch: a gym may want the
+/// bot configured and tested without it answering anybody yet.
+model BotConfig {
+  id             String   @id @default(cuid())
+  gymId          String   @unique
+  name           String   @default("Max")
+  isActive       Boolean  @default(false)
+  /// Whether it answers members by itself. Off means it only answers in the test chat.
+  autoReply      Boolean  @default(false)
+  /// The owner's persona prompt: how it should sound.
+  persona        String   @default("")
+  /// Which languages the gym serves; the reply follows the member's own language.
+  languages      String[] @default(["hi", "en"])
+  /// What the member is told when it cannot answer — a number, a name, "come to the desk".
+  escalationNote String?
+  updatedById    String?
+  createdAt      DateTime @default(now()) @db.Timestamptz
+  updatedAt      DateTime @updatedAt @db.Timestamptz
+
+  gym Gym @relation(fields: [gymId], references: [id])
+}
+
+/// One thing the gym has written down for the assistant to answer from (ADR-090).
+///
+/// Text, not a file: whatever the owner uploads is turned into text before it is saved, so
+/// the prompt never contains a binary and the owner can read and correct what the bot knows.
+model BotDocument {
+  id          String   @id @default(cuid())
+  gymId       String
+  title       String
+  body        String
+  /// The file it came from, when it came from one.
+  sourceName  String?
+  updatedById String?
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  gym Gym @relation(fields: [gymId], references: [id])
+
+  @@index([gymId, createdAt])
+}
+
+enum BotReplyStatus {
+  ANSWERED
+  ESCALATED
+  FAILED
+}
+
+/// Every question the assistant was asked and what it did (ADR-090).
+///
+/// The log is the whole point of the feature for the owner: it is where they see what members
+/// actually ask, which is how the knowledge base gets better.
+model BotReply {
+  id        String         @id @default(cuid())
+  gymId     String
+  memberId  String?
+  /// Masked in the UI; stored because a question can arrive from a number we do not know.
+  mobile    String
+  question  String
+  answer    String?
+  status    BotReplyStatus
+  /// Why it failed or escalated, as a code.
+  reason    String?
+  /// True when it came from the owner's test chat rather than from a member.
+  isTest    Boolean        @default(false)
+  createdAt DateTime       @default(now()) @db.Timestamptz
+
+  gym    Gym     @relation(fields: [gymId], references: [id])
+  member Member? @relation(fields: [memberId], references: [id])
+
+  @@index([gymId, createdAt])
+  @@index([gymId, status])
 }
 
 /// What a member has told us about their body, their goal and their food (ADR-089).
@@ -586,6 +665,7 @@ model Member {
   dietProfile   DietProfile?
   dietPlans     DietPlan[]
   dietFollowUps DietFollowUp[]
+  botReplies    BotReply[]
   payments      Payment[]
   media         MediaFile[]           @relation("MemberMedia")
   faceTemplates FaceTemplate[]

@@ -9,6 +9,7 @@ import {
   PrismaDeskPaymentUnitOfWork,
   PrismaElevationStore,
   PrismaLeadPipelineUnitOfWork,
+  PrismaBot,
   PrismaDietPlans,
   PrismaDietReader,
   PrismaDietUnitOfWork,
@@ -207,6 +208,13 @@ export function memberPrivacy() {
   const container = getContainer();
   const privacy = new PrismaMemberPrivacy(container.prisma);
   return { clock: container.clock, storage: container.storage, uow: privacy, store: privacy.store };
+}
+
+/** The WhatsApp assistant: its settings, what it knows, and what it has been asked (ADR-090). */
+export function botDeps() {
+  const container = getContainer();
+  const bot = new PrismaBot(container.prisma);
+  return { clock: container.clock, uow: bot, bot, store: bot.store, ai: container.ai };
 }
 
 /** The diet questionnaire and the plans it produces (ADR-089). */

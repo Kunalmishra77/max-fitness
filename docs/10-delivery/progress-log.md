@@ -1025,3 +1025,44 @@ months, so a trial member paying ₹300 would have received no receipt and no we
 - Still blocked on the client: the **AI key** (`AI_API_KEY`; the Diet screen says so until it
   arrives), **WhatsApp Cloud API approval and a worker host**, and **Razorpay credentials
   plus Subscriptions/e-mandate**.
+
+### Later the same session — the monthly diet check, then the WhatsApp assistant
+
+**The monthly diet check (ADR-089 completed).** Four questions a month, not the seven on the
+list, and the point is the end of it: when the answers say the plan should change, a new plan
+is written carrying what the member said about the old one. It rewrites when they ask, when the
+scales have moved three kilos, and when they cannot follow it at all. One check per plan per
+month, at seven in the evening, never to somebody who has unsubscribed, and the owner can
+change the interval or switch it off (`pricing.dietFollowUpEveryDays`). A test caught the one
+bug worth catching: I had passed the new weight as the baseline, so a member who had gained
+five kilos looked unchanged.
+
+The member's plan page now has a **save-or-print** button, which is the PDF path: the browser
+keeps their language, where a server-rendered PDF would need a Devanagari font embedded —
+flagged for the client rather than adding a 400 KB font asset unasked.
+
+**The WhatsApp assistant (ADR-090).** The whole design is about one risk: to a member the bot
+is the gym, so an invented price is a price the gym quoted.
+- Three mechanisms, not a promise: the gym's documents go in verbatim, the instruction to
+  escalate carries a marker and an answer containing it is never sent, and the member's message
+  is fenced and labelled as a question — because somebody will type "ignore the above".
+- Two switches: the assistant existing, and it answering members by itself. A gym can set it up
+  and test it without speaking to anybody.
+- Everything logged, failures included, with the owner's own test questions marked as tests.
+  The log is where the owner sees what members actually ask.
+- Knowledge base is text, never a file. **PDF/DOCX extraction not built:** it needs two more
+  dependencies, which CLAUDE.md says to ask about first.
+- Behind the PIN with prices; audited by titles and switches, never by copying content.
+
+### Pending
+- Wire the assistant into the **inbound webhook** so it answers live (today an unrecognised
+  reply alerts the owner; that becomes "ask the bot first" once WhatsApp is approved).
+- Bot and diet numbers on the **reports** page; the UI/UX pass; PDF/DOCX imports if wanted.
+- Still blocked on the client: the **AI key**, **WhatsApp Cloud API approval and a worker
+  host**, **Razorpay credentials plus Subscriptions/e-mandate**.
+
+**A flake worth recording:** `packages/db/tests/outbox.integration.test.ts` ("claims due events
+oldest first") failed twice under a full parallel run against the remote database and passed
+alone and in a db-only run, twice. Its data is isolated by a random run id, so this is timing
+against Supabase under load rather than cross-test pollution — but it is the kind of thing that
+erodes trust in a suite, and it should be made order-independent rather than left to chance.

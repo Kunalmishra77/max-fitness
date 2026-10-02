@@ -9,7 +9,8 @@ import {
   type PrismaClient,
 } from '@mfp/db';
 import type { CheckoutUnitOfWork, PaymentConfirmationUnitOfWork, RegistrationUnitOfWork, WebhookEventStore } from '@mfp/core';
-import type { MessageLogWriter, PaymentProvider, StorageDriver, WhatsAppProvider } from '@mfp/core/ports';
+import type { AiTextGenerator, MessageLogWriter, PaymentProvider, StorageDriver, WhatsAppProvider } from '@mfp/core/ports';
+import { createAiGenerator } from '@mfp/integrations/ai';
 import { createStorageDriver } from '@mfp/integrations/storage';
 import { SimulatedPaymentProvider, RazorpayPaymentProvider } from '@mfp/integrations/payments';
 import { SimulatorWhatsAppProvider, MetaCloudWhatsAppProvider } from '@mfp/integrations/whatsapp';
@@ -41,6 +42,8 @@ export interface Container {
   readonly checkoutUow: CheckoutUnitOfWork;
   readonly paymentUow: PaymentConfirmationUnitOfWork;
   readonly webhookEvents: WebhookEventStore;
+  /** Writes diet plans and answers members (ADR-089, ADR-090); unavailable with no key. */
+  readonly ai: AiTextGenerator;
 }
 
 /**
@@ -120,5 +123,7 @@ function build(): Container {
     checkoutUow: new PrismaCheckoutUnitOfWork(prisma),
     paymentUow: new PrismaPaymentConfirmationUnitOfWork(prisma),
     webhookEvents: new PrismaWebhookEventStore(prisma, clock),
+    // Empty key means unavailable: the CRM says so rather than failing at the last moment.
+    ai: createAiGenerator({ apiKey: env.AI_API_KEY, model: env.AI_MODEL }),
   };
 }

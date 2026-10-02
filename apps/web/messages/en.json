@@ -1455,6 +1455,10 @@
       "diet": {
         "label": "Diet plans",
         "desc": "Ask members their details and send a plan"
+      },
+      "bot": {
+        "label": "WhatsApp assistant",
+        "desc": "Set up what it knows and how it answers"
       }
     },
     "shell": {
@@ -1658,6 +1662,64 @@
       "notSent": "not sent yet",
       "sent": "sent",
       "caloriesLine": "{calories} kcal a day · {protein} g protein · {meals} meals"
+    },
+    "bot": {
+      "title": "WhatsApp assistant",
+      "notAllowed": "Only the owner can set up the assistant.",
+      "noKey": "No AI key is configured yet, so the assistant cannot answer anybody. You can still write what it should know and set it up — it starts answering the day the key is added.",
+      "switchesTitle": "The assistant",
+      "switchesHelp": "Two switches on purpose: you can set it up and try it without it speaking to a single member.",
+      "isActiveLabel": "Assistant switched on",
+      "isActiveHelp": "Off means it does nothing at all, anywhere.",
+      "autoReplyLabel": "Answer members by itself",
+      "autoReplyHelp": "Off means it only answers you, here, in the test box below.",
+      "nameLabel": "What it calls itself",
+      "personaLabel": "How it should sound",
+      "personaHelp": "A line or two. \"Warm, short sentences, never pushy\" is plenty. This goes to the assistant with every message.",
+      "languagesLabel": "Languages the gym serves",
+      "escalationLabel": "When it cannot answer, what should the member be told?",
+      "escalationHelp": "A number to ring, a name to ask for, or \"come to the desk\".",
+      "save": "Save the assistant",
+      "saving": "Saving…",
+      "savedConfig": "Saved.",
+      "knowledgeTitle": "What it knows",
+      "knowledgeHelp": "The assistant answers only from what is written here — prices, timings, rules, payment, renewals, trials, the usual questions. If something is not here, it says it will ask a person instead of making it up.",
+      "knowledgeEmpty": "Nothing written yet, so the assistant will pass every question to a person.",
+      "addDocument": "Add something it should know",
+      "docTitle": "Title",
+      "docBody": "What it should know",
+      "docBodyHelp": "Write it as you would tell a new member. Plain sentences work better than a table.",
+      "saveDocument": "Save",
+      "savedDocument": "Saved.",
+      "deleted": "Deleted.",
+      "edit": "Edit",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "testTitle": "Try it",
+      "testHelp": "Exactly what a member would get — same words, same knowledge, same rules. Nothing is sent to anybody.",
+      "testPlaceholder": "kitne baje khulta hai?",
+      "askIt": "Ask it",
+      "asking": "Asking…",
+      "wouldEscalate": "It would not answer this — it would tell the member somebody will get back to them. Add what it needs to know above.",
+      "wouldSayNothing": "It is switched off, so it would say nothing.",
+      "logTitle": "What members have asked",
+      "logEmpty": "Nothing yet.",
+      "testTag": "your test",
+      "status": {
+        "ANSWERED": "answered",
+        "ESCALATED": "passed to a person",
+        "FAILED": "could not answer"
+      },
+      "languages": {
+        "hi": "Hindi",
+        "en": "English"
+      },
+      "errors": {
+        "FORBIDDEN": "Only the owner can do that.",
+        "PIN_REQUIRED": "Enter your PIN again to save this.",
+        "VALIDATION_FAILED": "Check what you typed — something is too long or missing.",
+        "generic": "That could not be saved. Try again."
+      }
     }
   },
   "photos": {

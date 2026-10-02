@@ -20,6 +20,7 @@ export type CrmNavKey =
   | 'leads'
   | 'diet'
   | 'announce'
+  | 'bot'
   | 'reports'
   | 'import'
   | 'staff'
@@ -54,6 +55,8 @@ export function crmNavItems(actor: CrmActor, now: Date): CrmNavItem[] {
     // waiting and opens the queue (ADR-086). `/crm/verify` still exists.
     // One message to every member is the owner's, and needs the PIN on the way in (ADR-079).
     afterPin('settings.manage') && { key: 'announce', href: '/crm/announcements', icon: 'whatsapp', group: 'business' },
+    // What the assistant says is what the gym says, so it sits with the owner's settings (ADR-090).
+    afterPin('settings.manage') && { key: 'bot', href: '/crm/bot', icon: 'whatsapp', group: 'business' },
     may('money.view') && { key: 'reports', href: '/crm/reports', icon: 'reports', group: 'business' },
     afterPin('member.import') && { key: 'import', href: '/crm/import', icon: 'import', group: 'business' },
     afterPin('settings.manage') && { key: 'staff', href: '/crm/settings/staff', icon: 'staff', group: 'business' },

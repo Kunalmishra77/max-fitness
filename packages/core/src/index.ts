@@ -41,6 +41,9 @@ export * from './diet/plan';
 export * from './diet/diet.service';
 export * from './diet/follow-up';
 export * from './diet/follow-up.service';
+export * from './bot/answer';
+export * from './bot/bot.service';
+export * from './bot/bot-settings';
 export * from './gym/hours';
 export * from './gym/promo';
 
