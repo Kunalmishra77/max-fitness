@@ -169,10 +169,20 @@ export const EnvSchema = z
     message: 'S3_SECRET_ACCESS_KEY is required when STORAGE_DRIVER is "s3"',
     path: ['S3_SECRET_ACCESS_KEY'],
   })
-  // Real payments need real keys. Only a production deployment that is NOT in demo
-  // mode takes money; a deliberate demo deployment uses the simulated gateway.
-  .refine((env) => env.NODE_ENV !== 'production' || env.DEMO_MODE || env.RAZORPAY_KEY_SECRET.length > 0, {
-    message: 'RAZORPAY_KEY_SECRET is required in production when DEMO_MODE is off',
+  // A half-configured gateway is the case that silently loses money (ADR-096).
+  //
+  // This used to demand a secret of every live production deployment, on the premise that
+  // "not demo mode" meant "takes money". That premise no longer holds: without a gateway
+  // the public sign-up reserves the place and asks the member to pay at reception
+  // (ADR-093), which is a real path the desk already uses. Refusing to boot would keep a
+  // gym off the internet until its gateway paperwork cleared — exactly backwards, since
+  // Razorpay asks for a live site before it will issue the keys.
+  //
+  // What is still refused is a key id with no secret beside it: somebody midway through
+  // copying credentials across. There the checkout WOULD offer to take payment and then
+  // fail at the gateway, which is worse than never offering.
+  .refine((env) => env.RAZORPAY_KEY_ID.length === 0 || env.RAZORPAY_KEY_SECRET.length > 0, {
+    message: 'RAZORPAY_KEY_SECRET is required whenever RAZORPAY_KEY_ID is set',
     path: ['RAZORPAY_KEY_SECRET'],
   });
 

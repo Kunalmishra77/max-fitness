@@ -15,7 +15,8 @@
     "set:trial-rules": "tsx scripts/set-trial-rules.ts",
     "clear:demo-promo": "tsx scripts/clear-demo-promo.ts",
     "set:staff": "tsx scripts/set-staff.ts",
-    "set:staff-logins": "tsx scripts/set-staff-logins.ts"
+    "set:staff-logins": "tsx scripts/set-staff-logins.ts",
+    "check:go-live": "tsx scripts/check-go-live.ts"
   },
   "dependencies": {
     "@mfp/core": "workspace:*",

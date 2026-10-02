@@ -361,3 +361,46 @@ Format: `ADR-NNN — Title` · Date · Status (Proposed/Accepted/Superseded) · 
 **(3) Nothing has to be remembered at deploy time.** Adding the live Razorpay keys turns online payment on by itself — there is no second flag to set and therefore no way to set only one of them. This is deliberate: a go-live checklist with two boxes is a go-live checklist with one box ticked.
 
 **On hosting, recorded because the client asked:** the client has a Hostinger domain and **shared** hosting. Shared hosting cannot run this application — it serves PHP against MySQL, while this is a long-lived Node process against PostgreSQL with a background worker, and the schema uses Postgres enums and array columns that MySQL has no equivalent for. The domain is independent of it: `maxfitnessgym.co.in` stays registered at Hostinger and its DNS points at the host that runs the app. A Hostinger VPS could run it later; the shared plan cannot, at any amount of effort.
+
+## ADR-094 — Signing in by address as well as by number (owner, 2026-10-02)
+2026-10-02 · Accepted · **Context:** the owner asked for `admin@` and `reception@` accounts rather than two phone numbers to remember.
+
+**(1) One field, not two, and no chooser.** The field takes either and the server works out which: an `@` makes it an address, otherwise it is a mobile. A dropdown between "email" and "phone" is one more thing to get wrong at a counter at six in the morning, and the cost of sniffing is a regular expression.
+
+**(2) Neither replaces the other.** The desk still has people who only know the number, so the old mobile sign-in keeps working on the same accounts. `StaffUser.email` is nullable for the same reason — floor staff should not be made to invent an address to keep their login.
+
+**(3) The lockout counts against the account, not the thing typed.** Five tries on the email and five on the mobile is still five, because they are the same person and the same row. This falls out of looking the account up first and counting afterwards, but it is the kind of thing that is easy to get wrong by counting per identifier.
+
+**(4) The address is trimmed and lower-cased before it is looked up.** A phone keyboard capitalises the first letter and nobody notices. Storing it lower-cased and comparing lower-cased is the only way that is not a support call every week.
+
+**(5) The accounts were changed in place, not recreated.** `set:staff-logins` adds the address and replaces the PIN on the existing rows, so sessions, the audit trail and everything attached to those two people stayed where it was. It clears the lockout at the same time — handing somebody a new PIN while they are locked out of the old one would be a poor way to do it.
+
+**Said to the owner, and worth recording:** both accounts were given the same six-digit PIN, in a chat message. That is their decision to make and it is reversible from Max Register → Staff, but it is written down here because "the two logins shared a PIN for a while" is the kind of thing that matters later.
+
+## ADR-095 — The week's arrivals, so today's number means something (owner, 2026-10-02)
+2026-10-02 · Accepted · **Context:** the owner said Home looked basic and did too little. The largest gap was that every number on it was stranded: "23 came in today" is good on a Sunday and poor on a Monday, and the screen gave no way to tell which.
+
+**(1) The shape, not the values.** Seven bars, the week's total and the daily average. No gridlines, no axis, no number on every bar — the owner is not reading values off it, and that ink would add no answer. Today's bar is the accent colour because it is still filling up and must not be compared by eye with a finished day.
+
+**(2) A day nobody came in is a zero, not a gap.** Dropping an empty day would move Saturday next to Monday and quietly turn a weekly rhythm into a smooth line. Every bar is scaled against the busiest day in the window, which is the only reason to draw bars at all.
+
+**(3) The average leaves today out.** Today is half-finished; averaging it in makes every afternoon look like a slump and would have the owner chasing a problem that is only the clock.
+
+**(4) It is a table underneath.** The bars are decoration over real figures rather than a picture of figures kept somewhere else, so a screen reader gets the same week.
+
+**(5) The query has an integration test, because it is raw SQL with date arithmetic in it.** That is exactly the kind of code that typechecks, reads correctly and returns the wrong week. The test covers the window's edges (the seventh day in, the eighth out), a member who scanned twice counting once, a check-in the desk undid leaving no trace, and another gym's arrivals staying out. The live gym has no attendance rows at all yet, so running it against production would have proved nothing.
+
+## ADR-096 — A gym may be live before its payment gateway is (2026-10-02)
+2026-10-02 · Accepted · **Context:** the owner bought `maxfitnessgym.co.in` and needs it indexed and visible. Two things stood in the way, and they turned out to be the same thing.
+
+`isIndexable()` requires `DEMO_MODE=false`, and the environment schema refused `DEMO_MODE=false` in production without a Razorpay secret. So the site could not be indexed until the gateway was configured — while Razorpay, for its part, asks for a live site before it will issue the keys. A deadlock, and one made of an assumption that had already stopped being true.
+
+**(1) The old premise is dead.** The guard's comment read "Real payments need real keys. Only a production deployment that is NOT in demo mode takes money." Since ADR-093 that is false: without a gateway the public sign-up reserves the place and asks the member to pay at reception — a path the desk already uses for every QR arrival. So the guard now refuses only a **key id with no secret beside it**, which is somebody midway through copying credentials across; there the checkout would offer to take payment and then fail at the gateway, which is worse than never offering.
+
+**(2) Turning demo mode off is the safer state, not the riskier one.** This is worth being explicit about, because it reads backwards. With `DEMO_MODE=true` on a public domain, `/api/v1/checkout/simulate` exists and a stranger pressing Pay becomes an ACTIVE member having paid nothing. With it off, that route does not exist at all. The flip closes a hole rather than opening one.
+
+**(3) What was checked before flipping it.** `DEMO_MODE` also stops the OTP code being shown on screen, which would strand QR arrivals waiting on a WhatsApp message that cannot be sent until the Cloud API is approved — so the gym's `features.otpRequired` was read from the live database first and confirmed `false`. WhatsApp itself is unaffected: the provider is chosen separately and stays the simulator until real credentials exist.
+
+**(4) `aggregateRating` is stated only when reviews stand behind it.** The gym's 4.8 from 231 Google reviews now rides in the `ExerciseGym` structured data so a search result can carry the stars. With a review count of zero the field is omitted entirely: a rating out of nothing is a claim, not a fact.
+
+**Said to the owner:** the supplied meta description is 185 characters and Google truncates near 160, so "Visit us today!" will not appear in a search result. It was used as given — their words, their call — and the measurement was reported rather than the text quietly trimmed.

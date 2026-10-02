@@ -176,14 +176,24 @@ describe('parseEnv — provider credentials must be present before they are need
 });
 
 describe('parseEnv — payment keys in production', () => {
-  it('refuses a live production deployment without a Razorpay secret', () => {
-    expect(() => parseEnv(base({ NODE_ENV: 'production', DEMO_MODE: 'false' }))).toThrow(/RAZORPAY_KEY_SECRET/);
+  it('boots a live production deployment with no Razorpay secret at all (ADR-096)', () => {
+    // Without a secret the site does not take money — it reserves the place and asks the
+    // member to pay at reception (ADR-093). Refusing to boot would keep a gym off the
+    // internet until its gateway paperwork cleared, which is the wrong way round.
+    expect(() => parseEnv(base({ NODE_ENV: 'production', DEMO_MODE: 'false' }))).not.toThrow();
   });
 
   it('boots a live production deployment once the secret is set', () => {
     expect(() =>
       parseEnv(base({ NODE_ENV: 'production', DEMO_MODE: 'false', RAZORPAY_KEY_SECRET: 'secret' })),
     ).not.toThrow();
+  });
+
+  it('still refuses a half-configured gateway, which is the case that silently loses money', () => {
+    // A key id with no secret is somebody midway through copying credentials across. The
+    // checkout would offer to take payment and then fail at the gateway, which is worse
+    // than never offering — so this one is refused rather than degraded.
+    expect(() => parseEnv(base({ NODE_ENV: 'production', DEMO_MODE: 'false', RAZORPAY_KEY_ID: 'rzp_live_x' }))).toThrow(/RAZORPAY_KEY_SECRET/);
   });
 
   it('does not demand Razorpay keys for a deliberate demo deployment, which simulates payments', () => {

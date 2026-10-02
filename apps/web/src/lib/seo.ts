@@ -75,6 +75,23 @@ export function gymJsonLd(ctx: SiteContext): Record<string, unknown> {
     geo: { '@type': 'GeoCoordinates', latitude: GOOGLE_PLACE.latitude, longitude: GOOGLE_PLACE.longitude },
     hasMap: googleMapsUrl(),
     sameAs: [googleMapsUrl(), JUSTDIAL_URL],
+    // The social card doubles as the listing's picture; it is the only image guaranteed
+    // to exist, since the gallery is whatever the owner has uploaded so far (ADR-091).
+    image: new URL(`${localizedPath('/', ctx.locale)}/opengraph-image`.replace('//', '/'), siteUrl()).toString(),
+    // The gym's Google standing, repeated here so a search result can carry the stars.
+    // Only ever stated when there are reviews behind it: a rating with a count of zero is
+    // a claim, not a fact, and Google is right to ignore it.
+    ...(ctx.data.settings.trust.googleReviews > 0
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: ctx.data.settings.trust.googleRating.toFixed(1),
+            reviewCount: ctx.data.settings.trust.googleReviews,
+            bestRating: '5',
+            worstRating: '1',
+          },
+        }
+      : {}),
     ...(open.length === 0
       ? {}
       : {

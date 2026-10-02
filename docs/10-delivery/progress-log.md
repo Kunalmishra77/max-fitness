@@ -1116,3 +1116,51 @@ against MySQL, and this is a long-lived Node process against PostgreSQL with a w
 Postgres enums and array columns MySQL has no equivalent for. The domain is separate: it stays
 registered at Hostinger with its DNS pointed at whatever host runs the app. A Hostinger VPS
 could run it later; the shared plan cannot, at any amount of effort.
+
+## 2026-10-02 (later) — Live on the gym's own domain
+
+**`https://maxfitnessgym.co.in` is serving.** The domain stays registered at Hostinger with
+two records pointing at the host that runs the app; `APP_URL` follows it, so the QR link, the
+receipt links and the renew links are all on the gym's own name. The reception posters were
+regenerated against it — a poster outlives the deployment it was printed from.
+
+**Hostinger shared hosting cannot run this**, and the owner was told plainly: it serves PHP
+against MySQL, while this is a long-lived Node process against PostgreSQL with a worker, using
+Postgres enums and array columns MySQL has no equivalent for. Nothing had to be bought: the
+domain is independent of the hosting beside it.
+
+**Sign in by email as well as mobile (ADR-094).** `admin@` and `reception@`, with the mobile
+numbers still working on the same accounts. One field takes either; the lockout counts against
+the account rather than the thing typed. The two rows were updated in place, so sessions and
+the audit trail stayed put.
+
+**The week's arrivals on Home (ADR-095).** Seven bars, a total and an average that leaves today
+out. The owner reads the shape — "23 today" is good on a Sunday and poor on a Monday, and the
+screen used to give no way to tell which. The raw SQL behind it has an integration test against
+a real database, because the live gym has no attendance rows to prove anything with.
+
+**Home dropped the QR queue tile** at the owner's request: a QR arrival is a member, lands in
+Members, and a fourth tile pointing at a separate screen only suggested otherwise.
+
+**The reviews run in one line** instead of three cards filling the page, paused on hover and on
+keyboard focus, swiped by hand under reduced motion.
+
+**Search engines are being let in (ADR-096).** The environment schema refused `DEMO_MODE=false`
+in production without a Razorpay secret, while Razorpay asks for a live site before issuing the
+keys — a deadlock built on an assumption that ADR-093 had already made false. The guard now
+refuses only a key id with no secret beside it. **Turning demo mode off is the safer state**:
+with it on, `/checkout/simulate` exists on a public domain and a stranger pressing Pay becomes an
+ACTIVE member having paid nothing. `features.otpRequired` was read from the live database and
+confirmed `false` first, so QR arrivals are not left waiting on a WhatsApp message that cannot
+be sent yet.
+
+The page title and description are the owner's own words. Their description is 185 characters
+and Google truncates near 160; that was reported rather than quietly trimmed.
+
+### Pending
+- Still the client's: **Razorpay keys**, the **AI key**, **WhatsApp Cloud API approval**.
+- Still asked for and not done: the **UI/UX pass across the rest of the CRM screens**. Home was
+  the first; the owner was asked which screens bother them most rather than guessing at fifteen.
+- **The lint could not be run on this machine.** `pnpm lint` and even `eslint` on a single file
+  were both stopped at the thirty-minute limit without producing output, twice each. Types and
+  tests pass; the lint is genuinely unverified and should be run where it can finish.
