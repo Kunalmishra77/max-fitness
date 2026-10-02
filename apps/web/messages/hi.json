@@ -788,7 +788,19 @@
       "ptRunning": "चल रही है",
       "ptEnded": "पूरी हो गई",
       "ptUnpaid": "पेमेंट बाक़ी",
-      "trialDays": "{count, plural, one {ट्रायल — 1 दिन} other {ट्रायल — # दिन}}"
+      "trialDays": "{count, plural, one {ट्रायल — 1 दिन} other {ट्रायल — # दिन}}",
+      "diet": {
+        "goal": "लक्ष्य",
+        "dietType": "खाना",
+        "weight": "वज़न",
+        "bmi": "BMI"
+      },
+      "dietTypes": {
+        "VEG": "शाकाहारी",
+        "NON_VEG": "मांसाहारी",
+        "EGG": "अंडा खाते हैं",
+        "VEGAN": "वीगन"
+      }
     },
     "renew": {
       "title": "फीस लें",
@@ -1642,7 +1654,10 @@
       "errors": {
         "FORBIDDEN": "आपकी लॉगिन यह नहीं कर सकती।",
         "generic": "यह नहीं हो सका। दोबारा कोशिश करें।"
-      }
+      },
+      "notSent": "अभी भेजा नहीं",
+      "sent": "भेज दिया",
+      "caloriesLine": "रोज़ {calories} kcal · {protein} g प्रोटीन · {meals} मील"
     }
   },
   "photos": {

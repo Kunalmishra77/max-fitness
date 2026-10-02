@@ -10,10 +10,11 @@ import { GovIdStrip } from '@/components/crm/gov-id-strip';
 import { PhotoViewer } from '@/components/crm/photo-viewer';
 import { displayPhone } from '@/lib/site';
 import { cn } from '@/lib/cn';
+import { DietPanel } from '@/components/crm/diet-panel';
 import { MemberActionsMenu } from '@/components/crm/member-actions-menu';
 import { VoidPaymentButton } from '@/components/crm/void-payment';
 import { getContainer } from '@/lib/container';
-import { requireCrmContext } from '@/lib/crm';
+import { dietReader, requireCrmContext } from '@/lib/crm';
 
 /**
  * Member profile (crm-ux-blueprint §5).
@@ -33,6 +34,9 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
 
   const member = await reader.member(gym.id, id, today);
   if (member === null) notFound();
+
+  // Only a trainer and above sees the diet plan, the same rule as starting one (ADR-089).
+  const dietPlans = can(actor, 'diet.manage', getContainer().clock.now()) ? await dietReader().overview.plansFor(gym.id, id, 5) : [];
 
   const { clock, storage } = getContainer();
   // Photos are private objects, shown through a link that lapses in five minutes
@@ -234,6 +238,10 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
           </ul>
         </section>
       )}
+
+      {/* The diet plan, when they have one (ADR-089). Staff get asked "what are they meant
+          to be eating?", so the current plan is here in full rather than behind a link. */}
+      {dietPlans.length === 0 ? null : <DietPanel plans={dietPlans} locale={locale} />}
 
       <section className="mt-3 bg-white px-4 py-4 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:px-6 lg:shadow-sm">
         <h2 className="text-crm-body font-bold text-brand-obsidian">{t('profile.attendanceMonth')}</h2>

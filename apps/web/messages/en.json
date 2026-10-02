@@ -788,7 +788,19 @@
       "ptRunning": "Running",
       "ptEnded": "Finished",
       "ptUnpaid": "Not paid yet",
-      "trialDays": "{count, plural, one {Trial — 1 day} other {Trial — # days}}"
+      "trialDays": "{count, plural, one {Trial — 1 day} other {Trial — # days}}",
+      "diet": {
+        "goal": "Goal",
+        "dietType": "Eats",
+        "weight": "Weight",
+        "bmi": "BMI"
+      },
+      "dietTypes": {
+        "VEG": "Vegetarian",
+        "NON_VEG": "Non-vegetarian",
+        "EGG": "Eggetarian",
+        "VEGAN": "Vegan"
+      }
     },
     "renew": {
       "title": "Take fees",
@@ -1642,7 +1654,10 @@
       "errors": {
         "FORBIDDEN": "Your login cannot do that.",
         "generic": "That could not be done. Try again."
-      }
+      },
+      "notSent": "not sent yet",
+      "sent": "sent",
+      "caloriesLine": "{calories} kcal a day · {protein} g protein · {meals} meals"
     }
   },
   "photos": {
