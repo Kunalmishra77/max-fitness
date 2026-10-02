@@ -28,6 +28,7 @@ function fakeStore(overrides: Partial<StaffForLogin> | null = {}) {
   const calls = { failed: [] as Array<{ count: number; lockedUntil: Date | null }>, cleared: [] as Date[], sessions: [] as Array<Record<string, unknown>> };
   const store: LoginStore = {
     findStaffByMobile: () => Promise.resolve(overrides === null ? null : { ...staff, ...overrides }),
+    findStaffByEmail: () => Promise.resolve(overrides === null ? null : { ...staff, ...overrides }),
     recordFailedPin: (_id, count, lockedUntil) => (calls.failed.push({ count, lockedUntil }), Promise.resolve()),
     clearFailedPins: (_id, at) => (calls.cleared.push(at), Promise.resolve()),
     createSession: (record) => (calls.sessions.push({ ...record }), Promise.resolve()),
@@ -43,7 +44,7 @@ const deps = (store: LoginStore, verify: (hash: string, pin: string) => Promise<
   gymId: 'gym_1',
 });
 
-const input = { mobile: '9000000001', pin: '2468', ipHash: 'iphash', userAgent: 'phone', trusted: false };
+const input = { identifier: '9000000001', pin: '2468', ipHash: 'iphash', userAgent: 'phone', trusted: false };
 
 describe('login', () => {
   it('checks the PIN against the stored hash and opens a session', async () => {
@@ -120,7 +121,7 @@ describe('login', () => {
     await expect(login(input, deps(store, () => Promise.resolve(true)))).resolves.toMatchObject({ actor: { role: 'OWNER' } });
   });
 
-  it('gives the same answer for an unknown mobile as for a wrong PIN', async () => {
+  it('gives the same answer for an unknown sign-in as for a wrong PIN', async () => {
     const { store } = fakeStore(null);
     const error = await login(input, deps(store, () => Promise.resolve(true))).catch((e: unknown) => e);
     expect(error).toMatchObject({ code: 'INVALID_PIN' });
@@ -132,11 +133,44 @@ describe('login', () => {
     expect(error).toMatchObject({ code: 'INVALID_PIN' });
   });
 
-  it('rejects anything that is not a 4–6 digit PIN or an Indian mobile before touching the database', async () => {
+  it('rejects anything that is neither a mobile number nor an email, before touching the database', async () => {
     const { store } = fakeStore();
     const find = vi.spyOn(store, 'findStaffByMobile');
     await expect(login({ ...input, pin: '12' }, deps(store, () => Promise.resolve(true)))).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
-    await expect(login({ ...input, mobile: '12345' }, deps(store, () => Promise.resolve(true)))).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+    await expect(login({ ...input, identifier: '12345' }, deps(store, () => Promise.resolve(true)))).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
     expect(find).not.toHaveBeenCalled();
+  });
+
+  it('signs in with an email address as well as a mobile number', async () => {
+    // The owner asked for admin@ and reception@ rather than two phone numbers to remember.
+    const { store, calls } = fakeStore();
+    const byEmail = vi.spyOn(store, 'findStaffByEmail');
+    const byMobile = vi.spyOn(store, 'findStaffByMobile');
+
+    const result = await login({ ...input, identifier: 'admin@maxfitnessgym.com' }, deps(store, () => Promise.resolve(true)));
+
+    expect(byEmail).toHaveBeenCalledWith('gym_1', 'admin@maxfitnessgym.com');
+    expect(byMobile).not.toHaveBeenCalled();
+    expect(result.actor.role).toBe('OWNER');
+    expect(calls.sessions).toHaveLength(1);
+  });
+
+  it('lower-cases and trims an email, because a phone keyboard capitalises the first letter', async () => {
+    const { store } = fakeStore();
+    const byEmail = vi.spyOn(store, 'findStaffByEmail');
+    await login({ ...input, identifier: '  Reception@MaxFitnessGym.com ' }, deps(store, () => Promise.resolve(true)));
+    expect(byEmail).toHaveBeenCalledWith('gym_1', 'reception@maxfitnessgym.com');
+  });
+
+  it('gives the same answer for an unknown email as for a wrong PIN', async () => {
+    const { store } = fakeStore(null);
+    const error = await login({ ...input, identifier: 'nobody@maxfitnessgym.com' }, deps(store, () => Promise.resolve(true))).catch((e: unknown) => e);
+    expect(error).toMatchObject({ code: 'INVALID_PIN' });
+  });
+
+  it('counts a wrong PIN against the account whether they typed the email or the mobile', async () => {
+    const { store, calls } = fakeStore({ failedPinCount: 2 });
+    await login({ ...input, identifier: 'admin@maxfitnessgym.com' }, deps(store, () => Promise.resolve(false))).catch(() => undefined);
+    expect(calls.failed).toEqual([{ count: 3, lockedUntil: null }]);
   });
 });

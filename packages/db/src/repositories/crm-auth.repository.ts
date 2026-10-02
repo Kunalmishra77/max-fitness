@@ -8,6 +8,18 @@ import type { PrismaClient } from '../client';
  * Sessions are looked up by the SHA-256 of the token the browser holds, never by the
  * token itself, and an expired or revoked row simply does not resolve to an actor.
  */
+const STAFF_FOR_LOGIN = {
+  id: true,
+  gymId: true,
+  name: true,
+  role: true,
+  language: true,
+  pinHash: true,
+  isActive: true,
+  failedPinCount: true,
+  lockedUntil: true,
+} as const;
+
 export class PrismaCrmAuthStore implements LoginStore {
   readonly #prisma: PrismaClient;
 
@@ -16,21 +28,12 @@ export class PrismaCrmAuthStore implements LoginStore {
   }
 
   async findStaffByMobile(gymId: string, mobile: string): Promise<StaffForLogin | null> {
-    const staff = await this.#prisma.staffUser.findFirst({
-      where: { gymId, mobile },
-      select: {
-        id: true,
-        gymId: true,
-        name: true,
-        role: true,
-        language: true,
-        pinHash: true,
-        isActive: true,
-        failedPinCount: true,
-        lockedUntil: true,
-      },
-    });
-    return staff;
+    return this.#prisma.staffUser.findFirst({ where: { gymId, mobile }, select: STAFF_FOR_LOGIN });
+  }
+
+  /** The address is stored lower-cased, and the service lower-cases what was typed (ADR-094). */
+  async findStaffByEmail(gymId: string, email: string): Promise<StaffForLogin | null> {
+    return this.#prisma.staffUser.findFirst({ where: { gymId, email }, select: STAFF_FOR_LOGIN });
   }
 
   async recordFailedPin(staffUserId: string, failedCount: number, lockedUntil: Date | null): Promise<void> {

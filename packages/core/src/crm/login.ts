@@ -5,12 +5,18 @@ import type { PinHasher } from '../ports/auth';
 import { PIN_ELEVATION_MINUTES, type CrmRole } from './permissions';
 
 /**
- * Staff sign-in with mobile and PIN (security-plan.md §3.1; crm-ux-blueprint §1).
+ * Staff sign-in (security-plan.md §3.1; crm-ux-blueprint §1; ADR-094).
  *
- * A 4–6 digit PIN is weak by design — it has to be typed one-handed at a busy desk —
- * so the protection is around it: Argon2id hashing (the hasher is injected), five
- * attempts before a 15-minute lockout, and the same answer for an unknown mobile as
- * for a wrong PIN, so the login screen never confirms who works here.
+ * One field takes **either a mobile number or an email address**. The owner asked for
+ * `admin@` and `reception@` rather than two phone numbers to remember, and the desk still
+ * has people who only know the number — so the identifier is sniffed rather than chosen
+ * from a dropdown, because a dropdown is one more thing to get wrong at a busy counter.
+ *
+ * A 4–6 digit PIN is weak by design — it has to be typed one-handed — so the protection is
+ * around it: Argon2id hashing (the hasher is injected), five attempts before a 15-minute
+ * lockout counted against the **account** rather than the thing typed (so trying the email
+ * five times and the mobile five times is still five), and the same answer for an unknown
+ * sign-in as for a wrong PIN, so the screen never confirms who works here.
  *
  * The session token is random and handed to the browser once; only its SHA-256 hash is
  * stored, so a leaked database does not hand anyone a working session.
@@ -22,6 +28,8 @@ export const SESSION_IDLE_HOURS = 12;
 export const SESSION_TRUSTED_DAYS = 30;
 
 const PIN_PATTERN = /^\d{4,6}$/;
+/** Deliberately loose: the address is only ever looked up, never sent to. */
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const TOKEN_BYTES = 32;
 
 export interface StaffForLogin {
@@ -47,6 +55,7 @@ export interface NewSessionRecord {
 
 export interface LoginStore {
   findStaffByMobile(gymId: string, mobile: string): Promise<StaffForLogin | null>;
+  findStaffByEmail(gymId: string, email: string): Promise<StaffForLogin | null>;
   recordFailedPin(staffUserId: string, failedCount: number, lockedUntil: Date | null): Promise<void>;
   clearFailedPins(staffUserId: string, lastLoginAt: Date): Promise<void>;
   createSession(record: NewSessionRecord): Promise<void>;
@@ -67,7 +76,8 @@ export interface LoggedInStaff {
 }
 
 export interface LoginInput {
-  readonly mobile: string;
+  /** A mobile number or an email address; which one it is, is worked out here. */
+  readonly identifier: string;
   readonly pin: string;
   readonly ipHash: string | null;
   readonly userAgent: string | null;
@@ -94,16 +104,22 @@ export async function login(
     readonly receptionMayTakePayments?: boolean;
   },
 ): Promise<{ token: string; actor: LoggedInStaff }> {
-  if (!PIN_PATTERN.test(input.pin) || !isValidIndianMobile(input.mobile)) {
-    throw new DomainError('VALIDATION_FAILED', 'Enter a mobile number and PIN');
+  // An address is trimmed and lower-cased before anything else: a phone keyboard
+  // capitalises the first letter, and nobody at a desk at 6am will notice it did.
+  const typed = input.identifier.trim();
+  const email = typed.toLowerCase();
+  const looksLikeEmail = EMAIL_PATTERN.test(email);
+
+  if (!PIN_PATTERN.test(input.pin) || !(looksLikeEmail || isValidIndianMobile(typed))) {
+    throw new DomainError('VALIDATION_FAILED', 'Enter a mobile number or email, and a PIN');
   }
 
   const now = deps.clock.now();
-  const staff = await deps.store.findStaffByMobile(deps.gymId, toE164(input.mobile));
+  const staff = looksLikeEmail ? await deps.store.findStaffByEmail(deps.gymId, email) : await deps.store.findStaffByMobile(deps.gymId, toE164(typed));
 
-  // An unknown mobile and a wrong PIN look the same from outside.
+  // An unknown sign-in and a wrong PIN look the same from outside.
   if (staff === null || !staff.isActive) {
-    throw new DomainError('INVALID_PIN', 'Mobile number or PIN is wrong');
+    throw new DomainError('INVALID_PIN', 'Sign-in or PIN is wrong');
   }
   if (staff.lockedUntil !== null && staff.lockedUntil.getTime() > now.getTime()) {
     throw new DomainError('ACCOUNT_LOCKED', 'Too many wrong PINs', {
@@ -118,7 +134,7 @@ export async function login(
     if (locked) {
       throw new DomainError('ACCOUNT_LOCKED', 'Too many wrong PINs', { retryAfterSeconds: LOGIN_LOCKOUT_MINUTES * 60 });
     }
-    throw new DomainError('INVALID_PIN', 'Mobile number or PIN is wrong', { attemptsLeft: LOGIN_MAX_ATTEMPTS - failedCount });
+    throw new DomainError('INVALID_PIN', 'Sign-in or PIN is wrong', { attemptsLeft: LOGIN_MAX_ATTEMPTS - failedCount });
   }
 
   const token = randomBytes(TOKEN_BYTES).toString('base64url');

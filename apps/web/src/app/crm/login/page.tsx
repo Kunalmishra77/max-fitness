@@ -6,7 +6,8 @@ import { LoginForm } from '@/components/crm/login-form';
 import { currentActor, signIn } from '@/lib/crm';
 
 /**
- * `/crm/login` — mobile and PIN (crm-ux-blueprint §1; security-plan.md §3.1; ADR-062).
+ * `/crm/login` — a mobile number or an email, and a PIN (crm-ux-blueprint §1;
+ * security-plan.md §3.1; ADR-062, ADR-094).
  *
  * The PIN is checked on the server by a server action, so it never travels to any
  * client-side code, and the session cookie is set in the same round trip. On a computer
@@ -20,7 +21,7 @@ export default async function CrmLoginPage() {
   const t = await getTranslations('crm');
   const locale = (await getLocale()) === 'en' ? 'en' : 'hi';
 
-  async function submit(values: { mobile: string; pin: string; trusted: boolean }) {
+  async function submit(values: { identifier: string; pin: string; trusted: boolean }) {
     'use server';
     const outcome = await signIn(values);
     if (outcome.ok) redirect('/crm');

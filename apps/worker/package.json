@@ -14,7 +14,8 @@
     "set:pt": "tsx scripts/set-pt-plans.ts",
     "set:trial-rules": "tsx scripts/set-trial-rules.ts",
     "clear:demo-promo": "tsx scripts/clear-demo-promo.ts",
-    "set:staff": "tsx scripts/set-staff.ts"
+    "set:staff": "tsx scripts/set-staff.ts",
+    "set:staff-logins": "tsx scripts/set-staff-logins.ts"
   },
   "dependencies": {
     "@mfp/core": "workspace:*",

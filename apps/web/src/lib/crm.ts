@@ -90,7 +90,7 @@ export async function requireCrmContext(): Promise<CrmContext> {
 
 export type LoginOutcome = { ok: true } | { ok: false; code: 'INVALID_PIN' | 'ACCOUNT_LOCKED' | 'VALIDATION_FAILED' | 'INTERNAL'; attemptsLeft?: number; minutes?: number };
 
-export async function signIn(input: { mobile: string; pin: string; trusted: boolean }): Promise<LoginOutcome> {
+export async function signIn(input: { identifier: string; pin: string; trusted: boolean }): Promise<LoginOutcome> {
   const container = getContainer();
   const requestHeaders = await headers();
 
@@ -98,7 +98,7 @@ export async function signIn(input: { mobile: string; pin: string; trusted: bool
     const gym = await loadGym(container);
     const { token, actor } = await loginService(
       {
-        mobile: input.mobile,
+        identifier: input.identifier,
         pin: input.pin,
         ipHash: hashIp(requestHeaders.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown', container.env.LINK_TOKEN_SECRET),
         userAgent: requestHeaders.get('user-agent')?.slice(0, 300) ?? null,

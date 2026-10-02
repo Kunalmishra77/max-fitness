@@ -642,7 +642,9 @@
       "welcome": "Welcome back",
       "tagline": "Members, fees, attendance and calls — all in one place.",
       "brandLine": "The front desk of Max Fitness Gym",
-      "help": "Forgot your PIN? Ask the owner to set a new one."
+      "help": "Forgot your PIN? Ask the owner to set a new one.",
+      "identifier": "Mobile number or email",
+      "identifierHelper": "Whichever you were given — both work."
     },
     "nav": {
       "home": "Home",

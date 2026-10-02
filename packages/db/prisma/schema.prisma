@@ -353,6 +353,9 @@ model StaffUser {
   gymId          String
   name           String
   mobile         String
+  /// Sign-in by address as well as by number (ADR-094); optional, because the desk's
+  /// own staff are known by their phone and should not be made to invent an email.
+  email          String?
   role           StaffRole
   pinHash        String
   language       Language  @default(hi)
@@ -369,6 +372,7 @@ model StaffUser {
   announcements Announcement[]
 
   @@unique([gymId, mobile])
+  @@unique([gymId, email])
 }
 
 model Session {

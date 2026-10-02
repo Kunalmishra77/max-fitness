@@ -7,16 +7,21 @@ import { cn } from '@/lib/cn';
 import type { LoginOutcome } from '@/lib/crm';
 
 /**
- * The login form (crm-ux-blueprint §1).
+ * The login form (crm-ux-blueprint §1; ADR-094).
  *
- * Numeric keyboards on both fields, 64px targets, and one plain message when the PIN is
- * wrong: the same wording whether the mobile is unknown or the PIN is wrong, so the
- * screen never confirms who works here.
+ * **One field for the mobile number or the email address.** Two fields, or a chooser
+ * between them, would be one more thing to get wrong at a counter at six in the morning —
+ * the server works out which was typed. The keyboard follows what is being typed: digits
+ * until an `@` appears, then the ordinary one, so the number stays easy and the address
+ * stays possible.
+ *
+ * 64px targets, and one plain message when the sign-in fails: the same wording whether
+ * the account is unknown or the PIN is wrong, so the screen never confirms who works here.
  */
-export function LoginForm({ action }: { action: (values: { mobile: string; pin: string; trusted: boolean }) => Promise<LoginOutcome> }) {
+export function LoginForm({ action }: { action: (values: { identifier: string; pin: string; trusted: boolean }) => Promise<LoginOutcome> }) {
   const t = useTranslations('crm.login');
   const id = useId();
-  const [mobile, setMobile] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [pin, setPin] = useState('');
   const [trusted, setTrusted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +32,7 @@ export function LoginForm({ action }: { action: (values: { mobile: string; pin: 
     setBusy(true);
     setError(null);
     try {
-      const outcome = await action({ mobile, pin, trusted });
+      const outcome = await action({ identifier, pin, trusted });
       if (!outcome.ok) {
         setError(
           outcome.code === 'ACCOUNT_LOCKED'
@@ -55,19 +60,24 @@ export function LoginForm({ action }: { action: (values: { mobile: string; pin: 
   return (
     <form onSubmit={(event) => void onSubmit(event)} className="mt-8 grid gap-5">
       <div>
-        <label htmlFor={`${id}-mobile`} className="block text-crm-body font-semibold">
-          {t('mobile')}
+        <label htmlFor={`${id}-identifier`} className="block text-crm-body font-semibold">
+          {t('identifier')}
         </label>
         <input
-          id={`${id}-mobile`}
-          type="tel"
-          inputMode="numeric"
+          id={`${id}-identifier`}
+          type="text"
+          // Digits while it still could be a number; the full keyboard once it cannot.
+          inputMode={identifier.includes('@') ? 'email' : 'numeric'}
           autoComplete="username"
-          maxLength={14}
-          value={mobile}
-          onChange={(e) => setMobile(e.target.value)}
-          className={cn('mt-2', field)}
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          maxLength={120}
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
+          className={cn('mt-2', field, identifier.includes('@') && 'tracking-normal')}
         />
+        <p className="mt-1 text-small text-brand-stone">{t('identifierHelper')}</p>
       </div>
 
       <div>
