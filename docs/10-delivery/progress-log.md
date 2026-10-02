@@ -1164,3 +1164,38 @@ and Google truncates near 160; that was reported rather than quietly trimmed.
 - **The lint could not be run on this machine.** `pnpm lint` and even `eslint` on a single file
   were both stopped at the thirty-minute limit without producing output, twice each. Types and
   tests pass; the lint is genuinely unverified and should be run where it can finish.
+
+### Going live: three faults found in the environment, one of them mine
+
+**`APP_URL` was stored empty.** Found by reading the live `robots.txt`, which ended
+`Sitemap: http://localhost:3000/sitemap.xml`. `new URL('')` throws, the catch returned
+localhost, and from there every receipt link, renew link and sitemap entry pointed at a
+machine that is not on the internet — while every page still rendered, which is how it went
+unseen. The cause was setting the variable through a PowerShell pipe, which does not reliably
+hand a value to a native command's stdin; `printf 'value' | npx vercel env add` from bash
+works. `DEMO_MODE` had the same fault and had to be set twice before it took.
+
+`siteUrl()` now logs an error in production when it falls back, with a test for it. The
+fallback itself stays: metadata, robots and the sitemap must keep working when configuration
+is broken. What must not stay is doing it silently.
+
+**I took the dynamic site down for about twenty minutes.** The new guard from ADR-096 refuses
+a `RAZORPAY_KEY_ID` with no secret beside it. Production had exactly that — a leftover
+placeholder key id, no secret — and the old guard had never noticed because `DEMO_MODE=true`
+skipped the payment check entirely. So the first deploy of the new guard failed environment
+validation, `getContainer()` threw, and `/api/v1/health` reported `db: "down"` while the
+cached pages carried on looking fine. The guard was right; the configuration was genuinely
+half-done. Removing the orphaned key id fixed it, and the keys will go in as a pair when the
+gym has them.
+
+**The worker has never run.** `/api/v1/health` returns 503 with `worker.lastBeatAt` of
+2026-09-13 — nineteen days. Nothing in the reminder engine, the outbox or the diet follow-ups
+is actually firing in production, and it cannot until the worker has a host. This is on the
+pending list rather than a surprise, but it is worth writing down that the health endpoint has
+been honestly red about it the whole time.
+
+**Verified live on the domain after the fixes:** `/`, `/join`, `/join/pay`, `/crm/login`,
+`/qr`, `/contact` and `/sitemap.xml` all 200; `POST /api/v1/checkout/simulate` 404, so the
+free-membership hole is shut; `db: "ok"` with real plan prices served; robots allows crawling
+and names the right sitemap; the page title, description, canonical, `index, follow` and the
+4.8-from-231 `aggregateRating` are all on the live HTML.
