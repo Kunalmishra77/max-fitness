@@ -80,6 +80,17 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
 
   const daysInMonth = new Date(Number(today.slice(0, 4)), Number(today.slice(5, 7)), 0).getDate();
   const attended = new Set(member.attendanceDays);
+  // What the WhatsApp button opens with. An empty chat means reception types the same
+  // sentence forty times a week; this is that sentence, in their language, already there.
+  // It is a convenience, not a tracked send — the reminder engine owns real messages.
+  const whatsappText =
+    member.effectiveEndDate === null || member.daysLeft === null
+      ? t('profile.whatsappPrefillPlain', { name: member.fullName.split(' ')[0] ?? member.fullName })
+      : t(member.daysLeft < 0 ? 'profile.whatsappPrefillOverdue' : 'profile.whatsappPrefillDue', {
+          name: member.fullName.split(' ')[0] ?? member.fullName,
+          date: formatISTDate(member.effectiveEndDate, locale),
+        });
+
   const feeLine =
     member.daysLeft === null
       ? t('feeState.NONE')
@@ -178,7 +189,7 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
             {t('profile.call')}
           </a>
           <a
-            href={`https://wa.me/${member.mobile.replace(/\D/g, '')}`}
+            href={`https://wa.me/${member.mobile.replace(/\D/g, '')}?text=${encodeURIComponent(whatsappText)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-panel border-2 border-brand-obsidian text-small font-semibold text-brand-obsidian transition-colors hover:bg-brand-obsidian hover:text-brand-white"
@@ -274,11 +285,13 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
                       {rupees(payment.amountPaise)}
                     </span>
                     <span className="block text-small text-brand-stone">
-                      {payment.receiptNo === null ? payment.status : t('profile.receipt', { receiptNo: payment.receiptNo })}
+                      {payment.receiptNo === null
+                        ? t(`profile.paymentStatus.${payment.status}` as never)
+                        : t('profile.receipt', { receiptNo: payment.receiptNo })}
                       {payment.status === 'VOIDED' ? ` — ${t('void.voided')}` : ''}
                     </span>
                   </span>
-                  <span className="text-small text-brand-stone">{payment.method}</span>
+                  <span className="text-small text-brand-stone">{t(`profile.method.${payment.method}` as never)}</span>
                 </div>
                 {mayVoid && payment.status === 'PAID' && payment.receiptNo !== null ? (
                   <VoidPaymentButton

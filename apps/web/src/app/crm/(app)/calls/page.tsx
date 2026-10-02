@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { can } from '@mfp/core';
 import { recordCallOutcomeAction } from '@/app/crm/actions';
@@ -36,7 +37,13 @@ export default async function CrmCallsPage() {
           {tasks.map((task) => (
             <li key={task.id} className="bg-white p-4 lg:mb-3 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:shadow-sm">
               <div className="flex items-baseline justify-between gap-3">
-                <span className="truncate text-crm-body font-semibold">{task.member?.fullName ?? '—'}</span>
+                {task.member === null ? (
+                  <span className="truncate text-crm-body font-semibold">—</span>
+                ) : (
+                  <Link href={`/crm/members/${task.member.id}`} className="truncate text-crm-body font-semibold text-brand-ink hover:underline">
+                    {task.member.fullName}
+                  </Link>
+                )}
                 <span className={`shrink-0 rounded-button px-2 py-1 text-small font-semibold ${FEE_TONE[task.member?.feeState ?? 'NONE'].chip}`}>
                   {t(`calls.reasons.${task.reason}` as never)}
                 </span>
@@ -48,7 +55,9 @@ export default async function CrmCallsPage() {
                     {t('profile.call')}
                   </a>
                   <a
-                    href={`https://wa.me/${task.member.mobile.replace(/\D/g, '')}`}
+                    href={`https://wa.me/${task.member.mobile.replace(/\D/g, '')}?text=${encodeURIComponent(
+                      t('profile.whatsappPrefillPlain', { name: task.member.fullName.split(' ')[0] ?? task.member.fullName }),
+                    )}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex min-h-14 items-center justify-center gap-2 rounded-panel border-2 border-brand-obsidian text-crm-body font-semibold text-brand-obsidian transition-colors hover:bg-brand-obsidian hover:text-brand-white"

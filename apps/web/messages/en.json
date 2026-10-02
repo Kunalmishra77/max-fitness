@@ -807,7 +807,25 @@
         "NON_VEG": "Non-vegetarian",
         "EGG": "Eggetarian",
         "VEGAN": "Vegan"
-      }
+      },
+      "method": {
+        "RAZORPAY": "Online",
+        "CASH": "Cash",
+        "UPI_DIRECT": "UPI",
+        "CARD_POS": "Card",
+        "BANK_TRANSFER": "Bank transfer",
+        "SIMULATED": "Demo payment"
+      },
+      "paymentStatus": {
+        "CREATED": "Started, not paid",
+        "PAID": "Paid",
+        "FAILED": "Failed",
+        "VOIDED": "Cancelled",
+        "REFUNDED": "Refunded"
+      },
+      "whatsappPrefillDue": "Namaste {name}, this is Max Fitness Gym. Your membership is due on {date}. Shall we renew it?",
+      "whatsappPrefillOverdue": "Namaste {name}, this is Max Fitness Gym. Your membership ended on {date}. Shall we renew it?",
+      "whatsappPrefillPlain": "Namaste {name}, this is Max Fitness Gym."
     },
     "renew": {
       "title": "Take fees",
@@ -1002,7 +1020,8 @@
       "cancel": "Cancel",
       "notAllowed": "You are not allowed to change enquiries.",
       "addMember": "Add as member",
-      "makeMember": "Make them a member"
+      "makeMember": "Make them a member",
+      "whatsappPrefill": "Namaste {name}, this is Max Fitness Gym, Indirapuram. Thank you for your enquiry — how can we help?"
     },
     "reports": {
       "title": "Reports",

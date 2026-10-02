@@ -9,6 +9,7 @@ import { cn } from '@/lib/cn';
 import { LeadActions } from '@/components/crm/lead-actions';
 import { getContainer } from '@/lib/container';
 import { requireCrmContext } from '@/lib/crm';
+import { displayPhone } from '@/lib/site';
 
 /**
  * Enquiries — "पूछताछ" (BR-10.1; crm-ux-blueprint §12).
@@ -69,7 +70,7 @@ export default async function CrmLeadsPage({ searchParams }: { searchParams: Pro
                 </span>
               </div>
               <p className="mt-1 text-small text-brand-stone">
-                {t('leads.askedOn', { date: formatISTDate(toISTDate(lead.createdAt), actor.language) })}
+                {displayPhone(lead.mobile)} · {t('leads.askedOn', { date: formatISTDate(toISTDate(lead.createdAt), actor.language) })}
                 {lead.goal === null ? '' : ` · ${t('leads.goal', { goal: lead.goal })}`}
               </p>
               {lead.notes === null ? null : <p className="mt-2 text-small whitespace-pre-line text-brand-stone">{lead.notes}</p>}
@@ -83,7 +84,9 @@ export default async function CrmLeadsPage({ searchParams }: { searchParams: Pro
                   {t('profile.call')}
                 </a>
                 <a
-                  href={`https://wa.me/${lead.mobile.replace(/\D/g, '')}`}
+                  href={`https://wa.me/${lead.mobile.replace(/\D/g, '')}?text=${encodeURIComponent(
+                    t('leads.whatsappPrefill', { name: lead.name.split(' ')[0] ?? lead.name }),
+                  )}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex min-h-14 items-center justify-center gap-2 rounded-panel border-2 border-brand-obsidian text-crm-body font-semibold text-brand-obsidian transition-colors hover:bg-brand-obsidian hover:text-brand-white"

@@ -807,7 +807,25 @@
         "NON_VEG": "मांसाहारी",
         "EGG": "अंडा खाते हैं",
         "VEGAN": "वीगन"
-      }
+      },
+      "method": {
+        "RAZORPAY": "ऑनलाइन",
+        "CASH": "नकद",
+        "UPI_DIRECT": "UPI",
+        "CARD_POS": "कार्ड",
+        "BANK_TRANSFER": "बैंक ट्रांसफ़र",
+        "SIMULATED": "डेमो पेमेंट"
+      },
+      "paymentStatus": {
+        "CREATED": "शुरू हुआ, पैसा नहीं आया",
+        "PAID": "मिल गया",
+        "FAILED": "नहीं हुआ",
+        "VOIDED": "रद्द",
+        "REFUNDED": "वापस किया"
+      },
+      "whatsappPrefillDue": "नमस्ते {name}, मैक्स फिटनेस जिम से। आपकी फीस {date} को आनी है। रिन्यू कर दें?",
+      "whatsappPrefillOverdue": "नमस्ते {name}, मैक्स फिटनेस जिम से। आपकी मेंबरशिप {date} को खत्म हो गई थी। रिन्यू कर दें?",
+      "whatsappPrefillPlain": "नमस्ते {name}, मैक्स फिटनेस जिम से।"
     },
     "renew": {
       "title": "फीस लें",
@@ -1002,7 +1020,8 @@
       "cancel": "रहने दें",
       "notAllowed": "आपको पूछताछ बदलने की इजाज़त नहीं है।",
       "addMember": "मेंबर बनाएँ",
-      "makeMember": "इन्हें मेंबर बनाएँ"
+      "makeMember": "इन्हें मेंबर बनाएँ",
+      "whatsappPrefill": "नमस्ते {name}, मैक्स फिटनेस जिम, इंदिरापुरम से। आपने पूछताछ की थी — बताइए कैसे मदद करें?"
     },
     "reports": {
       "title": "हिसाब",
