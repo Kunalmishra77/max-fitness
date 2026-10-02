@@ -1572,7 +1572,9 @@
       "noPeople": "No conversations yet.",
       "unknownMember": "Unknown member",
       "count": "{count, plural, one {1 message} other {# messages}}",
-      "replied": "replied"
+      "replied": "replied",
+      "threadOf": "Messages with {name}",
+      "backToPeople": "All people"
     },
     "simulator": {
       "title": "Message plan",

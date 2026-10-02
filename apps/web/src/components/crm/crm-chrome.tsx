@@ -42,7 +42,7 @@ export async function CrmHeader({
 }) {
   const t = await getTranslations('crm.shell');
   return (
-    <header className="sticky top-0 z-10 bg-brand-obsidian text-brand-white lg:static lg:mb-6 lg:overflow-hidden lg:rounded-panel">
+    <header className="sticky top-0 z-10 bg-brand-obsidian text-brand-white lg:static lg:mb-6 lg:rounded-panel">
       <div className="flex min-h-16 items-center gap-3 px-4 py-2 lg:min-h-20 lg:px-6">
         {back === undefined ? null : (
           <Link
@@ -60,7 +60,9 @@ export async function CrmHeader({
         </div>
         {right}
       </div>
-      <span aria-hidden className="block h-0.5 bg-gradient-to-r from-brand-accent via-brand-accent/40 to-transparent" />
+      {/* The accent line used to be clipped to the panel's corners by `overflow-hidden` on
+          the header. That also clipped the actions menu, so the line rounds itself. */}
+      <span aria-hidden className="block h-0.5 bg-gradient-to-r from-brand-accent via-brand-accent/40 to-transparent lg:rounded-b-panel" />
     </header>
   );
 }

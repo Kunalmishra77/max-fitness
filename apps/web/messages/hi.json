@@ -1572,7 +1572,9 @@
       "noPeople": "अभी कोई बातचीत नहीं।",
       "unknownMember": "अनजान मेंबर",
       "count": "{count, plural, one {1 मैसेज} other {# मैसेज}}",
-      "replied": "जवाब आया"
+      "replied": "जवाब आया",
+      "threadOf": "{name} के साथ संदेश",
+      "backToPeople": "सभी लोग"
     },
     "simulator": {
       "title": "मैसेज का हिसाब",

@@ -70,6 +70,10 @@ export default async function CrmMessagesPage({ searchParams }: { searchParams: 
     at: row.createdAt.toISOString(),
   }));
 
+  // Whose thread this is. Opening one from the people list used to leave the screen headed
+  // "Messages" with no way back to the list it came from.
+  const threadName = member === undefined ? null : (rows.find((row) => row.memberName !== null)?.memberName ?? null);
+
   const sentToday = (counts['SENT'] ?? 0) + (counts['DELIVERED'] ?? 0) + (counts['READ'] ?? 0) + (counts['SIMULATED'] ?? 0);
   const notSentToday = (counts['SKIPPED'] ?? 0) + (counts['FAILED'] ?? 0);
 
@@ -77,11 +81,20 @@ export default async function CrmMessagesPage({ searchParams }: { searchParams: 
     <>
       {/* A reply or a delivery report arrives without anybody asking (ADR-092). */}
       <AutoRefresh seconds={60} />
-      <CrmHeader title={t('messages.title')} subtitle={t('messages.helper')} back="/crm/more" />
+      <CrmHeader
+        title={threadName === null ? t('messages.title') : t('messages.threadOf', { name: threadName })}
+        {...(threadName === null ? { subtitle: t('messages.helper') } : {})}
+        back={member === undefined ? '/crm/more' : '/crm/messages?view=people'}
+      />
       <div className="grid gap-4 p-4 lg:p-0">
         <p className="text-small text-brand-stone">{t('messages.today', { sent: sentToday, skipped: notSentToday })}</p>
         <div className="flex flex-wrap gap-2">
-          <Link href="/crm/messages" className={pillClass(!failedOnly && !byPerson)}>
+          {member === undefined ? null : (
+            <Link href="/crm/messages?view=people" className={pillClass(false)}>
+              {t('messages.backToPeople')}
+            </Link>
+          )}
+          <Link href="/crm/messages" className={pillClass(!failedOnly && !byPerson && member === undefined)}>
             {t('messages.filterAll')}
           </Link>
           {/* A gym thinks in people, not in a stream of sends (ADR-091). */}
