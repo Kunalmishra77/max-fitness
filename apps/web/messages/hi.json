@@ -662,7 +662,7 @@
       "dueAmount": "{amount} आएगा",
       "expired": "फीस बाकी",
       "calls": "आज के कॉल",
-      "noCalls": "आज कोई कॉल नहीं ✓",
+      "noCalls": "आज कोई कॉल नहीं",
       "seeAll": "सब देखें",
       "birthdays": "आज जन्मदिन",
       "noBirthdays": "आज कोई जन्मदिन नहीं",
@@ -855,7 +855,7 @@
     },
     "calls": {
       "title": "आज के कॉल",
-      "empty": "आज कोई कॉल नहीं ✓",
+      "empty": "आज कोई कॉल नहीं",
       "reasons": {
         "EXPIRED_BUT_VISITING": "आ रहे हैं, फीस बाकी",
         "SIGNUP_NOT_PAID": "फॉर्म भरा, पैसे नहीं",
@@ -977,7 +977,7 @@
       "empty": "आज अभी कोई नहीं आया",
       "tabToday": "आज",
       "tabAbsent": "नहीं आ रहे",
-      "absentEmpty": "सब आ रहे हैं ✓",
+      "absentEmpty": "सब आ रहे हैं",
       "absentSince": "{count} दिन से नहीं आए",
       "absentNever": "कभी नहीं आए",
       "methodFACE": "चेहरे से",
@@ -1392,7 +1392,7 @@
       "inRegister": "रजिस्टर में",
       "memberSaid": "मेंबर ने बताया",
       "lastAmount": "आखिरी फीस",
-      "correct": "✓ सही है",
+      "correct": "सही है",
       "changeDate": "✎ तारीख बदलें",
       "dateLabel": "फीस इस तारीख तक जमा है",
       "approveWithDate": "इस तारीख से मंज़ूर करें",
@@ -1797,6 +1797,13 @@
         "couldNotRead": "यह फ़ाइल फ़ोटो की तरह नहीं पढ़ी जा सकी।",
         "generic": "यह नहीं हो सका। दोबारा कोशिश करें।"
       }
+    },
+    "statusShort": {
+      "ACTIVE": "चालू",
+      "PENDING_PAYMENT": "फीस बाक़ी",
+      "PENDING_VERIFICATION": "जाँचना है",
+      "LEFT": "छोड़ा",
+      "BLOCKED": "रोका"
     }
   },
   "photos": {

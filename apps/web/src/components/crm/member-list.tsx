@@ -136,7 +136,7 @@ async function MemberListRow({ entry, today }: { entry: MemberListEntry; today: 
       <span className={cn(cell, 'hidden lg:block')}>{plan}</span>
       <span className="hidden lg:block">
         <span className={cn('inline-block max-w-full truncate rounded-full px-2.5 py-0.5 text-small font-semibold', tone.chip)}>
-          {left ? t('members.left') : t(`status.${member.status}` as never)}
+          {left ? t('members.left') : t(`statusShort.${member.status}` as never)}
         </span>
       </span>
       <span className={cn(cell, 'hidden lg:block')}>

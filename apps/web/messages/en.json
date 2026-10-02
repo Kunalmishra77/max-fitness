@@ -662,7 +662,7 @@
       "dueAmount": "{amount} expected",
       "expired": "Fees due",
       "calls": "Calls today",
-      "noCalls": "No calls today ✓",
+      "noCalls": "No calls today",
       "seeAll": "See all",
       "birthdays": "Birthdays today",
       "noBirthdays": "No birthdays today",
@@ -855,7 +855,7 @@
     },
     "calls": {
       "title": "Calls today",
-      "empty": "No calls today ✓",
+      "empty": "No calls today",
       "reasons": {
         "EXPIRED_BUT_VISITING": "Visiting, fees due",
         "SIGNUP_NOT_PAID": "Signed up, not paid",
@@ -977,7 +977,7 @@
       "empty": "Nobody has come in yet today",
       "tabToday": "Today",
       "tabAbsent": "Not coming",
-      "absentEmpty": "Everyone is coming ✓",
+      "absentEmpty": "Everyone is coming",
       "absentSince": "Away for {count} days",
       "absentNever": "Never came",
       "methodFACE": "Face",
@@ -1797,6 +1797,13 @@
         "couldNotRead": "That file could not be read as a photo.",
         "generic": "That could not be done. Try again."
       }
+    },
+    "statusShort": {
+      "ACTIVE": "Active",
+      "PENDING_PAYMENT": "Unpaid",
+      "PENDING_VERIFICATION": "To check",
+      "LEFT": "Left",
+      "BLOCKED": "Blocked"
     }
   },
   "photos": {

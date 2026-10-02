@@ -193,7 +193,7 @@ export default async function CrmHomePage() {
         )}
 
         <div className="grid gap-4 lg:gap-6 lg:grid-cols-[1.4fr_1fr]">
-          <section aria-labelledby="calls-heading" className="overflow-hidden rounded-panel border border-brand-stone/15 bg-white shadow-sm">
+          <section aria-labelledby="calls-heading" className="self-start overflow-hidden rounded-panel border border-brand-stone/15 bg-white shadow-sm">
             <div className="flex items-start justify-between gap-3 border-b border-brand-stone/15 px-4 py-3">
               <div className="flex gap-3">
                 <span className="mt-0.5 flex size-9 items-center justify-center rounded-full bg-brand-accent/10 text-brand-accent">

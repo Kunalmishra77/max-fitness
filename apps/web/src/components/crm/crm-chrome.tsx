@@ -171,7 +171,9 @@ export const CRM_CARD = 'bg-white lg:rounded-panel lg:border lg:border-brand-sto
 /** A filter or tab pill; the chosen one is obsidian, or its own fee tint. */
 export function pillClass(active: boolean, tone = 'bg-white text-brand-stone hover:text-brand-obsidian'): string {
   return cn(
-    'inline-flex min-h-11 items-center rounded-full px-5 text-crm-body font-semibold transition-colors',
+    // `gap` rather than a space in the markup: a flex container eats whitespace between
+    // its children, which turned "All 14" into "All14".
+    'inline-flex min-h-11 items-center gap-1.5 rounded-full px-5 text-crm-body font-semibold transition-colors',
     active ? 'bg-brand-obsidian text-white' : tone,
   );
 }
