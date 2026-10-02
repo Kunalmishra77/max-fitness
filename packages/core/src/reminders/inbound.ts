@@ -161,6 +161,8 @@ export type InboundRoute =
   | { readonly to: 'RESTART' }
   /** The reply answers the diet question we are waiting on (ADR-089). */
   | { readonly to: 'DIET_ANSWER'; readonly question: string }
+  /** The reply answers this month's check on their plan (ADR-089). */
+  | { readonly to: 'DIET_FOLLOW_UP'; readonly question: string }
   /** Nobody automatic owns this; the owner is told and a person answers. */
   | { readonly to: 'HUMAN' };
 
@@ -173,10 +175,19 @@ export type InboundRoute =
  * is the answer to it — whether it is readable is the questionnaire's problem, not this
  * function's. Anything else goes to a person.
  */
-export function routeInboundReply(input: { readonly text: string; readonly pendingDietQuestion: string | null }): InboundRoute {
+export function routeInboundReply(input: {
+  readonly text: string;
+  readonly pendingDietQuestion: string | null;
+  /** This month's check on their plan, when one is open (ADR-089). */
+  readonly pendingFollowUpQuestion?: string | null;
+}): InboundRoute {
   const intent = classifyInboundText(input.text);
   if (intent === 'STOP') return { to: 'STOP' };
   if (intent === 'RESTART') return { to: 'RESTART' };
+  // The questionnaire first: it only runs before a member has a plan at all, so if both are
+  // somehow open, the one that is blocking a plan is the one to finish.
   if (input.pendingDietQuestion !== null) return { to: 'DIET_ANSWER', question: input.pendingDietQuestion };
+  const followUp = input.pendingFollowUpQuestion ?? null;
+  if (followUp !== null) return { to: 'DIET_FOLLOW_UP', question: followUp };
   return { to: 'HUMAN' };
 }

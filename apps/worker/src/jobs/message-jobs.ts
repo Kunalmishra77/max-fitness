@@ -18,9 +18,10 @@ import {
   type TransactionalMessage,
 } from '@mfp/core';
 import type { AiTextGenerator, MessagePurpose, WhatsAppProvider } from '@mfp/core/ports';
-import { DIET_QUESTION_TEXT } from '@mfp/integrations';
+import { DIET_QUESTION_TEXT, FOLLOW_UP_QUESTION_TEXT } from '@mfp/integrations';
 import {
   PrismaAnnouncements,
+  PrismaDietFollowUps,
   PrismaDietPlans,
   PrismaDietReader,
   PrismaMessageData,
@@ -355,6 +356,9 @@ export function messageOutboxHandlers(deps: MessageJobDeps): OutboxHandlers {
         return;
       }
 
+      // What the member said at the last check goes with it, so a rewrite is a different
+      // plan rather than the same one again (ADR-089).
+      const feedback = (event.payload as { feedback?: unknown }).feedback;
       const prompt = dietPlanPrompt({
         firstName: found.member.firstName,
         gender: found.member.gender,
@@ -362,6 +366,7 @@ export function messageOutboxHandlers(deps: MessageJobDeps): OutboxHandlers {
         gymName: await deps.gymName(),
         answers: found.answers,
         bmi,
+        ...(typeof feedback === 'string' && feedback.trim() !== '' ? { feedback } : {}),
       });
 
       let answer: { text: string; model: string };
@@ -426,6 +431,51 @@ export function messageOutboxHandlers(deps: MessageJobDeps): OutboxHandlers {
         null,
       );
       await new PrismaDietPlans(deps.prisma).markSent(planId, deps.clock.now());
+    },
+
+    /**
+     * This month's question about their plan (ADR-089).
+     *
+     * Checked against the open follow-up, like the questionnaire is against the profile, so
+     * a stale event cannot ask something already answered.
+     */
+    'whatsapp.diet_follow_up': async (event) => {
+      const memberId = memberIdOf(event);
+      const payload = event.payload as { followUpId?: unknown; question?: unknown; attempt?: unknown };
+      const followUpId = typeof payload.followUpId === 'string' ? payload.followUpId : null;
+      const question = typeof payload.question === 'string' ? payload.question : null;
+      const attempt = typeof payload.attempt === 'number' ? payload.attempt : 1;
+      if (memberId === null || followUpId === null || question === null) return;
+      const gymId = await deps.gymId();
+
+      const follows = new PrismaDietFollowUps(deps.prisma);
+      const open = await follows.transaction((store) => store.openFollowUpFor(gymId, memberId));
+      if (open === null || open.id !== followUpId || open.pendingQuestion !== question) {
+        deps.log.info({ memberId, question }, 'the member has moved on from that follow-up question');
+        return;
+      }
+
+      const found = await new PrismaDietReader(deps.prisma).forGeneration(gymId, memberId);
+      if (found === null) return;
+      const text = FOLLOW_UP_QUESTION_TEXT[question]?.[found.member.language];
+      if (text === undefined) {
+        deps.log.warn({ question }, 'no wording for that follow-up question');
+        return;
+      }
+
+      await sendTemplate(
+        deps,
+        {
+          templateName: 'mf_diet_follow_up',
+          language: found.member.language,
+          idempotencyKey: `diet-follow:${followUpId}:${question}:${attempt}`,
+          purpose: 'DIET',
+          variables: { firstName: found.member.firstName, question: text },
+        },
+        found.member.mobile,
+        memberId,
+        null,
+      );
     },
 
     'whatsapp.unsubscribe_confirm': (event) => sendConfirmation(deps, event, 'UNSUBSCRIBED'),

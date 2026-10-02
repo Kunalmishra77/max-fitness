@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { parseWhatsAppWebhook, recordDietReply, restartReminders, unsubscribeMember, verifyMetaSignature } from '@mfp/core';
-import { PrismaDietInbox, PrismaDietUnitOfWork, PrismaMessageLogWriter, PrismaUnsubscribeUnitOfWork } from '@mfp/db';
+import { parseWhatsAppWebhook, recordDietReply, recordFollowUpReply, restartReminders, unsubscribeMember, verifyMetaSignature } from '@mfp/core';
+import { PrismaDietFollowUps, PrismaDietInbox, PrismaDietUnitOfWork, PrismaMessageLogWriter, PrismaUnsubscribeUnitOfWork } from '@mfp/db';
 import type { E164Mobile } from '@mfp/shared';
 import { newRequestId } from '@/lib/api';
 import { getContainer } from '@/lib/container';
@@ -90,6 +90,10 @@ export async function POST(request: NextRequest) {
         pendingDietQuestion: (mobile: E164Mobile) => new PrismaDietInbox(prisma).pendingAtMobile(gym.id, mobile),
         recordDietReply: async (memberId, text) => {
           await recordDietReply({ memberId, text }, { clock, gymId: gym.id, uow: new PrismaDietUnitOfWork(prisma) });
+        },
+        pendingFollowUpQuestion: (mobile: E164Mobile) => new PrismaDietFollowUps(prisma).pendingAtMobile(gym.id, mobile),
+        recordFollowUpReply: async (memberId, text) => {
+          await recordFollowUpReply({ gymId: gym.id, memberId, text }, { clock, uow: new PrismaDietFollowUps(prisma) });
         },
         updateStatus: (providerMessageId, status, at, error) =>
           messageLog.updateStatus(providerMessageId, status as Parameters<PrismaMessageLogWriter['updateStatus']>[1], at, error ?? undefined),

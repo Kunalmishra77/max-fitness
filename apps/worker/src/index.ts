@@ -4,7 +4,8 @@ import { GymSettingsSchema, parseEnv, systemClock, WORKER_HEARTBEAT_STALE_SECOND
 import { createPrismaClient } from '@mfp/db';
 import { createStorageDriver } from '@mfp/integrations/storage';
 import { createAiGenerator } from '@mfp/integrations/ai';
-import { issueToken, sessionsForDay } from '@mfp/core';
+import { issueToken, sessionsForDay, startDietFollowUps } from '@mfp/core';
+import { PrismaDietFollowUps } from '@mfp/db';
 import { MetaCloudWhatsAppProvider, SimulatorWhatsAppProvider } from '@mfp/integrations/whatsapp';
 import { PrismaMessageLogWriter } from '@mfp/db';
 import { nightlyCallTasksHandler, registerReceiptPdfWorker, RECEIPT_PDF_QUEUE, startOutboxPoller, type Phase3Deps } from './jobs/phase3-jobs';
@@ -168,6 +169,13 @@ async function main(): Promise<void> {
   await registerSchedules(boss, log, {
     'nightly-call-tasks': nightlyCallTasksHandler(phase3),
     'kiosk-offline-check': kioskOfflineHandler({ prisma, clock: systemClock, log, gymSlug: env.GYM_SLUG }),
+    // This month's check on every diet plan that is due one (ADR-089).
+    'diet-follow-ups': async () => {
+      const gym = await prisma.gym.findUniqueOrThrow({ where: { slug: env.GYM_SLUG }, select: { id: true, settings: true } });
+      const everyDays = GymSettingsSchema.parse(gym.settings).pricing.dietFollowUpEveryDays;
+      const result = await startDietFollowUps({ everyDays, gymId: gym.id }, { clock: systemClock, uow: new PrismaDietFollowUps(prisma) });
+      log.info({ ...result, everyDays }, 'diet follow-ups');
+    },
     ...ownerJobHandlers(phase6, messageDeps),
     ...handlers,
   });

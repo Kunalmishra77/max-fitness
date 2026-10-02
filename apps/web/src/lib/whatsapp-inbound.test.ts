@@ -48,10 +48,15 @@ function deps(over: Partial<InboundDeps> = {}): InboundDeps & { calls: string[] 
       calls.push(`alert:${kind}`);
       return Promise.resolve();
     },
-    // Nobody is mid-questionnaire unless a test says so (ADR-089).
+    // Nobody is mid-questionnaire or mid-check unless a test says so (ADR-089).
     pendingDietQuestion: () => Promise.resolve(null),
     recordDietReply: (memberId: string, text: string) => {
       calls.push(`diet:${memberId}:${text}`);
+      return Promise.resolve();
+    },
+    pendingFollowUpQuestion: () => Promise.resolve(null),
+    recordFollowUpReply: (memberId: string, text: string) => {
+      calls.push(`follow:${memberId}:${text}`);
       return Promise.resolve();
     },
     qualityGuard: {
@@ -174,5 +179,24 @@ describe('a reply while a diet question is waiting', () => {
     const d = deps({ pendingDietQuestion: () => Promise.resolve(asking) });
     await handleInboundWhatsApp(textMessage('STOP'), d);
     expect(d.calls).toEqual(['unsub:mem_1']);
+  });
+});
+
+describe('a reply while this month\u0027s check is open', () => {
+  const checking = { memberId: 'mem_1', question: 'following' };
+
+  it('is recorded as this month\u0027s answer', async () => {
+    const d = deps({ pendingFollowUpQuestion: () => Promise.resolve(checking) });
+    await handleInboundWhatsApp(textMessage('mostly'), d);
+    expect(d.calls).toEqual(['follow:mem_1:mostly']);
+  });
+
+  it('gives way to the questionnaire when both are somehow open', async () => {
+    const d = deps({
+      pendingDietQuestion: () => Promise.resolve({ memberId: 'mem_1', question: 'weight' }),
+      pendingFollowUpQuestion: () => Promise.resolve(checking),
+    });
+    await handleInboundWhatsApp(textMessage('72'), d);
+    expect(d.calls).toEqual(['diet:mem_1:72']);
   });
 });

@@ -103,6 +103,14 @@ export const PricingSettingsSchema = z.object({
   trialPerDayPaise: z.number().int().positive().max(100_000).default(10_000),
   /** How many days a newcomer may buy, shortest first. */
   trialDayOptions: z.array(z.number().int().positive().max(30)).min(1).max(8).default([1, 2, 3, 5, 7]),
+  /**
+   * How often a diet plan is checked on, in days (ADR-089). 0 switches follow-ups off.
+   *
+   * It lives under pricing only because that is where the owner's own switches already are;
+   * nothing about it is a price. Thirty days is "once a month" without arithmetic about
+   * which month.
+   */
+  dietFollowUpEveryDays: z.number().int().min(0).max(180).default(30),
 });
 export type PricingSettings = z.infer<typeof PricingSettingsSchema>;
 

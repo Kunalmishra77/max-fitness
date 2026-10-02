@@ -438,6 +438,36 @@ export const DIET_QUESTION_TEXT: Readonly<Record<string, TemplateBodies>> = {
   },
 };
 
+/**
+ * This month's four questions (ADR-089).
+ *
+ * Short, numbered, and answerable while waiting for a bus. "Same" is offered for the weight
+ * because it is the most honest answer most months, and a member who has not weighed
+ * themselves should not have to make something up.
+ */
+export const FOLLOW_UP_QUESTION_TEXT: Readonly<Record<string, TemplateBodies>> = {
+  following: {
+    en: 'Have you been able to follow the plan? Reply with the number:\n1. Mostly\n2. Sometimes\n3. Not really',
+    hi: 'प्लान फ़ॉलो कर पा रहे हैं? नंबर भेज दें:\n1. ज़्यादातर\n2. कभी-कभी\n3. नहीं कर पाया',
+  },
+  weight: {
+    en: 'What is your weight now, in kg? If it has not changed, reply Same.',
+    hi: 'अभी वज़न कितना है, kg में? न बदला हो तो "वही" भेज दें।',
+  },
+  energy: {
+    en: 'How is your energy and strength in the gym? Reply with the number:\n1. Better\n2. Same\n3. Worse',
+    hi: 'जिम में एनर्जी और ताक़त कैसी है? नंबर भेज दें:\n1. बेहतर\n2. वही\n3. पहले से कम',
+  },
+  wantsChange: {
+    en: 'Would you like the plan changed? Reply Yes or No.',
+    hi: 'प्लान में बदलाव चाहिए? "हाँ" या "नहीं" भेज दें।',
+  },
+  changeWhat: {
+    en: 'What would you like changed? Tell us in a line or two — too much rice, cannot eat late, anything.',
+    hi: 'क्या बदलवाना चाहते हैं? एक-दो लाइन में बता दें — चावल ज़्यादा है, देर रात नहीं खा सकते, कुछ भी।',
+  },
+};
+
 export const TEMPLATES: Readonly<Record<WhatsAppTemplateName, TemplateDefinition>> = {
   mf_renewal_due: RENEWAL_DUE,
   mf_renewal_due_today: RENEWAL_DUE_TODAY,

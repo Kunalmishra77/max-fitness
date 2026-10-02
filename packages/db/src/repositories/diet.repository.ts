@@ -8,9 +8,13 @@ import type {
   DietStore,
   DietType,
   DietUnitOfWork,
+  FollowUpStore,
+  FollowUpUnitOfWork,
+  OpenFollowUp,
+  PlanDueFollowUp,
 } from '@mfp/core';
 import type { OutboxEventInput } from '@mfp/core/ports';
-import type { E164Mobile } from '@mfp/shared';
+import { toISTDate, type E164Mobile } from '@mfp/shared';
 import type { Prisma } from '../generated/prisma/client';
 import { withTransaction, type PrismaClient, type TransactionClient } from '../client';
 import { fromDbDate } from '../dates';
@@ -142,6 +146,129 @@ export function dietStore(db: Db): DietStore {
       });
     },
   };
+}
+
+/**
+ * The monthly check against the database (ADR-089).
+ *
+ * `plansDueFollowUp` returns every current plan rather than only the due ones: deciding what
+ * is due is `followUpDue`'s job, which knows about the owner's setting and can be tested
+ * without a database. The query stays one indexed read either way.
+ */
+export function followUpStore(db: Db): FollowUpStore {
+  return {
+    async plansDueFollowUp(gymId?: string): Promise<readonly PlanDueFollowUp[]> {
+      const rows = await db.dietPlan.findMany({
+        where: { status: 'READY', ...(gymId === undefined ? {} : { gymId }) },
+        select: {
+          id: true,
+          gymId: true,
+          memberId: true,
+          generatedAt: true,
+          answers: true,
+          member: { select: { status: true, whatsappOptIn: true, remindersUnsubscribedAt: true } },
+          followUps: { orderBy: { askedAt: 'desc' }, take: 1, select: { askedAt: true } },
+        },
+      });
+
+      return rows.flatMap((row): PlanDueFollowUp[] => {
+        if (row.generatedAt === null) return [];
+        const answers = (row.answers ?? {}) as { weightGrams?: number };
+        return [
+          {
+            planId: row.id,
+            gymId: row.gymId,
+            memberId: row.memberId,
+            // Both are timestamps, not DATE columns: `toISTDate` is what turns an instant
+            // into the IST day it fell on. `fromDbDate` would be a day out near midnight.
+            generatedAt: toISTDate(row.generatedAt),
+            lastFollowUpOn: row.followUps[0] === undefined ? null : toISTDate(row.followUps[0].askedAt),
+            weightAtPlanGrams: answers.weightGrams,
+            whatsappOptIn: row.member.whatsappOptIn,
+            remindersUnsubscribedAt: row.member.remindersUnsubscribedAt,
+            memberStatus: row.member.status,
+          },
+        ];
+      });
+    },
+
+    async openFollowUpFor(gymId: string, memberId: string): Promise<OpenFollowUp | null> {
+      const row = await db.dietFollowUp.findFirst({
+        where: { gymId, memberId, completedAt: null },
+        orderBy: { askedAt: 'desc' },
+        select: { id: true, dietPlanId: true, memberId: true, answers: true, pendingQuestion: true, completedAt: true },
+      });
+      if (row === null) return null;
+      return {
+        id: row.id,
+        planId: row.dietPlanId,
+        memberId: row.memberId,
+        answers: (row.answers ?? {}) as Record<string, unknown>,
+        pendingQuestion: row.pendingQuestion,
+        completedAt: row.completedAt,
+      };
+    },
+
+    async createFollowUp(input): Promise<string> {
+      const created = await db.dietFollowUp.create({
+        data: { gymId: input.gymId, memberId: input.memberId, dietPlanId: input.planId, pendingQuestion: input.pendingQuestion, answers: {} },
+        select: { id: true },
+      });
+      return created.id;
+    },
+
+    async saveFollowUp(id, patch): Promise<void> {
+      await db.dietFollowUp.update({
+        where: { id },
+        data: {
+          ...(patch.answers === undefined ? {} : { answers: patch.answers as Prisma.InputJsonValue }),
+          ...('pendingQuestion' in patch ? { pendingQuestion: patch.pendingQuestion } : {}),
+          ...('completedAt' in patch ? { completedAt: patch.completedAt } : {}),
+        },
+      });
+    },
+
+    async savedWeight(memberId: string, weightGrams: number): Promise<void> {
+      await db.dietProfile.update({ where: { memberId }, data: { weightGrams } });
+    },
+
+    async enqueueOutbox(event: OutboxEventInput): Promise<void> {
+      await db.outboxEvent.createMany({
+        data: [
+          {
+            gymId: event.gymId,
+            type: event.type,
+            payload: event.payload as Prisma.InputJsonValue,
+            dedupeKey: event.dedupeKey,
+            ...(event.availableAt === undefined ? {} : { availableAt: event.availableAt }),
+          },
+        ],
+        skipDuplicates: true,
+      });
+    },
+  };
+}
+
+export class PrismaDietFollowUps implements FollowUpUnitOfWork {
+  readonly #prisma: PrismaClient;
+
+  constructor(prisma: PrismaClient) {
+    this.#prisma = prisma;
+  }
+
+  transaction<T>(work: (store: FollowUpStore) => Promise<T>): Promise<T> {
+    return withTransaction(this.#prisma, (tx) => work(followUpStore(tx)));
+  }
+
+  /** Which follow-up question a number is being asked, for routing a reply. */
+  async pendingAtMobile(gymId: string, mobile: string): Promise<{ readonly memberId: string; readonly question: string } | null> {
+    const row = await this.#prisma.dietFollowUp.findFirst({
+      where: { gymId, completedAt: null, pendingQuestion: { not: null }, member: { mobile, deletedAt: null } },
+      orderBy: { askedAt: 'asc' },
+      select: { memberId: true, pendingQuestion: true },
+    });
+    return row === null || row.pendingQuestion === null ? null : { memberId: row.memberId, question: row.pendingQuestion };
+  }
 }
 
 export class PrismaDietUnitOfWork implements DietUnitOfWork {

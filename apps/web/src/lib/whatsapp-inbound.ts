@@ -27,6 +27,9 @@ export interface InboundDeps {
   /** Who at this number is mid-questionnaire, if anybody (ADR-089). */
   readonly pendingDietQuestion: (mobile: E164Mobile) => Promise<{ readonly memberId: string; readonly question: string } | null>;
   readonly recordDietReply: (memberId: string, text: string) => Promise<void>;
+  /** Who at this number is part-way through this month's check on their plan (ADR-089). */
+  readonly pendingFollowUpQuestion: (mobile: E164Mobile) => Promise<{ readonly memberId: string; readonly question: string } | null>;
+  readonly recordFollowUpReply: (memberId: string, text: string) => Promise<void>;
 }
 
 /** `UNSUB.<token>` / `RESTART.<token>`: the prefix says what, the token says who. */
@@ -48,12 +51,20 @@ async function handleReply(reply: ParsedWebhook['replies'][number], deps: Inboun
     return;
   }
 
-  // A diet question we are waiting on beats "someone replied, tell the owner" — but never
-  // beats "stop", which `routeInboundReply` puts first (ADR-089).
-  const pending = await deps.pendingDietQuestion(reply.from);
-  const route = routeInboundReply({ text: reply.value, pendingDietQuestion: pending === null ? null : pending.question });
+  // A question we are waiting on beats "someone replied, tell the owner" — but never beats
+  // "stop", which `routeInboundReply` puts first (ADR-089).
+  const [pending, checking] = await Promise.all([deps.pendingDietQuestion(reply.from), deps.pendingFollowUpQuestion(reply.from)]);
+  const route = routeInboundReply({
+    text: reply.value,
+    pendingDietQuestion: pending === null ? null : pending.question,
+    pendingFollowUpQuestion: checking === null ? null : checking.question,
+  });
   if (route.to === 'DIET_ANSWER' && pending !== null) {
     await deps.recordDietReply(pending.memberId, reply.value);
+    return;
+  }
+  if (route.to === 'DIET_FOLLOW_UP' && checking !== null) {
+    await deps.recordFollowUpReply(checking.memberId, reply.value);
     return;
   }
   if (route.to === 'HUMAN') {

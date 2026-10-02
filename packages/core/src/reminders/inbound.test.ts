@@ -152,3 +152,24 @@ describe('routeInboundReply', () => {
     expect(routeInboundReply({ text: '', pendingDietQuestion: null })).toEqual({ to: 'HUMAN' });
   });
 });
+
+describe('routeInboundReply and the monthly check', () => {
+  it('treats a reply as this month\u0027s answer when a check is open', () => {
+    expect(routeInboundReply({ text: 'mostly', pendingDietQuestion: null, pendingFollowUpQuestion: 'following' })).toEqual({
+      to: 'DIET_FOLLOW_UP',
+      question: 'following',
+    });
+  });
+
+  it('finishes the questionnaire first when both are somehow open', () => {
+    // The questionnaire is what is blocking a plan from existing at all.
+    expect(routeInboundReply({ text: '72', pendingDietQuestion: 'weight', pendingFollowUpQuestion: 'following' })).toEqual({
+      to: 'DIET_ANSWER',
+      question: 'weight',
+    });
+  });
+
+  it('still lets them stop', () => {
+    expect(routeInboundReply({ text: 'STOP', pendingDietQuestion: null, pendingFollowUpQuestion: 'following' })).toEqual({ to: 'STOP' });
+  });
+});

@@ -91,6 +91,14 @@ export const SCHEDULES: readonly ScheduleDefinition[] = [
     implementedIn: 7,
   },
   {
+    // ADR-089. Once a day, in the evening: a check-in at seven o'clock gets an answer,
+    // one at six in the morning gets read and forgotten.
+    name: 'diet-follow-ups',
+    cron: '0 19 * * *',
+    description: 'Start this month’s check on every diet plan that is due one (ADR-089)',
+    implementedIn: 8,
+  },
+  {
     name: 'lead-followup',
     cron: '*/15 5-22 * * *',
     description: 'Raise NEW_LEAD call tasks for enquiries untouched for 2 gym hours (BR-7)',

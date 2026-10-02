@@ -23,6 +23,7 @@ export type OutboxEventType =
   | 'whatsapp.diet_question'
   | 'diet.generate'
   | 'whatsapp.diet_plan'
+  | 'whatsapp.diet_follow_up'
   | 'diet.pdf';
 
 export interface OutboxEventInput {
