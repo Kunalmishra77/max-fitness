@@ -98,6 +98,14 @@ export const EnvSchema = z
     WHATSAPP_ALLOWLIST: csvList,
     OWNER_WHATSAPP_NUMBER: z.string().default(''),
 
+    // ── AI (diet plans, and the WhatsApp assistant) ─────────────────────
+    /**
+     * Empty means no AI: generation is refused with a message that says the key is
+     * missing, rather than a plan nobody wrote (ADR-089). Never logged, like every secret.
+     */
+    AI_API_KEY: z.string().default(''),
+    AI_MODEL: z.string().default('claude-sonnet-5-5'),
+
     // ── Observability ───────────────────────────────────────────────────
     SENTRY_DSN: z.string().default(''),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
