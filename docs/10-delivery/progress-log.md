@@ -989,3 +989,39 @@ follow-ups during and after it, and the trial counts on the dashboard.
 **Still blocked on the client, unchanged:** an AI API key (diet plans, bot), WhatsApp Cloud
 API approval and a worker host (two-way conversations), Razorpay credentials and
 Subscriptions/e-mandate (online PT and trial payments, recurring billing).
+
+### Later the same session — trial follow-ups, then AI diet plans
+
+**Trial follow-ups (ADR-088 continued).** Reminder rules now say which kind of membership
+they are about, so a three-day trial is never told to renew; the trial gets a check-in the
+day before it ends, a "how was it" on the last day, and a question about joining two days
+later. Four new templates, none of which says "renew". Three trial rules written to the live
+gym with `pnpm --filter @mfp/worker run set:trial-rules`. The dashboard shows trials in
+today, finished without joining, and joined this month — "running" by date, not status.
+
+**A bug fixed on the way:** the receipt reader refused any membership without a duration in
+months, so a trial member paying ₹300 would have received no receipt and no welcome at all.
+
+**AI diet plans (ADR-089)** — built in four commits:
+1. **The questionnaire and the plan shape.** Pure parsing of what members actually type
+   ("72kg", "5 ft 9", "non veg", "nahi"); a strict JSON schema for the plan; safety checks
+   that refuse a plan wrong for the member (calories, protein, diet type, allergens); the
+   model reached with plain `fetch`, each failure with its own code, the key only ever in a
+   header.
+2. **The conversation.** `DietProfile`, `DietPlan` and `DietFollowUp` tables; the service
+   that asks one question at a time, re-asks what it cannot read, gives up after three tries,
+   and asks for a plan once there is enough. `diet.manage` capability, trainers included.
+3. **The worker.** Handlers to ask, to write (plan row created before the model is called,
+   every failure recorded as FAILED with a code) and to send the plan as a signed link.
+4. **The screens.** `/crm/diet` to pick members and watch what came back; the member's own
+   printable plan page at `/diet/<token>`; the current plan in full on the member profile;
+   inbound replies routed to the questionnaire, with "stop" still outranking it.
+
+### Pending
+- Diet: the branded **PDF** (the page prints cleanly today), the **monthly follow-up**
+  conversation, and the owner's follow-up frequency setting.
+- **WhatsApp bot settings** (knowledge base, persona, test chat, logs) — the next slice.
+- Dashboard and report additions for the bot, and the UI/UX pass.
+- Still blocked on the client: the **AI key** (`AI_API_KEY`; the Diet screen says so until it
+  arrives), **WhatsApp Cloud API approval and a worker host**, and **Razorpay credentials
+  plus Subscriptions/e-mandate**.
