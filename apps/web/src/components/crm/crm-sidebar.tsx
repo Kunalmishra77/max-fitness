@@ -88,14 +88,19 @@ export function CrmSidebar({
         ))}
       </nav>
 
-      <div className="grid gap-2 border-t border-brand-white/10 px-6 py-4">
-        <p className="text-small text-brand-mist">
-          {signedInAs}
-          <span className="block text-body font-semibold text-brand-white">{name}</span>
-          <span className="text-small">{role}</span>
+      {/*
+        Two lines, not five. This footer used to spell out "Signed in as", the name, the role,
+        the language switch and log out on separate rows — five lines of a sidebar the menu
+        itself has to scroll. Who is signed in is one line, and the two controls share the next.
+      */}
+      <div className="border-t border-brand-white/10 px-4 py-3">
+        <p className="truncate text-small text-brand-mist" title={signedInAs}>
+          <span className="font-semibold text-brand-white">{name}</span> · {role}
         </p>
-        <LanguageSwitch current={language} change={changeLanguage} />
-        <LogoutButton label={logoutLabel} withIcon className="-ml-3 text-brand-mist hover:text-brand-white" />
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <LanguageSwitch current={language} change={changeLanguage} />
+          <LogoutButton label={logoutLabel} withIcon className="shrink-0 text-small text-brand-mist hover:text-brand-white" />
+        </div>
       </div>
     </aside>
   );
