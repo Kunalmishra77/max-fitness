@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { verifyToken } from '@mfp/core';
 import { formatISTDate, toISTDate, type DietPlanDoc } from '@mfp/shared';
 import { getContainer } from '@/lib/container';
+import { PrintButton } from '@/components/join/print-button';
 import { JoinPage, joinContext } from '@/lib/join-page';
 import { loadGym } from '@/lib/gym';
 
@@ -141,6 +142,10 @@ export default async function MemberDietPlanPage({ params }: { params: Promise<{
           <p className="mt-6 rounded-panel border border-brand-stone/30 p-5 text-small leading-body text-brand-ink/80">
             {doc.seeProfessional ? t('seeProfessional') : t('disclaimer')}
           </p>
+
+          <div className="mt-6 print:hidden">
+            <PrintButton label={t('print')} />
+          </div>
         </article>
       </div>
     </JoinPage>
