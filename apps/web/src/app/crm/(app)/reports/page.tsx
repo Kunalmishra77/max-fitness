@@ -320,6 +320,7 @@ export default async function CrmReportsPage({ searchParams }: { searchParams: P
         </Card>
 
         <Card title={t('reports.gender')} subtitle={t('reports.genderSubtitle')}>
+          {genders.length === 0 ? <p className="text-crm-body text-brand-stone">{t('reports.genderNone')}</p> : null}
           <SplitBar
             rows={genders.map((row, index) => ({
               key: row.gender,

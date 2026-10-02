@@ -1104,7 +1104,8 @@
       "monthPrev": "Earlier month",
       "monthNext": "Later month",
       "monthThis": "This month",
-      "viewing": "Showing {month}"
+      "viewing": "Showing {month}",
+      "genderNone": "No active members yet"
     },
     "settings": {
       "title": "Settings",
@@ -1166,7 +1167,10 @@
         "PRE_2": "2 days before",
         "PRE_1": "1 day before",
         "DUE_TODAY": "On the due day",
-        "POST": "After the fee runs out"
+        "POST": "After the fee runs out",
+        "TRIAL_MID": "Day before the trial ends",
+        "TRIAL_LAST": "Last day of the trial",
+        "TRIAL_AFTER": "Two days after the trial"
       },
       "ruleOn": "On",
       "time": "Time",

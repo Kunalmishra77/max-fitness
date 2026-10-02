@@ -37,6 +37,18 @@ const SCREENS = [
   ['diet', '/crm/diet'],
   ['more', '/crm/more'],
   ['member-new', '/crm/members/new'],
+  // Behind the owner's PIN. They are visited anyway: a screen that bounces to the PIN gate
+  // should bounce cleanly, and a screen that does not bounce should render.
+  ['settings', '/crm/settings'],
+  ['settings-staff', '/crm/settings/staff'],
+  ['settings-kiosk', '/crm/settings/kiosk'],
+  ['announcements', '/crm/announcements'],
+  ['bot', '/crm/bot'],
+  ['gallery', '/crm/gallery'],
+  ['import', '/crm/import'],
+  ['simulator', '/crm/messages/simulator'],
+  ['verify', '/crm/verify'],
+  ['pin', '/crm/more/pin'],
 ];
 
 /** A member id to walk the per-member screens with, found at run time. */
