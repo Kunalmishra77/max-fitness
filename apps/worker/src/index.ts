@@ -3,6 +3,7 @@ import { PgBoss } from 'pg-boss';
 import { GymSettingsSchema, parseEnv, systemClock, WORKER_HEARTBEAT_STALE_SECONDS } from '@mfp/shared';
 import { createPrismaClient } from '@mfp/db';
 import { createStorageDriver } from '@mfp/integrations/storage';
+import { createAiGenerator } from '@mfp/integrations/ai';
 import { issueToken, sessionsForDay } from '@mfp/core';
 import { MetaCloudWhatsAppProvider, SimulatorWhatsAppProvider } from '@mfp/integrations/whatsapp';
 import { PrismaMessageLogWriter } from '@mfp/db';
@@ -150,6 +151,18 @@ async function main(): Promise<void> {
       return sessions.map((session) => `${session.open} – ${session.close}`).join(', ');
     },
     unsubscribePayload: phase6.unsubscribePayload,
+    // No key means no plans: the CRM says the key is missing rather than inventing one.
+    ai: createAiGenerator({ apiKey: env.AI_API_KEY, model: env.AI_MODEL }),
+    gymName: async () => (await prisma.gym.findUniqueOrThrow({ where: { slug: env.GYM_SLUG }, select: { name: true } })).name,
+    // A member's own plan, behind a signed link that lasts as long as a plan stays current.
+    dietPlanUrl: (memberId) =>
+      `${env.APP_URL}/diet/${issueToken({ purpose: 'diet', subject: memberId, ttlSeconds: 120 * 86_400, secret: env.LINK_TOKEN_SECRET, clock: systemClock })}`,
+    enqueue: async (event) => {
+      await prisma.outboxEvent.createMany({
+        data: [{ gymId: event.gymId, type: event.type, payload: event.payload as never, dedupeKey: event.dedupeKey }],
+        skipDuplicates: true,
+      });
+    },
   };
 
   await registerSchedules(boss, log, {

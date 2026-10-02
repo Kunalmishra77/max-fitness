@@ -9,7 +9,8 @@
     "./payments": "./src/payments/index.ts",
     "./storage": "./src/storage/index.ts",
     "./auth": "./src/auth/index.ts",
-    "./otp": "./src/otp/index.ts"
+    "./otp": "./src/otp/index.ts",
+    "./ai": "./src/ai/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

@@ -128,6 +128,10 @@ export const WHATSAPP_TEMPLATES = {
   birthdayWish: 'mf_birthday_wish',
   announcement: 'mf_announcement',
   // The trial, start to finish (ADR-088).
+  // The diet plan (ADR-089): one template asks every question, one delivers the plan.
+  dietQuestion: 'mf_diet_question',
+  dietPlanReady: 'mf_diet_plan_ready',
+  dietFollowUp: 'mf_diet_follow_up',
   trialWelcome: 'mf_trial_welcome',
   trialCheckIn: 'mf_trial_check_in',
   trialLastDay: 'mf_trial_last_day',
@@ -238,7 +242,7 @@ export const LANGUAGES = ['hi', 'en'] as const;
 export type Language = (typeof LANGUAGES)[number];
 
 /** Purposes a signed link may carry. Tokens are bound to one (security-plan.md §3.1). */
-export const TOKEN_PURPOSES = ['renew', 'receipt', 'unsub', 'restart', 'registration', 'otp'] as const;
+export const TOKEN_PURPOSES = ['renew', 'receipt', 'unsub', 'restart', 'registration', 'otp', 'diet'] as const;
 export type TokenPurpose = (typeof TOKEN_PURPOSES)[number];
 
 /** Receipt number format: `MF/2026-27/000123` (BR-11.2). */

@@ -31,6 +31,7 @@ export * from './repositories/settings.repository';
 export * from './repositories/staff.repository';
 export * from './repositories/member-privacy.repository';
 export * from './repositories/edit-member.repository';
+export * from './repositories/diet.repository';
 export * from './repositories/member-import.repository';
 export * from './repositories/verification.repository';
 export * from './repositories/otp.repository';

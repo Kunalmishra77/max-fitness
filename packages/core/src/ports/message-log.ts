@@ -24,6 +24,8 @@ export type MessagePurpose =
   | 'ANNOUNCEMENT'
   | 'UNSUBSCRIBE_CONFIRM'
   | 'RESTART_CONFIRM'
+  /** The diet questionnaire and the plan that comes out of it (ADR-089). */
+  | 'DIET'
   | 'OTHER';
 
 export interface MessageLogEntry {

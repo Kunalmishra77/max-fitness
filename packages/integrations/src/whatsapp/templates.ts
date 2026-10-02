@@ -335,6 +335,109 @@ const TRIAL_JOIN: TemplateDefinition = {
   footer: FOOTER,
 };
 
+/**
+ * T17–T19 — the diet plan (ADR-089).
+ *
+ * One template asks every question, with the question itself as a variable, because
+ * nine approved templates for nine questions would be nine approvals to wait for and nine
+ * things to keep in step. The words for each question live in `DIET_QUESTION_TEXT` below.
+ *
+ * The finished plan is **a link, not the plan**: a diet plan does not fit in a template
+ * body, and the member gets something they can keep, print and come back to. If Meta
+ * refuses a URL inside a body parameter at approval, this becomes a dynamic URL button —
+ * a change to the template, not to our code.
+ */
+const DIET_QUESTION: TemplateDefinition = {
+  name: 'mf_diet_question',
+  category: 'UTILITY',
+  variables: ['firstName', 'question'],
+  body: {
+    en: 'Hi {{1}}, to write your diet plan we need a few details.\n\n{{2}}\n\nJust reply to this message.',
+    hi: 'नमस्ते {{1}}, आपका डाइट प्लान बनाने के लिए थोड़ी जानकारी चाहिए।\n\n{{2}}\n\nइसी मैसेज का जवाब दे दीजिए।',
+  },
+  footer: FOOTER,
+};
+
+const DIET_PLAN_READY: TemplateDefinition = {
+  name: 'mf_diet_plan_ready',
+  category: 'UTILITY',
+  variables: ['firstName', 'calories', 'meals', 'link'],
+  body: {
+    en: [
+      'Hi {{1}}, your diet plan is ready — about {{2}} calories a day across {{3}} meals.',
+      '',
+      'Open it here: {{4}}',
+      '',
+      'This is general guidance, not medical advice. If you have a medical condition, please check with a doctor or a qualified nutritionist.',
+    ].join('\n'),
+    hi: [
+      'नमस्ते {{1}}, आपका डाइट प्लान तैयार है — लगभग {{2}} कैलोरी रोज़, {{3}} मील में।',
+      '',
+      'यहाँ देखें: {{4}}',
+      '',
+      'यह सामान्य सलाह है, मेडिकल सलाह नहीं। कोई बीमारी हो तो डॉक्टर या क्वालिफाइड न्यूट्रिशनिस्ट से ज़रूर पूछ लें।',
+    ].join('\n'),
+  },
+  footer: FOOTER,
+};
+
+const DIET_FOLLOW_UP: TemplateDefinition = {
+  name: 'mf_diet_follow_up',
+  category: 'UTILITY',
+  variables: ['firstName', 'question'],
+  body: {
+    en: 'Hi {{1}}, checking in on your diet plan.\n\n{{2}}\n\nReply here and we will adjust it if it needs adjusting.',
+    hi: 'नमस्ते {{1}}, आपके डाइट प्लान का हाल पूछ रहे हैं।\n\n{{2}}\n\nयहीं जवाब दे दीजिए, ज़रूरत हो तो प्लान बदल देंगे।',
+  },
+  footer: FOOTER,
+};
+
+/**
+ * The questions themselves, in the member's language (ADR-089).
+ *
+ * Each one is a single thing, with the options spelt out and numbered where there are
+ * options, because "reply 2" is the easiest thing to type on a bus. The parser accepts the
+ * number or the words (`answerDietQuestion`), so neither habit is punished.
+ */
+export const DIET_QUESTION_TEXT: Readonly<Record<string, TemplateBodies>> = {
+  weight: {
+    en: 'What is your weight right now, in kg? (for example: 72)',
+    hi: 'आपका अभी का वज़न कितना है, kg में? (जैसे: 72)',
+  },
+  height: {
+    en: "How tall are you? Centimetres (for example 170) or feet and inches (for example 5'9).",
+    hi: 'आपकी हाइट कितनी है? सेंटीमीटर में (जैसे 170) या फुट-इंच में (जैसे 5\'9)।',
+  },
+  age: {
+    en: 'How old are you?',
+    hi: 'आपकी उम्र कितनी है?',
+  },
+  goal: {
+    en: 'What is your main goal? Reply with the number:\n1. Muscle gain\n2. Fat loss\n3. Weight gain\n4. Weight loss\n5. General fitness\n6. Muscle and fat loss together',
+    hi: 'आपका मुख्य लक्ष्य क्या है? नंबर भेज दें:\n1. मसल बढ़ाना\n2. फैट कम करना\n3. वज़न बढ़ाना\n4. वज़न कम करना\n5. सामान्य फिटनेस\n6. मसल और फैट, दोनों',
+  },
+  dietType: {
+    en: 'What do you eat? Reply with the number:\n1. Vegetarian\n2. Non-vegetarian\n3. Eggetarian\n4. Vegan',
+    hi: 'आप क्या खाते हैं? नंबर भेज दें:\n1. शाकाहारी\n2. मांसाहारी\n3. अंडा खाते हैं\n4. वीगन',
+  },
+  allergies: {
+    en: 'Any foods you are allergic to, or cannot eat? Write them, or reply None.',
+    hi: 'किसी खाने से एलर्जी है, या कुछ खा नहीं सकते? लिख दीजिए, या "नहीं" भेज दें।',
+  },
+  mealsPerDay: {
+    en: 'How many times a day do you eat? (2 to 8)',
+    hi: 'दिन में कितनी बार खाते हैं? (2 से 8)',
+  },
+  activityLevel: {
+    en: 'Apart from the gym, how is your day? Reply with the number:\n1. Mostly sitting (desk job)\n2. On my feet a lot\n3. Heavy physical work',
+    hi: 'जिम के अलावा दिन कैसा रहता है? नंबर भेज दें:\n1. ज़्यादातर बैठना (ऑफ़िस)\n2. काफ़ी चलना-फिरना\n3. भारी मेहनत का काम',
+  },
+  workoutsPerWeek: {
+    en: 'How many days a week do you come to the gym? (0 to 7)',
+    hi: 'हफ़्ते में कितने दिन जिम आते हैं? (0 से 7)',
+  },
+};
+
 export const TEMPLATES: Readonly<Record<WhatsAppTemplateName, TemplateDefinition>> = {
   mf_renewal_due: RENEWAL_DUE,
   mf_renewal_due_today: RENEWAL_DUE_TODAY,
@@ -347,6 +450,9 @@ export const TEMPLATES: Readonly<Record<WhatsAppTemplateName, TemplateDefinition
   mf_owner_alert: OWNER_ALERT,
   mf_birthday_wish: BIRTHDAY_WISH,
   mf_announcement: ANNOUNCEMENT,
+  mf_diet_question: DIET_QUESTION,
+  mf_diet_plan_ready: DIET_PLAN_READY,
+  mf_diet_follow_up: DIET_FOLLOW_UP,
   mf_trial_welcome: TRIAL_WELCOME,
   mf_trial_check_in: TRIAL_CHECK_IN,
   mf_trial_last_day: TRIAL_LAST_DAY,

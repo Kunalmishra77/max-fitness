@@ -204,6 +204,8 @@ enum MessagePurpose {
   ANNOUNCEMENT
   UNSUBSCRIBE_CONFIRM
   RESTART_CONFIRM
+  /// The diet questionnaire and the plan it produces (ADR-089).
+  DIET
   OTHER
 }
 

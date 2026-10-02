@@ -1,18 +1,34 @@
 import {
   announcementBodyFor,
+  bmiFor,
   buildAnnouncement,
   buildBirthdayWish,
   buildReceiptMessage,
   buildVerificationApprovedMessage,
   buildTrialWelcomeMessage,
   buildWelcomeMessage,
+  checkDietPlanSafety,
   confirmationText,
+  dietPlanPrompt,
+  dietProfileComplete,
+  parseDietPlan,
   type ClaimedOutboxEvent,
+  type OutboxEventInput,
   type OutboxHandlers,
   type TransactionalMessage,
 } from '@mfp/core';
-import type { MessagePurpose, WhatsAppProvider } from '@mfp/core/ports';
-import { PrismaAnnouncements, PrismaMessageData, PrismaMessageLogWriter, PrismaMessageLogUpdates, type PrismaClient } from '@mfp/db';
+import type { AiTextGenerator, MessagePurpose, WhatsAppProvider } from '@mfp/core/ports';
+import { DIET_QUESTION_TEXT } from '@mfp/integrations';
+import {
+  PrismaAnnouncements,
+  PrismaDietPlans,
+  PrismaDietReader,
+  PrismaMessageData,
+  PrismaMessageLogWriter,
+  PrismaMessageLogUpdates,
+  dietStore,
+  type PrismaClient,
+} from '@mfp/db';
 import { istDate, todayIST, type Clock } from '@mfp/shared';
 import type { Logger } from '../logger';
 
@@ -36,6 +52,14 @@ export interface MessageJobDeps {
   /** "Mon–Sat 4:30 am – 10:00 pm", for the welcome message. */
   readonly hoursLine: () => Promise<string>;
   readonly unsubscribePayload: (memberId: string) => string;
+  /** The model that writes diet plans; unavailable until a key is configured (ADR-089). */
+  readonly ai: AiTextGenerator;
+  /** The gym's name, which the diet prompt puts in front of the model. */
+  readonly gymName: () => Promise<string>;
+  /** Where a member reads their own plan: a signed link that lapses. */
+  readonly dietPlanUrl: (memberId: string) => string;
+  /** Enqueue a follow-on event from a handler, outside the original transaction. */
+  readonly enqueue: (event: OutboxEventInput) => Promise<void>;
 }
 
 function memberIdOf(event: ClaimedOutboxEvent): string | null {
@@ -250,6 +274,158 @@ export function messageOutboxHandlers(deps: MessageJobDeps): OutboxHandlers {
         null,
         [{ payload: deps.unsubscribePayload(memberId), label: 'unsubscribe' }],
       );
+    },
+
+    /**
+     * One question from the diet questionnaire (ADR-089).
+     *
+     * The question the event names, not whatever the profile says now: if the member has
+     * since answered and moved on, the event is stale and sending it would ask something
+     * twice. The attempt number is in the key, so a nudge is allowed through where a
+     * duplicate is not.
+     */
+    'whatsapp.diet_question': async (event) => {
+      const memberId = memberIdOf(event);
+      const payload = event.payload as { question?: unknown; attempt?: unknown };
+      const question = typeof payload.question === 'string' ? payload.question : null;
+      const attempt = typeof payload.attempt === 'number' ? payload.attempt : 1;
+      if (memberId === null || question === null) return;
+
+      const store = dietStore(deps.prisma);
+      const [member, profile] = await Promise.all([store.memberForDiet(await deps.gymId(), memberId), store.loadProfile(await deps.gymId(), memberId)]);
+      if (member === null) return;
+      if (profile?.pendingQuestion !== question) {
+        deps.log.info({ memberId, question }, 'the member has moved on from that diet question — not asking again');
+        return;
+      }
+
+      const text = DIET_QUESTION_TEXT[question]?.[member.language];
+      if (text === undefined) {
+        deps.log.warn({ question }, 'no wording for that diet question');
+        return;
+      }
+      await sendTemplate(
+        deps,
+        {
+          templateName: 'mf_diet_question',
+          language: member.language,
+          idempotencyKey: `diet-ask:${memberId}:${question}:${attempt}`,
+          purpose: 'DIET',
+          variables: { firstName: member.fullName.trim().split(/\s+/)[0] ?? member.fullName, question: text },
+        },
+        (await new PrismaDietReader(deps.prisma).forGeneration(await deps.gymId(), memberId))?.member.mobile ?? '',
+        memberId,
+        null,
+      );
+    },
+
+    /**
+     * Write the plan (ADR-089).
+     *
+     * The row is created before the model is called, so a batch in progress is visible in
+     * the CRM. A refusal, an unreadable answer or a plan that fails the safety checks all
+     * end as `FAILED` with a code — never as a plan the member can see.
+     */
+    'diet.generate': async (event) => {
+      const memberId = memberIdOf(event);
+      if (memberId === null) return;
+      const gymId = await deps.gymId();
+
+      const reader = new PrismaDietReader(deps.prisma);
+      const found = await reader.forGeneration(gymId, memberId);
+      if (found === null) return;
+      if (!dietProfileComplete(found.answers)) {
+        deps.log.info({ memberId }, 'diet answers are not complete — nothing to generate');
+        return;
+      }
+
+      const plans = new PrismaDietPlans(deps.prisma);
+      const bmi = bmiFor(found.answers);
+      const started = await plans.start({
+        gymId,
+        memberId,
+        answers: found.answers,
+        bmiTenths: bmi === null ? null : Math.round(bmi * 10),
+        requestedById: null,
+      });
+
+      if (!deps.ai.available) {
+        await plans.markFailed(started.id, 'NO_AI_KEY');
+        deps.log.warn({ memberId }, 'no AI key configured — diet plan not generated');
+        return;
+      }
+
+      const prompt = dietPlanPrompt({
+        firstName: found.member.firstName,
+        gender: found.member.gender,
+        language: found.member.language,
+        gymName: await deps.gymName(),
+        answers: found.answers,
+        bmi,
+      });
+
+      let answer: { text: string; model: string };
+      try {
+        answer = await deps.ai.generate({ system: prompt.system, user: prompt.user, maxTokens: 2_500 });
+      } catch (error) {
+        const code = error instanceof Error ? (error.message.split(':')[0] ?? 'AI_FAILED') : 'AI_FAILED';
+        await plans.markFailed(started.id, code);
+        deps.log.warn({ memberId, code }, 'the model did not produce a diet plan');
+        return;
+      }
+
+      const parsed = parseDietPlan(answer.text);
+      if (!parsed.ok) {
+        await plans.markFailed(started.id, 'NOT_THE_SHAPE');
+        return;
+      }
+      const safety = checkDietPlanSafety(parsed.plan, found.answers);
+      if (!safety.ok) {
+        await plans.markFailed(started.id, safety.reason);
+        deps.log.warn({ memberId, reason: safety.reason }, 'diet plan refused by the safety checks');
+        return;
+      }
+
+      await plans.markReady(started.id, { doc: parsed.plan, model: answer.model, at: deps.clock.now() });
+      await deps.enqueue({
+        type: 'whatsapp.diet_plan',
+        gymId,
+        payload: { memberId, planId: started.id },
+        dedupeKey: `diet-plan:${started.id}`,
+      });
+    },
+
+    /** Tell the member it is ready, with a link to it. */
+    'whatsapp.diet_plan': async (event) => {
+      const memberId = memberIdOf(event);
+      const planId = typeof (event.payload as { planId?: unknown }).planId === 'string' ? (event.payload as { planId: string }).planId : null;
+      if (memberId === null || planId === null) return;
+      const gymId = await deps.gymId();
+
+      const reader = new PrismaDietReader(deps.prisma);
+      const [found, plan] = await Promise.all([reader.forGeneration(gymId, memberId), new PrismaDietPlans(deps.prisma).latest(gymId, memberId)]);
+      if (found === null || plan === null || plan.id !== planId || plan.status !== 'READY' || plan.doc === null) return;
+
+      const doc = plan.doc as { caloriesPerDay?: number; meals?: unknown[] };
+      await sendTemplate(
+        deps,
+        {
+          templateName: 'mf_diet_plan_ready',
+          language: found.member.language,
+          idempotencyKey: `diet-plan:${planId}`,
+          purpose: 'DIET',
+          variables: {
+            firstName: found.member.firstName,
+            calories: String(doc.caloriesPerDay ?? ''),
+            meals: String((doc.meals ?? []).length),
+            link: deps.dietPlanUrl(memberId),
+          },
+        },
+        found.member.mobile,
+        memberId,
+        null,
+      );
+      await new PrismaDietPlans(deps.prisma).markSent(planId, deps.clock.now());
     },
 
     'whatsapp.unsubscribe_confirm': (event) => sendConfirmation(deps, event, 'UNSUBSCRIBED'),
