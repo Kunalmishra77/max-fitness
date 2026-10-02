@@ -966,7 +966,8 @@
         "linkCopied": "Link copied",
         "previewAlt": "Member’s photo",
         "preparing": "Preparing the photo…",
-        "unusable": "That photo could not be used. Please take another."
+        "unusable": "That photo could not be used. Please take another.",
+        "choosePhoto": "Choose a photo from this phone"
       }
     },
     "attendance": {

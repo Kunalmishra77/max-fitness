@@ -151,7 +151,7 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
             {t(`feeState.${member.feeState}`)}
             {member.effectiveEndDate === null ? '' : ` — ${t('feeState.till', { date: formatISTDate(member.effectiveEndDate, locale) })}`}
           </p>
-          <p className="text-crm-body">{feeLine}</p>
+          {feeLine === t(`feeState.${member.feeState}`) ? null : <p className="text-crm-body">{feeLine}</p>}
         </div>
 
         {/* Everything the desk might be asked for, in one place, every row present even
