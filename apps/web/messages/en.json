@@ -1097,7 +1097,11 @@
       "dietAwaiting": "Still answering questions",
       "dietFollowUps": "Monthly checks open",
       "bot": "Assistant",
-      "botSplit": "{answered} answered, {escalated} passed to a person"
+      "botSplit": "{answered} answered, {escalated} passed to a person",
+      "monthPrev": "Earlier month",
+      "monthNext": "Later month",
+      "monthThis": "This month",
+      "viewing": "Showing {month}"
     },
     "settings": {
       "title": "Settings",

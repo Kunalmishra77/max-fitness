@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { istDate } from '@mfp/shared';
-import { busyHours, kioskShare, largestRemainderShares, membershipFlow, monthBounds, moneyByMethod, type MembershipForReport } from './reports';
+import { busyHours, kioskShare, largestRemainderShares, membershipFlow, monthBounds, monthBoundsFor, moneyByMethod, readReportMonth, type MembershipForReport } from './reports';
 
 /**
  * The owner's reports (crm-module-spec §6; crm-ux-blueprint §13).
@@ -165,5 +165,64 @@ describe('membershipFlow', () => {
 
   it('has no renewal rate when nothing has come due', () => {
     expect(membershipFlow([], september).renewalRate).toEqual({ due: 0, renewed: 0, percent: null });
+  });
+});
+
+describe('readReportMonth', () => {
+  const today = istDate('2026-09-14');
+
+  it('takes a month the owner picked', () => {
+    expect(readReportMonth('2026-07', today)).toBe('2026-07');
+  });
+
+  it('falls back to this month for anything it cannot read', () => {
+    // A hand-edited URL must not produce a report of nothing, or of the year 0202.
+    for (const bad of [undefined, '', 'July', '2026-13', '2026-00', '202607', '2026-7', 'drop table']) {
+      expect(readReportMonth(bad, today)).toBe('2026-09');
+    }
+  });
+
+  it('refuses a month in the future, which has no figures to show', () => {
+    expect(readReportMonth('2026-10', today)).toBe('2026-09');
+    expect(readReportMonth('2027-01', today)).toBe('2026-09');
+  });
+
+  it('allows a month far enough back to be the gym’s first', () => {
+    expect(readReportMonth('2020-01', today)).toBe('2020-01');
+  });
+});
+
+describe('monthBoundsFor', () => {
+  it('matches monthBounds when the month asked for is the one we are in', () => {
+    const today = istDate('2026-09-14');
+    expect(monthBoundsFor('2026-09', today)).toEqual(monthBounds(today));
+  });
+
+  it('spans the whole month when the month has already finished', () => {
+    const bounds = monthBoundsFor('2026-07', istDate('2026-09-14'));
+    expect(bounds.start).toBe('2026-07-01');
+    expect(bounds.end).toBe('2026-07-31');
+    expect(bounds.previousStart).toBe('2026-06-01');
+    expect(bounds.previousEnd).toBe('2026-06-30');
+  });
+
+  it('compares a finished month against the whole month before it, not part of one', () => {
+    // Mid-month, fourteen days against all of last month would read "less" every time, so
+    // `monthBounds` cuts last month short. A finished month is complete, and cutting the
+    // comparison short there would invent a fall that did not happen.
+    expect(monthBoundsFor('2026-07', istDate('2026-09-14')).previousToDate).toBe('2026-06-30');
+  });
+
+  it('handles a December, where the month before is in the previous year', () => {
+    const bounds = monthBoundsFor('2026-01', istDate('2026-09-14'));
+    expect(bounds.start).toBe('2026-01-01');
+    expect(bounds.end).toBe('2026-01-31');
+    expect(bounds.previousStart).toBe('2025-12-01');
+    expect(bounds.previousEnd).toBe('2025-12-31');
+  });
+
+  it('handles February, including a leap year', () => {
+    expect(monthBoundsFor('2024-02', istDate('2026-09-14')).end).toBe('2024-02-29');
+    expect(monthBoundsFor('2026-02', istDate('2026-09-14')).end).toBe('2026-02-28');
   });
 });

@@ -1097,7 +1097,11 @@
       "dietAwaiting": "सवालों के जवाब बाक़ी",
       "dietFollowUps": "महीने की जाँच खुली",
       "bot": "असिस्टेंट",
-      "botSplit": "{answered} के जवाब दिए, {escalated} व्यक्ति को भेजे"
+      "botSplit": "{answered} के जवाब दिए, {escalated} व्यक्ति को भेजे",
+      "monthPrev": "पिछला महीना",
+      "monthNext": "अगला महीना",
+      "monthThis": "इस महीने",
+      "viewing": "{month} का हिसाब"
     },
     "settings": {
       "title": "सेटिंग",

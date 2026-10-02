@@ -1,7 +1,9 @@
 import { getTranslations } from 'next-intl/server';
-import { busyHours, can, kioskShare, largestRemainderShares, membershipFlow, monthBounds, moneyByMethod } from '@mfp/core';
+import Link from 'next/link';
+import { busyHours, can, kioskShare, largestRemainderShares, membershipFlow, monthBoundsFor, moneyByMethod, readReportMonth } from '@mfp/core';
 import { addDays } from '@mfp/shared';
 import { BottomNav, CrmHeader, rupees } from '@/components/crm/crm-chrome';
+import { CrmIcon } from '@/components/crm/crm-icons';
 import { BusyHoursChart, Meter, ShareBars, SplitBar } from '@/components/crm/report-charts';
 import { getContainer } from '@/lib/container';
 import { reportsReader, requireCrmContext } from '@/lib/crm';
@@ -34,8 +36,9 @@ function Card({ title, subtitle, children }: { title: string; subtitle?: string;
   );
 }
 
-export default async function CrmReportsPage() {
+export default async function CrmReportsPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   const { actor, gym, today } = await requireCrmContext();
+  const { month: askedMonth } = await searchParams;
   const t = await getTranslations('crm');
 
   if (!can(actor, 'money.view', getContainer().clock.now())) {
@@ -50,13 +53,32 @@ export default async function CrmReportsPage() {
     );
   }
 
-  const month = monthBounds(today);
+  // The month the owner asked for, or this one (ADR-098). "What did last month come to?"
+  // used to need a different screen; now it needs an arrow.
+  const viewing = readReportMonth(askedMonth, today);
+  const month = monthBoundsFor(viewing, today);
+  const isThisMonth = viewing === today.slice(0, 7);
+
+  // The floor's own rhythm — who comes, and when — is about the gym as it is now, so those
+  // two figures stay anchored on today whichever month's money is being read.
   const attendanceFrom = addDays(today, -(ATTENDANCE_DAYS - 1));
   const inputs = await reportsReader().inputs(gym.id, month, {
     attendanceFrom,
     attendanceTo: today,
     planMixFrom: addDays(today, -(PLAN_MIX_DAYS - 1)),
   });
+
+  const monthName = new Intl.DateTimeFormat(actor.language === 'hi' ? 'hi-IN' : 'en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
+    new Date(`${month.start}T00:00:00Z`),
+  );
+  // Card subtitles said "This month" unconditionally; with a month picker above them that
+  // would be wrong on every month but one.
+  const periodLabel = isThisMonth ? t('reports.thisMonth') : monthName;
+  const shift = (by: number) => {
+    const [year, mon] = [Number(viewing.slice(0, 4)), Number(viewing.slice(5, 7))];
+    const moved = new Date(Date.UTC(year, mon - 1 + by, 1));
+    return `${moved.getUTCFullYear()}-${String(moved.getUTCMonth() + 1).padStart(2, '0')}`;
+  };
 
   const money = moneyByMethod({ thisMonth: inputs.paidThisMonth, lastMonth: inputs.paidLastMonth });
   const flow = membershipFlow(inputs.memberships, {
@@ -88,6 +110,31 @@ export default async function CrmReportsPage() {
     <>
       <CrmHeader title={t('reports.title')} subtitle={t('menu.reports.desc')} back="/crm/more" />
 
+      {/* Which month is being read, and the two arrows that change it (ADR-098). The
+          forward arrow is absent in the current month rather than disabled: there is
+          nothing ahead to go to, and a dead button invites the tap anyway. */}
+      <nav aria-label={t('reports.viewing', { month: monthName })} className="flex items-center justify-between gap-3 px-4 pt-3 lg:px-0">
+        <Link
+          href={`/crm/reports?month=${shift(-1)}`}
+          className="flex min-h-11 items-center gap-1 rounded-button px-3 text-body font-semibold text-brand-link hover:bg-brand-stone/10"
+        >
+          <CrmIcon name="back" className="size-4" />
+          {t('reports.monthPrev')}
+        </Link>
+        <p className="text-crm-body font-bold text-brand-obsidian">{monthName}</p>
+        {isThisMonth ? (
+          <span className="min-h-11 px-3" />
+        ) : (
+          <Link
+            href={`/crm/reports?month=${shift(1)}`}
+            className="flex min-h-11 items-center gap-1 rounded-button px-3 text-body font-semibold text-brand-link hover:bg-brand-stone/10"
+          >
+            {t('reports.monthNext')}
+            <CrmIcon name="chevron" className="size-4" />
+          </Link>
+        )}
+      </nav>
+
       <div className="grid gap-3 p-4 pb-24 lg:grid-cols-2 lg:gap-4 lg:p-0">
         <Card title={t('reports.money')}>
           {/* The hero figure: the one number this screen leads with, in the body sans. */}
@@ -109,10 +156,10 @@ export default async function CrmReportsPage() {
         </Card>
 
         <div className="grid grid-cols-2 gap-3">
-          <Card title={t('reports.newMembers')} subtitle={t('reports.thisMonth')}>
+          <Card title={t('reports.newMembers')} subtitle={periodLabel}>
             <p className="font-display text-[2.25rem] leading-none font-bold text-brand-obsidian tabular">{flow.newMembers}</p>
           </Card>
-          <Card title={t('reports.renewals')} subtitle={t('reports.thisMonth')}>
+          <Card title={t('reports.renewals')} subtitle={periodLabel}>
             <p className="font-display text-[2.25rem] leading-none font-bold text-brand-obsidian tabular">{flow.renewals}</p>
           </Card>
         </div>
@@ -149,7 +196,7 @@ export default async function CrmReportsPage() {
         {/* The trial, the diet plans and the assistant (ADR-088, 089, 090). Each card is
             absent rather than zeroed when the gym has never used that part. */}
         {inputs.trial.soldThisMonth === 0 && inputs.trial.convertedThisMonth === 0 ? null : (
-          <Card title={t('reports.trial')} subtitle={t('reports.thisMonth')}>
+          <Card title={t('reports.trial')} subtitle={periodLabel}>
             <div className="flex items-baseline gap-6">
               <span>
                 <span className="block font-display text-[2.25rem] leading-none font-bold text-brand-obsidian tabular">{inputs.trial.soldThisMonth}</span>
@@ -188,7 +235,7 @@ export default async function CrmReportsPage() {
         )}
 
         {inputs.bot.askedThisMonth === 0 ? null : (
-          <Card title={t('reports.bot')} subtitle={t('reports.thisMonth')}>
+          <Card title={t('reports.bot')} subtitle={periodLabel}>
             <p className="font-display text-[2.25rem] leading-none font-bold text-brand-obsidian tabular">{inputs.bot.askedThisMonth}</p>
             <p className="mt-2 text-small text-brand-stone">
               {t('reports.botSplit', { answered: inputs.bot.answeredThisMonth, escalated: inputs.bot.escalatedThisMonth })}
@@ -212,7 +259,7 @@ export default async function CrmReportsPage() {
           )}
         </Card>
 
-        <Card title={t('reports.left')} subtitle={t('reports.thisMonth')}>
+        <Card title={t('reports.left')} subtitle={periodLabel}>
           {leftTotal === 0 ? (
             <p className="text-crm-body text-brand-stone">{t('reports.leftNone')}</p>
           ) : (

@@ -48,6 +48,45 @@ export function monthBounds(today: ISTDate): MonthBounds {
   };
 }
 
+/**
+ * The month the owner asked to see, or this one (ADR-098).
+ *
+ * The month arrives in a URL, so it is whatever somebody typed. Anything unreadable falls
+ * back to the current month rather than reporting on nothing, and a month in the **future**
+ * is refused for the same reason — there are no figures there, and a screen of zeros reads
+ * as a bad month rather than as one that has not happened.
+ */
+export function readReportMonth(asked: string | undefined, today: ISTDate): string {
+  const thisMonth = today.slice(0, 7);
+  if (asked === undefined || !/^\d{4}-(0[1-9]|1[0-2])$/.test(asked)) return thisMonth;
+  return asked > thisMonth ? thisMonth : asked;
+}
+
+/**
+ * The bounds of a named month, and of the month before it (ADR-098).
+ *
+ * The one judgement here is what to compare against. Mid-month, `monthBounds` cuts last
+ * month short at today's day, because fourteen days against a whole month reads "less"
+ * almost every time. A month that has **finished** needs no such care: it is complete, and
+ * cutting the comparison short would invent a fall that did not happen. So the current
+ * month keeps the like-for-like rule and a past month is compared against the whole month
+ * before it.
+ */
+export function monthBoundsFor(month: string, today: ISTDate): MonthBounds {
+  if (month === today.slice(0, 7)) return monthBounds(today);
+
+  const start = istDateOf(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 1);
+  const previousStart = addMonthsClamped(start, -1);
+  const previousEnd = addDays(start, -1);
+  return {
+    start,
+    end: addDays(addMonthsClamped(start, 1), -1),
+    previousStart,
+    previousEnd,
+    previousToDate: previousEnd,
+  };
+}
+
 // ── Shares ──────────────────────────────────────────────────────────────────
 
 /**
