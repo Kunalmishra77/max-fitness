@@ -1,6 +1,6 @@
 // @vitest-environment node
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { gymJsonLd, isIndexable, localizedPath } from './seo';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { gymJsonLd, isIndexable, localizedPath, siteUrl } from './seo';
 import type { SiteContext } from './site-context';
 
 /**
@@ -12,10 +12,11 @@ import type { SiteContext } from './site-context';
  * URL rather than something with a doubled slash in it that silently fetches nothing.
  */
 
-const original = { node: process.env['NODE_ENV'], demo: process.env['DEMO_MODE'] };
+const original = { node: process.env['NODE_ENV'], demo: process.env['DEMO_MODE'], app: process.env['APP_URL'] };
 
 afterEach(() => {
-  for (const [name, value] of [['NODE_ENV', original.node], ['DEMO_MODE', original.demo]] as const) {
+  vi.restoreAllMocks();
+  for (const [name, value] of [['NODE_ENV', original.node], ['DEMO_MODE', original.demo], ['APP_URL', original.app]] as const) {
     if (value === undefined) Reflect.deleteProperty(process.env, name);
     else Reflect.set(process.env, name, value);
   }
@@ -81,5 +82,33 @@ describe('localizedPath', () => {
     expect(localizedPath('/', 'en')).toBe('/');
     expect(localizedPath('/', 'hi')).toBe('/hi');
     expect(localizedPath('/contact', 'hi')).toBe('/hi/contact');
+  });
+});
+
+describe('siteUrl', () => {
+  it('uses the configured address', () => {
+    process.env['APP_URL'] = 'https://maxfitnessgym.co.in';
+    expect(siteUrl()).toBe('https://maxfitnessgym.co.in');
+  });
+
+  it('shouts when production has no usable address, instead of quietly serving localhost', () => {
+    // This is not hypothetical: a deploy stored APP_URL empty, and every receipt link,
+    // renew link and sitemap URL silently became http://localhost:3000. A page that still
+    // renders is right — a page that renders without saying anything is how it went unseen.
+    Reflect.set(process.env, 'NODE_ENV', 'production');
+    process.env['APP_URL'] = '';
+    const complained = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    expect(siteUrl()).toBe('http://localhost:3000');
+    expect(complained).toHaveBeenCalledWith(expect.stringContaining('APP_URL'));
+  });
+
+  it('says nothing in development, where localhost is the right answer', () => {
+    Reflect.set(process.env, 'NODE_ENV', 'development');
+    process.env['APP_URL'] = '';
+    const complained = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    expect(siteUrl()).toBe('http://localhost:3000');
+    expect(complained).not.toHaveBeenCalled();
   });
 });

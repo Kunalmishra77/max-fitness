@@ -17,6 +17,14 @@ export function siteUrl(): string {
   try {
     return new URL(process.env['APP_URL'] ?? '').origin;
   } catch {
+    // Localhost is right in development and catastrophic in production, where it would put
+    // `http://localhost:3000` in every receipt link, renew link and sitemap entry — and the
+    // page would keep rendering, which is exactly how it goes unnoticed. It has happened
+    // once already, to a deploy that stored the variable empty. So the page still renders,
+    // and the log says why.
+    if (process.env['NODE_ENV'] === 'production') {
+      console.error('[seo] APP_URL is missing or not a URL; falling back to localhost. Links and the sitemap will be wrong.');
+    }
     return 'http://localhost:3000';
   }
 }
