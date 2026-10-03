@@ -11,7 +11,8 @@
     "test:e2e": "playwright test",
     "test:lighthouse": "lhci autorun",
     "test:lighthouse:simulated": "lhci autorun --config=./lighthouserc.simulated.json",
-    "smoke:crm": "node scripts/smoke-crm.mjs"
+    "smoke:crm": "node scripts/smoke-crm.mjs",
+    "smoke:public": "node scripts/smoke-public.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "catalog:",
