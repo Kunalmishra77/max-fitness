@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import { sessionsForDay } from '@mfp/core';
 import { GymAtAGlance } from '@/components/qr/gym-at-a-glance';
 import { QrNewPageFlow } from '@/components/qr/qr-new-page-flow';
@@ -24,6 +25,7 @@ export function generateMetadata({ params }: { params: Promise<{ locale: string 
 
 export default async function QrNewPage({ params }: { params: Promise<{ locale: string }> }) {
   const ctx = await joinContext(params);
+  const t = await getTranslations({ locale: ctx.locale, namespace: 'qr.new' });
   const { privacy, pricing, trust, hours } = ctx.data.settings;
 
   // Every session, so somebody reading this at three in the afternoon is not told the
@@ -45,6 +47,10 @@ export default async function QrNewPage({ params }: { params: Promise<{ locale: 
   return (
     <JoinPage ctx={ctx}>
       <div className="grid gap-8">
+        {/* Every page needs one, and this one had none: the headings started at h2, so a
+            screen reader found no title and the levels skipped a rung. */}
+        <h1 className="font-display text-display-m font-bold text-brand-obsidian">{t('title')}</h1>
+
         <GymAtAGlance
           locale={ctx.locale}
           prices={priceLists(ctx)}

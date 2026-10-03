@@ -1849,6 +1849,9 @@
       "helper": "Reception will check your details and switch your membership on.",
       "codeLabel": "Your code",
       "home": "Go to the home page"
+    },
+    "new": {
+      "title": "I am new here"
     }
   },
   "checkin": {
