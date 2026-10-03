@@ -18,7 +18,8 @@
     "set:staff-logins": "tsx scripts/set-staff-logins.ts",
     "check:go-live": "tsx scripts/check-go-live.ts",
     "check:members": "tsx scripts/check-members.ts",
-    "backup:members": "tsx scripts/backup-members.ts"
+    "backup:members": "tsx scripts/backup-members.ts",
+    "delete:object": "tsx scripts/delete-orphan-object.ts"
   },
   "dependencies": {
     "@mfp/core": "workspace:*",

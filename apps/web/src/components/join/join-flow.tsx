@@ -56,15 +56,25 @@ function Placeholder() {
   return <div aria-hidden className="min-h-64" />;
 }
 
+/**
+ * Reached step two or three without the step before it (ADR-101).
+ *
+ * This used to read "your sign-up session has expired", in red, as an alert. For anybody
+ * who *had* been part-way through, that was true. For everybody else — a bookmark, a link
+ * someone shared, a second tab, a phone that cleared its storage overnight — it announced
+ * the failure of something they had never started, in the colour reserved for things going
+ * wrong, as their first impression of the gym.
+ *
+ * Nothing has gone wrong. They are simply at the second step of a form without the first.
+ * So it says that, and points at the first.
+ */
 function StartAgain() {
   const t = useTranslations('signup.errors');
   return (
     <div className="grid gap-4">
-      <p role="alert" className="rounded-input bg-tint-fee-expired-bg p-3 text-body font-medium text-semantic-fee-expired">
-        {t('expired')}
-      </p>
+      <p className="rounded-input bg-brand-stone/10 p-3 text-body text-brand-ink">{t('needDetails')}</p>
       <Link href="/join" className={buttonVariants({ variant: 'primary', full: true })}>
-        {t('startAgain')}
+        {t('startSignUp')}
       </Link>
     </div>
   );
