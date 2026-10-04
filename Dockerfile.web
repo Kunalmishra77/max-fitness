@@ -61,9 +61,10 @@ RUN corepack enable
 COPY --from=deps /app ./
 COPY . .
 
-# The Prisma client is generated TypeScript that the app imports; it must exist before
-# Next compiles. It needs no database — only the schema.
-RUN pnpm --filter @mfp/db run db:generate
+# The Prisma client was generated in the deps stage by `packages/db`'s postinstall and came
+# across with the tree. `packages/db/src/generated` is gitignored, so `COPY . .` does not
+# overwrite it — and regenerating here would make pnpm reconcile the workspace again, which
+# is both slow and the thing that must not happen below.
 
 # `next build` does not read the database: no locale page is prerendered and every route
 # that needs data is dynamic (ADR-032). A placeholder URL satisfies anything that insists
@@ -71,7 +72,22 @@ RUN pnpm --filter @mfp/db run db:generate
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL="postgresql://build:build@127.0.0.1:5432/build"
 ENV DIRECT_URL="postgresql://build:build@127.0.0.1:5432/build"
-RUN pnpm --filter @mfp/web run build
+
+# Next is invoked directly rather than through `pnpm run`, and NODE_ENV is set on this one
+# command. Both halves matter:
+#
+# `next build` must see NODE_ENV=production — with anything else Next warns about a
+# "non-standard NODE_ENV", builds React in development mode, and prerendering
+# `/_global-error` throws.
+#
+# But a `pnpm` invocation can reconcile the workspace first, and a reconcile that sees
+# NODE_ENV=production prunes devDependencies — which is where `tailwindcss` and
+# `typescript` live. The build would then fail for a second, less obvious reason. Calling
+# the binary leaves no opportunity for that.
+WORKDIR /app/apps/web
+ENV NODE_ENV=production
+RUN node scripts/copy-mediapipe-wasm.mjs && ./node_modules/.bin/next build
+WORKDIR /app
 
 # ── 3. Runtime ───────────────────────────────────────────────────────────────
 FROM node:24-alpine AS runtime
