@@ -3,7 +3,8 @@ import { sessionsForDay } from '@mfp/core';
 import { GymAtAGlance } from '@/components/qr/gym-at-a-glance';
 import { QrNewPageFlow } from '@/components/qr/qr-new-page-flow';
 import type { QrPlanCard } from '@/components/qr/qr-new-form';
-import { JoinPage, joinContext, joinMetadata, legalHref, priceLists, trialChoices } from '@/lib/join-page';
+import { joinContext, joinMetadata, legalHref, priceLists, trialChoices } from '@/lib/join-page';
+import { QrPage } from '@/lib/qr-page';
 
 /**
  * `/qr/new` — somebody new, standing at reception, after scanning the QR
@@ -45,7 +46,7 @@ export default async function QrNewPage({ params }: { params: Promise<{ locale: 
   );
 
   return (
-    <JoinPage ctx={ctx}>
+    <QrPage ctx={ctx}>
       <div className="grid gap-8">
         {/* Every page needs one, and this one had none: the headings started at h2, so a
             screen reader found no title and the levels skipped a rung. */}
@@ -72,6 +73,6 @@ export default async function QrNewPage({ params }: { params: Promise<{ locale: 
           admissionFeePaise={pricing.admissionFeePaise}
         />
       </div>
-    </JoinPage>
+    </QrPage>
   );
 }
