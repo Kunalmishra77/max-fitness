@@ -54,3 +54,6 @@ apps/web/e2e/fixtures/
 
 # Register backups taken before a wipe: real names and phone numbers, never in git.
 /backups/
+
+# Environment blocks generated for pasting into a host's dashboard. Real credentials.
+/secrets/
