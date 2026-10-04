@@ -1,7 +1,17 @@
 # What never belongs in a build context.
 #
-# Keeping this tight is most of the build speed: without it Docker uploads node_modules
-# and every .next cache on the machine before the first instruction runs.
+# Keeping this tight is most of the build speed: without it Docker uploads node_modules and
+# every .next cache on the machine before the first instruction runs.
+#
+# **Anchor anything named after a common word.** An unanchored `storage` here matched
+# `packages/integrations/src/storage` — the storage driver's own source — and the worker
+# built, started, and died on a module it could not find. Every pattern below that is not
+# anchored has been checked against the tree for the same mistake.
+
+# Uploaded files when the local storage driver is in use. Anchored, exactly as .gitignore
+# anchors them, and for the same reason.
+/storage
+/apps/*/storage
 
 # Dependencies and build output — reinstalled and rebuilt inside the image.
 node_modules
@@ -12,14 +22,16 @@ node_modules
 **/build
 **/.turbo
 
-# Secrets. The image gets its configuration from the platform's environment, never from a
+# Secrets. The image takes its configuration from the platform's environment, never from a
 # file baked into a layer, where it would survive in the image history.
 .env
 .env.*
 !.env.example
 
+# Generated for pasting into a host's dashboard: real credentials.
+/secrets
 # Register backups: real names and phone numbers.
-backups
+/backups
 
 # Local state and tooling noise.
 .git
@@ -31,7 +43,6 @@ coverage
 playwright-report
 test-results
 .lighthouseci
-**/storage
 tmp
 
 # Not needed to build or run the two services.
