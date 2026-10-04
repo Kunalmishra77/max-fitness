@@ -1,0 +1,93 @@
+# syntax=docker/dockerfile:1
+
+# The website and Max Register (deployment-plan.md §1; ADR-104).
+#
+# Next.js builds to `output: 'standalone'` — a self-contained server with only the
+# dependencies its routes actually reach, traced at build time. That is what makes this
+# image small without hand-pruning node_modules, and it is already configured: the Next
+# config turns standalone off only when VERCEL=1, so building here gets it.
+#
+# Prisma needs no engine binary. The schema uses the `prisma-client` generator with the
+# `@prisma/adapter-pg` driver adapter, so the generated client is plain TypeScript and
+# there are no binaryTargets to match against the base image.
+#
+# Build it from the repository root, not from apps/web: this is a pnpm workspace and the
+# web app is compiled from its sibling packages' TypeScript source (`transpilePackages`).
+
+# ── 1. Dependencies ──────────────────────────────────────────────────────────
+FROM node:24-alpine AS deps
+WORKDIR /app
+
+# corepack pins pnpm to the version in package.json's `packageManager`, so the image uses
+# the same pnpm that produced the lockfile.
+RUN corepack enable
+
+# Manifests first, so a change to application code does not reinstall the world.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY apps/web/package.json apps/web/
+COPY apps/worker/package.json apps/worker/
+COPY packages/shared/package.json packages/shared/
+COPY packages/core/package.json packages/core/
+COPY packages/db/package.json packages/db/
+COPY packages/integrations/package.json packages/integrations/
+
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm config set store-dir /pnpm/store && \
+    pnpm install --frozen-lockfile
+
+# ── 2. Build ─────────────────────────────────────────────────────────────────
+FROM node:24-alpine AS build
+WORKDIR /app
+RUN corepack enable
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
+COPY --from=deps /app/apps/worker/node_modules ./apps/worker/node_modules
+COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
+COPY --from=deps /app/packages/core/node_modules ./packages/core/node_modules
+COPY --from=deps /app/packages/db/node_modules ./packages/db/node_modules
+COPY --from=deps /app/packages/integrations/node_modules ./packages/integrations/node_modules
+COPY . .
+
+# The Prisma client is generated TypeScript that the app imports; it must exist before
+# Next compiles. It needs no database — only the schema.
+RUN pnpm --filter @mfp/db run db:generate
+
+# `next build` does not read the database: no locale page is prerendered and every route
+# that needs data is dynamic (ADR-032). A placeholder URL satisfies anything that insists
+# on the variable being present; the real one arrives at runtime from the platform.
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV DATABASE_URL="postgresql://build:build@127.0.0.1:5432/build"
+ENV DIRECT_URL="postgresql://build:build@127.0.0.1:5432/build"
+RUN pnpm --filter @mfp/web run build
+
+# ── 3. Runtime ───────────────────────────────────────────────────────────────
+FROM node:24-alpine AS runtime
+WORKDIR /app
+
+# curl for the healthcheck; Alpine has none by default.
+RUN apk add --no-cache curl && \
+    addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+# The standalone bundle already carries the workspace layout and the traced dependencies.
+# Static assets and `public/` are not traced and are copied beside it.
+COPY --from=build --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
+COPY --from=build --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=build --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
+
+USER nextjs
+EXPOSE 3000
+
+# Liveness, not readiness (ADR-104). `/api/v1/health` answers 503 when the worker has
+# stopped beating — correct for an uptime monitor, wrong here, because a platform that
+# restarts unhealthy containers would take the website down every time the worker did.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD curl -fsS http://127.0.0.1:3000/api/v1/health/live || exit 1
+
+CMD ["node", "apps/web/server.js"]

@@ -1,0 +1,69 @@
+# syntax=docker/dockerfile:1
+
+# The background worker: reminders, the outbox, diet follow-ups, nightly jobs
+# (deployment-plan.md §1; system-architecture.md §5).
+#
+# **Exactly one instance.** The schedules are cron-like and the outbox is polled; two
+# copies would evaluate the same slot twice. The idempotency keys would stop a member
+# being messaged twice, but the right number of replicas is still one.
+#
+# It has no inbound port, so there is nothing to HTTP-healthcheck. The evidence that it is
+# alive is the heartbeat row it keeps touching, which `/api/v1/health` reads — one URL
+# covering both processes, as ADR-018 intended.
+#
+# Unlike the web image there is no compile step: the worker runs its TypeScript through
+# `tsx`, which is how it reads the same source the tests and the app do. That costs image
+# size — development dependencies have to stay — and buys back having no second build
+# pipeline to keep in step with the first.
+
+FROM node:24-alpine AS deps
+WORKDIR /app
+RUN corepack enable
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY apps/web/package.json apps/web/
+COPY apps/worker/package.json apps/worker/
+COPY packages/shared/package.json packages/shared/
+COPY packages/core/package.json packages/core/
+COPY packages/db/package.json packages/db/
+COPY packages/integrations/package.json packages/integrations/
+
+# `...<pkg>` is "that package and everything it depends on". The other order, `<pkg>...`,
+# selects its dependents, which is the opposite direction and not what this image wants.
+# apps/web falls outside it on purpose: the worker never imports it, and installing it
+# would pull Next in for nothing.
+#
+# NODE_ENV is deliberately not `production` in this stage. The worker runs its TypeScript
+# through tsx, which is a devDependency, and a production install would leave it out.
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm config set store-dir /pnpm/store && \
+    pnpm install --frozen-lockfile --filter ...@mfp/worker
+
+FROM node:24-alpine AS runtime
+WORKDIR /app
+RUN corepack enable && \
+    addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 worker
+
+ENV NODE_ENV=production
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/worker/node_modules ./apps/worker/node_modules
+COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
+COPY --from=deps /app/packages/core/node_modules ./packages/core/node_modules
+COPY --from=deps /app/packages/db/node_modules ./packages/db/node_modules
+COPY --from=deps /app/packages/integrations/node_modules ./packages/integrations/node_modules
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+COPY apps/worker ./apps/worker
+COPY packages ./packages
+
+# Generated TypeScript, read directly by `tsx` at runtime. No database is contacted.
+RUN pnpm --filter @mfp/db run db:generate && chown -R worker:nodejs /app
+
+USER worker
+
+# `start` is `tsx src/index.ts`, run from the worker's own directory so its relative
+# paths — the root .env it loads when one exists — resolve the way they do in development.
+WORKDIR /app/apps/worker
+CMD ["pnpm", "run", "start"]

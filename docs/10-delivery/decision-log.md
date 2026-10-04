@@ -452,3 +452,18 @@ Blank messages are refused for the same reason — they render as a gap rather t
 This is recorded rather than worked around because the fix is a dashboard step the owner has to take: create the webhook against `/api/v1/webhooks/razorpay`, subscribe to `payment.captured` and `payment.failed`, and set the signing secret as `RAZORPAY_WEBHOOK_SECRET`.
 
 **Said to the owner, and worth writing down:** the live secret was pasted into a chat message. It should be regenerated in the Razorpay dashboard once the webhook is in place.
+
+## ADR-104 — Two containers on Coolify, and a liveness probe that is not the readiness one (owner, 2026-10-04)
+2026-10-04 · Accepted · **Context:** the owner has a VPS running Coolify and asked to leave Vercel for it, web and worker both. The worker is the reason: it has never run in production, because Vercel has nowhere to keep a process alive, so nothing in the reminder engine, the outbox or the diet follow-ups has ever fired for this gym.
+
+**(1) The database does not move.** `web` and `worker` go to Coolify; PostgreSQL and object storage stay on Supabase. Moving live data is a separate job with its own risk and no connection to the problem being solved. It also keeps the change reversible: both deployments read the same database, so pointing DNS back restores service.
+
+**(2) Two Dockerfiles, not one image with a mode flag.** They have genuinely different shapes. The web image builds Next's `standalone` output — a traced, self-contained server — and throws the toolchain away. The worker image compiles nothing: it runs its TypeScript through `tsx`, which is how it reads the same source the tests and the app read, and that costs it the development dependencies at runtime. One image doing both would carry the worse half of each.
+
+**(3) Prisma needs no engine binary here**, which is most of why these files are short. The `prisma-client` generator plus the `@prisma/adapter-pg` driver adapter produce plain TypeScript, so there is no `binaryTargets` to match against Alpine and nothing to copy out of `node_modules` by hand.
+
+**(4) A liveness endpoint, separate from the health one.** `/api/v1/health` answers 503 when the worker has stopped beating. That is right, and ADR-018 chose it deliberately so one URL covers both processes for an uptime monitor. It is **wrong as a container healthcheck**: a platform that restarts unhealthy containers would restart the website every time the worker went down — fixing nothing, and taking the public site down with the background job. `/api/v1/health/live` touches nothing and claims only that the process can answer. The two questions are "is the system working" and "is this process alive", and conflating them would have been an outage waiting for its first bad night.
+
+**(5) The worker runs exactly one replica.** The schedules are cron-like and the outbox is polled; two copies evaluate the same slot twice. The idempotency keys would stop a member being messaged twice — that is what they are for — but the right number is still one, and it is written down in the Dockerfile where somebody scaling up will read it.
+
+**Honest about what is unverified:** these images have not been built. This project has no Docker on the development machine by the client's standing instruction, so Coolify's first build is their first run. `docs/09-operations/coolify-setup.md` §8 lists what a first build usually objects to and what each message means, rather than pretending the files are proven.

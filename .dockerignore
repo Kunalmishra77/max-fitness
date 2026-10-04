@@ -1,0 +1,44 @@
+# What never belongs in a build context.
+#
+# Keeping this tight is most of the build speed: without it Docker uploads node_modules
+# and every .next cache on the machine before the first instruction runs.
+
+# Dependencies and build output — reinstalled and rebuilt inside the image.
+node_modules
+**/node_modules
+.pnpm-store
+**/.next
+**/dist
+**/build
+**/.turbo
+
+# Secrets. The image gets its configuration from the platform's environment, never from a
+# file baked into a layer, where it would survive in the image history.
+.env
+.env.*
+!.env.example
+
+# Register backups: real names and phone numbers.
+backups
+
+# Local state and tooling noise.
+.git
+.github
+.vercel
+.claude
+*.log
+coverage
+playwright-report
+test-results
+.lighthouseci
+**/storage
+tmp
+
+# Not needed to build or run the two services.
+apps/kiosk-android
+docs
+assets
+e2e
+**/*.test.ts
+**/*.test.tsx
+**/*.integration.test.ts
