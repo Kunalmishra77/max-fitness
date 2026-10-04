@@ -2,8 +2,8 @@
 
 # The website and Max Register (deployment-plan.md §1; ADR-104).
 #
-# Next.js builds to `output: 'standalone'` — a self-contained server with only the
-# dependencies its routes actually reach, traced at build time. That is what makes this
+# Next.js builds to `output: 'standalone'` — a self-contained server carrying only the
+# dependencies its routes actually reach, traced at build time. That is what keeps this
 # image small without hand-pruning node_modules, and it is already configured: the Next
 # config turns standalone off only when VERCEL=1, so building here gets it.
 #
@@ -11,12 +11,19 @@
 # `@prisma/adapter-pg` driver adapter, so the generated client is plain TypeScript and
 # there are no binaryTargets to match against the base image.
 #
-# Build it from the repository root, not from apps/web: this is a pnpm workspace and the
-# web app is compiled from its sibling packages' TypeScript source (`transpilePackages`).
+# Build from the repository root, not from apps/web: this is a pnpm workspace and the web
+# app is compiled from its sibling packages' TypeScript source (`transpilePackages`).
 
 # ── 1. Dependencies ──────────────────────────────────────────────────────────
 FROM node:24-alpine AS deps
 WORKDIR /app
+
+# NODE_ENV is pinned to development for the install and only flipped in the final stage.
+#
+# Coolify passes every environment variable into the build, so `NODE_ENV=production`
+# arrives as a build argument — and a production install skips devDependencies, which is
+# where `next` and `typescript` live. Setting it here beats whatever is injected.
+ENV NODE_ENV=development
 
 # corepack pins pnpm to the version in package.json's `packageManager`, so the image uses
 # the same pnpm that produced the lockfile.
@@ -38,15 +45,13 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 # ── 2. Build ─────────────────────────────────────────────────────────────────
 FROM node:24-alpine AS build
 WORKDIR /app
+ENV NODE_ENV=development
 RUN corepack enable
 
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
-COPY --from=deps /app/apps/worker/node_modules ./apps/worker/node_modules
-COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
-COPY --from=deps /app/packages/core/node_modules ./packages/core/node_modules
-COPY --from=deps /app/packages/db/node_modules ./packages/db/node_modules
-COPY --from=deps /app/packages/integrations/node_modules ./packages/integrations/node_modules
+# The whole installed tree in one instruction. pnpm creates a `node_modules` directory
+# under a workspace package only when that package has something to link, so copying them
+# one path at a time fails on whichever package happens to have none.
+COPY --from=deps /app ./
 COPY . .
 
 # The Prisma client is generated TypeScript that the app imports; it must exist before
@@ -65,7 +70,7 @@ RUN pnpm --filter @mfp/web run build
 FROM node:24-alpine AS runtime
 WORKDIR /app
 
-# curl for the healthcheck; Alpine has none by default.
+# curl for the healthcheck; Alpine ships without it.
 RUN apk add --no-cache curl && \
     addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
@@ -76,7 +81,8 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
 # The standalone bundle already carries the workspace layout and the traced dependencies.
-# Static assets and `public/` are not traced and are copied beside it.
+# Static assets and `public/` are not traced and are copied beside it — verified against a
+# real build: the entrypoint is `apps/web/server.js` and `public/` is not in the bundle.
 COPY --from=build --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=build --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=build --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
