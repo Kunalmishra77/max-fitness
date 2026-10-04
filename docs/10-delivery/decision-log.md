@@ -428,3 +428,27 @@ So the catalogue is now tested against the domain rather than against itself: ev
 Blank messages are refused for the same reason — they render as a gap rather than as an error. One exception is listed with its reason: the "the Hindi translation is being reviewed" notice appears on the Hindi page only, so its English twin is deliberately empty and never rendered. Listing it is what keeps the difference between a decision and an oversight visible.
 
 **Three more of these were found the same day** by walking the screens in a browser rather than reasoning about the source: `crm.add.camera.choosePhoto` did not exist at all, and the member list and reports each had a card that drew nothing where every neighbouring card said something.
+
+## ADR-102 — The website publishes what the certificate says (owner, 2026-10-04)
+2026-10-04 · Accepted · **Context:** Meta's business verification compares the details published on a website against the registration certificate behind the account, and rejects a discrepancy. Razorpay does the same. The site had three.
+
+**(1) The address now matches the Udyam certificate, not Google.** The site read "Krishan Plaza, Plot No. 6, Nyay Khand I"; the certificate says "C-6, Krishna Plaza". That is not a formatting difference — a different building number and a different spelling of the building. The certificate wins, because it is the document a reviewer is holding.
+
+**This is a real trade and worth naming.** The Google Business Profile keeps the old wording, so the two no longer agree, and consistent name-address-phone across listings is a local-search signal. The gym's findability is protected a different way: `directionsHref` points at the Google pin, which is what anybody navigating actually follows.
+
+**(2) The gym's own number is printed as registered; a member's is printed for reading.** The site showed "098714 06350" — the signboard's grouping with the zero India dials. The certificate writes ten plain digits. Those are two different jobs that had been sharing one helper, so `registeredPhone` was split out from `displayPhone`: the business's number is a legal detail compared against a document, and a member's number is read aloud at a desk.
+
+**(3) The email was nowhere on the site**, which is itself a discrepancy to be found. `Gym.email` is a new nullable column, published in the footer, on the contact page and in the `ExerciseGym` structured data — so a person and a machine reading the page see the same three details.
+
+**(4) `set:gym-details` edits by slug, never `findFirst`.** Three leftover test gyms were sitting in production from integration runs, and `check:go-live` had been cheerfully reporting on "Trend test gym" instead of the real one. A script that writes the gym's legal address must not be able to pick the wrong row. `check:gyms` lists them all and removes the empty leftovers.
+
+## ADR-103 — Live payments on, and the one half of it that is not finished (owner, 2026-10-04)
+2026-10-04 · Accepted · **Context:** the owner supplied live Razorpay credentials and asked for payments to be switched on.
+
+`RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` are set in production. With `DEMO_MODE=false` already in place, `onlinePaymentsLive()` is now true and `/join/pay` offers online payment beside pay-at-reception — verified on the live page, which serialises `"onlinePayments":true`. `/api/v1/checkout/simulate` still answers 404, so the simulated gateway remains gone.
+
+**`RAZORPAY_WEBHOOK_SECRET` is not set, and until it is, one failure mode loses a membership.** The browser's return from the payment window is the usual confirmation path; the webhook is the one that works when the member closes the tab, loses signal, or the redirect is swallowed. With no secret, `verifyWebhookSignature` HMACs against an empty key and rejects every event — safe, in that nothing forged is accepted, but it means Razorpay can hold a payment that Max Register never hears about. The member has paid and the gym's register says they have not.
+
+This is recorded rather than worked around because the fix is a dashboard step the owner has to take: create the webhook against `/api/v1/webhooks/razorpay`, subscribe to `payment.captured` and `payment.failed`, and set the signing secret as `RAZORPAY_WEBHOOK_SECRET`.
+
+**Said to the owner, and worth writing down:** the live secret was pasted into a chat message. It should be regenerated in the Razorpay dashboard once the webhook is in place.
