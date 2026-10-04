@@ -36,6 +36,13 @@ COPY packages/core/package.json packages/core/
 COPY packages/db/package.json packages/db/
 COPY packages/integrations/package.json packages/integrations/
 
+# `packages/db` runs `prisma generate` on postinstall, which needs the schema and the
+# Prisma config — neither of which is a package.json, so the install failed without them.
+# Only these two: generation never reads the migrations, and leaving them out keeps a new
+# migration from invalidating the install layer.
+COPY packages/db/prisma.config.ts packages/db/
+COPY packages/db/prisma/schema.prisma packages/db/prisma/
+
 # `...<pkg>` is "that package and everything it depends on". The other order, `<pkg>...`,
 # selects its dependents, which is the opposite direction. apps/web falls outside it on
 # purpose: the worker never imports it, and installing it would pull Next in for nothing.
