@@ -8,7 +8,7 @@ import type { Locale } from '@/i18n/routing';
 import { getContainer } from './container';
 import { formatTime, price } from './format';
 import { getLandingData, type LandingData } from './landing-data';
-import { SITE_FALLBACK, directionsHref, displayPhone, mapEmbedSrc, telHref, whatsappHref } from './site';
+import { SITE_FALLBACK, directionsHref, mapEmbedSrc, registeredPhone, telHref, whatsappHref } from './site';
 
 /**
  * Everything the public pages derive from settings and plans, worked out once per render
@@ -31,6 +31,8 @@ export interface SiteContext {
     readonly name: string;
     readonly phone: E164Mobile;
     readonly phoneDisplay: string;
+    /** The registered address for correspondence; published so a verifier can match it. */
+    readonly email: string | null;
     readonly telHref: string;
     readonly whatsappHref: string;
     readonly address: string;
@@ -140,7 +142,10 @@ export async function getSiteContext(locale: Locale): Promise<SiteContext> {
     contact: {
       name: gym?.name ?? SITE_FALLBACK.name,
       phone,
-      phoneDisplay: gym === null ? SITE_FALLBACK.phoneDisplay : displayPhone(phone),
+      // Printed as the registration certificate writes it, because that is what a
+      // business verification compares it against (ADR-102).
+      phoneDisplay: registeredPhone(phone),
+      email: gym?.email ?? SITE_FALLBACK.email,
       telHref: telHref(phone),
       whatsappHref: whatsappHref(phone, tw('prefill')),
       address: `${postal.streetAddress}, ${postal.locality} ${postal.postalCode}`,

@@ -270,6 +270,10 @@ model Gym {
   slug        String   @unique
   name        String
   phone       String
+  /// The gym's own address for correspondence. Shown on the website's contact page and
+  /// footer because a business verification (Meta, Razorpay) compares what is published
+  /// against what is on the registration certificate, and a missing one is a discrepancy.
+  email       String?
   addressLine String
   city        String
   state       String

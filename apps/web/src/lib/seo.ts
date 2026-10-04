@@ -70,6 +70,7 @@ export function gymJsonLd(ctx: SiteContext): Record<string, unknown> {
     name: ctx.contact.name,
     url: `${siteUrl()}${localizedPath('/', ctx.locale)}`,
     telephone: ctx.contact.phone,
+    ...(ctx.contact.email === null ? {} : { email: ctx.contact.email }),
     priceRange: '₹₹',
     foundingDate: String(ctx.data.settings.trust.establishedYear),
     address: {

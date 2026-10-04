@@ -50,6 +50,12 @@ async function main(): Promise<void> {
     console.log(`\nLEFTOVER TEST ROWS (${test.length})`);
     for (const m of test) console.log(line(m));
 
+    // Soft-deleted rows do not show above but still count against the gym; an erasure
+    // leaves one behind on purpose, so seeing it is the point.
+    const erased = await prisma.member.count({ where: { deletedAt: { not: null } } });
+    if (erased > 0) console.log(`
+${erased} erased member row(s) retained (anonymised, not listed above)`);
+
     const totalPaise = [...paidBy.values()].reduce((sum, value) => sum + value, 0);
     console.log(`\nMoney recorded against members: ₹${(totalPaise / 100).toFixed(0)}`);
 

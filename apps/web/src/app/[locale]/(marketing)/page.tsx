@@ -85,6 +85,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         rows={ctx.hours.rows}
         address={contact.address}
         phoneDisplay={contact.phoneDisplay}
+        email={contact.email}
         telHref={contact.telHref}
         whatsappHref={contact.whatsappHref}
         directionsHref={contact.directionsHref}

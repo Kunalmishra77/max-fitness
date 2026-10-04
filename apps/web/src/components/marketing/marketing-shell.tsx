@@ -24,6 +24,7 @@ export function MarketingShell({ ctx, onHome, children }: { ctx: SiteContext; on
         sectionHrefPrefix={onHome ? '' : getPathname({ href: '/', locale: ctx.locale })}
         address={contact.address}
         phoneDisplay={contact.phoneDisplay}
+        email={contact.email}
         telHref={contact.telHref}
         hoursSummary={ctx.hours.summary}
         year={Number(ctx.today.slice(0, 4))}

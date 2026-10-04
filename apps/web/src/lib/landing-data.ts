@@ -21,6 +21,7 @@ export const LANDING_TAGS = ['plans', 'settings'] as const;
 export interface LandingGym {
   readonly name: string;
   readonly phone: string;
+  readonly email: string | null;
   readonly addressLine: string;
   readonly city: string;
   readonly state: string;
@@ -47,7 +48,7 @@ const loadFromDatabase = unstable_cache(
     const { prisma } = getContainer();
     const gym = await prisma.gym.findUnique({
       where: { slug },
-      select: { id: true, name: true, phone: true, addressLine: true, city: true, state: true, pincode: true, settings: true },
+      select: { id: true, name: true, phone: true, email: true, addressLine: true, city: true, state: true, pincode: true, settings: true },
     });
 
     if (gym === null) {
@@ -79,6 +80,7 @@ const loadFromDatabase = unstable_cache(
       gym: {
         name: gym.name,
         phone: gym.phone,
+        email: gym.email,
         addressLine: gym.addressLine,
         city: gym.city,
         state: gym.state,

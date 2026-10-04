@@ -20,6 +20,7 @@ export async function VisitSection({
   rows,
   address,
   phoneDisplay,
+  email,
   telHref,
   whatsappHref,
   directionsHref,
@@ -28,6 +29,7 @@ export async function VisitSection({
   rows: readonly HoursTableRow[];
   address: string;
   phoneDisplay: string;
+  email: string | null;
   telHref: string;
   whatsappHref: string;
   directionsHref: string;
@@ -53,9 +55,16 @@ export async function VisitSection({
           <h3 className="mt-10 text-title font-semibold text-brand-obsidian">{t('findingUs')}</h3>
           <p className="mt-4 flex gap-3 text-body-l leading-body">
             <MapPinIcon className="mt-1.5 shrink-0 text-brand-accent-deep" />
-            {/* The address line already names the landmark (opposite Sai Mandir). */}
             <span>{address}</span>
           </p>
+          {email === null ? null : (
+            <p className="mt-3 flex gap-3 text-body-l leading-body">
+              <span className="shrink-0 font-semibold">{t('email')}:</span>
+              <a href={`mailto:${email}`} className="break-all text-brand-link underline underline-offset-4 hover:no-underline">
+                {email}
+              </a>
+            </p>
+          )}
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <a href={telHref} data-track="call_click" data-track-source="visit" className={buttonVariants({ variant: 'primary' })}>

@@ -17,6 +17,7 @@ export async function SiteFooter({
   sectionHrefPrefix,
   address,
   phoneDisplay,
+  email,
   telHref,
   hoursSummary,
   year,
@@ -26,6 +27,7 @@ export async function SiteFooter({
   sectionHrefPrefix: string;
   address: string;
   phoneDisplay: string;
+  email: string | null;
   telHref: string;
   hoursSummary: string | null;
   year: number;
@@ -47,6 +49,11 @@ export async function SiteFooter({
           >
             {phoneDisplay}
           </a>
+          {email === null ? null : (
+            <a href={`mailto:${email}`} className="mt-2 block text-body leading-body break-all text-brand-paper/85 hover:text-brand-white">
+              {email}
+            </a>
+          )}
           {hoursSummary === null ? null : (
             <p className="mt-2 max-w-[40ch] text-small leading-body text-brand-paper/75">
               <span className="font-semibold">{t('hours')}:</span> {hoursSummary}

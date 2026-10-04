@@ -11,15 +11,26 @@ import { whatsappLink, type E164Mobile } from '@mfp/shared';
  * 2026-09-11 (ADR-031), so directions and the map land on the listing itself rather
  * than on a geocoded guess of the address.
  */
+/**
+ * The gym's registered details, as they appear on its Udyam certificate (owner, 2026-10-04).
+ *
+ * A business verification — Meta's, Razorpay's — compares what the website publishes with
+ * what the registration says, and rejects a discrepancy. So these match the certificate
+ * word for word rather than matching the Google Business Profile, which spells the building
+ * "Krishan Plaza, Plot No. 6" where the certificate says "C-6, Krishna Plaza". The Google
+ * listing is what people navigate by; `directionsHref` still points at its pin, so nobody
+ * loses their way over it.
+ */
 export const SITE_FALLBACK = {
   name: 'Max Fitness Gym',
   phone: '+919871406350' as E164Mobile,
-  /** How the number is printed on the signboard and on Google. */
-  phoneDisplay: '098714 06350',
-  addressLine: 'Krishan Plaza, Plot No. 6, Abhay Khand 1, Nyay Khand I (opposite Sai Mandir)',
+  /** Plain ten digits, as the certificate writes it — not the signboard's leading zero. */
+  phoneDisplay: '9871406350',
+  addressLine: 'C-6, Krishna Plaza',
   city: 'Indirapuram, Ghaziabad',
   state: 'Uttar Pradesh',
   pincode: '201014',
+  email: 'Ajaykuliyal35@gmail.com',
 } as const;
 
 /** Google Business Profile identifiers. */
@@ -67,4 +78,16 @@ export function mapEmbedSrc(): string {
 export function displayPhone(phone: string): string {
   const digits = phone.replace(/\D/g, '').slice(-10);
   return digits.length === 10 ? `0${digits.slice(0, 5)} ${digits.slice(5)}` : phone;
+}
+
+/**
+ * The gym's own number, printed as its registration certificate writes it.
+ *
+ * `displayPhone` groups a member's number for reading at a desk, with the leading zero
+ * India dials. The business's own number is a registered detail that a verifier compares
+ * against a document, so it is printed plainly: ten digits, nothing added (ADR-102).
+ */
+export function registeredPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '').slice(-10);
+  return digits.length === 10 ? digits : phone;
 }

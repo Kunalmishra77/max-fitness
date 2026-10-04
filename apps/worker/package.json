@@ -19,7 +19,9 @@
     "check:go-live": "tsx scripts/check-go-live.ts",
     "check:members": "tsx scripts/check-members.ts",
     "backup:members": "tsx scripts/backup-members.ts",
-    "delete:object": "tsx scripts/delete-orphan-object.ts"
+    "delete:object": "tsx scripts/delete-orphan-object.ts",
+    "check:gyms": "tsx scripts/check-gyms.ts",
+    "set:gym-details": "tsx scripts/set-gym-details.ts"
   },
   "dependencies": {
     "@mfp/core": "workspace:*",
