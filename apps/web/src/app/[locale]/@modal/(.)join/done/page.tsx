@@ -1,6 +1,7 @@
 import { JoinDone } from '@/components/join/join-flow';
 import { JoinModal } from '@/components/join/join-modal';
 import { JoinModalMessages, joinContext, priceLists } from '@/lib/join-page';
+import { onlinePaymentsLive } from '@/lib/online-payments';
 
 /**
  * The confirmation, still in the sheet when the flow was opened from the landing page.
@@ -18,7 +19,7 @@ export default async function JoinDoneModal({ params }: { params: Promise<{ loca
   return (
     <JoinModalMessages ctx={ctx}>
       <JoinModal>
-        <JoinDone prices={priceLists(ctx)} directionsHref={ctx.contact.directionsHref} />
+        <JoinDone prices={priceLists(ctx)} directionsHref={ctx.contact.directionsHref} autopayAvailable={onlinePaymentsLive()} />
       </JoinModal>
     </JoinModalMessages>
   );

@@ -26,6 +26,7 @@ import {
   updateReminderSettings,
   resetStaffPin,
   setStaffActive,
+  mandateStatusFrom,
   markAttendance,
   mayAfterPinEntry,
   recordCallOutcome,
@@ -36,7 +37,9 @@ import {
   sendBirthdayWish,
   setPlanActive,
   startDietPlans,
+  startMandate,
   undoAttendance,
+  updateMandateStatus,
   updateGymSettings,
   updatePlanPrices,
   voidPayment,
@@ -901,5 +904,82 @@ export async function voidPaymentAction(paymentId: string, reason: string, pin: 
     const code = (error as { code?: string }).code;
     console.error(`[crm] void failed: ${code ?? (error instanceof Error ? error.name : 'Error')}`);
     return { ok: false, code: code === 'FORBIDDEN' ? 'FORBIDDEN' : 'INTERNAL' };
+  }
+}
+
+/**
+ * Autopay — setting up and stopping a standing instruction (ADR-105).
+ *
+ * `payment.record`, so reception can do both. Stopping one is the more consequential half,
+ * but a member can cancel from their own UPI app whenever they like: making them wait for
+ * the owner would add friction without adding any protection.
+ */
+export type MandateActionResult =
+  | { readonly ok: true; readonly status: string; readonly shortUrl: string | null; readonly firstChargeOn: string | null; readonly alreadyLive: boolean }
+  | { readonly ok: false; readonly code: 'FORBIDDEN' | 'UNAVAILABLE' | 'NO_PLAN' | 'NOT_FOUND' | 'INTERNAL' };
+
+export async function startAutopayAction(memberId: string, planId?: string): Promise<MandateActionResult> {
+  const { actor, gym } = await requireCrmContext();
+  const { clock, subscriptions, startMandateUow } = getContainer();
+  if (!can(actor, 'payment.record', clock.now())) return { ok: false, code: 'FORBIDDEN' };
+  // No subscription provider means DEMO_MODE, where a mandate would be a fiction.
+  if (subscriptions === null) return { ok: false, code: 'UNAVAILABLE' };
+
+  try {
+    const result = await startMandate(
+      { memberId, gymId: gym.id, ...(planId === undefined ? {} : { planId }) },
+      { clock, provider: subscriptions, uow: startMandateUow },
+    );
+    revalidatePath(`/crm/members/${memberId}`);
+    return {
+      ok: true,
+      status: result.status,
+      shortUrl: result.shortUrl,
+      firstChargeOn: result.firstChargeOn,
+      alreadyLive: result.outcome === 'ALREADY_LIVE',
+    };
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    if (code === 'MEMBER_NOT_FOUND') return { ok: false, code: 'NOT_FOUND' };
+    if (code === 'VALIDATION_FAILED') return { ok: false, code: 'NO_PLAN' };
+    // Never the provider's message: it can carry an account detail.
+    console.error(`[crm] autopay setup failed: ${code ?? (error instanceof Error ? error.name : 'Error')}`);
+    return { ok: false, code: 'INTERNAL' };
+  }
+}
+
+export async function cancelAutopayAction(memberId: string, mandateId: string): Promise<MandateActionResult> {
+  const { actor, gym } = await requireCrmContext();
+  const { clock, prisma, subscriptions, mandateStatusUow } = getContainer();
+  if (!can(actor, 'payment.record', clock.now())) return { ok: false, code: 'FORBIDDEN' };
+  if (subscriptions === null) return { ok: false, code: 'UNAVAILABLE' };
+
+  try {
+    // Scoped to this gym and member: a mandate id arriving from a form must not be able to
+    // cancel somebody else's.
+    const mandate = await prisma.mandate.findFirst({
+      where: { id: mandateId, memberId, gymId: gym.id },
+      select: { providerSubscriptionId: true },
+    });
+    if (mandate === null) return { ok: false, code: 'NOT_FOUND' };
+
+    // Razorpay first, then our row. The other order could leave a cancelled row still being
+    // debited — the one outcome a member would rightly be angry about.
+    const cancelled = await subscriptions.cancelSubscription(mandate.providerSubscriptionId);
+    await updateMandateStatus(
+      {
+        providerSubscriptionId: mandate.providerSubscriptionId,
+        status: mandateStatusFrom(cancelled.status),
+        nextChargeAt: null,
+        failureReason: null,
+      },
+      { clock, uow: mandateStatusUow },
+    );
+    revalidatePath(`/crm/members/${memberId}`);
+    return { ok: true, status: mandateStatusFrom(cancelled.status), shortUrl: null, firstChargeOn: null, alreadyLive: false };
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    console.error(`[crm] autopay cancel failed: ${code ?? (error instanceof Error ? error.name : 'Error')}`);
+    return { ok: false, code: 'INTERNAL' };
   }
 }

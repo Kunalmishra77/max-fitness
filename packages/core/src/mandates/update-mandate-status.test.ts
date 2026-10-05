@@ -8,6 +8,7 @@ import {
   type MandateStatusUnitOfWork,
   type MandateForStatus,
   type MandateStatusPatch,
+  type MandateCallTask,
 } from './update-mandate-status';
 
 const clock = fakeClockAt('2026-11-02T04:30');
@@ -24,7 +25,7 @@ interface Recorded {
   readonly patches: Array<{ mandateId: string; patch: MandateStatusPatch }>;
   readonly alerts: MandateAlertRecord[];
   readonly outbox: OutboxEventInput[];
-  readonly callTasks: Array<{ memberId: string; reason: string }>;
+  readonly callTasks: MandateCallTask[];
 }
 
 function harness(mandate: MandateForStatus | null = CREATED_MANDATE) {
@@ -39,8 +40,8 @@ function harness(mandate: MandateForStatus | null = CREATED_MANDATE) {
       recorded.alerts.push(alert);
       return Promise.resolve();
     },
-    openCallTask: (memberId, reason) => {
-      recorded.callTasks.push({ memberId, reason });
+    openCallTask: (task) => {
+      recorded.callTasks.push(task);
       return Promise.resolve();
     },
     enqueueOutbox: (event) => {
@@ -109,7 +110,8 @@ describe('updateMandateStatus', () => {
     });
 
     it('puts the member on the call list, because a message may not be read', () => {
-      expect(h.recorded.callTasks).toEqual([{ memberId: 'mem_1', reason: 'DUE_SOON_NO_RESPONSE' }]);
+      // Due today, not next week: the fee is already not being collected.
+      expect(h.recorded.callTasks).toEqual([{ memberId: 'mem_1', reason: 'DUE_SOON_NO_RESPONSE', priority: 4, dueDate: '2026-11-02' }]);
     });
   });
 

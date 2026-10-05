@@ -1,4 +1,4 @@
-import { toISTDate, type Clock, type ISTDate } from '@mfp/shared';
+import { CALL_TASK_PRIORITY, toISTDate, todayIST, type Clock, type ISTDate } from '@mfp/shared';
 import type { OutboxEventInput } from '../ports/outbox';
 import type { MandateAlertRecord } from './record-mandate-charge';
 import { isLiveMandate, type MandateStatus } from './mandate';
@@ -41,8 +41,21 @@ export interface MandateStatusStore {
   lockMandateBySubscriptionId(providerSubscriptionId: string): Promise<MandateForStatus | null>;
   patchMandate(mandateId: string, patch: MandateStatusPatch): Promise<void>;
   createAlert(alert: MandateAlertRecord): Promise<void>;
-  openCallTask(memberId: string, reason: 'DUE_SOON_NO_RESPONSE'): Promise<void>;
+  /**
+   * At most one OPEN task per member and reason, enforced by a partial unique index
+   * (database-design.md §3) — a second halt while the first call is outstanding must not
+   * give the desk the same member twice.
+   */
+  openCallTask(task: MandateCallTask): Promise<void>;
   enqueueOutbox(event: OutboxEventInput): Promise<void>;
+}
+
+export interface MandateCallTask {
+  readonly memberId: string;
+  readonly reason: 'DUE_SOON_NO_RESPONSE';
+  readonly priority: number;
+  /** Today. The fee is already not being collected, so the call is not for next week. */
+  readonly dueDate: ISTDate;
 }
 
 export interface MandateStatusUnitOfWork {
@@ -115,7 +128,12 @@ export function updateMandateStatus(
         dedupeKey: `mandate-halted:${mandate.id}`,
       });
       // A message may not be read, and the fee is already not being collected.
-      await store.openCallTask(mandate.memberId, 'DUE_SOON_NO_RESPONSE');
+      await store.openCallTask({
+        memberId: mandate.memberId,
+        reason: 'DUE_SOON_NO_RESPONSE',
+        priority: CALL_TASK_PRIORITY['DUE_SOON_NO_RESPONSE'],
+        dueDate: todayIST(deps.clock),
+      });
     }
 
     if (input.status === 'CANCELLED') {

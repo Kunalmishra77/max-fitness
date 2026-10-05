@@ -16,6 +16,7 @@ export * from './repositories/lead.repository';
 export * from './repositories/registration.repository';
 export * from './repositories/checkout.repository';
 export * from './repositories/payment.repository';
+export * from './repositories/mandate.repository';
 export * from './repositories/signup-read.repository';
 export * from './repositories/receipt.repository';
 export * from './repositories/outbox-dispatch.repository';

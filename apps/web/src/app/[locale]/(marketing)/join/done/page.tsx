@@ -1,5 +1,6 @@
 import { JoinDone, JoinFrame } from '@/components/join/join-flow';
 import { JoinPage, joinContext, joinMetadata, priceLists } from '@/lib/join-page';
+import { onlinePaymentsLive } from '@/lib/online-payments';
 
 /** `/join/done` — confirmation of a payment or a reservation. */
 
@@ -15,7 +16,7 @@ export default async function JoinDonePage({ params }: { params: Promise<{ local
   return (
     <JoinPage ctx={ctx}>
       <JoinFrame step={null}>
-        <JoinDone prices={priceLists(ctx)} directionsHref={ctx.contact.directionsHref} />
+        <JoinDone prices={priceLists(ctx)} directionsHref={ctx.contact.directionsHref} autopayAvailable={onlinePaymentsLive()} />
       </JoinFrame>
     </JoinPage>
   );

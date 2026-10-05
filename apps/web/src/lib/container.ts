@@ -4,11 +4,23 @@ import {
   PrismaCheckoutUnitOfWork,
   PrismaMessageLogWriter,
   PrismaPaymentConfirmationUnitOfWork,
+  PrismaMandateChargeUnitOfWork,
+  PrismaMandateStatusUnitOfWork,
+  PrismaStartMandateUnitOfWork,
   PrismaRegistrationUnitOfWork,
   PrismaWebhookEventStore,
   type PrismaClient,
 } from '@mfp/db';
-import type { CheckoutUnitOfWork, PaymentConfirmationUnitOfWork, RegistrationUnitOfWork, WebhookEventStore } from '@mfp/core';
+import type {
+  CheckoutUnitOfWork,
+  MandateChargeUnitOfWork,
+  MandateStatusUnitOfWork,
+  PaymentConfirmationUnitOfWork,
+  RegistrationUnitOfWork,
+  StartMandateUnitOfWork,
+  SubscriptionProvider,
+  WebhookEventStore,
+} from '@mfp/core';
 import type { AiTextGenerator, MessageLogWriter, PaymentProvider, StorageDriver, WhatsAppProvider } from '@mfp/core/ports';
 import { createAiGenerator } from '@mfp/integrations/ai';
 import { createStorageDriver } from '@mfp/integrations/storage';
@@ -42,6 +54,15 @@ export interface Container {
   readonly checkoutUow: CheckoutUnitOfWork;
   readonly paymentUow: PaymentConfirmationUnitOfWork;
   readonly webhookEvents: WebhookEventStore;
+  /**
+   * Autopay (ADR-105). `null` in DEMO_MODE, where there is no subscription provider: a demo
+   * mandate that behaved like a real one would be a fiction, so the CRM says it is
+   * unavailable instead of pretending.
+   */
+  readonly subscriptions: SubscriptionProvider | null;
+  readonly mandateChargeUow: MandateChargeUnitOfWork;
+  readonly mandateStatusUow: MandateStatusUnitOfWork;
+  readonly startMandateUow: StartMandateUnitOfWork;
   /** Writes diet plans and answers members (ADR-089, ADR-090); unavailable with no key. */
   readonly ai: AiTextGenerator;
 }
@@ -79,13 +100,15 @@ function build(): Container {
   // CLAUDE.md §2.7: in demo mode payments are simulated and WhatsApp goes to the
   // in-app simulator, which will still make a real send to an allowlisted number.
   const simulator = env.DEMO_MODE ? new SimulatedPaymentProvider() : null;
-  const payments: PaymentProvider =
-    simulator ??
-    new RazorpayPaymentProvider({
-      keyId: env.RAZORPAY_KEY_ID,
-      keySecret: env.RAZORPAY_KEY_SECRET,
-      webhookSecret: env.RAZORPAY_WEBHOOK_SECRET,
-    });
+  const razorpay =
+    simulator === null
+      ? new RazorpayPaymentProvider({
+          keyId: env.RAZORPAY_KEY_ID,
+          keySecret: env.RAZORPAY_KEY_SECRET,
+          webhookSecret: env.RAZORPAY_WEBHOOK_SECRET,
+        })
+      : null;
+  const payments: PaymentProvider = simulator ?? (razorpay as RazorpayPaymentProvider);
 
   const realWhatsApp =
     env.WHATSAPP_PROVIDER === 'meta_cloud'
@@ -123,6 +146,12 @@ function build(): Container {
     checkoutUow: new PrismaCheckoutUnitOfWork(prisma),
     paymentUow: new PrismaPaymentConfirmationUnitOfWork(prisma),
     webhookEvents: new PrismaWebhookEventStore(prisma, clock),
+    // The same Razorpay object: one adapter implements both ports, because a plan and a
+    // subscription are the same account and the same credentials.
+    subscriptions: razorpay,
+    mandateChargeUow: new PrismaMandateChargeUnitOfWork(prisma),
+    mandateStatusUow: new PrismaMandateStatusUnitOfWork(prisma),
+    startMandateUow: new PrismaStartMandateUnitOfWork(prisma),
     // Empty key means unavailable: the CRM says so rather than failing at the last moment.
     ai: createAiGenerator({ apiKey: env.AI_API_KEY, model: env.AI_MODEL }),
   };

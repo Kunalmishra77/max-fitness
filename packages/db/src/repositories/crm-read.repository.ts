@@ -92,6 +92,26 @@ export interface MemberProfile extends MemberListItem {
     readonly receiptNo: string | null;
     readonly paidAt: Date | null;
   }>;
+  /**
+   * The member's standing instruction, newest first, whatever its state (ADR-105).
+   *
+   * Deliberately not filtered to the live statuses: a halted mandate is precisely what the
+   * desk needs to see, because it is the one state where nothing else about the member looks
+   * wrong while the fee is no longer arriving.
+   */
+  readonly mandate: {
+    readonly id: string;
+    readonly status: string;
+    readonly amountPaise: number;
+    readonly intervalMonths: number;
+    /** The link to authorise on, while Razorpay still considers it usable. */
+    readonly shortUrl: string | null;
+    readonly nextChargeOn: ISTDate | null;
+    readonly authorisedAt: Date | null;
+    readonly lastChargedAt: Date | null;
+    readonly chargeCount: number;
+    readonly failureReason: string | null;
+  } | null;
   /** Days this month the member came in, for the calendar dots. */
   readonly attendanceDays: readonly number[];
 }
@@ -392,6 +412,25 @@ export class PrismaCrmReader {
           orderBy: { createdAt: 'desc' },
           take: 10,
         },
+        // Autopay (ADR-105). The newest one, whatever its state — a halted or cancelled
+        // mandate is exactly what the desk needs to see, so this is not filtered to the
+        // live statuses the reminder engine cares about.
+        mandates: {
+          select: {
+            id: true,
+            status: true,
+            amountPaise: true,
+            intervalMonths: true,
+            shortUrl: true,
+            nextChargeOn: true,
+            authorisedAt: true,
+            lastChargedAt: true,
+            chargeCount: true,
+            failureReason: true,
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
       },
     });
     if (member === null) return null;
@@ -455,6 +494,13 @@ export class PrismaCrmReader {
         pricePaise: pt.pricePaise,
       })),
       payments: member.payments,
+      mandate:
+        member.mandates[0] === undefined
+          ? null
+          : {
+              ...member.mandates[0],
+              nextChargeOn: member.mandates[0].nextChargeOn === null ? null : fromDbDate(member.mandates[0].nextChargeOn),
+            },
       attendanceDays: [...new Set(attendance.map((a) => Number(fromDbDate(a.attendanceDate).slice(8, 10))))],
     };
   }

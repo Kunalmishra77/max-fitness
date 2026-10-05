@@ -3,6 +3,7 @@
 import { formatINR } from '@mfp/shared/money';
 import type { ISTDate } from '@mfp/shared/time';
 import { useLocale, useTranslations } from 'next-intl';
+import type { ReactNode } from 'react';
 import { buttonVariants } from '@/components/ui/button';
 import { formatISTDate, formatISTDateTime } from '@mfp/shared/time';
 
@@ -23,6 +24,11 @@ interface Common {
   readonly isMinor: boolean;
   readonly whatsappUpdates: boolean;
   readonly directionsHref: string;
+  /**
+   * The autopay offer (ADR-105), passed in rather than built here: this component is a
+   * confirmation and has no business knowing whether the gateway is live.
+   */
+  readonly autopay?: ReactNode;
 }
 
 export type DoneStepProps =
@@ -78,6 +84,9 @@ export function DoneStep(props: DoneStepProps) {
         {directions}
       </div>
       {props.isMinor ? <p className="rounded-input bg-tint-fee-due-soon-bg p-3 text-body">{t('minorReminder')}</p> : null}
+      {/* Below the receipt, above the housekeeping: the member has what they came for, and
+          this is the next useful thing rather than something in the way of it. */}
+      {props.autopay ?? null}
       <p className="text-body leading-body">{t('firstVisit')}</p>
       {props.whatsappUpdates ? <p className="text-body text-brand-ink/80">{t('whatsappSent')}</p> : null}
     </div>

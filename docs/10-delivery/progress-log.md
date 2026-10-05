@@ -1356,3 +1356,72 @@ so the four events now live are the correct set.
   is not the same as being unable to damage it.
 - Still the client's: the AI key, WhatsApp Cloud API approval.
 - `pnpm lint` has still never completed on this machine.
+
+## 2026-10-05 (later) — autopay, finished end to end
+
+### Context
+The owner supplied the live Razorpay credentials and confirmed the webhook secret, then asked
+why only two plans had a mandate: "sare bnao including free trial — jo bhi user choose kare
+sabme e-mandate ho." They were right, and ADR-105 §2 is revised to say so. The trial turned out
+to be the best case for a mandate rather than an exception to it, and generalising it gave the
+rule the whole feature rests on.
+
+### Verified first, because it was the open risk
+**The webhook secret works.** A body signed with the secret in production is accepted (200); the
+same body signed with anything else is refused (401). ADR-103 had flagged that a wrong secret
+means a payment Razorpay holds that never reaches the register — safe against forgery, silent
+against loss. That is now closed by measurement rather than by assumption. The probe row was
+removed afterwards.
+
+### Changed
+- **All sixteen Razorpay plans exist** — eight membership (₹1,200–₹10,000), eight personal
+  training (₹5,000–₹36,000), across 1/3/6/12-month cycles. Created by script, each amount
+  checked against what Razorpay echoed back before the id was written to `Plan.providerPlanId`.
+  A Razorpay plan is immutable, so that check is the only one there will ever be.
+- **The first debit is never today.** `firstChargeDate` is the day after the member's current
+  cover ends — trial, month or year, one rule and no special cases.
+- **`recordMandateCharge`** turns a debit into an ordinary `Payment` and a `Membership` chained
+  on from the old one: receipts, the day book, the fee state and the membership extension all
+  work without knowing a mandate exists. Its two anomalies record the money and raise an alert
+  rather than refusing — a member who has been debited and shows as unpaid is the worse outcome,
+  and a subscription charge has no member-controlled input to tamper with.
+- **`updateMandateStatus`** handles the rest of the family. A halt gets three channels — owner
+  alert, member message, call task — because a halted mandate is otherwise invisible: every
+  other thing on the member's page still says they are paid up.
+- **The reminder engine stops chasing a member with a live mandate**, read at send time rather
+  than at planning time. `CREATED` is deliberately not live. The two trial check-ins still go
+  out; they are not about money.
+- **Member-facing:** the confirmation screen after paying offers "Want next time's fee to pay
+  itself?", with the date stated rather than asked. Authorised by the same registration token
+  as the checkout, and it accepts no amount and no date from the client.
+- **Max Register:** an *Automatic fee payment* panel on the member profile, above the payment
+  history. A mandate waiting for approval says so rather than showing as live; a halt is
+  explained rather than named; the link is on screen while Razorpay still considers it usable.
+  Reception can set one up and stop one.
+- Three WhatsApp templates in both languages, a new `AUTOPAY` message purpose, and
+  `docs/09-operations/autopay-setup.md`.
+
+### Found on the way
+- **A `SYSTEM` alert that was not `paymentAmountMismatch` was silently dropped** by the owner
+  repository's `resolve()`. The halt alert would have been written to the database and reached
+  nobody — the one thing this feature most needed to be heard. Fixed, with the sentence stating
+  the consequence: "the bank could not take it — collect it at the desk."
+- `Payment.providerSignatureOk` is set true for an autopay debit. The webhook HMAC was verified
+  over the raw bytes before the handler ran, and it is the only signature such a debit has — a
+  stronger one than a browser checkout's.
+
+1,448 tests pass across core, shared, integrations and worker. Every package typechecks. Both
+migrations are additive and applied; `check:rls` reports 37/37 tables covered.
+
+### Pending
+- **Three webhook events still worth adding:** `subscription.activated`, `subscription.cancelled`,
+  `subscription.pending`. Without `activated` the platform never learns a member authorised, so
+  the fee reminders keep going out until the first debit lands a cycle later. One checkbox each.
+  `sync:mandates` is the correction in the meantime, and it writes through the domain so a halt
+  found by polling raises the same alert as one that arrived by webhook.
+- The live Razorpay secret was pasted into a chat message and should be regenerated.
+- **Integration tests share the production database.** They clean up after themselves and that
+  is not the same as being unable to damage it.
+- Still the client's: the AI key, WhatsApp Cloud API approval. Until WhatsApp is approved the
+  three autopay templates have nowhere to send, like every other template.
+- `pnpm lint` has still never completed on this machine.

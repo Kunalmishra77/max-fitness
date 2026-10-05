@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { can, mayAfterPinEntry } from '@mfp/core';
 import { formatISTDate } from '@mfp/shared';
-import { eraseMemberAction, unlockMemberDataAction, voidPaymentAction } from '@/app/crm/actions';
+import { cancelAutopayAction, eraseMemberAction, startAutopayAction, unlockMemberDataAction, voidPaymentAction } from '@/app/crm/actions';
 import { BottomNav, CrmHeader, FEE_TONE, rupees, initials } from '@/components/crm/crm-chrome';
 import { CrmIcon } from '@/components/crm/crm-icons';
 import { GovIdStrip } from '@/components/crm/gov-id-strip';
@@ -13,7 +13,9 @@ import { cn } from '@/lib/cn';
 import { DietPanel } from '@/components/crm/diet-panel';
 import { MemberActionsMenu } from '@/components/crm/member-actions-menu';
 import { VoidPaymentButton } from '@/components/crm/void-payment';
+import { AutopayPanel } from '@/components/crm/autopay-panel';
 import { getContainer } from '@/lib/container';
+import { onlinePaymentsLive } from '@/lib/online-payments';
 import { dietReader, requireCrmContext } from '@/lib/crm';
 
 /**
@@ -45,6 +47,9 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
   // A member's ID photographs are for the people who check identity at the desk, which
   // is the same set `verification.approve` names — a trainer never sees them (ADR-077).
   const maySeeId = can(actor, 'verification.approve', clock.now());
+  // A mandate needs a real gateway. In DEMO_MODE the panel says so rather than offering a
+  // button that would make a subscription nobody can authorise.
+  const onlinePayments = onlinePaymentsLive();
   const govIdPhotos = !maySeeId
     ? []
     : await Promise.all(member.govIdPhotos.map(async (photo) => ({ side: photo.side, url: await storage.signedUrl(photo.storageKey, 300) })));
@@ -249,6 +254,31 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
           </ul>
         </section>
       )}
+
+      {/* Autopay (ADR-105). Above the history, because "will their fee arrive by itself?"
+          is a question about now — and because a halted mandate is invisible everywhere
+          else on this page: the member still reads as paid up. */}
+      <AutopayPanel
+        memberId={member.id}
+        mandate={
+          member.mandate === null
+            ? null
+            : {
+                id: member.mandate.id,
+                status: member.mandate.status,
+                amount: rupees(member.mandate.amountPaise),
+                intervalMonths: member.mandate.intervalMonths,
+                shortUrl: member.mandate.shortUrl,
+                nextChargeOn: member.mandate.nextChargeOn === null ? null : formatISTDate(member.mandate.nextChargeOn, locale),
+                chargeCount: member.mandate.chargeCount,
+                authorised: member.mandate.authorisedAt !== null,
+              }
+        }
+        canManage={can(actor, 'payment.record', clock.now())}
+        available={onlinePayments}
+        onStart={startAutopayAction}
+        onCancel={cancelAutopayAction}
+      />
 
       {/* The diet plan, when they have one (ADR-089). Staff get asked "what are they meant
           to be eating?", so the current plan is here in full rather than behind a link. */}

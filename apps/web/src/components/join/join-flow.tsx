@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState, type ReactNode } from 'react';
 import { buttonVariants } from '@/components/ui/button';
 import { Link, useRouter } from '@/i18n/navigation';
+import { AutopayOffer } from './autopay-offer';
 import { DetailsStep } from './details-step';
 import { DoneStep } from './done-step';
 import { readJoinState, updateJoinState, type JoinState } from './join-state';
@@ -270,7 +271,7 @@ export function JoinPay(props: {
  * The paid confirmation reads the payment's status again, so it is right after a refresh
  * and never shows a receipt the server has not issued.
  */
-export function JoinDone(props: { prices: PriceLists; directionsHref: string }) {
+export function JoinDone(props: { prices: PriceLists; directionsHref: string; autopayAvailable: boolean }) {
   const label = usePlanLabel();
   const state = useJoinState();
   const [paid, setPaid] = useState<{ amountPaise: number; memberCode: string | null; receiptNo: string | null; receiptUrl: string; membership: { startDate: string; endDate: string } } | 'missing' | null>(null);
@@ -330,6 +331,11 @@ export function JoinDone(props: { prices: PriceLists; directionsHref: string }) 
       memberCode={paid.memberCode}
       receiptNo={paid.receiptNo}
       receiptUrl={paid.receiptUrl}
+      autopay={
+        props.autopayAvailable ? (
+          <AutopayOffer registrationToken={token} endDate={paid.membership.endDate} amountPaise={paid.amountPaise} />
+        ) : undefined
+      }
     />
   );
 }

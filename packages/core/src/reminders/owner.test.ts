@@ -41,6 +41,25 @@ describe('buildOwnerDigest', () => {
   });
 });
 
+describe('alertSentence — autopay (ADR-105)', () => {
+  it('says the automatic fee has stopped and that the money must now be collected', () => {
+    // The sentence has to carry the consequence, not just the fact. "The mandate halted"
+    // means nothing at a gym counter; "collect it at the desk" is an instruction.
+    const en = alertSentence({ kind: 'AUTOPAY_HALTED', memberName: 'Sanjay Tomar' }, 'en');
+    expect(en).toContain('Sanjay Tomar');
+    expect(en.toLowerCase()).toContain('desk');
+
+    const hi = alertSentence({ kind: 'AUTOPAY_HALTED', memberName: 'संजय तोमर' }, 'hi');
+    expect(hi).toContain('संजय तोमर');
+  });
+
+  it('distinguishes an unexpected amount from a debit after the desk had stopped it', () => {
+    const amount = alertSentence({ kind: 'AUTOPAY_UNEXPECTED', memberName: 'Sanjay Tomar', reason: 'AMOUNT' }, 'en');
+    const afterCancel = alertSentence({ kind: 'AUTOPAY_UNEXPECTED', memberName: 'Sanjay Tomar', reason: 'AFTER_CANCEL' }, 'en');
+    expect(amount).not.toBe(afterCancel);
+  });
+});
+
 describe('alertSentence', () => {
   it('says who walked in and how long their fee has been overdue', () => {
     const hi = alertSentence({ kind: 'EXPIRED_MEMBER_VISIT', memberName: 'संजय तोमर', daysOverdue: 6 }, 'hi');
@@ -80,6 +99,9 @@ describe('alertSentence', () => {
       { kind: 'WHATSAPP_QUALITY' },
       { kind: 'WHATSAPP_FAILURE', slot: '19:00', failed: 9, planned: 20 },
       { kind: 'KIOSK_OFFLINE', deviceName: 'Reception', minutesOffline: 45 },
+      { kind: 'AUTOPAY_HALTED', memberName: 'Sanjay Tomar' },
+      { kind: 'AUTOPAY_UNEXPECTED', memberName: 'Sanjay Tomar', reason: 'AMOUNT' },
+      { kind: 'AUTOPAY_UNEXPECTED', memberName: 'Sanjay Tomar', reason: 'AFTER_CANCEL' },
     ];
 
     for (const alert of alerts) {

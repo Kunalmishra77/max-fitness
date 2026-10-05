@@ -25,6 +25,8 @@ export const SITE_EVENTS = [
   'renew_paid',
   'whatsapp_click',
   'call_click',
+  /** The member accepting the autopay offer on the confirmation screen (ADR-105). */
+  'autopay_offer_accepted',
 ] as const;
 export type SiteEvent = (typeof SITE_EVENTS)[number];
 

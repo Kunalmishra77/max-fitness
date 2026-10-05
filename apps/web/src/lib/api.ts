@@ -18,6 +18,8 @@ export type ApiErrorCode =
   | 'UNAUTHENTICATED'
   | 'SELFIE_REJECTED'
   | 'PAYMENT_PROVIDER_UNAVAILABLE'
+  /** Autopay needs a live gateway; DEMO_MODE has none to make a real mandate with (ADR-105). */
+  | 'AUTOPAY_UNAVAILABLE'
   | 'INTERNAL';
 
 export function newRequestId(): string {

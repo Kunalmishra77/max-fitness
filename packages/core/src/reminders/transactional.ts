@@ -114,3 +114,55 @@ export function confirmationText(kind: 'UNSUBSCRIBED' | 'RESTARTED', language: L
     ? 'आपके रिमाइंडर फिर से चालू कर दिए गए हैं। फीस खत्म होने से पहले हम आपको याद दिला देंगे।'
     : 'Done — your reminders are on again. We will remind you before your fees run out.';
 }
+
+/**
+ * T20–T22 — autopay (ADR-105).
+ *
+ * The invitation carries the link because Razorpay issues a fresh one per mandate, and the
+ * amount and first-debit date because a member asked to authorise a standing instruction is
+ * entitled to see both before they tap.
+ *
+ * All three are keyed on the mandate, not the member: Razorpay re-delivers freely, and a
+ * member told twice that their autopay has stopped would reasonably think it stopped twice.
+ */
+export function buildMandateInviteMessage(input: {
+  mandateId: string;
+  firstName: string;
+  language: Language;
+  amountPaise: number;
+  firstChargeDate: ISTDate;
+  link: string;
+}): TransactionalMessage {
+  return {
+    templateName: 'mf_autopay_invite',
+    language: input.language,
+    idempotencyKey: `mandate-invite:${input.mandateId}`,
+    purpose: 'AUTOPAY',
+    variables: {
+      firstName: input.firstName,
+      amount: formatINR(input.amountPaise, { showPaise: false }),
+      firstChargeDate: formatISTDate(input.firstChargeDate, input.language),
+      link: input.link,
+    },
+  };
+}
+
+export function buildMandateHaltedMessage(input: { mandateId: string; firstName: string; language: Language }): TransactionalMessage {
+  return {
+    templateName: 'mf_autopay_halted',
+    language: input.language,
+    idempotencyKey: `mandate-halted:${input.mandateId}`,
+    purpose: 'AUTOPAY',
+    variables: { firstName: input.firstName },
+  };
+}
+
+export function buildMandateCancelledMessage(input: { mandateId: string; firstName: string; language: Language }): TransactionalMessage {
+  return {
+    templateName: 'mf_autopay_cancelled',
+    language: input.language,
+    idempotencyKey: `mandate-cancelled:${input.mandateId}`,
+    purpose: 'AUTOPAY',
+    variables: { firstName: input.firstName },
+  };
+}

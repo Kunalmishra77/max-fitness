@@ -28,6 +28,8 @@ export type MessagePurpose =
   | 'DIET'
   /** What the WhatsApp assistant answered a member by itself (ADR-090). */
   | 'BOT'
+  /** The standing instruction: the invitation, and the halt the gym must hear about (ADR-105). */
+  | 'AUTOPAY'
   | 'OTHER';
 
 export interface MessageLogEntry {

@@ -5,6 +5,9 @@ import {
   buildBirthdayWish,
   buildReceiptMessage,
   buildVerificationApprovedMessage,
+  buildMandateCancelledMessage,
+  buildMandateHaltedMessage,
+  buildMandateInviteMessage,
   buildTrialWelcomeMessage,
   buildWelcomeMessage,
   checkDietPlanSafety,
@@ -70,6 +73,11 @@ function memberIdOf(event: ClaimedOutboxEvent): string | null {
 
 function paymentIdOf(event: ClaimedOutboxEvent): string | null {
   const value = (event.payload as { paymentId?: unknown }).paymentId;
+  return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+function mandateIdOf(event: ClaimedOutboxEvent): string | null {
+  const value = (event.payload as { mandateId?: unknown }).mandateId;
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
@@ -480,5 +488,63 @@ export function messageOutboxHandlers(deps: MessageJobDeps): OutboxHandlers {
 
     'whatsapp.unsubscribe_confirm': (event) => sendConfirmation(deps, event, 'UNSUBSCRIBED'),
     'whatsapp.restart_confirm': (event) => sendConfirmation(deps, event, 'RESTARTED'),
+
+    // Autopay (ADR-105). All three read the mandate rather than the event payload, so a
+    // mandate the desk removed — or a member erased under DPDP — produces no message about
+    // something that no longer exists.
+    'whatsapp.mandate_invite': async (event) => {
+      const mandateId = mandateIdOf(event);
+      if (mandateId === null) return;
+      const mandate = await data().mandate(mandateId);
+      // Without a link there is nothing for the member to tap, and without a first-charge
+      // date the message cannot say when the money goes. Both come from Razorpay, and a
+      // mandate missing either is one to look at rather than to send.
+      if (mandate === null || mandate.shortUrl === null || mandate.nextChargeOn === null) {
+        deps.log.info({ mandateId }, 'no autopay invitation to send (mandate gone, or no link yet)');
+        return;
+      }
+      await sendTemplate(
+        deps,
+        buildMandateInviteMessage({
+          mandateId: mandate.mandateId,
+          firstName: mandate.firstName,
+          language: mandate.language,
+          amountPaise: mandate.amountPaise,
+          firstChargeDate: mandate.nextChargeOn,
+          link: mandate.shortUrl,
+        }),
+        mandate.mobile,
+        mandate.memberId,
+        null,
+      );
+    },
+
+    'whatsapp.mandate_halted': async (event) => {
+      const mandateId = mandateIdOf(event);
+      if (mandateId === null) return;
+      const mandate = await data().mandate(mandateId);
+      if (mandate === null) return;
+      await sendTemplate(
+        deps,
+        buildMandateHaltedMessage({ mandateId: mandate.mandateId, firstName: mandate.firstName, language: mandate.language }),
+        mandate.mobile,
+        mandate.memberId,
+        null,
+      );
+    },
+
+    'whatsapp.mandate_cancelled': async (event) => {
+      const mandateId = mandateIdOf(event);
+      if (mandateId === null) return;
+      const mandate = await data().mandate(mandateId);
+      if (mandate === null) return;
+      await sendTemplate(
+        deps,
+        buildMandateCancelledMessage({ mandateId: mandate.mandateId, firstName: mandate.firstName, language: mandate.language }),
+        mandate.mobile,
+        mandate.memberId,
+        null,
+      );
+    },
   };
 }

@@ -35,6 +35,19 @@ export interface MemberMessageData {
   readonly endDate: ISTDate | null;
 }
 
+/** What the three autopay messages need, in one read (ADR-105). */
+export interface MandateMessageData {
+  readonly mandateId: string;
+  readonly memberId: string;
+  readonly firstName: string;
+  readonly language: Language;
+  readonly mobile: E164Mobile;
+  readonly amountPaise: number;
+  readonly nextChargeOn: ISTDate | null;
+  /** The authorisation link, while Razorpay still considers it usable. */
+  readonly shortUrl: string | null;
+}
+
 const firstNameOf = (fullName: string) => fullName.trim().split(/\s+/)[0] ?? fullName;
 
 export class PrismaMessageData {
@@ -80,6 +93,37 @@ export class PrismaMessageData {
   }
 
   /** A member and the end date of their latest confirmed membership. */
+  /**
+   * The member and their standing instruction, for the three autopay messages (ADR-105).
+   *
+   * Returns `null` when either is gone. A mandate the desk deleted, or a member erased under
+   * DPDP, must not produce a message about a mandate that no longer exists.
+   */
+  async mandate(mandateId: string): Promise<MandateMessageData | null> {
+    const mandate = await this.#prisma.mandate.findUnique({
+      where: { id: mandateId },
+      select: {
+        id: true,
+        amountPaise: true,
+        nextChargeOn: true,
+        shortUrl: true,
+        member: { select: { id: true, fullName: true, language: true, mobile: true, deletedAt: true } },
+      },
+    });
+    if (mandate === null || mandate.member.deletedAt !== null) return null;
+
+    return {
+      mandateId: mandate.id,
+      memberId: mandate.member.id,
+      firstName: firstNameOf(mandate.member.fullName),
+      language: mandate.member.language,
+      mobile: mandate.member.mobile as E164Mobile,
+      amountPaise: mandate.amountPaise,
+      nextChargeOn: mandate.nextChargeOn === null ? null : fromDbDate(mandate.nextChargeOn),
+      shortUrl: mandate.shortUrl,
+    };
+  }
+
   async member(memberId: string): Promise<MemberMessageData | null> {
     const member = await this.#prisma.member.findFirst({
       where: { id: memberId, deletedAt: null },

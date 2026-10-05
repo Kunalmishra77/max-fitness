@@ -219,16 +219,32 @@ function resolve(
     }
 
     case 'SYSTEM': {
-      // The one SYSTEM alert worth a WhatsApp: money came in that does not add up.
-      if (row.title !== 'crm.alerts.paymentAmountMismatch') return null;
-      const payment = paymentById.get(str(row.params, 'paymentId') ?? '');
-      if (payment === undefined) return null;
-      return {
-        kind: 'PAYMENT_AMOUNT_MISMATCH',
-        memberName: memberName ?? payment.member.fullName,
-        expectedPaise: payment.amountPaise,
-        receivedPaise: num(row.params, 'receivedPaise') ?? 0,
-      };
+      // Money came in that does not add up.
+      if (row.title === 'crm.alerts.paymentAmountMismatch') {
+        const payment = paymentById.get(str(row.params, 'paymentId') ?? '');
+        if (payment === undefined) return null;
+        return {
+          kind: 'PAYMENT_AMOUNT_MISMATCH',
+          memberName: memberName ?? payment.member.fullName,
+          expectedPaise: payment.amountPaise,
+          receivedPaise: num(row.params, 'receivedPaise') ?? 0,
+        };
+      }
+
+      // Autopay (ADR-105). The halt matters most: from that moment the fee is not arriving
+      // and the member still reads as paid up, so it is the one thing the owner must hear.
+      if (row.title === 'crm.alerts.autopayHalted') {
+        return memberName === null ? null : { kind: 'AUTOPAY_HALTED', memberName };
+      }
+      if (row.title === 'crm.alerts.autopayAmountUnexpected') {
+        return memberName === null ? null : { kind: 'AUTOPAY_UNEXPECTED', memberName, reason: 'AMOUNT' };
+      }
+      if (row.title === 'crm.alerts.autopayAfterCancel') {
+        return memberName === null ? null : { kind: 'AUTOPAY_UNEXPECTED', memberName, reason: 'AFTER_CANCEL' };
+      }
+
+      // Every other SYSTEM alert is a record for the register, not a WhatsApp to the owner.
+      return null;
     }
 
     default:

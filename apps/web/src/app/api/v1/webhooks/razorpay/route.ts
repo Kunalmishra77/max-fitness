@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { handleRazorpayWebhook, isDomainError } from '@mfp/core';
+import { handleRazorpayWebhook, isDomainError, recordMandateCharge, updateMandateStatus } from '@mfp/core';
 import { newRequestId } from '@/lib/api';
 import { getContainer } from '@/lib/container';
 
@@ -22,7 +22,7 @@ const MAX_BODY_BYTES = 256 * 1024;
 
 export async function POST(request: NextRequest) {
   const requestId = newRequestId();
-  const { env, clock, payments, paymentUow, webhookEvents } = getContainer();
+  const { env, clock, payments, paymentUow, webhookEvents, subscriptions, mandateChargeUow, mandateStatusUow } = getContainer();
 
   // In DEMO_MODE the simulator's "signature" is a fixed marker, so accepting webhooks
   // would let anyone confirm a payment. The demo confirms through the pay dialog instead.
@@ -45,7 +45,23 @@ export async function POST(request: NextRequest) {
         signature: request.headers.get('x-razorpay-signature') ?? '',
         eventId: request.headers.get('x-razorpay-event-id'),
       },
-      { provider: payments, clock, uow: paymentUow, events: webhookEvents },
+      {
+        provider: payments,
+        clock,
+        uow: paymentUow,
+        events: webhookEvents,
+        // Autopay (ADR-105). Passed only where there is a subscription provider to have made
+        // the mandate in the first place: with none, a `subscription.*` event is archived and
+        // answered 200 rather than acted on.
+        ...(subscriptions === null
+          ? {}
+          : {
+              mandates: {
+                recordCharge: (charge) => recordMandateCharge(charge, { clock, uow: mandateChargeUow }),
+                updateStatus: (status) => updateMandateStatus(status, { clock, uow: mandateStatusUow }),
+              },
+            }),
+      },
     );
     if (outcome === 'AMOUNT_MISMATCH') {
       console.warn(`[webhook-razorpay] amount mismatch held for review ${requestId}`);

@@ -60,7 +60,13 @@ export type OwnerAlert =
   | { readonly kind: 'PAYMENT_AMOUNT_MISMATCH'; readonly memberName: string; readonly expectedPaise: number; readonly receivedPaise: number }
   | { readonly kind: 'WHATSAPP_QUALITY' }
   | { readonly kind: 'WHATSAPP_FAILURE'; readonly slot: string; readonly failed: number; readonly planned: number }
-  | { readonly kind: 'KIOSK_OFFLINE'; readonly deviceName: string; readonly minutesOffline: number };
+  | { readonly kind: 'KIOSK_OFFLINE'; readonly deviceName: string; readonly minutesOffline: number }
+  /**
+   * Autopay (ADR-105). A halt is the one mandate event the owner must hear about: from that
+   * moment the fee is not arriving, and nothing else about the member looks wrong.
+   */
+  | { readonly kind: 'AUTOPAY_HALTED'; readonly memberName: string }
+  | { readonly kind: 'AUTOPAY_UNEXPECTED'; readonly memberName: string; readonly reason: 'AMOUNT' | 'AFTER_CANCEL' };
 
 const rupees = (paise: number) => formatINR(paise, { showPaise: false });
 
@@ -105,6 +111,22 @@ export function alertSentence(alert: OwnerAlert, language: Language): string {
       return hi
         ? `${alert.memberName} का पेमेंट मेल नहीं खाया: माँगे ${rupees(alert.expectedPaise)}, आए ${rupees(alert.receivedPaise)}। पैसे रोके गए हैं।`
         : `${alert.memberName}'s payment did not match: asked ${rupees(alert.expectedPaise)}, received ${rupees(alert.receivedPaise)}. It is on hold.`;
+
+    // The sentence carries the consequence, not the mechanism. "The mandate halted" means
+    // nothing at a gym counter; "collect it at the desk" is something to act on.
+    case 'AUTOPAY_HALTED':
+      return hi
+        ? `${alert.memberName} की ऑटोमैटिक फीस बंद हो गई — बैंक से कट नहीं पाई। फीस काउंटर पर लेनी होगी।`
+        : `${alert.memberName}'s automatic fee has stopped — the bank could not take it. Collect it at the desk.`;
+
+    case 'AUTOPAY_UNEXPECTED':
+      return alert.reason === 'AMOUNT'
+        ? hi
+          ? `${alert.memberName} की ऑटोमैटिक फीस में तय रकम से अलग कटौती हुई। पैसे आ गए हैं, एक बार देख लीजिए।`
+          : `${alert.memberName}'s automatic fee took a different amount than agreed. The money is in; worth a look.`
+        : hi
+          ? `${alert.memberName} की ऑटोमैटिक फीस बंद करने के बाद भी कटौती हो गई। पैसे आ गए हैं, एक बार देख लीजिए।`
+          : `${alert.memberName}'s automatic fee was taken after it had been stopped. The money is in; worth a look.`;
 
     case 'WHATSAPP_QUALITY':
       return hi

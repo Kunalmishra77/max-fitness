@@ -581,6 +581,18 @@
       "reservedTitle": "Your plan is reserved, {name}.",
       "reservedBody": "Pay {amount} at reception by {until} to start.",
       "backHome": "Back to home"
+    },
+    "autopay": {
+      "title": "Want next time's fee to pay itself?",
+      "body": "Nothing is taken today. Your first automatic payment would be the day after {date}, and you can stop it any time from your own UPI app.",
+      "setUp": "Set up automatic payment",
+      "working": "Please wait…",
+      "reassure": "You can also skip this and pay at reception as usual.",
+      "failed": "Could not set that up. Ask at reception and they will do it for you.",
+      "almostTitle": "One more tap",
+      "almostBody": "Approve it in your UPI app or with your bank. The first payment would be on {date}.",
+      "almostBodyNoDate": "Approve it in your UPI app or with your bank.",
+      "approve": "Approve automatic payment"
     }
   },
   "receipt": {
@@ -900,6 +912,40 @@
       "wrongPin": "That PIN is wrong.",
       "notAllowed": "Only the owner can void a payment.",
       "voided": "Voided"
+    },
+    "autopay": {
+      "title": "Automatic fee payment",
+      "none": "Not set up. The fee is collected the usual way.",
+      "setUp": "Set up automatic payment",
+      "setUpAgain": "Set it up again",
+      "stop": "Stop automatic payment",
+      "confirmStop": "Yes, stop it",
+      "keep": "Keep it",
+      "working": "Please wait…",
+      "amount": "Amount",
+      "everyMonths": "{amount} every {count, plural, one {month} other {# months}}",
+      "nextCharge": "Next payment",
+      "firstCharge": "First payment",
+      "taken": "Payments taken",
+      "takenCount": "{count, plural, =0 {None yet} one {# payment} other {# payments}}",
+      "linkLabel": "Send this link to the member to approve it",
+      "notAuthorisedHelp": "The member has not approved it yet, so the fee is still collected the usual way.",
+      "haltedHelp": "The bank could not take the fee and has stopped trying. Collect it at the desk and set this up again.",
+      "unavailable": "Automatic payment needs the live payment gateway.",
+      "noPlan": "This member's plan cannot be paid automatically yet.",
+      "notAllowed": "You cannot change automatic payment.",
+      "failed": "Could not do that. Please try again.",
+      "status": {
+        "CREATED": "Waiting for approval",
+        "AUTHENTICATED": "Approved",
+        "ACTIVE": "Running",
+        "PENDING": "Retrying",
+        "HALTED": "Stopped by the bank",
+        "PAUSED": "Paused",
+        "CANCELLED": "Cancelled",
+        "COMPLETED": "Finished",
+        "EXPIRED": "Expired"
+      }
     },
     "add": {
       "title": "New member",

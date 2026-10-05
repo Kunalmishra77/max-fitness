@@ -23,6 +23,7 @@
     "check:gyms": "tsx scripts/check-gyms.ts",
     "check:rls": "tsx scripts/check-rls.ts",
     "create:razorpay-plans": "tsx scripts/create-razorpay-plans.ts",
+    "sync:mandates": "tsx scripts/sync-mandates.ts",
     "set:gym-details": "tsx scripts/set-gym-details.ts",
     "make:coolify-env": "tsx scripts/make-coolify-env.ts"
   },
