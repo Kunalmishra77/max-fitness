@@ -76,7 +76,23 @@ try {
   await page.locator('input[autocomplete="username"]').fill(USER);
   await page.locator('input[autocomplete="current-password"]').fill(PIN);
   await page.getByRole('button', { name: /.+/ }).last().click();
-  await page.waitForURL(/\/crm(\?|$|\/)/, { timeout: 30_000 });
+
+  // Wait for the **session cookie**, not for the URL.
+  //
+  // `waitForURL(/\/crm(\?|$|\/)/)` resolved instantly, because `/crm/login` already matches
+  // it. On a container slow enough that the sign-in had not finished, this walked every
+  // screen signed out and reported twenty-seven failures against a CRM that was working
+  // perfectly — a test tool inventing an outage. The cookie is what "signed in" means;
+  // nothing else on this page is true until it exists.
+  const signedIn = await page
+    .waitForFunction(() => document.cookie.length > 0 || !location.pathname.endsWith('/login'), null, { timeout: 30_000 })
+    .then(() => true)
+    .catch(() => false);
+  const session = (await page.context().cookies()).find((c) => c.name === 'mfp_session');
+  if (!signedIn || session === undefined) {
+    const shown = (await page.getByRole('alert').allTextContents()).filter((t) => t.trim() !== '');
+    throw new Error(`sign-in produced no session cookie${shown.length === 0 ? '' : ` — the screen said: ${shown.join(' / ')}`}`);
+  }
   await page.waitForLoadState('networkidle');
   console.log(`signed in — ${WIDTH}px\n`);
 

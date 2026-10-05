@@ -176,9 +176,19 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
               ['status', t(`status.${member.status}` as never)],
             ] as const
           ).map(([key, value]) => (
-            <div key={key} className="flex items-baseline justify-between gap-3 sm:block">
-              <dt className="text-small text-brand-stone">{t(`profile.field.${key}` as never)}</dt>
-              <dd className={cn('text-crm-body', value === null || value === '' ? 'text-brand-stone italic' : 'font-semibold text-brand-obsidian')}>
+            // `min-w-0` on the row and `break-all` on the value, because an email address is
+            // one unbroken word. A real member with a long one pushed this card to 453px on a
+            // 390px phone and took the whole page sideways with it — the label held its width,
+            // the value refused to wrap, and a flex item will not shrink below its content
+            // without `min-w-0`.
+            <div key={key} className="flex min-w-0 items-baseline justify-between gap-3 sm:block">
+              <dt className="shrink-0 text-small text-brand-stone">{t(`profile.field.${key}` as never)}</dt>
+              <dd
+                className={cn(
+                  'min-w-0 break-all text-right text-crm-body sm:text-left',
+                  value === null || value === '' ? 'text-brand-stone italic' : 'font-semibold text-brand-obsidian',
+                )}
+              >
                 {value === null || value === '' ? t('profile.notGiven') : value}
               </dd>
             </div>
