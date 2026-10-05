@@ -333,7 +333,7 @@ export function JoinDone(props: { prices: PriceLists; directionsHref: string; au
       receiptUrl={paid.receiptUrl}
       autopay={
         props.autopayAvailable ? (
-          <AutopayOffer registrationToken={token} endDate={paid.membership.endDate} amountPaise={paid.amountPaise} />
+          <AutopayOffer auth={{ kind: 'registration', token }} endDate={paid.membership.endDate} />
         ) : undefined
       }
     />

@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { buttonVariants } from '@/components/ui/button';
 import { track } from '@/lib/analytics';
 import { formatISTDate } from '@mfp/shared/time';
+import { AutopayOffer } from './autopay-offer';
 import { DoneStep } from './done-step';
 import { PayStep, type PaidResult, type ReservedResult } from './pay-step';
 import { PlanStep } from './plan-step';
@@ -69,6 +70,14 @@ export function RenewFlow(props: RenewFlowProps) {
         memberCode={stage.result.memberCode}
         receiptNo={stage.result.receiptNo}
         receiptUrl={stage.result.receiptUrl}
+        autopay={
+          props.onlinePayments ? (
+            <AutopayOffer
+              auth={{ kind: 'renew', token: props.token }}
+              endDate={membership?.endDate ?? membershipEndDate(props.proposedStartDate, stage.card.durationMonths)}
+            />
+          ) : undefined
+        }
       />
     );
   }

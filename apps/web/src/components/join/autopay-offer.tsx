@@ -22,14 +22,17 @@ import { cn } from '@/lib/cn';
  */
 
 export function AutopayOffer({
-  registrationToken,
+  auth,
   endDate,
-  amountPaise,
 }: {
-  registrationToken: string;
+  /**
+   * The same shape `PayStep` takes. A renewing member reaches this by a WhatsApp link and
+   * holds a renew token, not a registration one, and they are the member most likely to want
+   * autopay — they have just renewed by hand for at least the second time.
+   */
+  auth: { readonly kind: 'registration' | 'renew'; readonly token: string };
   /** The last date the member is covered for. The first debit is the day after. */
   endDate: string;
-  amountPaise: number;
 }) {
   const t = useTranslations('signup.autopay');
   const locale = useLocale();
@@ -40,7 +43,8 @@ export function AutopayOffer({
   const setUp = () => {
     setState('working');
     track('autopay_offer_accepted');
-    void fetch('/api/v1/checkout/autopay', { method: 'POST', headers: { 'x-registration-token': registrationToken } })
+    const header = auth.kind === 'registration' ? 'x-registration-token' : 'x-renew-token';
+    void fetch('/api/v1/checkout/autopay', { method: 'POST', headers: { [header]: auth.token } })
       .then((response) => (response.ok ? (response.json() as Promise<{ data?: Record<string, unknown> }>) : null))
       .then((body) => {
         const data = body?.data;
