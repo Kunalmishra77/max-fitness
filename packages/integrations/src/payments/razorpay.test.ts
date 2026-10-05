@@ -153,4 +153,133 @@ describe('RazorpayPaymentProvider', () => {
       expect(provider.verifyWebhookSignature(rawBody, '')).toBe(false);
     });
   });
+
+  // Subscriptions, which are how an e-mandate is expressed at Razorpay (ADR-105). A plan is
+  // created once per price and reused; a subscription is one member's standing instruction.
+  describe('createPlan', () => {
+    const request = { name: 'Max Fitness monthly — male', amountPaise: 150_000, intervalMonths: 1, notes: { planCode: 'M1_MALE' } } as const;
+
+    it('creates a monthly plan priced in paise and returns the plan id', async () => {
+      reply.body = { id: 'plan_P1aBcD2eFgH3iJ', entity: 'plan', period: 'monthly', interval: 1, item: { name: request.name, amount: 150_000, currency: 'INR' } };
+
+      const plan = await provider.createPlan(request);
+
+      expect(plan).toEqual({ providerPlanId: 'plan_P1aBcD2eFgH3iJ', amountPaise: 150_000 });
+      const call = calls[0];
+      expect(call?.method).toBe('POST');
+      expect(call?.url).toBe('https://api.razorpay.com/v1/plans');
+      expect(call?.body).toEqual({
+        period: 'monthly',
+        interval: 1,
+        item: { name: request.name, amount: 150_000, currency: 'INR' },
+        notes: { planCode: 'M1_MALE' },
+      });
+    });
+
+    it('refuses an interval it has no Razorpay period for, without calling Razorpay', async () => {
+      await expect(provider.createPlan({ ...request, intervalMonths: 4 })).rejects.toThrow(PaymentProviderError);
+      expect(calls).toHaveLength(0);
+    });
+
+    it('rejects a response that is not a plan', async () => {
+      reply.body = { id: 'order_P1aBcD2eFgH3iJ', amount: 150_000 };
+      await expect(provider.createPlan(request)).rejects.toThrow(/unexpected response shape/);
+    });
+  });
+
+  describe('createSubscription', () => {
+    const request = { providerPlanId: 'plan_P1aBcD2eFgH3iJ', totalCount: 100, notes: { memberId: 'mem_1' } } as const;
+
+    it('creates a subscription and returns the id, status and the link the member authorises on', async () => {
+      reply.body = {
+        id: 'sub_P1aBcD2eFgH3iJ',
+        entity: 'subscription',
+        plan_id: request.providerPlanId,
+        status: 'created',
+        short_url: 'https://rzp.io/i/aBcD2eFg',
+        total_count: 100,
+        paid_count: 0,
+      };
+
+      const subscription = await provider.createSubscription(request);
+
+      expect(subscription).toEqual({
+        providerSubscriptionId: 'sub_P1aBcD2eFgH3iJ',
+        status: 'created',
+        shortUrl: 'https://rzp.io/i/aBcD2eFg',
+        chargeAt: null,
+      });
+      const call = calls[0];
+      expect(call?.url).toBe('https://api.razorpay.com/v1/subscriptions');
+      // `customer_notify: 1` lets Razorpay send its own authorisation prompt; the gym's own
+      // WhatsApp message carries the same link, and a member who misses one gets the other.
+      expect(call?.body).toEqual({ plan_id: request.providerPlanId, total_count: 100, quantity: 1, customer_notify: 1, notes: { memberId: 'mem_1' } });
+    });
+
+    it('rejects a malformed plan id without calling Razorpay', async () => {
+      await expect(provider.createSubscription({ ...request, providerPlanId: 'not-a-plan' })).rejects.toThrow(PaymentProviderError);
+      expect(calls).toHaveLength(0);
+    });
+  });
+
+  describe('fetchSubscription', () => {
+    it("reads the mandate's state from Razorpay's own record, with the next charge as a date", async () => {
+      // 1762_387_200 is 2025-11-06T00:00:00Z — 05:30 on the 6th in Kolkata, so the business
+      // date is the 6th. A UTC-naive reading would call it the 5th.
+      reply.body = {
+        id: 'sub_P1aBcD2eFgH3iJ',
+        entity: 'subscription',
+        plan_id: 'plan_P1aBcD2eFgH3iJ',
+        status: 'active',
+        charge_at: 1_762_387_200,
+        paid_count: 3,
+        customer_id: 'cust_P1aBcD2eFgH3iJ',
+      };
+
+      const subscription = await provider.fetchSubscription('sub_P1aBcD2eFgH3iJ');
+
+      expect(subscription).toEqual({
+        providerSubscriptionId: 'sub_P1aBcD2eFgH3iJ',
+        status: 'active',
+        shortUrl: null,
+        chargeAt: new Date('2025-11-06T00:00:00.000Z'),
+      });
+      expect(calls[0]?.method).toBe('GET');
+      expect(calls[0]?.url).toBe('https://api.razorpay.com/v1/subscriptions/sub_P1aBcD2eFgH3iJ');
+    });
+
+    it('refuses a malformed subscription id without calling Razorpay', async () => {
+      await expect(provider.fetchSubscription('../payments/pay_1')).rejects.toThrow(/malformed subscription id/);
+      expect(calls).toHaveLength(0);
+    });
+  });
+
+  describe('cancelSubscription', () => {
+    it('cancels immediately by default, so the member is not debited again', async () => {
+      reply.body = { id: 'sub_P1aBcD2eFgH3iJ', entity: 'subscription', plan_id: 'plan_P1aBcD2eFgH3iJ', status: 'cancelled' };
+
+      const subscription = await provider.cancelSubscription('sub_P1aBcD2eFgH3iJ');
+
+      expect(subscription.status).toBe('cancelled');
+      expect(calls[0]?.method).toBe('POST');
+      expect(calls[0]?.url).toBe('https://api.razorpay.com/v1/subscriptions/sub_P1aBcD2eFgH3iJ/cancel');
+      expect(calls[0]?.body).toEqual({ cancel_at_cycle_end: 0 });
+    });
+
+    it('can be asked to stop at the end of the paid cycle instead', async () => {
+      reply.body = { id: 'sub_P1aBcD2eFgH3iJ', entity: 'subscription', plan_id: 'plan_P1aBcD2eFgH3iJ', status: 'active' };
+
+      await provider.cancelSubscription('sub_P1aBcD2eFgH3iJ', { atCycleEnd: true });
+
+      expect(calls[0]?.body).toEqual({ cancel_at_cycle_end: 1 });
+    });
+
+    it('treats a subscription Razorpay has already cancelled as cancelled, not as a failure', async () => {
+      reply = { status: 400, body: { error: { code: 'BAD_REQUEST_ERROR', description: 'Subscription is already cancelled' } } };
+
+      const subscription = await provider.cancelSubscription('sub_P1aBcD2eFgH3iJ');
+
+      expect(subscription.status).toBe('cancelled');
+    });
+  });
 });

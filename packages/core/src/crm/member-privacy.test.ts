@@ -49,6 +49,11 @@ const exported: MemberExport = {
     whatsappOptIn: true,
     faceConsent: true,
     hasPhoto: true,
+    joinedOn: '2026-01-05',
+    trainingSlot: 'MORNING',
+    isMinor: false,
+    notes: 'घुटने में पुरानी चोट',
+    govIdType: 'AADHAAR',
   },
   memberships: [{ startDate: '2026-09-01', endDate: '2026-09-30', durationMonths: 1, pricePaise: 150_000, status: 'CONFIRMED' }],
   payments: [{ amountPaise: 150_000, method: 'CASH', status: 'PAID', receiptNo: 'MF/2026-27/000012', paidAt: '2026-09-01T05:30:00.000Z' }],
@@ -56,6 +61,20 @@ const exported: MemberExport = {
   consents: [{ type: 'PRIVACY', granted: true, noticeVersion: '1.0', channel: 'web_signup', createdAt: '2026-01-05T05:30:00.000Z', withdrawnAt: null }],
   messages: [{ purpose: 'RECEIPT', status: 'SENT', sentAt: '2026-09-01T05:31:00.000Z', text: 'आपकी रसीद MF/2026-27/000012' }],
   callTasks: [{ reason: 'EXPIRED_NOT_RENEWED', status: 'DONE', outcome: 'WILL_RENEW', note: null, createdAt: '2026-08-31T00:30:00.000Z' }],
+  ptEnrolments: [{ startDate: '2026-09-01', endDate: '2026-09-30', durationMonths: 1, pricePaise: 500_000, status: 'ACTIVE' }],
+  dietPlans: [
+    {
+      version: 1,
+      status: 'SENT',
+      bmiTenths: 243,
+      answers: { goal: 'WEIGHT_LOSS', vegetarian: true },
+      plan: { breakfast: 'पोहा और स्प्राउट्स' },
+      failureReason: null,
+      generatedAt: '2026-09-02T05:30:00.000Z',
+      sentAt: '2026-09-02T05:31:00.000Z',
+      createdAt: '2026-09-02T05:29:00.000Z',
+    },
+  ],
   faceTemplates: { count: 1 },
 };
 

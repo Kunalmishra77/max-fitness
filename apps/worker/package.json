@@ -21,6 +21,8 @@
     "backup:members": "tsx scripts/backup-members.ts",
     "delete:object": "tsx scripts/delete-orphan-object.ts",
     "check:gyms": "tsx scripts/check-gyms.ts",
+    "check:rls": "tsx scripts/check-rls.ts",
+    "create:razorpay-plans": "tsx scripts/create-razorpay-plans.ts",
     "set:gym-details": "tsx scripts/set-gym-details.ts",
     "make:coolify-env": "tsx scripts/make-coolify-env.ts"
   },

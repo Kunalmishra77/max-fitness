@@ -107,6 +107,25 @@ enum PaymentStatus {
   REFUNDED
 }
 
+/// The life of a standing instruction, in Razorpay's own words (ADR-105).
+///
+/// `CREATED` is a subscription that exists but which the member has not authorised yet —
+/// the link has been made and may never be opened. `ACTIVE` is the only status that means
+/// money will arrive without anyone asking. `HALTED` is the dangerous one: Razorpay gave
+/// up after repeated failures, and a halted mandate looks exactly like a paid-up member
+/// until somebody checks, which is why it raises an alert rather than sitting quietly.
+enum MandateStatus {
+  CREATED
+  AUTHENTICATED
+  ACTIVE
+  PENDING
+  HALTED
+  PAUSED
+  CANCELLED
+  COMPLETED
+  EXPIRED
+}
+
 enum LeadStatus {
   NEW
   CONTACTED
@@ -298,6 +317,7 @@ model Gym {
   botReplies    BotReply[]
   galleryPhotos GalleryPhoto[]
   payments      Payment[]
+  mandates      Mandate[]
   leads         Lead[]
   verifications VerificationRequest[]
   media         MediaFile[]
@@ -427,12 +447,18 @@ model Plan {
   pricePaise     Int
   isActive       Boolean  @default(true)
   sortOrder      Int      @default(0)
+  /// Razorpay's plan id, set by `create:razorpay-plans` for the monthly rows and left null
+  /// for the rest, because autopay is monthly-only (ADR-105). A Razorpay plan is immutable,
+  /// so changing `pricePaise` here means creating a new one and pointing this at it; the
+  /// mandates already running keep charging the old amount until they are cancelled.
+  providerPlanId String?
   createdAt      DateTime @default(now()) @db.Timestamptz
   updatedAt      DateTime @updatedAt @db.Timestamptz
 
   gym           Gym            @relation(fields: [gymId], references: [id])
   memberships   Membership[]
   ptEnrolments  PtEnrolment[]
+  mandates      Mandate[]
 
   @@unique([gymId, code])
   @@index([gymId, kind, gender, isActive])
@@ -713,6 +739,7 @@ model Member {
   consents      Consent[]
   verifications VerificationRequest[]
   alerts        Alert[]
+  mandates      Mandate[]
 
   @@unique([gymId, memberCode])
   @@index([gymId, status])
@@ -772,6 +799,11 @@ model Payment {
   providerOrderId     String?       @unique
   providerPaymentId   String?       @unique
   providerSignatureOk Boolean       @default(false)
+  /// Set when this payment arrived by itself, debited against a standing instruction
+  /// rather than taken at the counter or through a checkout (ADR-105). Everything else
+  /// about the row is identical, so receipts, the day book and the fee state need no
+  /// knowledge of mandates at all.
+  mandateId           String?
   failureReason       String?
   paidAt              DateTime?     @db.Timestamptz
   recordedById        String?
@@ -785,10 +817,83 @@ model Payment {
   member      Member       @relation(fields: [memberId], references: [id])
   membership  Membership?  @relation(fields: [membershipId], references: [id])
   ptEnrolment PtEnrolment? @relation(fields: [ptEnrolmentId], references: [id])
+  mandate     Mandate?     @relation(fields: [mandateId], references: [id])
 
   @@unique([gymId, receiptNo])
   @@index([gymId, status, paidAt])
   @@index([memberId])
+  @@index([mandateId])
+}
+
+/// A standing instruction the member gave their UPI app or bank, so the fee arrives on its
+/// own and the gym stops chasing it every month (ADR-105).
+///
+/// Monthly only, on purpose. The 3, 6 and 12-month plans are prepaid lump sums; letting a
+/// member sign one standing instruction for a year is a different product than the one the
+/// gym sells, so `intervalMonths` is always 1 and the constraint is in the domain, not here,
+/// where a later product decision can relax it without a migration.
+///
+/// A mandate never gates anything. Entry, attendance and the membership itself are decided
+/// without consulting this table — cancel a mandate and the member simply pays at the
+/// counter again, exactly as they did before.
+model Mandate {
+  id       String @id @default(cuid())
+  gymId    String
+  memberId String
+  /// Which of the gym's own plans this charges for. The amount is copied from it at
+  /// creation and then frozen, because Razorpay's plan is immutable and the two must agree
+  /// for the life of the mandate even if the gym later changes its price list.
+  planId   String
+
+  /// Razorpay's subscription, which is the mandate. Unique because one Razorpay
+  /// subscription is one row here, and a re-delivered webhook must find the same row.
+  providerSubscriptionId String  @unique
+  /// Razorpay's plan, copied from `Plan.providerPlanId` at creation so the history survives
+  /// the gym deactivating that plan.
+  providerPlanId         String
+  /// Razorpay's customer record, reused if this member ever sets up a second mandate.
+  providerCustomerId     String?
+
+  status         MandateStatus @default(CREATED)
+  /// What each debit takes, in paise, frozen at creation (BR-2.2; CLAUDE.md §2.1).
+  amountPaise    Int
+  intervalMonths Int           @default(1)
+
+  /// The authorisation link Razorpay issues. Razorpay expires it, so a member who never
+  /// opened it needs a fresh mandate rather than a resend of this one.
+  shortUrl       String?
+  authorisedAt   DateTime?     @db.Timestamptz
+  /// Razorpay's own next-charge date, as an Asia/Kolkata business date (CLAUDE.md §2.2).
+  /// Advisory only: what actually extends a membership is a `subscription.charged` event,
+  /// never this field arriving in the past.
+  nextChargeOn   DateTime?     @db.Date
+  /// How many debits Razorpay has told us about. Used to notice a mandate that authorised
+  /// but has never charged.
+  chargeCount    Int           @default(0)
+  lastChargedAt  DateTime?     @db.Timestamptz
+  /// Why Razorpay halted or the member's bank refused, as given. Never a card number or a
+  /// VPA: the masking helpers apply here as everywhere (CLAUDE.md §2.8).
+  failureReason  String?
+  haltedAt       DateTime?     @db.Timestamptz
+  cancelledAt    DateTime?     @db.Timestamptz
+  /// Who cancelled it. Null when Razorpay or the member's bank ended it, set when somebody
+  /// at the desk did.
+  cancelledById  String?
+  cancelReason   String?
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  gym      Gym       @relation(fields: [gymId], references: [id])
+  member   Member    @relation(fields: [memberId], references: [id])
+  plan     Plan      @relation(fields: [planId], references: [id])
+  payments Payment[]
+
+  /// One live mandate per member is enforced in the domain, not here: a member may hold a
+  /// cancelled one and a new one at the same time, and a partial unique index is not
+  /// something Prisma expresses. This index is what that check reads.
+  @@index([gymId, status])
+  @@index([memberId, status])
 }
 
 // ───────────────────────────── Leads & verification ─────────────────────────────

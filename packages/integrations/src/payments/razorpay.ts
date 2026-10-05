@@ -2,9 +2,14 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import type {
   CreateOrderRequest,
+  CreatePlanRequest,
+  CreateSubscriptionRequest,
   CreatedOrder,
+  CreatedPlan,
   FetchedPayment,
+  FetchedSubscription,
   PaymentProvider,
+  SubscriptionProvider,
   VerifyCheckoutRequest,
 } from '@mfp/core/ports';
 
@@ -38,7 +43,13 @@ export interface RazorpayConfig {
   readonly timeoutMs?: number;
 }
 
-export type RazorpayOperation = 'createOrder' | 'fetchPayment';
+export type RazorpayOperation =
+  | 'createOrder'
+  | 'fetchPayment'
+  | 'createPlan'
+  | 'createSubscription'
+  | 'fetchSubscription'
+  | 'cancelSubscription';
 
 /** An infrastructure failure talking to the gateway. The API layer maps it to 502. */
 export class PaymentProviderError extends Error {
@@ -73,8 +84,35 @@ const ErrorResponse = z.object({
   error: z.object({ code: z.string().optional(), description: z.string().optional() }),
 });
 
+const PlanResponse = z.object({
+  id: z.string().regex(/^plan_[A-Za-z0-9]+$/),
+  item: z.object({ amount: z.number().int() }),
+});
+
+const SubscriptionResponse = z.object({
+  id: z.string().regex(/^sub_[A-Za-z0-9]+$/),
+  status: z.enum(['created', 'authenticated', 'active', 'pending', 'halted', 'paused', 'cancelled', 'completed', 'expired']),
+  short_url: z.string().nullable().optional(),
+  /** Unix seconds. Absent until the member has authorised. */
+  charge_at: z.number().int().nullable().optional(),
+});
+
 const PAYMENT_ID = /^pay_[A-Za-z0-9]{1,40}$/;
+const PLAN_ID = /^plan_[A-Za-z0-9]{1,40}$/;
+const SUBSCRIPTION_ID = /^sub_[A-Za-z0-9]{1,40}$/;
 const HEX_SHA256 = /^[0-9a-f]{64}$/;
+
+/**
+ * Razorpay expresses a cycle as a period plus an interval, and only some combinations are
+ * legal. A month count with no period is refused here rather than by the API, so a typo in
+ * a plan definition fails locally instead of creating something immutable and wrong.
+ */
+const PERIOD_BY_INTERVAL_MONTHS: Readonly<Record<number, { period: string; interval: number }>> = {
+  1: { period: 'monthly', interval: 1 },
+  3: { period: 'monthly', interval: 3 },
+  6: { period: 'monthly', interval: 6 },
+  12: { period: 'yearly', interval: 1 },
+};
 
 /** Constant-time comparison of a presented hex HMAC with the expected one. */
 function hmacMatches(payload: string, secret: string, presented: string): boolean {
@@ -83,7 +121,7 @@ function hmacMatches(payload: string, secret: string, presented: string): boolea
   return timingSafeEqual(expected, Buffer.from(presented, 'hex'));
 }
 
-export class RazorpayPaymentProvider implements PaymentProvider {
+export class RazorpayPaymentProvider implements PaymentProvider, SubscriptionProvider {
   readonly name = 'razorpay' as const;
   readonly #config: RazorpayConfig;
   readonly #fetch: typeof fetch;
@@ -134,6 +172,91 @@ export class RazorpayPaymentProvider implements PaymentProvider {
 
   verifyWebhookSignature(rawBody: string, signature: string): boolean {
     return hmacMatches(rawBody, this.#config.webhookSecret, signature);
+  }
+
+  // ── Subscriptions: the e-mandate half (ADR-105) ──────────────────────────────
+
+  /**
+   * A Razorpay plan is immutable once created — the amount and the cycle cannot be edited,
+   * only deactivated. That is why the interval is validated here before the call and why the
+   * amount Razorpay echoes back is returned: a plan created for the wrong price is dead
+   * weight that still appears in a dropdown.
+   */
+  async createPlan(request: CreatePlanRequest): Promise<CreatedPlan> {
+    const cycle = PERIOD_BY_INTERVAL_MONTHS[request.intervalMonths];
+    if (cycle === undefined) {
+      throw new PaymentProviderError('createPlan', `no Razorpay period for an interval of ${request.intervalMonths} months`);
+    }
+    const body = await this.#call('createPlan', 'POST', '/plans', {
+      period: cycle.period,
+      interval: cycle.interval,
+      item: { name: request.name, amount: request.amountPaise, currency: 'INR' },
+      ...(request.notes === undefined ? {} : { notes: request.notes }),
+    });
+    const plan = PlanResponse.safeParse(body);
+    if (!plan.success) throw new PaymentProviderError('createPlan', 'unexpected response shape');
+
+    return { providerPlanId: plan.data.id, amountPaise: plan.data.item.amount };
+  }
+
+  async createSubscription(request: CreateSubscriptionRequest): Promise<FetchedSubscription> {
+    if (!PLAN_ID.test(request.providerPlanId)) {
+      throw new PaymentProviderError('createSubscription', 'malformed plan id');
+    }
+    const body = await this.#call('createSubscription', 'POST', '/subscriptions', {
+      plan_id: request.providerPlanId,
+      total_count: request.totalCount,
+      quantity: 1,
+      // Razorpay sends its own authorisation prompt. The gym's WhatsApp message carries the
+      // same link, so a member who misses one still gets the other.
+      customer_notify: 1,
+      ...(request.notes === undefined ? {} : { notes: request.notes }),
+    });
+    return this.#subscription('createSubscription', body);
+  }
+
+  async fetchSubscription(providerSubscriptionId: string): Promise<FetchedSubscription> {
+    // The id reaches the URL path and can arrive from a webhook body: accept only the shape.
+    if (!SUBSCRIPTION_ID.test(providerSubscriptionId)) {
+      throw new PaymentProviderError('fetchSubscription', 'malformed subscription id');
+    }
+    const body = await this.#call('fetchSubscription', 'GET', `/subscriptions/${providerSubscriptionId}`);
+    return this.#subscription('fetchSubscription', body);
+  }
+
+  async cancelSubscription(providerSubscriptionId: string, options?: { readonly atCycleEnd?: boolean }): Promise<FetchedSubscription> {
+    if (!SUBSCRIPTION_ID.test(providerSubscriptionId)) {
+      throw new PaymentProviderError('cancelSubscription', 'malformed subscription id');
+    }
+    try {
+      const body = await this.#call('cancelSubscription', 'POST', `/subscriptions/${providerSubscriptionId}/cancel`, {
+        cancel_at_cycle_end: options?.atCycleEnd === true ? 1 : 0,
+      });
+      return this.#subscription('cancelSubscription', body);
+    } catch (error) {
+      // Cancelling something already cancelled is the outcome the caller wanted. Razorpay
+      // says so with a 400, and treating that as a failure would leave a row stuck ACTIVE
+      // in the register while no money is ever taken again.
+      if (error instanceof PaymentProviderError && /already cancelled/i.test(error.message)) {
+        return { providerSubscriptionId, status: 'cancelled', shortUrl: null, chargeAt: null };
+      }
+      throw error;
+    }
+  }
+
+  #subscription(operation: RazorpayOperation, body: unknown): FetchedSubscription {
+    const parsed = SubscriptionResponse.safeParse(body);
+    if (!parsed.success) throw new PaymentProviderError(operation, 'unexpected response shape');
+
+    const chargeAt = parsed.data.charge_at;
+    return {
+      providerSubscriptionId: parsed.data.id,
+      status: parsed.data.status,
+      shortUrl: parsed.data.short_url ?? null,
+      // Unix seconds to an instant. Turning it into a business date is the domain's job,
+      // with the IST helpers — doing it here would bake a timezone into the adapter.
+      chargeAt: chargeAt === undefined || chargeAt === null ? null : new Date(chargeAt * 1000),
+    };
   }
 
   async #call(operation: RazorpayOperation, method: 'GET' | 'POST', path: string, payload?: unknown): Promise<unknown> {
