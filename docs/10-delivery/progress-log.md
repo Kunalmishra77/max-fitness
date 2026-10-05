@@ -1425,3 +1425,45 @@ migrations are additive and applied; `check:rls` reports 37/37 tables covered.
 - Still the client's: the AI key, WhatsApp Cloud API approval. Until WhatsApp is approved the
   three autopay templates have nowhere to send, like every other template.
 - `pnpm lint` has still never completed on this machine.
+
+## 2026-10-05 (deploy) — autopay live, and two things the deploy found
+
+### Live on `https://maxfitnessgym.co.in`, commit `dc9608f`
+`/api/v1/health` answers `{"ok":true,"db":"ok","worker":{"ok":true}}`. `/api/v1/checkout/autopay`
+answers 401 rather than 404, which is the route being deployed and correctly gated. The autopay
+panel renders on a real member's profile. CRM **27/27 screens at 390px**, public **12/12 at 390px**,
+no sideways scroll anywhere.
+
+The owner added `subscription.activated`, `subscription.cancelled` and `subscription.pending` to
+the Razorpay webhook, so it now carries all seven events the platform knows what to do with.
+Nothing is left polling for a state change it should have been told about.
+
+### Two findings, neither from the feature itself
+
+**A long email took the member profile sideways on a phone.** Measured on the live page once
+there was a real member on it: scrollWidth 453 against a 390 viewport, with no element's bounding
+box past the edge — the overflow was inside the details card. `dheerajsingh57392@gmail.com` is one
+unbroken word; the label held its width, the value would not wrap, and a flex item does not shrink
+below its content without `min-w-0`. Pre-existing, and invisible until somebody signed up with a
+long address. Fixed and verified: scrollWidth now equals the viewport.
+
+**`smoke-crm` reported an outage that did not exist.** Its sign-in waited for a URL it was already
+on — `/crm/login` matches `/\/crm(\?|$|\/)/` — so `waitForURL` resolved instantly, and on a
+container slow enough that the server action had not finished, it walked all twenty-seven screens
+signed out and flagged every one. Half an hour was spent proving the CRM was fine: the login
+service ran clean against the production database, and a measured probe showed `POST /crm/login`
+returning 200 with `Set-Cookie` and landing on `/crm`. The script now waits for the session
+cookie — which is what "signed in" means — and fails loudly with whatever the screen said if it
+never arrives. A test tool that invents an outage is worse than no test.
+
+### Pending
+- **No mandate has been authorised end to end yet**, because that needs a member to approve one in
+  their own UPI app. The provider calls are proven by unit tests and the plans were created against
+  the live account; creating a live subscription to prove the request shape was refused by the
+  permission gate as a real-world transaction, and was not worked around.
+- The live Razorpay secret was pasted into a chat message and should be regenerated.
+- **Integration tests share the production database.**
+- Still the client's: the AI key, WhatsApp Cloud API approval — until that lands, the three autopay
+  templates have nowhere to send, like every other template.
+- `pnpm lint` has still never completed on the whole repo; it does complete on individual files,
+  and the autopay files are clean.
