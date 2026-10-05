@@ -14,7 +14,7 @@ import {
   reminderIdempotencyKey,
   ruleCoversOffset,
 } from './rules';
-import { checkReminderEligibility, isWithinQuietHours, type EligibilityInput } from './eligibility';
+import { autopaySupersedes, checkReminderEligibility, isWithinQuietHours, type EligibilityInput } from './eligibility';
 
 const T = istDate('2026-09-10');
 const RULES = buildDefaultReminderRules(7);
@@ -258,9 +258,59 @@ function eligibilityInput(overrides: Partial<EligibilityInput> = {}): Eligibilit
   };
 }
 
+describe('autopay and the reminder rules — ADR-105 §5', () => {
+  it('supersedes every rule that chases the fee', () => {
+    for (const code of ['PRE_7', 'PRE_3', 'PRE_2', 'PRE_1', 'DUE_TODAY', 'POST'] as const) {
+      expect(autopaySupersedes(code), code).toBe(true);
+    }
+  });
+
+  it('supersedes the one that asks a trial member to join, because autopay is them joining', () => {
+    expect(autopaySupersedes('TRIAL_AFTER')).toBe(true);
+  });
+
+  it('leaves the trial check-ins alone, because they are not about money', () => {
+    // "How is the trial going" and "today is your last day" are worth sending to a member
+    // who has already set up autopay. Suppressing them would make the mandate cost them
+    // the only two friendly messages in the whole sequence.
+    expect(autopaySupersedes('TRIAL_MID')).toBe(false);
+    expect(autopaySupersedes('TRIAL_LAST')).toBe(false);
+  });
+});
+
 describe('checkReminderEligibility — BR-5.3', () => {
   it('passes for an opted-in active member inside quiet hours', () => {
     expect(checkReminderEligibility(eligibilityInput())).toEqual({ eligible: true });
+  });
+
+  it('skips a fee reminder when the member has a live mandate (ADR-105 §5)', () => {
+    expect(checkReminderEligibility(eligibilityInput({ ruleCode: 'PRE_3', hasLiveMandate: true }))).toEqual({
+      eligible: false,
+      reason: 'AUTOPAY_ACTIVE',
+    });
+  });
+
+  it('still sends a fee reminder to a member whose mandate is not live', () => {
+    // A link that was sent and never opened is not a mandate. Treating it as one would stop
+    // the gym chasing a fee that is never coming — the worst failure this feature could have.
+    expect(checkReminderEligibility(eligibilityInput({ ruleCode: 'PRE_3', hasLiveMandate: false }))).toEqual({ eligible: true });
+  });
+
+  it('still sends the trial check-in to a member with a live mandate', () => {
+    expect(checkReminderEligibility(eligibilityInput({ ruleCode: 'TRIAL_MID', hasLiveMandate: true }))).toEqual({ eligible: true });
+  });
+
+  it('does not suppress anything when the caller did not say which rule it is', () => {
+    // Nothing may become silent by omission. A caller that forgets `ruleCode` sends, which is
+    // the safe direction: a member hearing twice is recoverable, a member never hearing is not.
+    expect(checkReminderEligibility(eligibilityInput({ hasLiveMandate: true }))).toEqual({ eligible: true });
+  });
+
+  it('reports the member being inactive before the mandate, which is the more useful reason', () => {
+    expect(checkReminderEligibility(eligibilityInput({ memberStatus: 'LEFT', ruleCode: 'PRE_3', hasLiveMandate: true }))).toEqual({
+      eligible: false,
+      reason: 'MEMBER_NOT_ACTIVE',
+    });
   });
 
   it('R14 — refuses any status other than ACTIVE', () => {

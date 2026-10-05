@@ -111,6 +111,14 @@ export interface SendContext {
   readonly hasMobile: boolean;
   readonly latestConfirmedMembershipId: string | null;
   readonly messagesToNumberToday: number;
+  /**
+   * Whether the member holds a mandate money can still arrive on (ADR-105 §5).
+   *
+   * Read here, at send time, and not when the slot was planned — the member may have
+   * authorised, or had their mandate halted, in the minutes since. That is the whole point of
+   * this function (CLAUDE.md §2.6).
+   */
+  readonly hasLiveMandate: boolean;
 }
 
 export type SendResult =
@@ -164,6 +172,8 @@ export async function sendReminder(intent: SendIntent, deps: SendDeps): Promise<
     alreadySent: false,
     messagesToNumberToday: context.messagesToNumberToday,
     maxMessagesPerNumberPerDay: settings.maxMessagesPerNumberPerDay,
+    ruleCode: intent.ruleCode,
+    hasLiveMandate: context.hasLiveMandate,
   });
 
   // The log row is written either way, so a skip is visible to the owner, and its unique

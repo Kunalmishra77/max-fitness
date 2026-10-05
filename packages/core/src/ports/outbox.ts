@@ -24,7 +24,12 @@ export type OutboxEventType =
   | 'diet.generate'
   | 'whatsapp.diet_plan'
   | 'whatsapp.diet_follow_up'
-  | 'diet.pdf';
+  | 'diet.pdf'
+  // Autopay (ADR-105). The invite carries the authorisation link; the halt is the one that
+  // matters most, because a halted mandate looks exactly like a paid-up member until asked.
+  | 'whatsapp.mandate_invite'
+  | 'whatsapp.mandate_halted'
+  | 'whatsapp.mandate_cancelled';
 
 export interface OutboxEventInput {
   readonly type: OutboxEventType;

@@ -56,6 +56,11 @@ export * from './payments/confirm-payment';
 export * from './payments/verify-checkout';
 export * from './payments/razorpay-webhook';
 export * from './payments/amount-in-words';
+// Autopay — an e-mandate, which Razorpay models as a subscription (ADR-105).
+export * from './mandates/mandate';
+export * from './mandates/start-mandate';
+export * from './mandates/record-mandate-charge';
+export * from './mandates/update-mandate-status';
 export * from './outbox/dispatch';
 export * from './payments/receipt-pdf';
 export * from './calls/signup-not-paid';

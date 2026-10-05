@@ -4,6 +4,7 @@ import {
   type ISTDate,
   type ISTTime,
   type MemberStatus,
+  type ReminderRuleCode,
 } from '@mfp/shared';
 
 /**
@@ -30,8 +31,34 @@ export const INELIGIBLE_REASONS = [
   'ALREADY_SENT',
   'NUMBER_DAILY_CAP_REACHED',
   'NO_MOBILE',
+  'AUTOPAY_ACTIVE',
 ] as const;
 export type IneligibleReason = (typeof INELIGIBLE_REASONS)[number];
+
+/**
+ * Which reminder rules a live mandate answers in advance (ADR-105 §5).
+ *
+ * Every rule that chases the fee, and `TRIAL_AFTER` — "would you like to join?" — because a
+ * trial member who authorised a mandate has already joined; asking would be odd and the
+ * answer is already yes.
+ *
+ * The two trial check-ins are **not** here. "How is the trial going" and "today is your last
+ * day" are not about money, and suppressing them would make setting up autopay cost the
+ * member the only two friendly messages in the sequence.
+ */
+const SUPERSEDED_BY_AUTOPAY: ReadonlySet<ReminderRuleCode> = new Set<ReminderRuleCode>([
+  'PRE_7',
+  'PRE_3',
+  'PRE_2',
+  'PRE_1',
+  'DUE_TODAY',
+  'POST',
+  'TRIAL_AFTER',
+]);
+
+export function autopaySupersedes(ruleCode: ReminderRuleCode): boolean {
+  return SUPERSEDED_BY_AUTOPAY.has(ruleCode);
+}
 
 export interface EligibilityInput {
   /** The owner's kill switch, `settings.reminders.automaticPaused` (ADR-052). */
@@ -54,6 +81,16 @@ export interface EligibilityInput {
   /** Messages already sent to this WhatsApp number today, against the per-number cap. */
   readonly messagesToNumberToday?: number;
   readonly maxMessagesPerNumberPerDay?: number;
+  /**
+   * Which rule this send is for, and whether the member holds a mandate money can still
+   * arrive on (ADR-105 §5).
+   *
+   * Both optional, and the omission is deliberately the sending direction: a caller that
+   * forgets `ruleCode` sends the message. A member hearing from the gym twice is
+   * recoverable; a member never hearing is not.
+   */
+  readonly ruleCode?: ReminderRuleCode;
+  readonly hasLiveMandate?: boolean;
 }
 
 export type EligibilityResult =
@@ -110,6 +147,13 @@ export function checkReminderEligibility(input: EligibilityInput): EligibilityRe
     input.latestConfirmedMembershipId !== input.targetMembershipId
   ) {
     return no('SUPERSEDED_BY_NEWER_MEMBERSHIP');
+  }
+
+  // 4a. Autopay (ADR-105 §5). A member whose fee arrives on its own must not be chased for
+  //     it. This sits beside the renewal stop above because it is the same fact stated in
+  //     advance: there is no point asking for money that is already coming.
+  if (input.hasLiveMandate === true && input.ruleCode !== undefined && autopaySupersedes(input.ruleCode)) {
+    return no('AUTOPAY_ACTIVE');
   }
 
   // 5. Quiet hours (⚙ 08:00-21:00). A slot outside them is a misconfiguration that

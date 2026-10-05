@@ -137,4 +137,111 @@ describe('handleRazorpayWebhook', () => {
     expect(await handle(body('payment.captured', { amount: 1 }))).toEqual({ outcome: 'AMOUNT_MISMATCH' });
     expect(payments.members.get('mem_1')!.status).toBe('PENDING_PAYMENT');
   });
+
+  // Autopay (ADR-105). `subscription.charged` is money that has already left the member's
+  // account; the rest of the `subscription.*` family is the mandate's own state.
+  describe('subscription events', () => {
+    const subscriptionBody = (event: string, subscription: Record<string, unknown> = {}, payment: Record<string, unknown> | null = null) =>
+      JSON.stringify({
+        event,
+        payload: {
+          subscription: { entity: { id: 'sub_rzp_1', status: event.replace('subscription.', ''), charge_at: 1_762_387_200, ...subscription } },
+          ...(payment === null ? {} : { payment: { entity: { id: 'pay_rzp_9', amount: 150_000, order_id: 'order_rzp_9', ...payment } } }),
+        },
+      });
+
+    const charges: unknown[] = [];
+    const statuses: unknown[] = [];
+
+    const withMandates = (rawBody: string, eventId = 'evt_sub_1') =>
+      handleRazorpayWebhook(
+        { rawBody, signature: FakePaymentProvider.VALID_WEBHOOK_SIGNATURE, eventId },
+        {
+          provider,
+          clock: fakeClockAt('2026-11-01T06:30'),
+          uow: inMemoryUnitOfWork(payments),
+          events,
+          mandates: {
+            recordCharge: (input) => {
+              charges.push(input);
+              return Promise.resolve({ outcome: 'RENEWED' as const, paymentId: 'pay_new', membershipId: 'ms_new', receiptNo: 'MF/2026-27/000042', memberCode: 'MF-0007' });
+            },
+            updateStatus: (input) => {
+              statuses.push(input);
+              return Promise.resolve({ outcome: 'UPDATED' as const, mandateId: 'mandate_1', status: 'HALTED' as const });
+            },
+          },
+        },
+      );
+
+    beforeEach(() => {
+      charges.length = 0;
+      statuses.length = 0;
+    });
+
+    it('turns a charge into a renewal, reading the amount from the payment entity', async () => {
+      const result = await withMandates(subscriptionBody('subscription.charged', { status: 'active' }, {}));
+
+      expect(result).toEqual({ outcome: 'MANDATE_RENEWED' });
+      expect(charges[0]).toEqual({
+        providerSubscriptionId: 'sub_rzp_1',
+        providerPaymentId: 'pay_rzp_9',
+        paidAmountPaise: 150_000,
+        nextChargeAt: new Date('2025-11-06T00:00:00.000Z'),
+      });
+      // The charge path does its own status work; calling both would fight over the row.
+      expect(statuses).toHaveLength(0);
+    });
+
+    it('passes a halt to the mandate state, with no payment entity to read', async () => {
+      const result = await withMandates(subscriptionBody('subscription.halted'));
+
+      expect(result).toEqual({ outcome: 'MANDATE_UPDATED' });
+      expect(statuses[0]).toMatchObject({ providerSubscriptionId: 'sub_rzp_1', status: 'HALTED' });
+      expect(charges).toHaveLength(0);
+    });
+
+    it('maps every subscription state Razorpay sends to the mandate enum', async () => {
+      for (const [event, expected] of [
+        ['subscription.authenticated', 'AUTHENTICATED'],
+        ['subscription.activated', 'ACTIVE'],
+        ['subscription.pending', 'PENDING'],
+        ['subscription.cancelled', 'CANCELLED'],
+        ['subscription.completed', 'COMPLETED'],
+        ['subscription.paused', 'PAUSED'],
+        ['subscription.resumed', 'ACTIVE'],
+      ] as const) {
+        statuses.length = 0;
+        await withMandates(subscriptionBody(event, { status: expected.toLowerCase() === 'active' ? 'active' : undefined }), `evt_${event}`);
+        expect(statuses[0]).toMatchObject({ status: expected });
+      }
+    });
+
+    it('takes the halt reason from the failed payment when the event carries one', async () => {
+      await withMandates(subscriptionBody('subscription.halted', {}, { error_description: 'insufficient funds' }));
+
+      expect(statuses[0]).toMatchObject({ failureReason: 'insufficient funds' });
+    });
+
+    it('ignores a charge it cannot find a payment id in, rather than guessing', async () => {
+      const result = await withMandates(subscriptionBody('subscription.charged', { status: 'active' }, null));
+
+      expect(result).toEqual({ outcome: 'IGNORED' });
+      expect(charges).toHaveLength(0);
+    });
+
+    it('ignores the whole family when the platform has no mandate support wired in', async () => {
+      // DEMO_MODE has no subscription provider, so a subscription event cannot be acted on.
+      // Answering 200 and archiving it is right; inventing a mandate is not.
+      expect(await handle(subscriptionBody('subscription.halted'), 'evt_demo')).toEqual({ outcome: 'IGNORED' });
+    });
+
+    it('records the event once, so a re-delivery changes nothing', async () => {
+      await withMandates(subscriptionBody('subscription.halted'), 'evt_dup');
+      const second = await withMandates(subscriptionBody('subscription.halted'), 'evt_dup');
+
+      expect(second).toEqual({ outcome: 'DUPLICATE' });
+      expect(statuses).toHaveLength(1);
+    });
+  });
 });

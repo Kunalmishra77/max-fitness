@@ -115,6 +115,8 @@ export interface SendContextRow {
   readonly hasMobile: boolean;
   readonly latestConfirmedMembershipId: string | null;
   readonly messagesToNumberToday: number;
+  /** True when the member holds a mandate money can still arrive on (ADR-105 §5). */
+  readonly hasLiveMandate: boolean;
 }
 
 export class PrismaSendContext {
@@ -139,6 +141,14 @@ export class PrismaSendContext {
           take: 1,
           select: { id: true },
         },
+        // Autopay (ADR-105 §5). Only the statuses money can still arrive on count as live:
+        // a mandate the member was sent and never authorised is `CREATED`, and treating that
+        // as signed would stop the gym chasing a fee that is never coming.
+        mandates: {
+          where: { status: { in: ['ACTIVE', 'AUTHENTICATED', 'PENDING'] } },
+          take: 1,
+          select: { id: true },
+        },
       },
     });
     if (member === null || member.deletedAt !== null) return null;
@@ -156,6 +166,7 @@ export class PrismaSendContext {
       hasMobile: member.mobile.length > 0,
       latestConfirmedMembershipId: member.memberships[0]?.id ?? null,
       messagesToNumberToday,
+      hasLiveMandate: member.mandates.length > 0,
     };
   }
 }

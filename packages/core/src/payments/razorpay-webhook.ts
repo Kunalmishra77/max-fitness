@@ -1,6 +1,9 @@
 import type { Clock } from '@mfp/shared';
 import { DomainError, isDomainError } from '../errors';
-import type { PaymentProvider } from '../ports/payments';
+import { mandateStatusFrom, type MandateStatus } from '../mandates/mandate';
+import type { MandateChargeInput, MandateChargeResult } from '../mandates/record-mandate-charge';
+import type { MandateStatusInput, MandateStatusResult } from '../mandates/update-mandate-status';
+import type { PaymentProvider, SubscriptionStatus } from '../ports/payments';
 import { confirmPayment, type PaymentConfirmationUnitOfWork } from './confirm-payment';
 
 /**
@@ -39,7 +42,22 @@ export type WebhookOutcome =
   | 'CONFIRMED'
   | 'ALREADY_CONFIRMED'
   | 'AMOUNT_MISMATCH'
-  | 'FAILED_RECORDED';
+  | 'FAILED_RECORDED'
+  // Autopay (ADR-105).
+  | 'MANDATE_RENEWED'
+  | 'MANDATE_UPDATED';
+
+/**
+ * The two mandate operations, injected rather than imported, so this stays a dispatcher.
+ *
+ * Optional on purpose: `DEMO_MODE` has no subscription provider, so a `subscription.*` event
+ * cannot be acted on there. Without these the family falls through to `IGNORED`, which
+ * answers 200 and archives the payload — inventing a mandate would be worse than ignoring it.
+ */
+export interface MandateWebhookHandlers {
+  recordCharge(input: MandateChargeInput): Promise<MandateChargeResult>;
+  updateStatus(input: MandateStatusInput): Promise<MandateStatusResult>;
+}
 
 interface PaymentEntity {
   readonly id: string;
@@ -48,14 +66,62 @@ interface PaymentEntity {
   readonly errorDescription: string | null;
 }
 
-function parseEvent(rawBody: string): { event: string; payload: unknown; payment: PaymentEntity | null } {
+interface SubscriptionEntity {
+  readonly id: string;
+  readonly status: MandateStatus | null;
+  /** Razorpay's next-charge instant, from Unix seconds. */
+  readonly chargeAt: Date | null;
+}
+
+const SUBSCRIPTION_STATUSES: ReadonlySet<string> = new Set<SubscriptionStatus>([
+  'created',
+  'authenticated',
+  'active',
+  'pending',
+  'halted',
+  'paused',
+  'cancelled',
+  'completed',
+  'expired',
+]);
+
+/**
+ * `subscription.resumed` has no state of its own — Razorpay reports the subscription as
+ * `active` in the entity — but the event name is the only thing some deliveries carry, so
+ * the names that imply a state are mapped too.
+ */
+const STATUS_BY_EVENT: Readonly<Record<string, MandateStatus>> = {
+  'subscription.authenticated': 'AUTHENTICATED',
+  'subscription.activated': 'ACTIVE',
+  'subscription.resumed': 'ACTIVE',
+  'subscription.charged': 'ACTIVE',
+  'subscription.pending': 'PENDING',
+  'subscription.halted': 'HALTED',
+  'subscription.paused': 'PAUSED',
+  'subscription.cancelled': 'CANCELLED',
+  'subscription.completed': 'COMPLETED',
+  'subscription.expired': 'EXPIRED',
+};
+
+function parseEvent(rawBody: string): {
+  event: string;
+  payload: unknown;
+  payment: PaymentEntity | null;
+  subscription: SubscriptionEntity | null;
+} {
   let payload: unknown;
   try {
     payload = JSON.parse(rawBody);
   } catch {
     throw new DomainError('VALIDATION_FAILED', 'Webhook body is not JSON');
   }
-  const root = payload as { event?: unknown; payload?: { payment?: { entity?: Record<string, unknown> } } };
+  const root = payload as {
+    event?: unknown;
+    payload?: {
+      payment?: { entity?: Record<string, unknown> };
+      subscription?: { entity?: Record<string, unknown> };
+    };
+  };
   if (typeof root.event !== 'string') {
     throw new DomainError('VALIDATION_FAILED', 'Webhook body has no event');
   }
@@ -71,19 +137,42 @@ function parseEvent(rawBody: string): { event: string; payload: unknown; payment
         }
       : null;
 
-  return { event: root.event, payload, payment };
+  const sub = root.payload?.subscription?.entity;
+  const rawStatus = sub?.['status'];
+  const chargeAt = sub?.['charge_at'];
+  const subscription =
+    sub !== undefined && typeof sub['id'] === 'string'
+      ? {
+          id: sub['id'],
+          // The entity's own status wins; the event name is the fallback, because the two
+          // disagree only when a delivery is partial.
+          status:
+            typeof rawStatus === 'string' && SUBSCRIPTION_STATUSES.has(rawStatus)
+              ? mandateStatusFrom(rawStatus as SubscriptionStatus)
+              : (STATUS_BY_EVENT[root.event] ?? null),
+          chargeAt: typeof chargeAt === 'number' && Number.isFinite(chargeAt) ? new Date(chargeAt * 1000) : null,
+        }
+      : null;
+
+  return { event: root.event, payload, payment, subscription };
 }
 
 export async function handleRazorpayWebhook(
   input: { rawBody: string; signature: string; eventId: string | null },
-  deps: { provider: PaymentProvider; clock: Clock; uow: PaymentConfirmationUnitOfWork; events: WebhookEventStore },
+  deps: {
+    provider: PaymentProvider;
+    clock: Clock;
+    uow: PaymentConfirmationUnitOfWork;
+    events: WebhookEventStore;
+    mandates?: MandateWebhookHandlers;
+  },
 ): Promise<{ outcome: WebhookOutcome }> {
   if (!deps.provider.verifyWebhookSignature(input.rawBody, input.signature)) {
     throw new DomainError('INVALID_PAYMENT_SIGNATURE', 'The webhook signature did not verify');
   }
 
-  const { event, payload, payment } = parseEvent(input.rawBody);
-  const externalId = input.eventId ?? `${event}:${payment?.id ?? 'no-payment'}`;
+  const { event, payload, payment, subscription } = parseEvent(input.rawBody);
+  const externalId = input.eventId ?? `${event}:${payment?.id ?? subscription?.id ?? 'no-payment'}`;
 
   const recorded = await deps.events.recordEvent({ provider: 'razorpay', externalId, eventType: event, signatureOk: true, payload });
   if (recorded === 'DUPLICATE') {
@@ -104,6 +193,35 @@ export async function handleRazorpayWebhook(
       await deps.events.markPaymentFailed(payment.orderId, payment.errorDescription);
       await deps.events.markProcessed(externalId, null);
       return { outcome: 'FAILED_RECORDED' };
+    }
+
+    // Autopay (ADR-105). A charge is money already taken; everything else is state.
+    if (event.startsWith('subscription.') && subscription !== null && deps.mandates !== undefined) {
+      if (event === 'subscription.charged') {
+        // Without a payment entity there is nothing to record and no id to be idempotent on.
+        // Guessing one would risk a second receipt for the same debit.
+        if (payment !== null) {
+          await deps.mandates.recordCharge({
+            providerSubscriptionId: subscription.id,
+            providerPaymentId: payment.id,
+            paidAmountPaise: payment.amountPaise,
+            nextChargeAt: subscription.chargeAt,
+          });
+          await deps.events.markProcessed(externalId, null);
+          return { outcome: 'MANDATE_RENEWED' };
+        }
+      } else if (subscription.status !== null) {
+        await deps.mandates.updateStatus({
+          providerSubscriptionId: subscription.id,
+          status: subscription.status,
+          nextChargeAt: subscription.chargeAt,
+          // Razorpay puts no reason on the subscription entity. When a halt arrives alongside
+          // the payment that caused it, that is where the reason is.
+          failureReason: payment?.errorDescription ?? null,
+        });
+        await deps.events.markProcessed(externalId, null);
+        return { outcome: 'MANDATE_UPDATED' };
+      }
     }
 
     await deps.events.markProcessed(externalId, null);

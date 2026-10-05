@@ -203,6 +203,19 @@ export class RazorpayPaymentProvider implements PaymentProvider, SubscriptionPro
     if (!PLAN_ID.test(request.providerPlanId)) {
       throw new PaymentProviderError('createSubscription', 'malformed plan id');
     }
+
+    // Razorpay refuses a `start_at` in the past, and it refuses it *after* it would otherwise
+    // have created the subscription — so checking here is what keeps a half-made mandate from
+    // existing. Wall-clock, not an injected clock, on purpose: this is the provider's own
+    // constraint about real time, not a business date, and the domain owns those (CLAUDE.md §2.2).
+    let startAtSeconds: number | undefined;
+    if (request.startAt !== undefined) {
+      startAtSeconds = Math.floor(request.startAt.getTime() / 1000);
+      if (!Number.isFinite(startAtSeconds) || startAtSeconds * 1000 <= Date.now()) {
+        throw new PaymentProviderError('createSubscription', 'the first debit must start in the future');
+      }
+    }
+
     const body = await this.#call('createSubscription', 'POST', '/subscriptions', {
       plan_id: request.providerPlanId,
       total_count: request.totalCount,
@@ -210,6 +223,7 @@ export class RazorpayPaymentProvider implements PaymentProvider, SubscriptionPro
       // Razorpay sends its own authorisation prompt. The gym's WhatsApp message carries the
       // same link, so a member who misses one still gets the other.
       customer_notify: 1,
+      ...(startAtSeconds === undefined ? {} : { start_at: startAtSeconds }),
       ...(request.notes === undefined ? {} : { notes: request.notes }),
     });
     return this.#subscription('createSubscription', body);

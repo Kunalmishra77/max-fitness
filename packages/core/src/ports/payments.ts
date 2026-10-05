@@ -96,6 +96,14 @@ export interface CreateSubscriptionRequest {
    * member will have left or renewed by then.
    */
   readonly totalCount: number;
+  /**
+   * When the first debit should happen. Omitted means "as soon as the member authorises".
+   *
+   * In practice it is always given, because the first debit is never today: a member who has
+   * just paid for a month, and a member on a free trial, are both covered until a date the
+   * register already knows, and the mandate starts the day after that (ADR-105).
+   */
+  readonly startAt?: Date;
   readonly notes?: Readonly<Record<string, string>>;
 }
 

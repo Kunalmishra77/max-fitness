@@ -1,5 +1,5 @@
 /**
- * Create the gym's monthly plans at Razorpay and record their ids (ADR-105).
+ * Create a Razorpay plan for every plan the gym sells, and record their ids (ADR-105).
  *
  * A Razorpay plan is **immutable**: once created, neither the amount nor the cycle can be
  * changed — only deactivated. So this is written to be run twice safely and to be read
@@ -8,12 +8,14 @@
  *   pnpm --filter @mfp/worker run create:razorpay-plans          # says what it would create
  *   pnpm --filter @mfp/worker run create:razorpay-plans -- --yes
  *
- * Monthly only, on purpose. The 3, 6 and 12-month plans are prepaid lump sums; a standing
- * instruction for one of those is a different product than the gym sells (ADR-105 §2).
+ * **Every plan, not only the monthly ones** (owner, 2026-10-05; ADR-105 §2 revised). A
+ * three-month membership that renews itself every three months is the same good deal as a
+ * monthly one renewing monthly: the member chose their term, and autopay only means nobody
+ * has to chase them at the end of it. Personal training is included for the same reason.
  *
  * Why a script rather than the dashboard: the amount a member is debited and the amount the
- * register shows have to come from one place. Creating these by hand means typing ₹1,500
- * twice and having no way to tell, later, which of the two was wrong.
+ * register shows have to come from one place. Creating sixteen of these by hand means typing
+ * sixteen amounts twice and having no way to tell, later, which of the two was wrong.
  */
 import { createPrismaClient } from '@mfp/db/client';
 import { RazorpayPaymentProvider } from '@mfp/integrations/payments';
@@ -28,8 +30,21 @@ const need = (name: string): string => {
 
 const rupees = (paise: number) => `₹${(paise / 100).toLocaleString('en-IN')}`;
 
-/** Only the one-month rows get a Razorpay plan. */
-const AUTOPAY_PLAN_CODES = ['M1_MALE', 'M1_FEMALE'] as const;
+/**
+ * Razorpay expresses a cycle as a period plus an interval, and the adapter refuses a month
+ * count it has no period for. These four are what the gym sells.
+ */
+const SUPPORTED_INTERVAL_MONTHS = new Set([1, 3, 6, 12]);
+
+/**
+ * What the member reads in their UPI app and on their bank statement, so it has to say which
+ * gym and what for, with none of our internal codes in it.
+ */
+function planLabel(kind: string, months: number, gender: string): string {
+  const term = months === 12 ? 'yearly' : months === 1 ? 'monthly' : `${months}-monthly`;
+  const who = gender === 'FEMALE' ? 'women' : 'men';
+  return kind === 'PT' ? `Max Fitness — personal training, ${term} (${who})` : `Max Fitness — membership, ${term} (${who})`;
+}
 
 async function main(): Promise<void> {
   process.loadEnvFile(new URL('../../../.env', import.meta.url));
@@ -56,42 +71,43 @@ async function main(): Promise<void> {
     if (gym === null) throw new Error(`No gym with slug "${slug}"`);
 
     const plans = await prisma.plan.findMany({
-      where: { gymId: gym.id, code: { in: [...AUTOPAY_PLAN_CODES] }, kind: 'MEMBERSHIP' },
-      select: { id: true, code: true, pricePaise: true, providerPlanId: true, durationMonths: true, isActive: true },
-      orderBy: { code: 'asc' },
+      where: { gymId: gym.id, isActive: true },
+      select: { id: true, code: true, kind: true, gender: true, pricePaise: true, providerPlanId: true, durationMonths: true },
+      orderBy: [{ kind: 'asc' }, { durationMonths: 'asc' }, { code: 'asc' }],
     });
-
-    const missing = AUTOPAY_PLAN_CODES.filter((code) => !plans.some((plan) => plan.code === code));
-    if (missing.length > 0) throw new Error(`${gym.name} has no plan row for ${missing.join(', ')}`);
+    if (plans.length === 0) throw new Error(`${gym.name} has no active plan rows`);
 
     console.log(`${gym.name} (${slug})\n`);
     for (const plan of plans) {
       const state = plan.providerPlanId === null ? 'no Razorpay plan yet' : `already ${plan.providerPlanId}`;
-      console.log(`   ${plan.code.padEnd(10)} ${rupees(plan.pricePaise).padStart(8)} / ${plan.durationMonths} month   ${state}`);
+      console.log(`   ${plan.code.padEnd(12)} ${rupees(plan.pricePaise).padStart(9)} / ${String(plan.durationMonths).padStart(2)} month   ${state}`);
     }
 
     const todo = plans.filter((plan) => plan.providerPlanId === null);
     if (todo.length === 0) {
-      console.log('\nEvery autopay plan already has its Razorpay id. Nothing to do.');
+      console.log('\nEvery plan already has its Razorpay id. Nothing to do.');
       return;
     }
-    // A sanity floor. A plan created for 1 paise is immutable and embarrassing.
+    // Sanity floors, checked before anything immutable is made. A plan created for 1 paise,
+    // or on a cycle Razorpay has no period for, cannot be corrected afterwards.
     for (const plan of todo) {
-      if (plan.durationMonths !== 1) throw new Error(`${plan.code} is ${plan.durationMonths} months; autopay is monthly only`);
+      if (!SUPPORTED_INTERVAL_MONTHS.has(plan.durationMonths)) {
+        throw new Error(`${plan.code} is ${plan.durationMonths} months, which has no Razorpay period`);
+      }
       if (plan.pricePaise < 10_000) throw new Error(`${plan.code} is ${rupees(plan.pricePaise)}, which is too low to be real`);
     }
 
     if (!commit) {
-      console.log(`\nWould create ${todo.length} Razorpay plan(s): ${todo.map((p) => `${p.code} at ${rupees(p.pricePaise)}/month`).join(', ')}`);
-      console.log('A Razorpay plan cannot be edited afterwards. Check the amounts, then re-run with -- --yes');
+      console.log(`\nWould create ${todo.length} Razorpay plan(s):`);
+      for (const plan of todo) console.log(`   ${plan.code.padEnd(12)} ${rupees(plan.pricePaise).padStart(9)} every ${plan.durationMonths} month(s)   "${planLabel(plan.kind, plan.durationMonths, plan.gender)}"`);
+      console.log('\nA Razorpay plan cannot be edited afterwards. Check the amounts, then re-run with -- --yes');
       return;
     }
 
     const razorpay = liveRazorpay();
     for (const plan of todo) {
-      const label = plan.code.endsWith('_FEMALE') ? 'Max Fitness — monthly (women)' : 'Max Fitness — monthly (men)';
       const created = await razorpay.createPlan({
-        name: label,
+        name: planLabel(plan.kind, plan.durationMonths, plan.gender),
         amountPaise: plan.pricePaise,
         intervalMonths: plan.durationMonths,
         notes: { planCode: plan.code, gymSlug: slug },
@@ -104,7 +120,7 @@ async function main(): Promise<void> {
       }
 
       await prisma.plan.update({ where: { id: plan.id }, data: { providerPlanId: created.providerPlanId } });
-      console.log(`   created ${plan.code} at ${rupees(created.amountPaise)}/month → ${created.providerPlanId}`);
+      console.log(`   created ${plan.code.padEnd(12)} ${rupees(created.amountPaise).padStart(9)} every ${plan.durationMonths} month(s) → ${created.providerPlanId}`);
     }
 
     console.log('\nDone. These ids are now on the gym\'s own plan rows, so the amount a member is debited and the amount the register shows come from one place.');

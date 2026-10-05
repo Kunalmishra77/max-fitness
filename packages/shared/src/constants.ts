@@ -136,6 +136,11 @@ export const WHATSAPP_TEMPLATES = {
   trialCheckIn: 'mf_trial_check_in',
   trialLastDay: 'mf_trial_last_day',
   trialJoin: 'mf_trial_join',
+  // Autopay (ADR-105). The first carries the authorisation link; the second is the one that
+  // matters most, because a halted mandate looks exactly like a paid-up member until asked.
+  mandateInvite: 'mf_autopay_invite',
+  mandateHalted: 'mf_autopay_halted',
+  mandateCancelled: 'mf_autopay_cancelled',
 } as const;
 export type WhatsAppTemplateName = (typeof WHATSAPP_TEMPLATES)[keyof typeof WHATSAPP_TEMPLATES];
 

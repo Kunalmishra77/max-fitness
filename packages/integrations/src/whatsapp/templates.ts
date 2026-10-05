@@ -336,6 +336,47 @@ const TRIAL_JOIN: TemplateDefinition = {
 };
 
 /**
+ * T20–T22 — autopay (ADR-105).
+ *
+ * The link is a variable, not part of the body, because Razorpay issues a fresh one per
+ * mandate. The halt message is the one that matters most in this whole file: from the moment
+ * a mandate halts the gym is not being paid while the member still shows as paid up, and
+ * nothing else about their record looks wrong.
+ */
+const AUTOPAY_INVITE: TemplateDefinition = {
+  name: 'mf_autopay_invite',
+  category: 'UTILITY',
+  variables: ['firstName', 'amount', 'firstChargeDate', 'link'],
+  body: {
+    en: 'Hi {{1}}, you can set your Max Fitness Gym fee to pay itself. {{2}} would be taken automatically from {{3}}, and nothing before that. Set it up here: {{4}} — you can stop it any time from your own UPI app.',
+    hi: 'नमस्ते {{1}}, आप अपनी Max Fitness Gym की फ़ीस ऑटोमैटिक कर सकते हैं। {{3}} से {{2}} अपने आप कट जाएगा, उससे पहले कुछ नहीं। यहाँ सेट कीजिए: {{4}} — अपने UPI ऐप से कभी भी बंद कर सकते हैं।',
+  },
+  footer: FOOTER,
+};
+
+const AUTOPAY_HALTED: TemplateDefinition = {
+  name: 'mf_autopay_halted',
+  category: 'UTILITY',
+  variables: ['firstName'],
+  body: {
+    en: 'Hi {{1}}, your automatic Max Fitness Gym fee payment has stopped — the bank could not take it. Nothing has been lost, but the fee is now due the usual way. Come to reception and we will set it up again, or pay at the desk.',
+    hi: 'नमस्ते {{1}}, आपकी Max Fitness Gym की ऑटोमैटिक फ़ीस बंद हो गई है — बैंक से कट नहीं पाई। कुछ नुकसान नहीं हुआ, लेकिन अब फ़ीस आम तरीक़े से देनी होगी। रिसेप्शन पर आ जाइए, हम दोबारा सेट कर देंगे, या वहीं जमा कर दीजिए।',
+  },
+  footer: FOOTER,
+};
+
+const AUTOPAY_CANCELLED: TemplateDefinition = {
+  name: 'mf_autopay_cancelled',
+  category: 'UTILITY',
+  variables: ['firstName'],
+  body: {
+    en: 'Hi {{1}}, your automatic Max Fitness Gym fee payment has been cancelled. Your membership is unchanged — just pay at reception as before.',
+    hi: 'नमस्ते {{1}}, आपकी Max Fitness Gym की ऑटोमैटिक फ़ीस रद्द कर दी गई है। आपकी मेंबरशिप वैसी ही है — पहले की तरह रिसेप्शन पर फ़ीस जमा कर दीजिए।',
+  },
+  footer: FOOTER,
+};
+
+/**
  * T17–T19 — the diet plan (ADR-089).
  *
  * One template asks every question, with the question itself as a variable, because
@@ -487,6 +528,9 @@ export const TEMPLATES: Readonly<Record<WhatsAppTemplateName, TemplateDefinition
   mf_trial_check_in: TRIAL_CHECK_IN,
   mf_trial_last_day: TRIAL_LAST_DAY,
   mf_trial_join: TRIAL_JOIN,
+  mf_autopay_invite: AUTOPAY_INVITE,
+  mf_autopay_halted: AUTOPAY_HALTED,
+  mf_autopay_cancelled: AUTOPAY_CANCELLED,
 };
 
 export function templateDefinition(name: WhatsAppTemplateName): TemplateDefinition {

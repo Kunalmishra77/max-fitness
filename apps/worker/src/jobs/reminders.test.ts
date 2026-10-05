@@ -128,6 +128,7 @@ const context: SendContext = {
   hasMobile: true,
   latestConfirmedMembershipId: 'mship_1',
   messagesToNumberToday: 0,
+  hasLiveMandate: false,
 };
 
 function sendDeps(over: { context?: Partial<SendContext>; send?: (request: WhatsAppSendRequest) => Promise<WhatsAppSendOutcome>; recorded?: boolean } = {}) {

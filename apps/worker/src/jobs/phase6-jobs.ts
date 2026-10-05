@@ -143,6 +143,7 @@ export async function sendOne(deps: Phase6Deps, intent: SendIntent): Promise<voi
         hasMobile: false,
         latestConfirmedMembershipId: null,
         messagesToNumberToday: 0,
+        hasLiveMandate: false,
       }) as SendContext;
     },
     messageLog: {

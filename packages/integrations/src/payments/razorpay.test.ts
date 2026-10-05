@@ -220,6 +220,24 @@ describe('RazorpayPaymentProvider', () => {
       await expect(provider.createSubscription({ ...request, providerPlanId: 'not-a-plan' })).rejects.toThrow(PaymentProviderError);
       expect(calls).toHaveLength(0);
     });
+
+    // The first debit is never today. A member who just paid for a month, and a member on a
+    // free trial, are both covered until a date we already know — so the mandate starts the
+    // day after that, and `start_at` is how Razorpay is told (ADR-105).
+    it('delays the first debit to a given instant, as Unix seconds', async () => {
+      reply.body = { id: 'sub_P1aBcD2eFgH3iJ', entity: 'subscription', plan_id: request.providerPlanId, status: 'created', short_url: 'https://rzp.io/i/aBcD2eFg' };
+
+      await provider.createSubscription({ ...request, startAt: new Date('2026-11-06T00:00:00.000Z') });
+
+      expect(calls[0]?.body).toMatchObject({ start_at: 1_793_923_200 });
+    });
+
+    it('refuses a first debit that is not a whole number of seconds in the future', async () => {
+      // Razorpay rejects a past `start_at`, and it does so after the subscription row would
+      // otherwise have been created. Catching it here keeps that from being a half-done state.
+      await expect(provider.createSubscription({ ...request, startAt: new Date('2020-01-01T00:00:00.000Z') })).rejects.toThrow(/start/i);
+      expect(calls).toHaveLength(0);
+    });
   });
 
   describe('fetchSubscription', () => {
