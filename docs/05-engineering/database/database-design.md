@@ -18,10 +18,11 @@ Schema: `schema.prisma` (validated against Prisma 7.10 engine). ER diagram: `doc
 | `Counter` | Gapless sequences | Gym | `member_code`, `receipt:{FY}`; updated with `UPDATE … SET value = value + 1 RETURNING value` in the same transaction |
 | `StaffUser`, `Session` | CRM auth | Gym | PIN hash Argon2id; session token hashed |
 | `OtpCode` | Mobile OTP | Gym | Code hashed; 5 attempts; 10 min |
-| `Plan` | Price catalogue | Memberships | Code `M{months}_{GENDER}` |
+| `Plan` | Price catalogue | Memberships, Mandates | Code `M{months}_{GENDER}`. `providerPlanId` is Razorpay's immutable plan for autopay: changing `pricePaise` means creating a new one and repointing, and mandates already running keep charging the old amount until cancelled |
 | `Member` | Person | Memberships, Payments, Attendance, Consents, Media | `mobile` intentionally not unique |
 | `Membership` | A paid (or declared) period | Member, Plan, Payments | `isDeclared` for QR/import records |
-| `Payment` | Money in | Member, Membership | Provider IDs unique; receipt unique per gym |
+| `Payment` | Money in | Member, Membership, Mandate | Provider IDs unique; receipt unique per gym. `mandateId` set when it arrived by autopay (ADR-105) |
+| `Mandate` | A standing instruction — autopay (ADR-105) | Member, Plan, Payments | `providerSubscriptionId` unique, so a re-delivered webhook finds the same row. Amount and cycle frozen at creation, because Razorpay's plan is immutable. Monthly-or-longer only; one *live* per member is enforced in the domain, not here — a partial unique index is not something Prisma expresses, and a member may hold a cancelled one beside a new one |
 | `Lead` | Enquiry | converts to Member | |
 | `VerificationRequest` | QR existing-customer claim | Member | Keeps declared vs approved date |
 | `MediaFile` | Private blob metadata | Member | `deleteAfter` drives retention job |
@@ -207,3 +208,5 @@ Why this is safe and sufficient:
 - **pg-boss is unaffected** — it creates its own `pgboss` schema, which the Data API does not expose.
 
 Every future migration that adds a table to `public` must enable RLS on it in the same migration. Belt and braces: the Supabase dashboard must also have **Data API → exposed schemas** cleared of `public` (a manual step, recorded in the runbook).
+
+**That instruction is now checkable rather than only written down.** `pnpm --filter @mfp/worker run check:rls` asks the catalogue which tables in `public` have RLS and names any that do not, with the `ALTER` to fix each. It was written because the sentence above had gone unenforced: no migration after the first one carried its line, and the only reason every table turned out to be covered is that Supabase now enables RLS by default on new public tables. A platform default that may change is not something to rely on, so the mandates migration adds its `ALTER` explicitly — and `check:rls` is how the next person finds out if theirs is missing.

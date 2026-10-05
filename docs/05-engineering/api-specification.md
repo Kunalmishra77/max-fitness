@@ -99,6 +99,17 @@ Same as `/registrations` with `source=QR_NEW` (kept separate for analytics and r
 ### GET `/files/{mediaId}?sig=&exp=`
 Signed, expiring (≤ 5 min) URLs for private images; `Cache-Control: private, max-age=60`.
 
+### POST `/checkout/autopay`
+Auth: the same `x-registration-token` **or** `x-renew-token` as the order and the status poll, so it can only act on the member that token names (ADR-105, ADR-106).
+
+Takes **no body**. Which plan, how much and when the first debit lands are all decided from the register: the member has just paid for a term, and the mandate starts the day after it ends. Accepting an amount or a date from the client would make the one number that matters client-controlled.
+
+→ `{ data: { status, authoriseUrl, firstChargeOn, alreadySetUp } }`
+
+`status` is the mandate's state, which is `CREATED` on a fresh one: nothing is taken, and the member has to open `authoriseUrl` and approve it with their own bank or UPI app. `alreadySetUp` is true when the member already held a live mandate, in which case that one comes back rather than a second being made — two would debit the same fee twice.
+
+`503 AUTOPAY_UNAVAILABLE` in `DEMO_MODE`, which has no gateway to make a real mandate with.
+
 ### GET `/health`
 `{ data: { ok: true, db: "ok", worker: { ok: true, lastBeatAt, ageSeconds }, version } }` (no secrets, no counts).
 
@@ -110,6 +121,15 @@ Signed, expiring (≤ 5 min) URLs for private images; `Cache-Control: private, m
 - Read **raw body**; verify `X-Razorpay-Signature` = HMAC-SHA256(rawBody, `RAZORPAY_WEBHOOK_SECRET`).
 - Insert `WebhookEvent(provider="razorpay", externalId=event id header or payload id)`; duplicate → 200 immediately.
 - Handle `payment.captured`, `order.paid` → `confirmPayment()`; `payment.failed` → mark failed.
+- **Autopay (ADR-105, ADR-106).** There is no `mandate.*` event in Razorpay: the whole life of a
+  standing instruction arrives as `subscription.*`.
+  - `subscription.charged` → `recordMandateCharge()`. The amount comes from the event's payment
+    entity; without one the event is ignored rather than guessed at, because the payment id is
+    what makes the handler idempotent.
+  - every other `subscription.*` → `updateMandateStatus()`, which maps the subscription entity's
+    own status, falling back to the event name only when the entity is missing one.
+  - Both handlers are injected and optional. With none — `DEMO_MODE` — the family falls through
+    to `IGNORED`, which answers 200 and archives the payload rather than inventing a mandate.
 - Always respond 200 quickly after persisting; process in worker if heavy.
 
 ### GET `/webhooks/whatsapp`
