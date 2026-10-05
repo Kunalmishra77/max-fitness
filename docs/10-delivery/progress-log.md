@@ -1294,3 +1294,65 @@ member sees at the QR, which are a stranger's first impression of the gym.
   that is not the same as being unable to damage it.
 - Still the client's: Razorpay keys, the AI key, WhatsApp Cloud API approval.
 - `pnpm lint` has still never completed on this machine.
+
+## 2026-10-05 — e-mandate: the ground it stands on
+
+### Context
+The owner asked whether a member can set up an e-mandate — a new member at sign-up and an
+existing member afterwards. The honest answer was no: there was no mandate table, no
+subscription code, no specification, and `RazorpayPaymentProvider` had exactly four
+one-time-payment methods. The owner has since **enabled Subscriptions on the Razorpay
+account** and added `subscription.charged` and `subscription.halted` to the live webhook.
+
+They also reported being unable to find any `mandate.*` event to subscribe to. There is
+none — Razorpay expresses the whole life of a standing instruction through `subscription.*`,
+so the four events now live are the correct set.
+
+### Changed
+- **ADR-105 records the rules before any of the code**, because a standing instruction is a
+  business decision: autopay is monthly only; plans are created from code because a Razorpay
+  plan is immutable once made; a debit becomes an ordinary `Payment` row so receipts, the day
+  book and the fee state need no knowledge of mandates; a member with a live mandate is not
+  chased for the fee, but a halted one is told about, because a halted mandate looks exactly
+  like a paid-up member until somebody checks.
+- **`Mandate` table, applied to the live database.** Purely additive — a new table plus two
+  nullable columns (`Plan.providerPlanId`, `Payment.mandateId`), so nothing already in the
+  register was touched. Verified afterwards: `/api/v1/health` still `{"ok":true,"db":"ok"}`
+  with the worker beating.
+- **Four provider calls, TDD with a verified RED:** `createPlan`, `createSubscription`,
+  `fetchSubscription`, `cancelSubscription`. Ten new tests failed for the right reason before
+  any of them existed. They live behind a `SubscriptionProvider` port kept deliberately
+  separate from `PaymentProvider`: the simulated provider has no mandate to offer, and a demo
+  mandate that behaved like the real thing would be a fiction.
+- **`create:razorpay-plans`** says what it would do unless given `--yes`. Its dry run needs no
+  payment credentials, which is the point — the live keys went into the host's environment and
+  never into `.env`, so a machine that cannot create a plan can still report which are missing
+  and at what price. Dry run confirms `M1_MALE ₹1,500` and `M1_FEMALE ₹1,200`, against the gym
+  looked up by slug rather than `findFirst`.
+
+### Found on the way
+- **`check:rls`** asks the database which tables in `public` have row-level security. The init
+  migration enables it on everything it creates and says in a comment that every later
+  migration must add its own line — a comment nothing enforced, and no later migration had one.
+  All 37 tables turn out to be covered, because Supabase now does this by default for new
+  public tables. The mandates migration adds its `ALTER` explicitly anyway: a platform default
+  that may change is not something a mandate table should rest on.
+- **`tsc` was red on `main`.** `MemberExport` grew seven fields when the member download was
+  made to include everything, and `member-privacy.test.ts`'s fixture was never updated with it.
+  Fixed; its ten tests still pass.
+
+1,337 tests pass across core, shared and integrations. Every package typechecks.
+
+### Pending
+- **No member-facing mandate flow yet.** What remains: webhook handlers for
+  `subscription.charged` and `subscription.halted`, the autopay option at `/join/pay`, an
+  authorisation link an existing member can be sent, reminder-engine eligibility so an autopay
+  member is not chased, a halted-mandate alert and message, and the CRM view with a cancel.
+- **The Razorpay webhook secret in production is unconfirmed.** It was inferred from a
+  screenshot. If it is wrong, every event is rejected with 401 — safe against forgery, but a
+  payment Razorpay holds would never reach the register. With the owner.
+- The live Razorpay secret was pasted into a chat message and should be regenerated.
+- **Integration tests share the production database.** They clean up after themselves and that
+  is not the same as being unable to damage it.
+- Still the client's: the AI key, WhatsApp Cloud API approval.
+- `pnpm lint` has still never completed on this machine.
