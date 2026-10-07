@@ -19,6 +19,7 @@ export * from './kiosk/check-in';
 export * from './qr/gov-id';
 export * from './kiosk/face-engine';
 export * from './kiosk/matcher';
+export * from './kiosk/photo-quality';
 export * from './kiosk/pairing';
 export * from './kiosk/heartbeat';
 export * from './reminders/owner';

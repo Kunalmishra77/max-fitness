@@ -1,0 +1,16 @@
+# Pinned exactly, and this matters more here than anywhere else in the repository.
+#
+# A face engine that silently changes version changes every embedding it produces. The
+# templates already in the database would stop matching the frames coming off the camera,
+# and nothing would fail loudly — members would simply stop being recognised, one rebuild
+# later, for no visible reason. The version is stamped onto every template so a change is
+# at least detectable; pinning is what stops it happening by accident.
+#
+# Verified resolvable at these versions on 2026-10-07.
+fastapi==0.142.2
+uvicorn[standard]==0.54.0
+python-multipart==0.0.32
+# Headless: the container has no display, and the GUI build pulls in X11 libraries that
+# would be dead weight in the image and one more thing to go wrong at startup.
+opencv-python-headless==5.0.0.93
+numpy==2.5.3

@@ -1,0 +1,61 @@
+# syntax=docker/dockerfile:1
+
+# The face engine (ADR-107).
+#
+# Python, not Node, for one reason: OpenCV's `FaceRecognizerSF.alignCrop` applies the exact
+# five-point similarity transform SFace was trained against. Hand-rolling that warp in
+# TypeScript is a few dozen lines of arithmetic which, when subtly wrong, does not raise an
+# error — it quietly costs accuracy on every member for ever. The alignment is the one piece
+# worth a whole runtime to get right.
+#
+# The weights are **baked into the image**, not fetched at startup. A container that
+# downloads 39 MB from GitHub before it can answer is a container that fails to start on the
+# morning GitHub is slow, at the hour the gym opens.
+
+FROM python:3.13-slim AS runtime
+WORKDIR /srv
+
+# curl for the healthcheck; the slim image has none.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+# Dependencies before source, so editing a handler does not reinstall OpenCV.
+COPY apps/face/requirements.txt ./requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --no-cache-dir -r requirements.txt
+
+ADD https://raw.githubusercontent.com/opencv/opencv_zoo/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx /models/yunet.onnx
+ADD https://raw.githubusercontent.com/opencv/opencv_zoo/main/models/face_recognition_sface/face_recognition_sface_2021dec.onnx /models/sface.onnx
+
+# **The build fails if either model is not byte-for-byte the one the POC measured.**
+#
+# These two files decide what every embedding in the database means. The URLs point at a
+# branch, so a rebuild could otherwise pick up a newer model — and every template already
+# stored would quietly stop matching the camera, with nothing failing loudly and members
+# simply no longer being recognised. The checksums are of the exact files ADR-107's numbers
+# came from. If upstream changes them, this build stops and somebody re-runs the POC, which
+# is the only safe way for the engine to ever change.
+RUN printf '%s  /models/yunet.onnx\n%s  /models/sface.onnx\n' \
+      8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4 \
+      0ba9fbfa01b5270c96627c4ef784da859931e02f04419c829e83484087c34e79 \
+    > /models/SHA256SUMS \
+ && sha256sum -c /models/SHA256SUMS
+
+COPY apps/face/app ./app
+
+ENV FACE_MODELS_DIR=/models \
+    FACE_PORT=8000 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+RUN useradd --system --uid 1001 face && chown -R face:face /srv /models
+USER face
+EXPOSE 8000
+
+# Readiness, not liveness: /health answers 503 until the weights have loaded, which takes a
+# second or two, and a check-in that arrives before then should wait rather than fail.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD curl -fsS http://127.0.0.1:8000/health || exit 1
+
+CMD ["python", "-m", "app"]
