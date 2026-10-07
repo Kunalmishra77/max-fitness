@@ -10,11 +10,20 @@ export async function postQrExisting(form: FormData): Promise<QrSubmitResult> {
   try {
     const response = await fetch('/api/v1/qr/existing', { method: 'POST', body: form });
     const body = (await response.json().catch(() => ({}))) as {
-      data?: { referenceCode?: string };
+      data?: { referenceCode?: string; autopayToken?: string; coveredUntil?: string };
       error?: { code?: string; details?: { fields?: Record<string, string>; field?: string; minAge?: number; reason?: string } };
       meta?: { requestId?: string };
     };
-    if (response.ok && typeof body.data?.referenceCode === 'string') return { ok: true, referenceCode: body.data.referenceCode };
+    if (response.ok && typeof body.data?.referenceCode === 'string') {
+      const { referenceCode, autopayToken, coveredUntil } = body.data;
+      return {
+        ok: true,
+        referenceCode,
+        // Present only for a member who answered "online": the next screen offers them the
+        // standing instruction rather than making them wait for the desk.
+        ...(typeof autopayToken === 'string' && typeof coveredUntil === 'string' ? { autopay: { token: autopayToken, coveredUntil } } : {}),
+      };
+    }
     const code = body.error?.code;
     const fields = [
       ...Object.keys(body.error?.details?.fields ?? {}),

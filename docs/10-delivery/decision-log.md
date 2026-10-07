@@ -593,3 +593,30 @@ Three consequences worth recording:
 **On autopay: there is no defect here, and no change.** A QR member pays cash at the desk, so there is no payment for a mandate to hang off and no plan row until approval. Autopay for them is a desk action: approve the verification, open the profile, press set up, and `startMandate` WhatsApps the member the link to approve with their own bank. The member's own phone cannot offer it at `/qr/done`, because at that moment nobody has verified who they are or what they are on.
 
 **Not a bug, and recorded because it was reported as one:** `/qr/existing` shows "1 / 8". That is ADR-080 — the client asked for one question per screen after watching members struggle with ADR-075's single page at reception. It is intentional.
+
+## ADR-110
+
+**Date:** 2026-10-07
+**Status:** Accepted
+**Context:** The owner asked that an existing member arriving at the reception QR be asked how they pay — cash goes to the counter, online sets up a standing instruction there and then. They also asked that the selfie be taken live rather than chosen from the gallery, and checked on the spot for whether face attendance will work with it.
+
+**Decision — the QR asks, and the answer is acted on twice.**
+
+A mandate's **first debit is the day after the member's cover ends**. At the QR that date is a claim typed into a phone, and a member who understates it is debited for a month they have already paid for. A Razorpay subscription's start date cannot be quietly corrected once the member has authorised it. So the answer is used in two places with different guarantees:
+
+1. **Immediately, on the reference-code screen,** for a member who chose online. The offer **states the date of the first debit** rather than hiding it, because the member is the only person who knows whether their own expiry date is right, and the desk is two steps away. Nothing is taken that day.
+2. **Again at approval,** where staff have either accepted or corrected the date and the membership is written with the gym's own. `approveVerification` carries the answer out — it cannot make the call itself, being inside the transaction that writes the membership — and the CRM action starts the mandate with `notify`, so the link reaches a member who left the desk minutes ago. A mandate that already exists is returned rather than duplicated, so the two paths cannot produce two debits.
+
+Starting the mandate never fails the approval. A member whose mandate could not be created is a button on their profile; an approval rolled back because Razorpay was slow is a person standing at the desk.
+
+**`findCandidate` now falls back to the pending request's declared end date.** Without it a member with no membership yet has `coveredUntil: null`, which means the first debit lands *tomorrow* — this was the actual defect behind the whole design above, and it would have hit the CRM's own "set up" button for an unapproved member too.
+
+**The autopay token is its own purpose.** A registration token would have worked and would also have opened the checkout. `POST /checkout/orders` refuses it explicitly, and the type system refuses it first — which is the reason for a separate purpose rather than a shared one.
+
+**Decision — the selfie is taken now, not chosen.** This reverses ADR-081, which added "choose a photo you already have" because not every camera works and not everybody wants to be photographed at a desk. That reasoning held when the selfie was a picture on a profile. It does not hold now that the same picture is what the camera at the door recognises the member by: a photograph from 2019, or of somebody else, is a member who will never be recognised, and nobody finds out until they are standing at the door every morning. The phone's own camera app stays as the fallback, with `capture` set so it opens the camera rather than the gallery.
+
+**Decision — the gate runs at capture time**, through `POST /api/v1/selfie/check`, which stores nothing, takes no name and is rate-limited by address alone. The member hears "hold the phone closer" while still looking at the picture. A refused photograph cannot be used; an unreachable engine lets it through, because the server runs the same gate on submission and a gym that cannot take a member while a container restarts is the worse failure.
+
+**Found, not a defect:** the ID upload has always accepted a PDF, in both QR forms, and the help text says so. Only the button's own label never mentioned it.
+
+**Recorded because it keeps costing time:** the integration tests share one Postgres and fail in parallel with `max clients reached in session mode — pool_size: 15`. They pass with `--no-file-parallelism`. This is not a flake to re-run; it is a limit, and it will keep being mistaken for a real failure until the suite is given its own database or a serial lane.

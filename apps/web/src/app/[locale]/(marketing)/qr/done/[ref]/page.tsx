@@ -2,13 +2,19 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { getPathname } from '@/i18n/navigation';
 import { joinContext } from '@/lib/join-page';
+import { QrDoneAutopay } from '@/components/qr/qr-done-autopay';
 import { QrPage, qrMetadata } from '@/lib/qr-page';
 
 /**
  * `/qr/done/[ref]` — the reference code to show at the desk (qr-onboarding-flow §2).
  *
- * The code alone is on the page: it tells whoever sees the screen nothing about the
- * member, and staff match it against the queue in the CRM.
+ * The code tells whoever sees the screen nothing about the member: no name, no number,
+ * nothing but something staff can match against the queue in the CRM.
+ *
+ * The one thing below it is the standing instruction, and only for a member who has just
+ * said on the form that they pay online (owner, 2026-10-07). It names the date of the first
+ * debit, which is the day after the cover they typed in — so a member who got that date
+ * wrong finds out here, two steps from the desk, rather than when the money goes.
  */
 
 export const dynamic = 'force-dynamic';
@@ -36,6 +42,9 @@ export default async function QrDonePage({ params }: { params: Promise<{ locale:
           <span className="block text-small tracking-wide uppercase">{t('codeLabel')}</span>
           <span className="mt-2 block font-display text-display-xl font-bold tracking-[0.15em]">{ref}</span>
         </p>
+        {/* Only for the member who just said they pay online; silent for everybody else. */}
+        <QrDoneAutopay />
+
         <a
           href={getPathname({ href: '/', locale: ctx.locale })}
           className="mt-8 inline-flex min-h-14 items-center justify-center rounded-panel border-2 border-brand-obsidian px-6 text-body-l font-semibold text-brand-obsidian"

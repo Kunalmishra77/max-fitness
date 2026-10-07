@@ -49,6 +49,13 @@ export async function POST(request: NextRequest) {
     const access = checkoutAccess(request.headers, { secret: env.LINK_TOKEN_SECRET, clock });
     const gym = await loadGym(container);
 
+    // An autopay token says one thing — set this member's fee to collect itself — and must
+    // not be able to open a checkout. Its own purpose exists so this is a type error rather
+    // than a judgement call; refusing it here is the other half of that.
+    if (access.mode === 'autopay') {
+      return apiError(403, 'FORBIDDEN', 'This link cannot start a payment', requestId);
+    }
+
     const result = await createCheckoutOrder(
       {
         memberId: access.memberId,

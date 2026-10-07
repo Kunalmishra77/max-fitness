@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { PrismaExistingMemberUnitOfWork } from '@mfp/db';
-import { submitExistingMember } from '@mfp/core';
+import { issueToken, submitExistingMember } from '@mfp/core';
 import { apiData, apiError, newRequestId } from '@/lib/api';
 import { errorResponse } from '@/lib/api-errors';
 import { getContainer } from '@/lib/container';
@@ -11,7 +11,7 @@ import { clientIp, limiterKey, registrationLimiters } from '@/lib/rate-limit';
 import { enrolFromSignup } from '@/lib/enrol-on-signup';
 import { checkSelfieFace } from '@/lib/selfie-face-gate';
 import { MAX_GOV_ID_BYTES, MAX_SELFIE_BYTES, processGovIdImage, processSelfie } from '@/lib/selfie-image';
-import { hashIp } from '@/lib/signup-access';
+import { AUTOPAY_TOKEN_TTL_SECONDS, hashIp } from '@/lib/signup-access';
 
 /**
  * `POST /api/v1/qr/existing` — an existing member's details from the reception QR
@@ -143,7 +143,29 @@ export async function POST(request: NextRequest) {
     // the camera keeps missing gets recognised. The gym's own cap decides how many.
     await enrolFromSignup({ memberId: result.memberId }, faceCheck, gym.id, gym.settings.attendance);
 
-    return apiData({ referenceCode: result.referenceCode, status: 'PENDING_VERIFICATION', matchedExisting: result.matchedExisting }, requestId, 201);
+    /**
+     * The member said they pay online, so they are offered the standing instruction on the
+     * very next screen — while they are still holding the phone at the desk.
+     *
+     * Its own short-lived purpose: it sets up this member's mandate and can do nothing
+     * else, least of all open a checkout. Half an hour is long enough to read a screen and
+     * far too short to be worth keeping. The desk's own path runs anyway when staff approve
+     * them, and a mandate that already exists is returned rather than duplicated.
+     */
+    const autopayToken = !parsed.wantsAutopay
+      ? null
+      : issueToken({ purpose: 'autopay', subject: result.memberId, ttlSeconds: AUTOPAY_TOKEN_TTL_SECONDS, secret: env.LINK_TOKEN_SECRET, clock });
+
+    return apiData(
+      {
+        referenceCode: result.referenceCode,
+        status: 'PENDING_VERIFICATION',
+        matchedExisting: result.matchedExisting,
+        ...(autopayToken === null ? {} : { autopayToken, coveredUntil: parsed.declaredEndDate }),
+      },
+      requestId,
+      201,
+    );
   } catch (error) {
     return errorResponse(error, requestId, 'qr-existing');
   }

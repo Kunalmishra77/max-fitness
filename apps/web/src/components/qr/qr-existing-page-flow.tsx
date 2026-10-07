@@ -2,6 +2,7 @@
 
 import { useRouter } from '@/i18n/navigation';
 import { postQrExisting } from './post-qr-existing';
+import { rememberQrAutopay } from './qr-done-autopay';
 import { QrExistingForm } from './qr-existing-form';
 
 /**
@@ -23,5 +24,16 @@ export function QrExistingPageFlow(props: {
 }) {
   const router = useRouter();
   const { otpRequired: _otpRequired, ...rest } = props;
-  return <QrExistingForm {...rest} submit={postQrExisting} onSubmitted={(referenceCode) => router.push(`/qr/done/${referenceCode}`)} />;
+  return (
+    <QrExistingForm
+      {...rest}
+      submit={postQrExisting}
+      onSubmitted={(referenceCode, autopay) => {
+        // Handed to the next screen rather than put in the URL: a reference code is shown
+        // to whoever is at the desk, and a token in the address bar goes with it.
+        if (autopay !== undefined) rememberQrAutopay(autopay);
+        router.push(`/qr/done/${referenceCode}`);
+      }}
+    />
+  );
 }

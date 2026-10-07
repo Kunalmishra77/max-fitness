@@ -277,6 +277,21 @@ function startStoreFor(tx: TransactionClient): StartMandateStore {
             take: 1,
             select: { id: true, status: true, shortUrl: true, nextChargeOn: true },
           },
+          /**
+           * The date a member who registered at the reception QR gave for their own fees,
+           * while nobody has approved them yet (owner, 2026-10-07).
+           *
+           * Without it such a member has no membership, `coveredUntil` is null, and the
+           * first debit lands *tomorrow* — on somebody who has already paid up to
+           * November. It is their own claim rather than the gym's record, which is why the
+           * screen that offers this states the date and takes nothing today.
+           */
+          verifications: {
+            where: { status: 'PENDING' },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: { declaredEndDate: true },
+          },
         },
       });
       if (member === null) return null;
@@ -304,7 +319,12 @@ function startStoreFor(tx: TransactionClient): StartMandateStore {
         pricePaise: plan.pricePaise,
         durationMonths: plan.durationMonths,
         providerPlanId: plan.providerPlanId,
-        coveredUntil: member.memberships[0] === undefined ? null : fromDbDate(member.memberships[0].endDate),
+        coveredUntil:
+          member.memberships[0] !== undefined
+            ? fromDbDate(member.memberships[0].endDate)
+            : member.verifications[0] !== undefined
+              ? fromDbDate(member.verifications[0].declaredEndDate)
+              : null,
         liveMandate:
           live === undefined
             ? null

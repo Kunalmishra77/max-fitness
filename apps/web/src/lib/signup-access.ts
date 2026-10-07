@@ -13,6 +13,15 @@ import type { Clock } from '@mfp/shared';
 
 export const REGISTRATION_TOKEN_HEADER = 'x-registration-token';
 export const RENEW_TOKEN_HEADER = 'x-renew-token';
+/**
+ * A member who registered at the reception QR and said they pay online (owner, 2026-10-07).
+ *
+ * Its own purpose rather than a registration token, because it grants exactly one thing —
+ * setting up this member's standing instruction — and a registration token would also open
+ * the checkout. Short-lived: it is used on the screen that issued it or not at all.
+ */
+export const AUTOPAY_TOKEN_HEADER = 'x-autopay-token';
+export const AUTOPAY_TOKEN_TTL_SECONDS = 30 * 60;
 
 /** Receipt links go out on WhatsApp and are opened again weeks later (decision-log). */
 export const RECEIPT_LINK_TTL_SECONDS = 90 * 86_400;
@@ -24,7 +33,7 @@ export interface TokenDeps {
 
 export interface CheckoutAccess {
   readonly memberId: string;
-  readonly mode: 'signup' | 'renewal';
+  readonly mode: 'signup' | 'renewal' | 'autopay';
 }
 
 export function checkoutAccess(headers: Headers, deps: TokenDeps): CheckoutAccess {
@@ -36,7 +45,11 @@ export function checkoutAccess(headers: Headers, deps: TokenDeps): CheckoutAcces
   if (renew !== null && renew !== '') {
     return { memberId: verifyTokenOrThrow({ token: renew, purpose: 'renew', ...deps }), mode: 'renewal' };
   }
-  throw new DomainError('TOKEN_INVALID', 'A sign-up or renew token is required');
+  const autopay = headers.get(AUTOPAY_TOKEN_HEADER);
+  if (autopay !== null && autopay !== '') {
+    return { memberId: verifyTokenOrThrow({ token: autopay, purpose: 'autopay', ...deps }), mode: 'autopay' };
+  }
+  throw new DomainError('TOKEN_INVALID', 'A sign-up, renew or autopay token is required');
 }
 
 /**

@@ -154,7 +154,8 @@ describe('QrExistingForm', () => {
     expect(sent.get('govIdType')).toBe('AADHAAR');
     // The gym shuts at midday, so when a member comes is worth knowing (ADR-082).
     expect(sent.get('trainingSlot')).toBe('MORNING');
-    await waitFor(() => expect(onDone).toHaveBeenCalledWith('Q-4821'));
+    // The second argument is the autopay hand-over, absent for a member paying cash.
+    await waitFor(() => expect(onDone).toHaveBeenCalledWith('Q-4821', undefined));
   });
 
   it('will not send until the last question is answered either', async () => {

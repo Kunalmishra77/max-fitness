@@ -26,7 +26,7 @@ import { SELFIE_REASONS } from './selfie-reasons';
  */
 
 export type QrSubmitResult =
-  | { ok: true; referenceCode: string }
+  | { ok: true; referenceCode: string; autopay?: { token: string; coveredUntil: string } }
   | { ok: false; code: string; fields?: readonly string[]; requestId?: string | undefined; minAge?: number | undefined; selfieReason?: string | undefined };
 
 export type QrSubmit = (form: FormData) => Promise<QrSubmitResult>;
@@ -139,7 +139,7 @@ export function QrExistingForm({
   readonly termsHref: string;
   readonly privacyHref: string;
   readonly submit: QrSubmit;
-  readonly onSubmitted: (referenceCode: string) => void;
+  readonly onSubmitted: (referenceCode: string, autopay?: { token: string; coveredUntil: string }) => void;
   /** Injected in tests; the real sheet needs a camera. */
   readonly Camera?: ComponentType<SelfieCaptureProps>;
   /** Injected in tests; the real one needs a canvas. */
@@ -299,7 +299,7 @@ export function QrExistingForm({
     start(async () => {
       const result = await submit(form);
       if (result.ok) {
-        onSubmitted(result.referenceCode);
+        onSubmitted(result.referenceCode, result.autopay);
         return;
       }
 

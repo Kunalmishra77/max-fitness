@@ -29,8 +29,11 @@ export function AutopayOffer({
    * The same shape `PayStep` takes. A renewing member reaches this by a WhatsApp link and
    * holds a renew token, not a registration one, and they are the member most likely to want
    * autopay — they have just renewed by hand for at least the second time.
+   *
+   * `autopay` is the reception QR: a member who has just said they pay online and is being
+   * offered it on the next screen, before anybody has approved them.
    */
-  auth: { readonly kind: 'registration' | 'renew'; readonly token: string };
+  auth: { readonly kind: 'registration' | 'renew' | 'autopay'; readonly token: string };
   /** The last date the member is covered for. The first debit is the day after. */
   endDate: string;
 }) {
@@ -43,7 +46,7 @@ export function AutopayOffer({
   const setUp = () => {
     setState('working');
     track('autopay_offer_accepted');
-    const header = auth.kind === 'registration' ? 'x-registration-token' : 'x-renew-token';
+    const header = auth.kind === 'registration' ? 'x-registration-token' : auth.kind === 'renew' ? 'x-renew-token' : 'x-autopay-token';
     void fetch('/api/v1/checkout/autopay', { method: 'POST', headers: { [header]: auth.token } })
       .then((response) => (response.ok ? (response.json() as Promise<{ data?: Record<string, unknown> }>) : null))
       .then((body) => {
