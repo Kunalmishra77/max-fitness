@@ -104,7 +104,12 @@ async function main(): Promise<void> {
     await step('verifications', prisma.verificationRequest.deleteMany({ where }));
     await step('call tasks', prisma.callTask.deleteMany({ where }));
     await step('alerts', prisma.alert.deleteMany({ where }));
+    // Before payments, because a payment points at the mandate it arrived on (ADR-105), and
+    // before members, because a mandate points at the member. Written in after the fact: this
+    // script predates autopay, and a member holding a mandate would have refused to delete.
+    await step('autopay mandates', prisma.payment.updateMany({ where, data: { mandateId: null } }));
     await step('payments', prisma.payment.deleteMany({ where }));
+    await step('mandates', prisma.mandate.deleteMany({ where }));
     await step('memberships', prisma.membership.deleteMany({ where }));
     await step('media rows', prisma.mediaFile.deleteMany({ where: { id: { in: files.map((file) => file.id) } } }));
     await step('members', prisma.member.deleteMany({ where: { id: { in: ids } } }));
