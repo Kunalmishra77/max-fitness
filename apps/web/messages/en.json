@@ -505,7 +505,6 @@
       "denied": "Camera access is blocked. Allow the camera in your browser settings, or take a photo with your phone camera instead.",
       "tryAgain": "Try again",
       "usePhoneCamera": "Use phone camera",
-      "choosePhoto": "Choose a photo you already have",
       "inUse": "Your camera is being used by another app. Close that app and try again.",
       "noCamera": "We couldn't use a camera here. Take a photo with your phone camera instead.",
       "inApp": "Camera may not work inside Instagram or WhatsApp. Open this page in Chrome for the best experience.",
@@ -1029,8 +1028,7 @@
         "linkCopied": "Link copied",
         "previewAlt": "Member’s photo",
         "preparing": "Preparing the photo…",
-        "unusable": "That photo could not be used. Please take another.",
-        "choosePhoto": "Choose a photo from this phone"
+        "unusable": "That photo could not be used. Please take another."
       }
     },
     "attendance": {
@@ -2030,7 +2028,7 @@
       "VOTER": "Voter ID",
       "front": "Front of the card",
       "back": "Back of the card",
-      "tapToAdd": "Tap to take a photo, or pick one you already have",
+      "tapToAdd": "Tap to add — photo, or a PDF from your files",
       "added": "Added — tap to change",
       "working": "Getting it ready…",
       "wholeCard": "Your file (both sides)",
@@ -2144,5 +2142,25 @@
     "disclaimer": "This is general wellness guidance from your gym, not medical advice. If you have a medical condition, are pregnant, or take regular medication, please check with a doctor or a qualified nutritionist before following it.",
     "seeProfessional": "Please go through this with a doctor or a qualified nutritionist before following it — from what you told us, your diet should be planned by a professional. This is general guidance from your gym, not medical advice.",
     "print": "Save or print this plan"
+  },
+  "selfieCheck": {
+    "checking": "Checking the photo…",
+    "good": "This photo will work at the gym.",
+    "wontWork": "This photo will not work for attendance",
+    "retakeHint": "Take it again — this is the photo the camera at the gym recognises you by.",
+    "reason": {
+      "NO_FACE": "We could not see a face in it.",
+      "NOT_A_FACE": "We could not see a face in it.",
+      "NOT_AN_IMAGE": "That file could not be opened as a photo.",
+      "TOO_FAR": "Your face is too small. Hold the phone closer.",
+      "TOO_DARK": "It is too dark. Move somewhere brighter.",
+      "TOO_BRIGHT": "There is too much light behind you. Turn around.",
+      "BLURRED": "It is blurred. Hold still.",
+      "ANOTHER_FACE": "There is somebody else in it. Just you, please.",
+      "unsupported_type": "That file is not a photo we can use.",
+      "unreadable": "That photo could not be opened.",
+      "too_large": "That photo is too large.",
+      "too_small": "That photo is too small. Move closer."
+    }
   }
 }

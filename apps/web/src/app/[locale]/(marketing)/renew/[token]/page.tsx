@@ -53,7 +53,13 @@ export default async function RenewPage({ params }: { params: Promise<{ locale: 
               </a>
             </div>
           ) : (
-            <NextIntlClientProvider messages={{ signup: messages['signup'] as Record<string, unknown>, renew: messages['renew'] as Record<string, unknown> }}>
+            <NextIntlClientProvider
+              messages={{
+                signup: messages['signup'] as Record<string, unknown>,
+                renew: messages['renew'] as Record<string, unknown>,
+                selfieCheck: messages['selfieCheck'] as Record<string, unknown>,
+              }}
+            >
               <RenewFlow
                 token={token}
                 firstName={offer.firstName}

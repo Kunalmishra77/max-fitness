@@ -74,7 +74,13 @@ export async function JoinPage({ ctx, children }: { ctx: SiteContext; children: 
 /** The sign-up catalogue for a modal, which renders outside the page's own provider. */
 export async function JoinModalMessages({ ctx, children }: { ctx: SiteContext; children: ReactNode }) {
   const messages = await getMessages({ locale: ctx.locale });
-  return <NextIntlClientProvider messages={{ signup: messages['signup'] as Record<string, unknown> }}>{children}</NextIntlClientProvider>;
+  return (
+    <NextIntlClientProvider
+      messages={{ signup: messages['signup'] as Record<string, unknown>, selfieCheck: messages['selfieCheck'] as Record<string, unknown> }}
+    >
+      {children}
+    </NextIntlClientProvider>
+  );
 }
 
 export async function PlansUnavailable({ ctx }: { ctx: SiteContext }) {

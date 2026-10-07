@@ -65,6 +65,7 @@ export function SelfieCapture({
   namespace = 'signup.camera',
 }: SelfieCaptureProps) {
   const t = useTranslations(namespace);
+  const tc = useTranslations('selfieCheck');
   // At the desk this is a CRM screen, with the CRM's bigger targets (CLAUDE.md §2.10).
   const atDesk = namespace === 'crm.add.camera';
   const regular = atDesk ? 'crm' : 'web';
@@ -76,10 +77,20 @@ export function SelfieCapture({
   const [supported] = useState(cameraSupported);
   const [inApp] = useState(() => typeof navigator !== 'undefined' && IN_APP_BROWSER.test(navigator.userAgent));
   const [copied, setCopied] = useState(false);
+  /**
+   * Whether this photograph will recognise the member at the gym later (owner, 2026-10-07).
+   *
+   * The same gate the server runs on submission, asked here instead — while the member is
+   * still looking at the picture and the camera is one tap away. It used to be asked only
+   * when the whole form was sent, which told them three screens too late.
+   *
+   * `skip` is an answer too: an engine that cannot be reached must never stop somebody
+   * joining, so the photo is accepted and the server has the last word either way.
+   */
+  const [verdict, setVerdict] = useState<{ state: 'checking' | 'good' | 'skip' } | { state: 'bad'; reason: string }>({ state: 'skip' });
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const galleryRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const detectorRef = useRef<FaceDetectorLike | null>(null);
   const lastFaceRef = useRef<Box | null>(null);
@@ -205,6 +216,30 @@ export function SelfieCapture({
     return () => clearInterval(interval);
   }, [phase]);
 
+  /**
+   * Ask the server whether this photograph is good enough to be recognised by.
+   *
+   * Nothing is stored by the endpoint and no name goes with it, so this costs the member
+   * nothing but a second. A failure of any kind — offline, slow, engine down — lands on
+   * `skip`: the photograph is allowed and the real gate still runs on submission.
+   */
+  const checkPhoto = async (blob: Blob) => {
+    setVerdict({ state: 'checking' });
+    const body = new FormData();
+    body.append('selfie', blob, 'selfie.jpg');
+    try {
+      const response = await fetch('/api/v1/selfie/check', { method: 'POST', body });
+      const json = (await response.json()) as { data?: { ok?: boolean; reason?: string } };
+      if (json.data?.ok === true) return setVerdict({ state: 'good' });
+      if (json.data?.ok === false && typeof json.data.reason === 'string') {
+        return setVerdict({ state: 'bad', reason: json.data.reason });
+      }
+      setVerdict({ state: 'skip' });
+    } catch {
+      setVerdict({ state: 'skip' });
+    }
+  };
+
   const capture = async () => {
     const video = videoRef.current;
     if (video === null) return;
@@ -214,6 +249,7 @@ export function SelfieCapture({
       stopCamera();
       setPreview({ blob, url: URL.createObjectURL(blob) });
       setPhase('preview');
+      void checkPhoto(blob);
     } catch {
       stopCamera();
       setPhase('unusable');
@@ -230,6 +266,7 @@ export function SelfieCapture({
       const blob = await renderPickedFile(file);
       setPreview({ blob, url: URL.createObjectURL(blob) });
       setPhase('preview');
+      void checkPhoto(blob);
     } catch {
       setPhase('unusable');
     }
@@ -256,18 +293,6 @@ export function SelfieCapture({
     </button>
   );
 
-  /**
-   * A photo the member already has (ADR-081).
-   *
-   * Not every camera works, and not everybody wants to be photographed at a reception
-   * desk. Without this, a broken camera is the end of the form.
-   */
-  const choosePhotoButton = (
-    <button type="button" onClick={() => galleryRef.current?.click()} className={buttonVariants({ variant: 'outlineDark', size: regular, full: true })}>
-      {t('choosePhoto')}
-    </button>
-  );
-
   const canCapture = phase === 'live' && (check === 'unavailable' || steady);
   const guidance =
     check === 'ok' && steady ? t('faceFound') : check === 'multiple' ? t('oneFace') : check === 'small' ? t('closer') : check === 'none' || check === 'offCentre' ? t('moveInside') : null;
@@ -291,9 +316,10 @@ export function SelfieCapture({
           </div>
         ) : null}
 
+        {/* `capture` sends the phone straight to its camera app rather than offering the
+            gallery, which is the whole point: the photo has to be of the person standing
+            here, now. It is the fallback for a browser whose camera we cannot drive. */}
         <input ref={fileRef} type="file" accept="image/*" capture={facing} className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => void onFilePicked(e)} />
-        {/* The same handler without `capture`, so the phone offers the gallery instead. */}
-        <input ref={galleryRef} type="file" accept="image/*" className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => void onFilePicked(e)} />
 
         {phase === 'explainer' ? (
           <div className="mt-4 grid gap-4">
@@ -304,7 +330,6 @@ export function SelfieCapture({
               </button>
             ) : null}
             {phoneCameraButton(supported ? 'outlineDark' : 'primary')}
-            {choosePhotoButton}
           </div>
         ) : null}
 
@@ -342,10 +367,40 @@ export function SelfieCapture({
           <div className="mt-4 grid gap-3">
             {/* A local object URL: next/image cannot optimise it and must not try. */}
             <img src={preview.url} alt={t('previewAlt')} className="mx-auto aspect-square w-full max-w-sm rounded-panel object-cover" />
-            <button type="button" onClick={usePhoto} className={buttonVariants({ variant: 'primary', size: large, full: true })}>
-              {t('use')}
-            </button>
-            <button type="button" onClick={() => (supported ? void startCamera() : fileRef.current?.click())} className={buttonVariants({ variant: 'outlineDark', size: regular, full: true })}>
+
+            {/* The verdict sits above the buttons, because it decides which one to press. */}
+            <p role="status" aria-live="polite" className="min-h-6 text-body leading-body">
+              {verdict.state === 'checking' ? (
+                <span className="text-brand-stone">{tc('checking')}</span>
+              ) : verdict.state === 'good' ? (
+                <span className="font-semibold text-semantic-fee-paid">{tc('good')}</span>
+              ) : verdict.state === 'bad' ? (
+                <span className="text-semantic-fee-expired">
+                  <span className="block font-semibold">{tc('wontWork')}</span>
+                  <span className="block">{tc(`reason.${verdict.reason}` as never)}</span>
+                  <span className="mt-1 block text-small">{tc('retakeHint')}</span>
+                </span>
+              ) : null}
+            </p>
+
+            {/* A photograph the gym cannot recognise is not worth keeping, so taking it
+                again is the loud button and using it anyway is not offered. Waiting on the
+                answer only disables it — a member must never be stuck behind a slow check. */}
+            {verdict.state === 'bad' ? null : (
+              <button
+                type="button"
+                onClick={usePhoto}
+                disabled={verdict.state === 'checking'}
+                className={cn(buttonVariants({ variant: 'primary', size: large, full: true }), verdict.state === 'checking' && 'opacity-60')}
+              >
+                {t('use')}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => (supported ? void startCamera() : fileRef.current?.click())}
+              className={buttonVariants({ variant: verdict.state === 'bad' ? 'primary' : 'outlineDark', size: verdict.state === 'bad' ? large : regular, full: true })}
+            >
               {t('retake')}
             </button>
           </div>

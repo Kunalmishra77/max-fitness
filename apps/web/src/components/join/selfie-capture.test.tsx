@@ -19,6 +19,7 @@ function mediaError(name: string) {
 }
 
 let getUserMedia: ReturnType<typeof vi.fn>;
+let gate: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   getUserMedia = vi.fn();
@@ -30,6 +31,9 @@ beforeEach(() => {
   Object.defineProperty(HTMLMediaElement.prototype, 'videoHeight', { configurable: true, get: () => FRAME.height });
   vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
   vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:preview'), revokeObjectURL: vi.fn() }));
+  // The photo gate (`/api/v1/selfie/check`). Most tests are not about it, so it says yes.
+  gate = vi.fn(() => Promise.resolve({ json: () => Promise.resolve({ data: { ok: true } }) }));
+  vi.stubGlobal('fetch', gate);
 });
 
 afterEach(() => {
@@ -154,6 +158,54 @@ describe('SelfieCapture', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Use this photo' }));
     expect(onCaptured).toHaveBeenCalledWith(photo);
+  });
+
+  /**
+   * The photo has one job — to be recognised by the camera at the gym — and the member is
+   * the only person who can fix it. Telling them when the form is sent is three screens and
+   * one closed camera too late (owner, 2026-10-07).
+   */
+  it('refuses a photo the gym could not recognise, and offers only to take it again', async () => {
+    gate.mockResolvedValue({ json: () => Promise.resolve({ data: { ok: false, reason: 'TOO_FAR' } }) });
+    const { stream } = fakeStream();
+    getUserMedia.mockResolvedValue(stream);
+    const { onCaptured } = renderCapture();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Open camera' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Take photo' }));
+
+    expect(await screen.findByText('This photo will not work for attendance')).toBeTruthy();
+    expect(screen.getByText('Your face is too small. Hold the phone closer.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Use this photo' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Retake' })).toBeTruthy();
+    expect(onCaptured).not.toHaveBeenCalled();
+  });
+
+  /**
+   * A gym that cannot take a new member because a container is restarting is a worse
+   * failure than one whose newest member has to use the keypad for a day. The server runs
+   * the same gate on submission and has the last word.
+   */
+  it('lets the photo through when the gate cannot be reached at all', async () => {
+    gate.mockRejectedValue(new Error('offline'));
+    const { stream } = fakeStream();
+    getUserMedia.mockResolvedValue(stream);
+    const { onCaptured, photo } = renderCapture();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Open camera' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Take photo' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Use this photo' }));
+
+    expect(onCaptured).toHaveBeenCalledWith(photo);
+  });
+
+  it('has no way to pick a photo from the gallery: it must be taken now', () => {
+    const { stream } = fakeStream();
+    getUserMedia.mockResolvedValue(stream);
+    renderCapture();
+
+    expect(screen.queryByRole('button', { name: /Choose a photo/i })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Use phone camera' })).toBeTruthy();
   });
 
   it('guides the member while the face is not yet right', async () => {
