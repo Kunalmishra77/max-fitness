@@ -27,7 +27,7 @@ import { createStorageDriver } from '@mfp/integrations/storage';
 import { SimulatedPaymentProvider, RazorpayPaymentProvider } from '@mfp/integrations/payments';
 import { SimulatorWhatsAppProvider, MetaCloudWhatsAppProvider } from '@mfp/integrations/whatsapp';
 import { SimulatedOtpSender, WhatsAppOtpSender } from '@mfp/integrations/otp';
-import { FaceClient } from '@/lib/face-client';
+import { FaceClient } from '@mfp/integrations/face';
 import type { OtpSender } from '@mfp/core';
 
 /**

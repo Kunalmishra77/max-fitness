@@ -1921,7 +1921,37 @@
     "pairHelp": "Ask the owner for the code in Max Register, then type it here.",
     "pairCode": "Pairing code",
     "pairButton": "Connect",
-    "pairFailed": "That code did not work. Ask for a new one."
+    "pairFailed": "That code did not work. Ask for a new one.",
+    "face": {
+      "useCamera": "Use the camera instead",
+      "useNumber": "Use my number instead",
+      "cameraLabel": "Reception camera",
+      "lookAtCamera": "Look at the camera",
+      "welcome": "Welcome",
+      "welcomeBack": "Marked in. Have a good session.",
+      "welcomeDueSoon": "Marked in. Your fees run out in {days, plural, one {# day} other {# days}}.",
+      "seeReception": "Marked in. Please see reception.",
+      "marked": "Marked in.",
+      "alreadyMarked": "You are already marked in today.",
+      "isThisYou": "Is this you?",
+      "yesThatIsMe": "Yes, that is me",
+      "tryAgain": "Could not do that. Please use your number.",
+      "nobodyEnrolled": "Nobody has been set up for face check-in yet.",
+      "unavailable": "Face check-in is not working right now.",
+      "cameraDenied": "The camera is blocked. Allow it in the browser, or use your number.",
+      "cameraMissing": "This device has no camera we can use.",
+      "hint": {
+        "NO_FACE": "Step in front of the camera",
+        "NOT_AN_IMAGE": "Step in front of the camera",
+        "NOT_A_FACE": "Step in front of the camera",
+        "TOO_FAR": "Come a little closer",
+        "TOO_DARK": "It is too dark here",
+        "TOO_BRIGHT": "Too much light behind you",
+        "BLURRED": "Hold still for a moment",
+        "ANOTHER_FACE": "One person at a time, please",
+        "UNKNOWN": "Not recognised — come closer, or use your number"
+      }
+    }
   },
   "qrExisting": {
     "optional": "(optional)",

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { CheckInKeypad, type LookupResult, type MarkResult } from './keypad';
+import { FaceScan, type ScanOutcome } from './face-scan';
 
 /**
  * The reception tablet's whole screen (BR-9.4).
@@ -33,6 +34,9 @@ export function CheckInApp() {
   const [token, setToken] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [code, setCode] = useState('');
+  // The camera is the way in; the keypad is what a member falls back to when it cannot see
+  // them, when they never gave a photograph, or when they simply prefer it.
+  const [mode, setMode] = useState<'face' | 'keypad'>('face');
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -112,6 +116,50 @@ export function CheckInApp() {
     }
   };
 
+  const scan = async (frame: Blob): Promise<ScanOutcome> => {
+    try {
+      const body = new FormData();
+      body.append('frame', frame, 'frame.jpg');
+      const response = await fetch('/api/v1/checkin/face', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${token ?? ''}` },
+        body,
+      });
+      if (response.status === 401) {
+        // Revoked in Max Register: pair again rather than failing silently at a member.
+        setToken(null);
+        return { kind: 'ERROR' };
+      }
+      if (!response.ok) return { kind: 'ERROR' };
+      const { data } = (await response.json()) as { data: Record<string, unknown> };
+      const decision = String(data['decision']);
+      const memberName = typeof data['memberName'] === 'string' ? data['memberName'] : null;
+      if (decision === 'RECORD') {
+        const greeting = data['greeting'];
+        return {
+          kind: 'RECORD',
+          memberName,
+          greeting: greeting !== null && typeof greeting === 'object' ? (greeting as { kind: string; tone: string; daysLeft?: number }) : null,
+        };
+      }
+      if (decision === 'WITHIN_COOLDOWN' || decision === 'DUPLICATE_EVENT') return { kind: decision, memberName };
+      if (decision === 'CONFIRM') return { kind: 'CONFIRM', memberId: String(data['memberId']), memberName: memberName ?? '' };
+      if (decision === 'NOBODY_ENROLLED') return { kind: 'NOBODY_ENROLLED' };
+      if (decision === 'UNAVAILABLE') return { kind: 'UNAVAILABLE' };
+      return { kind: 'NO_MATCH', reason: typeof data['reason'] === 'string' ? data['reason'] : 'UNKNOWN' };
+    } catch {
+      return { kind: 'ERROR' };
+    }
+  };
+
+  /** The member answered "yes, that is me" to a match the server was not sure enough about. */
+  const confirmFace = async (memberId: string): Promise<ScanOutcome> => {
+    const result = await mark(memberId);
+    if (!result.ok) return { kind: 'ERROR' };
+    if (result.decision === 'RECORD') return { kind: 'RECORD', memberName: result.memberName, greeting: result.greeting };
+    return { kind: 'WITHIN_COOLDOWN', memberName: result.memberName };
+  };
+
   // Nothing is rendered until localStorage has been read, so a paired tablet never
   // flashes the pairing screen at a member standing in front of it.
   if (!ready) return null;
@@ -155,7 +203,20 @@ export function CheckInApp() {
   return (
     <div className="mx-auto grid w-full max-w-sm min-w-0 gap-6">
       <h1 className="text-center font-display text-[1.75rem] font-bold text-brand-obsidian">{t('title')}</h1>
-      <CheckInKeypad lookup={lookup} mark={mark} />
+      {mode === 'face' ? (
+        <FaceScan scan={scan} confirm={confirmFace} onFallback={() => setMode('keypad')} />
+      ) : (
+        <>
+          <CheckInKeypad lookup={lookup} mark={mark} />
+          <button
+            type="button"
+            onClick={() => setMode('face')}
+            className="min-h-14 text-crm-body font-semibold text-brand-stone underline"
+          >
+            {t('face.useCamera')}
+          </button>
+        </>
+      )}
     </div>
   );
 }
