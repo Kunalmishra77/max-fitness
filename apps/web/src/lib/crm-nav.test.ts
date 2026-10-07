@@ -17,7 +17,7 @@ describe('crmNavItems', () => {
   it('gives the owner every place, grouped for the day, the members and the business', () => {
     const items = crmNavItems(actor('OWNER'), now);
     expect(items.map((item) => item.key)).toEqual([
-      'home', 'members', 'fees', 'attendance', 'calls', 'leads', 'messages', 'diet', 'announce', 'bot', 'gallery', 'reports', 'import', 'staff', 'settings', 'pin',
+      'home', 'members', 'fees', 'attendance', 'calls', 'leads', 'messages', 'diet', 'announce', 'bot', 'gallery', 'reports', 'import', 'staff', 'kiosk', 'settings', 'pin',
     ]);
     expect(new Set(items.map((item) => item.group))).toEqual(new Set(['today', 'people', 'business', 'account']));
   });

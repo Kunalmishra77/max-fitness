@@ -99,7 +99,7 @@ export interface ExistingMemberStore {
     memberId: string,
   ): Promise<{ readonly id: string } | null>;
   /** An open request for the same mobile and name. */
-  findPendingRequest(gymId: string, mobile: E164Mobile, fullName: string): Promise<{ readonly referenceCode: string } | null>;
+  findPendingRequest(gymId: string, mobile: E164Mobile, fullName: string): Promise<{ readonly referenceCode: string; readonly memberId: string } | null>;
   referenceCodeTaken(gymId: string, code: string): Promise<boolean>;
   createMember(record: QrMemberRecord): Promise<string>;
   /** The member confirmed themselves: their consents now count (ADR-009). */
@@ -164,7 +164,16 @@ export async function submitExistingMember(
     /** Four digits for the reference code; injected in tests. */
     readonly randomCode?: () => number;
   },
-): Promise<{ readonly referenceCode: string; readonly matchedExisting: boolean }> {
+): Promise<{
+  readonly referenceCode: string;
+  readonly matchedExisting: boolean;
+  /**
+   * Who the submission is about, so the caller can enrol their face from the photograph it
+   * has just had measured (ADR-107). A repeat scan names the member it already created,
+   * because scanning again is the same request and has to come back the same answer.
+   */
+  readonly memberId: string;
+}> {
   const { fields } = input;
   const today = todayIST(deps.clock);
 
@@ -215,11 +224,11 @@ export async function submitExistingMember(
     throw error;
   }
 
-  let outcome: { referenceCode: string; matchedExisting: boolean; keptPhoto: boolean };
+  let outcome: { referenceCode: string; matchedExisting: boolean; keptPhoto: boolean; memberId: string };
   try {
     outcome = await deps.uow.transaction(async (store) => {
       const pending = await store.findPendingRequest(deps.gymId, fields.mobile, fields.fullName);
-      if (pending !== null) return { referenceCode: pending.referenceCode, matchedExisting: false, keptPhoto: false };
+      if (pending !== null) return { referenceCode: pending.referenceCode, matchedExisting: false, keptPhoto: false, memberId: pending.memberId };
 
       const claimed =
         input.claimedMemberId === undefined
@@ -287,7 +296,7 @@ export async function submitExistingMember(
         matchedImportMemberId: imported?.id ?? null,
       });
       await store.createAlert({ gymId: deps.gymId, memberId, params: { referenceCode } });
-      return { referenceCode, matchedExisting: imported !== null, keptPhoto: true };
+      return { referenceCode, matchedExisting: imported !== null, keptPhoto: true, memberId };
     });
   } catch (error) {
     await cleanUp(deps.storage, [stored, ...govIdStored.map((item) => item.stored)]);
@@ -295,7 +304,7 @@ export async function submitExistingMember(
   }
 
   if (!outcome.keptPhoto) await cleanUp(deps.storage, [stored, ...govIdStored.map((item) => item.stored)]);
-  return { referenceCode: outcome.referenceCode, matchedExisting: outcome.matchedExisting };
+  return { referenceCode: outcome.referenceCode, matchedExisting: outcome.matchedExisting, memberId: outcome.memberId };
 }
 
 /**

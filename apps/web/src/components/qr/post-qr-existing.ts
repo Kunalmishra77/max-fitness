@@ -11,7 +11,7 @@ export async function postQrExisting(form: FormData): Promise<QrSubmitResult> {
     const response = await fetch('/api/v1/qr/existing', { method: 'POST', body: form });
     const body = (await response.json().catch(() => ({}))) as {
       data?: { referenceCode?: string };
-      error?: { code?: string; details?: { fields?: Record<string, string>; field?: string; minAge?: number } };
+      error?: { code?: string; details?: { fields?: Record<string, string>; field?: string; minAge?: number; reason?: string } };
       meta?: { requestId?: string };
     };
     if (response.ok && typeof body.data?.referenceCode === 'string') return { ok: true, referenceCode: body.data.referenceCode };
@@ -25,7 +25,7 @@ export async function postQrExisting(form: FormData): Promise<QrSubmitResult> {
     const requestId = body.meta?.requestId;
     if (code === 'RATE_LIMITED' || code === 'OTP_REQUIRED') return { ok: false, code, requestId };
     if (code === 'UNDER_MINIMUM_AGE') return { ok: false, code, fields: ['dob'], requestId, minAge: body.error?.details?.minAge };
-    if (code === 'SELFIE_REJECTED') return { ok: false, code, fields: ['selfie'], requestId };
+    if (code === 'SELFIE_REJECTED') return { ok: false, code, fields: ['selfie'], requestId, selfieReason: body.error?.details?.reason };
     if (code === 'VALIDATION_FAILED') return { ok: false, code, fields, requestId };
     return { ok: false, code: code ?? `HTTP ${response.status}`, requestId };
   } catch {

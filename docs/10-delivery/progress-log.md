@@ -1540,3 +1540,28 @@ scored 130, so it is kept only as a floor that catches a genuine smear.
   place is the frames-agree rule, the cooldown, a staffed desk, and a prize worth nothing.
 - The CRM does not yet show who is enrolled and who still owes a photograph.
 - The thresholds come from thirteen people. A bigger gallery is what shadow mode is for.
+
+## 2026-10-07 — the reception QR did not enrol anybody's face
+
+**Reported from the live site:** two existing members registered through the QR, and the attendance camera recognised neither. Also: the plan and fee date they typed did not show, and nothing offered autopay.
+
+**Changed**
+
+- `apps/web/src/app/api/v1/qr/existing/route.ts` — runs `checkSelfieFace` before anything is stored and `enrolFromSignup` after the member is written, which is what `/api/v1/registrations` has done since ADR-107. This route did neither, so **every existing member onboarded from the QR has a selfie and no face template.**
+- `packages/core/src/qr/existing-member.ts` — `submitExistingMember` returns `memberId`, so the caller has somebody to enrol. A repeat scan returns the member it created the first time, not null.
+- `packages/db/src/repositories/verification.repository.ts` — `findPendingRequest` selects `memberId`.
+- `apps/web/src/lib/enrol-on-signup.ts` — counts the member's existing templates instead of passing zero, so `maxTemplatesPerMember` is actually applied. Narrowed its argument to the id alone: it read `isMinor` from the database row and ignored the one passed in, and a caller that does not know must not be able to assert it.
+- `apps/web/src/components/qr/selfie-reasons.ts` (new), both QR forms, `post-qr-existing.ts`, `qr-new-page-flow.tsx` — a refused selfie names what is wrong with the photograph and sends the member back to the screen holding it. `/qr/new` previously flagged nothing and showed the raw error code.
+- `apps/web/messages/{en,hi}.json` — the ten selfie messages copied into `qrExisting.errors` from `signup.errors`, same wording.
+- `apps/web/src/lib/crm-nav.test.ts` — expects `kiosk`. My omission from the attendance-phone work earlier today; it had been failing since.
+- `packages/db/tests/crm-desk.integration.test.ts` — clears `faceTemplate` in teardown, so a run that fails midway does not leave a gym whose members cannot be deleted.
+
+**Tests:** core `src/qr` 40/40, `crm-desk` 23/23, `payments` + `send-context` 17/17, web `crm-nav` 4/4. Full suite running at the time of writing.
+
+**Pending**
+
+- **The two live members still have no template.** The route fix only covers registrations from here on. Run `pnpm --filter @mfp/worker run enrol:faces` in the worker container (dry run first) — it needs the face service and S3, neither of which is reachable from the dev machine.
+- Autopay for a QR member is a desk action and always was: approve, open the profile, press set up, the member gets the link on WhatsApp. No change made. See ADR-109.
+- The failed integration run left an orphaned `gym_it_crm_*` gym in the shared database. Harmless, not cleaned up — it is production and nobody asked.
+- Security review before deployment: still unfinished.
+- Offline mitigations: still unanswered.

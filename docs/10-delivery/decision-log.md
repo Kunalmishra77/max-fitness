@@ -565,3 +565,31 @@ So the single decision that governs whether this works is a **minimum face size 
 **Found while answering the owner's question "attendance CRM me kaise aayega":** an expired member walking in has always raised a **call task**, and the `EXPIRED_MEMBER_VISIT` **alert** — which is what reaches the owner's WhatsApp — was never created by anything. The kind existed in the owner-alert code with a sentence written for it in both languages, and no code anywhere produced one. So the gym learned about its warmest lead only if somebody opened the calls screen. This is the third time in two days that an alert path has turned out to be wired at one end only; it is worth a sweep rather than another one-off fix.
 
 **Still open, and the owner should know:** the member profile shows only the current month's attendance, so last month is invisible; and the check-in page needs the network — there is no offline queue, so a dropped connection at the door means the keypad, or marking by hand afterwards.
+
+## ADR-109
+
+**Date:** 2026-10-07
+**Status:** Accepted
+**Context:** The owner registered two existing members through the reception QR and then stood in front of the attendance camera. It did not recognise either of them. In the same report: the plan and the fee date they had typed did not appear on the member's profile, and nothing offered them autopay.
+
+**Decision — the reception QR's existing-member route gets the same selfie gate and the same enrolment as sign-up.**
+
+The two QR journeys were never the same code path. `/qr/new` posts to `/api/v1/registrations`, which has run the face gate and enrolled the member from the gate's own embedding since ADR-107. `/qr/existing` posts to `/api/v1/qr/existing`, which did neither. It re-encoded the selfie, stored it, and stopped.
+
+So an existing member who registered at the desk got a photograph and no face template. The camera cannot recognise a member who is not in the gallery, and nothing anywhere said so — the selfie was taken, accepted, and shown on their profile. **Every existing member onboarded from the QR since ADR-107 is in this state.** `enrol:faces` is the fix for the ones already in the register; the route is the fix for everybody after.
+
+The same gap left the QR with no photo quality check at all. The owner asked for animals, products and faceless pictures to be refused, and they are — on `/join` and `/qr/new`. On `/qr/existing` any file that decoded as an image was accepted.
+
+Three consequences worth recording:
+
+**(1) `submitExistingMember` now returns `memberId`.** It returned only the reference code, so the route had nothing to enrol. A repeat scan returns the member it created the first time rather than null: scanning again is the same request and has to come back the same answer, and the second photograph is a second template of the same face — which is how a member the camera keeps missing gets recognised.
+
+**(2) The template cap was never applied on the sign-up path.** `enrolFromSignup` passed `existingTemplates: 0` rather than counting them. Harmless while it ran once per registration; not harmless now that a member may submit the reception form more than once. It counts.
+
+**(3) A refused selfie now names its reason on both QR forms.** The gate answers with `details.reason` and no field. `/qr/existing` flagged the selfie generically; `/qr/new` flagged nothing at all, stayed on the last screen and printed the raw code — leaving the member to guess which of eight answers the gym disliked. Both now map the reason to the same wording sign-up uses and send the member back to the screen holding the photograph.
+
+**On the plan and the fee date:** not lost. They are stored on the pending `VerificationRequest`, and a `Membership` — which is what the profile read — exists only after staff approve. The profile now shows the declaration with a banner saying it is waiting to be checked (b65d37b).
+
+**On autopay: there is no defect here, and no change.** A QR member pays cash at the desk, so there is no payment for a mandate to hang off and no plan row until approval. Autopay for them is a desk action: approve the verification, open the profile, press set up, and `startMandate` WhatsApps the member the link to approve with their own bank. The member's own phone cannot offer it at `/qr/done`, because at that moment nobody has verified who they are or what they are on.
+
+**Not a bug, and recorded because it was reported as one:** `/qr/existing` shows "1 / 8". That is ADR-080 — the client asked for one question per screen after watching members struggle with ADR-075's single page at reception. It is intentional.

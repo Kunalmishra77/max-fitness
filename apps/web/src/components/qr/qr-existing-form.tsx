@@ -7,6 +7,7 @@ import { renderIdPhoto } from '@/components/join/render-photo';
 import { SelfieCapture, type SelfieCaptureProps } from '@/components/join/selfie-capture';
 import { cn } from '@/lib/cn';
 import { CrmIcon } from '@/components/crm/crm-icons';
+import { SELFIE_REASONS } from './selfie-reasons';
 
 /**
  * "I am already a member", on one page (client decision, ADR-075).
@@ -26,9 +27,11 @@ import { CrmIcon } from '@/components/crm/crm-icons';
 
 export type QrSubmitResult =
   | { ok: true; referenceCode: string }
-  | { ok: false; code: string; fields?: readonly string[]; requestId?: string | undefined; minAge?: number | undefined };
+  | { ok: false; code: string; fields?: readonly string[]; requestId?: string | undefined; minAge?: number | undefined; selfieReason?: string | undefined };
 
 export type QrSubmit = (form: FormData) => Promise<QrSubmitResult>;
+
+
 
 /**
  * The most one photograph may be once the browser has shrunk it.
@@ -298,6 +301,9 @@ export function QrExistingForm({
         if (key !== undefined) beside[key] = t(`errors.${key}` as never);
       }
       if (result.code === 'UNDER_MINIMUM_AGE') beside['dob'] = t('errors.underAge', { minAge: result.minAge ?? minAge });
+      if (result.code === 'SELFIE_REJECTED') {
+        beside['selfie'] = t(`errors.${SELFIE_REASONS[result.selfieReason ?? ''] ?? 'selfie'}` as never);
+      }
       setProblems(beside);
       // A complaint about an answer two screens back is no use on the last screen.
       const named = Object.keys(beside);

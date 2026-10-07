@@ -26,16 +26,24 @@ async function joinAtReception({
   const envelope = async (response: Response) =>
     (await response.json().catch(() => ({}))) as {
       data?: Record<string, unknown>;
-      error?: { code?: string; details?: { fields?: Record<string, string>; field?: string; minAge?: number } };
+      error?: { code?: string; details?: { fields?: Record<string, string>; field?: string; minAge?: number; reason?: string } };
       meta?: { requestId?: string };
     };
 
   const refusal = (body: Awaited<ReturnType<typeof envelope>>, status: number): QrJoinResult => ({
     ok: false,
     code: body.error?.code ?? `HTTP ${status}`,
-    fields: [...Object.keys(body.error?.details?.fields ?? {}), ...(body.error?.details?.field === undefined ? [] : [body.error.details.field])],
+    fields: [
+      ...Object.keys(body.error?.details?.fields ?? {}),
+      ...(body.error?.details?.field === undefined ? [] : [body.error.details.field]),
+      // A refused selfie names its reason rather than a field, so the field is added here.
+      // Without it the form flagged nothing, stayed on the last screen and showed the raw
+      // code — leaving the member to guess which of eight answers the gym disliked.
+      ...(body.error?.code === 'SELFIE_REJECTED' ? ['selfie'] : []),
+    ],
     requestId: body.meta?.requestId,
     minAge: body.error?.details?.minAge,
+    selfieReason: body.error?.details?.reason,
   });
 
   try {

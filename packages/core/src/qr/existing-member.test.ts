@@ -52,7 +52,7 @@ class MemoryStorage implements StorageDriver {
 
 class FakeStore implements ExistingMemberStore {
   imported: { id: string } | null = null;
-  pending: { referenceCode: string } | null = null;
+  pending: { referenceCode: string; memberId: string } | null = null;
   taken = new Set<string>();
   readonly members: QrMemberRecord[] = [];
   readonly confirmed: Array<{ memberId: string; whatsappOptIn: boolean; faceConsent: boolean }> = [];
@@ -158,7 +158,7 @@ describe('submitExistingMember', () => {
   it('creates a member waiting for verification, with the photo, consents, a request and an alert', async () => {
     const result = await submit();
 
-    expect(result).toEqual({ referenceCode: 'Q-4821', matchedExisting: false });
+    expect(result).toEqual({ referenceCode: 'Q-4821', matchedExisting: false, memberId: 'mem_new' });
     expect(store.members).toEqual([
       expect.objectContaining({
         gymId: 'gym_1',
@@ -194,7 +194,7 @@ describe('submitExistingMember', () => {
 
     const result = await submit({ claimedMemberId: 'mem_register' });
 
-    expect(result).toEqual({ referenceCode: 'Q-4821', matchedExisting: true });
+    expect(result).toEqual({ referenceCode: 'Q-4821', matchedExisting: true, memberId: 'mem_register' });
     expect(store.members).toEqual([]);
     expect(store.requests[0]?.matchedImportMemberId).toBe('mem_register');
   });
@@ -213,7 +213,7 @@ describe('submitExistingMember', () => {
 
     const result = await submit();
 
-    expect(result).toEqual({ referenceCode: 'Q-4821', matchedExisting: true });
+    expect(result).toEqual({ referenceCode: 'Q-4821', matchedExisting: true, memberId: 'mem_imported' });
     expect(store.members).toEqual([]);
     expect(store.confirmed).toEqual([{ memberId: 'mem_imported', whatsappOptIn: true, faceConsent: true }]);
     expect(store.photos).toEqual([{ memberId: 'mem_imported', mediaId: 'media_1' }]);
@@ -221,11 +221,11 @@ describe('submitExistingMember', () => {
   });
 
   it('hands back the same reference when the person scans again, and keeps no second photo', async () => {
-    store.pending = { referenceCode: 'Q-7777' };
+    store.pending = { referenceCode: 'Q-7777', memberId: 'mem_already' };
 
     const result = await submit();
 
-    expect(result).toEqual({ referenceCode: 'Q-7777', matchedExisting: false });
+    expect(result).toEqual({ referenceCode: 'Q-7777', matchedExisting: false, memberId: 'mem_already' });
     expect(store.members).toEqual([]);
     expect(store.requests).toEqual([]);
     expect(storage.objects.size).toBe(0);
@@ -351,5 +351,40 @@ describe('submitExistingMember', () => {
 
     expect(store.govIdMedia).toEqual([]);
     expect(store.requests[0]).toMatchObject({ govIdType: null });
+  });
+
+  /**
+   * The caller enrols the member's face from the selfie it has just had measured, and to do
+   * that it needs to know who the selfie belongs to (ADR-107).
+   *
+   * Without this, an existing member who registers from the reception QR gets a photograph
+   * and no face template, and the camera at the desk never recognises them — which is the
+   * whole point of having taken the selfie.
+   */
+  it('returns the new member id, so their face can be enrolled from the same selfie', async () => {
+    const result = await submit();
+
+    expect(result.memberId).toBe('mem_new');
+  });
+
+  it('returns the register entry id when the submission joined an imported member', async () => {
+    store.imported = { id: 'mem_imported' };
+
+    const result = await submit();
+
+    expect(result).toMatchObject({ matchedExisting: true, memberId: 'mem_imported' });
+  });
+
+  /**
+   * A second scan keeps the first reference and throws the new photograph away, but it is
+   * still the same person — so it names the member it made the first time. The caller enrols
+   * from the embedding it already has, which gives them a second template of the same face.
+   */
+  it('names the member it already created for a repeat submission', async () => {
+    store.pending = { referenceCode: 'Q-7777', memberId: 'mem_already' };
+
+    const result = await submit();
+
+    expect(result).toEqual({ referenceCode: 'Q-7777', matchedExisting: false, memberId: 'mem_already' });
   });
 });

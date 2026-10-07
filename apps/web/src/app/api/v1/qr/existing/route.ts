@@ -8,6 +8,8 @@ import { loadGym } from '@/lib/gym';
 import { parseQrExistingForm } from '@/lib/qr-existing-form';
 import { qrOtpGate } from '@/lib/qr-otp-gate';
 import { clientIp, limiterKey, registrationLimiters } from '@/lib/rate-limit';
+import { enrolFromSignup } from '@/lib/enrol-on-signup';
+import { checkSelfieFace } from '@/lib/selfie-face-gate';
 import { MAX_GOV_ID_BYTES, MAX_SELFIE_BYTES, processGovIdImage, processSelfie } from '@/lib/selfie-image';
 import { hashIp } from '@/lib/signup-access';
 
@@ -67,6 +69,17 @@ export async function POST(request: NextRequest) {
     const selfie = await processSelfie(parsed.selfie);
     const gym = await loadGym(container);
 
+    // The same gate sign-up uses (ADR-107). An existing member's selfie has exactly the same
+    // job as a new member's — it is what the camera at the desk recognises them by — so it
+    // has to clear the same bar. Without this, a photograph taken from across the room, or
+    // of somebody's dog, was accepted here and the member was never recognised again.
+    const faceCheck = await checkSelfieFace(selfie.body, gym.settings.attendance);
+    if (!faceCheck.ok) {
+      return apiError(400, 'SELFIE_REJECTED', 'That photo will not work for attendance', requestId, {
+        details: { reason: faceCheck.reason },
+      });
+    }
+
     const text = (name: string) => {
       const value = form.get(name);
       return typeof value === 'string' && value.length > 0 && value.length <= 1_000 ? value : null;
@@ -122,6 +135,12 @@ export async function POST(request: NextRequest) {
         userAgent: request.headers.get('user-agent')?.slice(0, MAX_USER_AGENT) ?? null,
       },
     );
+
+    // Enrolled from the embedding the gate already computed, so a member who registers at
+    // the desk is recognised by the camera a minute later. A repeat scan enrols too: the
+    // photograph is a second one of the same person, and a second template is how a member
+    // the camera keeps missing gets recognised. The gym's own cap decides how many.
+    await enrolFromSignup({ memberId: result.memberId }, faceCheck, gym.id, gym.settings.attendance);
 
     return apiData({ referenceCode: result.referenceCode, status: 'PENDING_VERIFICATION', matchedExisting: result.matchedExisting }, requestId, 201);
   } catch (error) {

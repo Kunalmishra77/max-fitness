@@ -41,8 +41,8 @@ function existingMemberStore(tx: TransactionClient): ExistingMemberStore {
     },
 
     async findPendingRequest(gymId: string, mobile: E164Mobile, fullName: string) {
-      const rows = await tx.$queryRaw<Array<{ referenceCode: string }>>`
-        SELECT v."referenceCode" FROM "VerificationRequest" v
+      const rows = await tx.$queryRaw<Array<{ referenceCode: string; memberId: string }>>`
+        SELECT v."referenceCode", v."memberId" FROM "VerificationRequest" v
         JOIN "Member" m ON m."id" = v."memberId"
         WHERE v."gymId" = ${gymId} AND v."status" = 'PENDING' AND m."mobile" = ${mobile} AND m."deletedAt" IS NULL
           AND lower(regexp_replace(trim(m."fullName"), '\\s+', ' ', 'g')) = ${personName(fullName)}

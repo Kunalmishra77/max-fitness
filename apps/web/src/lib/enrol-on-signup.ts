@@ -18,7 +18,11 @@ import type { SelfieFaceVerdict } from '@/lib/selfie-face-gate';
  * anything about the person, and left for `enrol:faces` to pick up.
  */
 export async function enrolFromSignup(
-  registration: { readonly memberId: string; readonly isMinor: boolean },
+  /**
+   * Only the id. Whether they are a minor is read back from the row below rather than taken
+   * from here, so a caller that does not know cannot accidentally assert that they are not.
+   */
+  registration: { readonly memberId: string },
   verdict: SelfieFaceVerdict,
   gymId: string,
   attendance: AttendanceSettings,
@@ -35,6 +39,12 @@ export async function enrolFromSignup(
     });
     if (member === null) return;
 
+    const templates = new PrismaFaceTemplates(prisma, keyFromEnv(env.FIELD_ENCRYPTION_KEY));
+    // Counted, not assumed to be none. This path used to pass zero, which meant the gym's
+    // own cap was never applied here — harmless while it ran once per sign-up, but an
+    // existing member may submit the reception form more than once.
+    const existingTemplates = await templates.countFor(registration.memberId);
+
     // The photograph already passed the gate, so this run of the rules is about permission:
     // consent, age, status. Those are read back from the row the registration just wrote
     // rather than from the form, because the row is what the gym will be held to.
@@ -43,7 +53,7 @@ export async function enrolFromSignup(
         faceConsent: member.faceConsent,
         isMinor: member.isMinor,
         memberStatus: member.status,
-        existingTemplates: 0,
+        existingTemplates,
         maxTemplatesPerMember: attendance.maxTemplatesPerMember,
         measurement: { found: true, facePx: verdict.facePx ?? 0, confidence: 1, brightness: 128, alignedSharpness: 1000, facesInFrame: 1, secondFacePx: 0 },
       },
@@ -51,7 +61,7 @@ export async function enrolFromSignup(
     );
     if (!decision.enrol) return;
 
-    await new PrismaFaceTemplates(prisma, keyFromEnv(env.FIELD_ENCRYPTION_KEY)).save({
+    await templates.save({
       gymId,
       memberId: registration.memberId,
       vector: verdict.embedding,

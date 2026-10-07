@@ -8,6 +8,7 @@ import { renderIdPhoto } from '@/components/join/render-photo';
 import { SelfieCapture, type SelfieCaptureProps } from '@/components/join/selfie-capture';
 import { cn } from '@/lib/cn';
 import { Field, GovIdStep, isPdf, MAX_UPLOAD_BYTES, QR_INPUT_CLASS, QrProgress } from './qr-form-parts';
+import { SELFIE_REASONS } from './selfie-reasons';
 
 /**
  * "I am new here", at the reception desk (client request, ADR-083).
@@ -28,7 +29,14 @@ export interface QrPlanCard {
 
 export type QrJoinResult =
   | { readonly ok: true; readonly firstName: string; readonly amountPaise: number; readonly reservedUntil: string }
-  | { readonly ok: false; readonly code: string; readonly fields?: readonly string[]; readonly requestId?: string | undefined; readonly minAge?: number | undefined };
+  | {
+      readonly ok: false;
+      readonly code: string;
+      readonly fields?: readonly string[];
+      readonly requestId?: string | undefined;
+      readonly minAge?: number | undefined;
+      readonly selfieReason?: string | undefined;
+    };
 
 export type QrJoin = (input: {
   form: FormData;
@@ -562,6 +570,11 @@ export function QrNewForm({
         if (key !== undefined) beside[key] = key === 'plan' || key === 'pt' ? t(`errors.${key}`) : te(`errors.${key}` as never);
       }
       if (result.code === 'UNDER_MINIMUM_AGE') beside['dob'] = te('errors.underAge', { minAge: result.minAge ?? minAge });
+      // The gate names what is wrong with the photograph, and the member is sent back to the
+      // screen that holds it rather than left on the last one (ADR-080).
+      if (result.code === 'SELFIE_REJECTED') {
+        beside['selfie'] = te(`errors.${SELFIE_REASONS[result.selfieReason ?? ''] ?? 'selfie'}` as never);
+      }
       setProblems(beside);
 
       const named = Object.keys(beside);

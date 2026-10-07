@@ -167,6 +167,9 @@ suite('CRM fee desk against Postgres', () => {
     await prisma.membership.deleteMany({ where: { gymId } });
     await prisma.member.updateMany({ where: { gymId }, data: { photoMediaId: null } });
     await prisma.mediaFile.deleteMany({ where: { gymId } });
+    // One test writes a template and another erases it, so this is usually already empty —
+    // but a run that fails in between must not leave a gym whose members cannot be deleted.
+    await prisma.faceTemplate.deleteMany({ where: { gymId } });
     await prisma.member.deleteMany({ where: { gymId } });
     await prisma.session.deleteMany({ where: { staffUser: { gymId } } });
     await prisma.staffUser.deleteMany({ where: { gymId } });

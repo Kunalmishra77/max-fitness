@@ -2064,7 +2064,17 @@
       "terms": "Please agree to the terms to continue.",
       "underAge": "You must be at least {minAge} to join. Please talk to reception.",
       "rateLimited": "Too many attempts. Please wait a few minutes, or tell reception.",
-      "serverSaid": "That could not be sent ({code}). Please tell reception and show them this: {reference}"
+      "serverSaid": "That could not be sent ({code}). Please tell reception and show them this: {reference}",
+      "selfieNoFace": "We could not see a face in that photo. Please take a photo of yourself.",
+      "selfieTooFar": "Your face is too small in the photo. Hold the phone closer and take it again — this is the photo we will recognise you by at the gym.",
+      "selfieTooDark": "That photo is too dark. Move somewhere brighter and take it again.",
+      "selfieTooBright": "There is too much light behind you. Turn around and take it again.",
+      "selfieBlurred": "That photo is blurred. Hold still and take it again.",
+      "selfieAnotherFace": "There is somebody else in that photo. Please take one of just you.",
+      "selfieUnreadable": "That photo couldn't be opened. Please take it again.",
+      "selfieUnsupported": "That file isn't a photo we can use. Take a new selfie, or choose a JPEG or PNG photo.",
+      "selfieTooLarge": "That photo is too large. Please take it again.",
+      "selfieTooSmall": "That photo is too small. Move closer and take it again."
     }
   },
   "qrNewForm": {
