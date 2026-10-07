@@ -47,7 +47,15 @@ const EXPLAIN: Readonly<Record<EnrolmentRefusal, string>> = {
 };
 
 async function main(): Promise<void> {
-  process.loadEnvFile(new URL('../../../.env', import.meta.url));
+  // On a laptop the settings are in the repository's `.env`; in the container they come from
+  // the platform and there is no such file. `loadEnvFile` throws on a missing one, so the
+  // absence is tolerated — this script has to run **inside the worker container**, because
+  // the face service has no public address and nothing outside that network can reach it.
+  try {
+    process.loadEnvFile(new URL('../../../.env', import.meta.url));
+  } catch {
+    // Already in the environment, which is how a container is configured.
+  }
   const prisma = createPrismaClient({ connectionString: need('DATABASE_URL'), poolMax: 3 });
 
   const face = new FaceClient({ baseUrl: need('FACE_SERVICE_URL'), token: need('FACE_SERVICE_TOKEN'), timeoutMs: 20_000 });
