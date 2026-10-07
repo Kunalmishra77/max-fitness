@@ -721,7 +721,17 @@
       "week": "This week",
       "weekHelp": "How many came in each day — the shape matters more than the number.",
       "weekArrivals": "visits in seven days",
-      "weekAverage": "Usually {count} a day"
+      "weekAverage": "Usually {count} a day",
+      "firstRun": {
+        "title": "Your register is empty",
+        "body": "Nothing here yet because nobody has been added. Three things get the gym running.",
+        "step1": "Add your first member",
+        "step1Help": "Name, number, plan. Two minutes.",
+        "step2": "Put the QR poster at reception",
+        "step2Help": "Members fill their own details in. New or existing, same code.",
+        "step3": "Set up the attendance phone",
+        "step3Help": "A phone on the desk that marks people in by their face."
+      }
     },
     "feeState": {
       "PAID": "Fees paid",

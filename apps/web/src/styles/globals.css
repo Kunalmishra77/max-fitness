@@ -333,3 +333,42 @@ html {
 :lang(hi) [class*='tracking-'] {
   letter-spacing: normal;
 }
+
+/*
+ * Max Register on a computer, with a mouse (owner, 2026-10-07).
+ *
+ * The CRM is built for a phone on a reception desk, so its targets are 56px and its base
+ * text is 18px (CLAUDE.md §2.10). On a 1440px screen driven by a mouse those same numbers
+ * are what make it look like an old intranet: a 64px red Save button, 64px list rows, and
+ * a third of the information on the screen that would fit.
+ *
+ * So the rule keeps its reason rather than its number. `pointer: fine` is the test that
+ * matters — a finger needs 56px and a cursor does not — and the width keeps a touchscreen
+ * laptop or a tablet on the generous scale. Nothing here is hard-coded per component: the
+ * same tokens drive every CRM button and every row, so one override moves all of them.
+ */
+@media (pointer: fine) and (min-width: 1024px) {
+  body.crm-pointer {
+    --size-tap-crm: 2.5rem;
+    --size-tap-crm-primary: 2.75rem;
+    --size-input-height: 2.5rem;
+    --text-crm-body: 0.9375rem;
+  }
+
+  /*
+   * The rows and inputs that were written as fixed Tailwind heights rather than as the
+   * token. Matching the class is not pretty, but it is honest about what it does, and the
+   * alternative is a hundred edits that each have to be kept in step by hand.
+   *
+   * Anything that already names its own `lg:` height is left alone: somebody chose that
+   * number for the wide screen on purpose, and the top bar is the one place where bigger
+   * on a computer was the point.
+   */
+  body.crm-pointer [class~='min-h-16']:not([class*='lg:min-h-']) {
+    min-height: 3rem;
+  }
+  body.crm-pointer [class~='min-h-14']:not([class*='lg:min-h-']),
+  body.crm-pointer [class~='min-h-[56px]']:not([class*='lg:min-h-']) {
+    min-height: 2.5rem;
+  }
+}

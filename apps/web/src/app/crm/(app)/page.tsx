@@ -11,7 +11,7 @@ import { BottomNav, CrmHeader, FEE_TONE, MemberRow, rupees } from '@/components/
 import { CrmIcon, type CrmIconName } from '@/components/crm/crm-icons';
 import { LanguageSwitch } from '@/components/crm/language-switch';
 import { getContainer } from '@/lib/container';
-import { requireCrmContext, verificationDeps } from '@/lib/crm';
+import { requireCrmContext } from '@/lib/crm';
 import { cn } from '@/lib/cn';
 
 /**
@@ -55,6 +55,10 @@ export default async function CrmHomePage() {
   const weekdays = new Intl.DateTimeFormat(locale === 'hi' ? 'hi-IN' : 'en-IN', { weekday: 'short', timeZone: 'UTC' });
   const dayNames = trend.bars.map((bar) => weekdays.format(new Date(`${bar.date}T00:00:00Z`)));
   const showMoney = can(actor, 'money.view', now);
+  // Nobody on the books at all — the first day, or the morning after a clean-out. Every
+  // tile would read zero, which looks like a fault rather than a starting point.
+  const registerEmpty =
+    counts.activeMembers === 0 && counts.expired === 0 && counts.dueThisWeek === 0 && counts.attendedToday === 0;
 
   const tiles: ReadonlyArray<{ key: 'totalMembers' | 'attendedToday' | 'dueThisWeek' | 'expired'; value: number; href: string; icon: CrmIconName; tone: string; note?: string }> = [
     { key: 'totalMembers', value: counts.activeMembers, href: '/crm/members?status=ACTIVE', icon: 'members', tone: 'bg-brand-obsidian text-brand-white' },
@@ -119,6 +123,50 @@ export default async function CrmHomePage() {
             <p className="mt-1 text-small text-brand-stone">{ta('sentAt', { date: formatISTDate(toISTDate(latest.sentAt), locale), name: latest.byName })}</p>
           </section>
         )}
+
+        {/*
+          * A gym whose register is empty, which is every gym on its first day.
+          *
+          * Four zeros and three "nothing here" lines is a screen that tells the owner the
+          * software is broken rather than that the work has not started. This says what to
+          * do instead, and each line goes to the place that does it.
+          */}
+        {registerEmpty ? (
+          <section aria-labelledby="first-run-heading" className="overflow-hidden rounded-panel bg-brand-obsidian text-brand-white shadow-sm">
+            <div className="relative p-5 lg:p-6">
+              <span aria-hidden className="absolute -top-16 -right-10 size-48 rounded-full bg-brand-accent/25 blur-3xl" />
+              <h2 id="first-run-heading" className="relative font-display text-title font-bold">
+                {t('home.firstRun.title')}
+              </h2>
+              <p className="relative mt-1 max-w-prose text-crm-body text-brand-mist">{t('home.firstRun.body')}</p>
+              <ol className="relative mt-5 grid gap-2 md:grid-cols-3">
+                {(
+                  [
+                    { key: 'step1', href: '/crm/members/new', icon: 'plus' },
+                    { key: 'step2', href: '/crm/settings', icon: 'gallery' },
+                    { key: 'step3', href: '/crm/settings/kiosk', icon: 'attendance' },
+                  ] as const
+                ).map((item, index) => (
+                  <li key={item.key}>
+                    <Link
+                      href={item.href}
+                      className="flex h-full items-start gap-3 rounded-input bg-brand-graphite p-4 transition-colors hover:bg-brand-ink"
+                    >
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-accent text-small font-bold text-brand-white tabular">
+                        {index + 1}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-crm-body font-semibold">{t(`home.firstRun.${item.key}` as never)}</span>
+                        <span className="mt-0.5 block text-small text-brand-mist">{t(`home.firstRun.${item.key}Help` as never)}</span>
+                      </span>
+                      <CrmIcon name="chevron" className="ml-auto size-4 shrink-0 self-center text-brand-silver" />
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </section>
+        ) : null}
 
         <section aria-labelledby="quick-heading">
           <h2 id="quick-heading" className="sr-only">
