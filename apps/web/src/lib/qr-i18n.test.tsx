@@ -57,7 +57,7 @@ describe('the catalogues a QR page sends to the browser', () => {
           privacyHref="/legal/privacy"
           plans={[{ planId: 'plan_m1_male', durationMonths: 1, pricePaise: 150_000, gender: 'MALE' }]}
           admissionFeePaise={0}
-          join={() => Promise.resolve({ ok: true, firstName: 'A', amountPaise: 0, reservedUntil: '' })}
+          join={() => Promise.resolve({ ok: true, kind: 'RESERVED' as const, firstName: 'A', amountPaise: 0, reservedUntil: '' })}
           Camera={() => null}
         />
       </NextIntlClientProvider>,

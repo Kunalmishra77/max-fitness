@@ -1565,3 +1565,30 @@ scored 130, so it is kept only as a floor that catches a genuine smear.
 - The failed integration run left an orphaned `gym_it_crm_*` gym in the shared database. Harmless, not cleaned up — it is production and nobody asked.
 - Security review before deployment: still unfinished.
 - Offline mitigations: still unanswered.
+
+## 2026-10-07 (later) — the QR asks how you pay, and the selfie has to be taken now
+
+Four things the owner asked for after the face fix went out.
+
+**1. "How do you pay?" on both QR forms.** Cash goes to the counter as always; online sets up a standing instruction. Nothing is pre-selected.
+
+The part that mattered: a mandate's **first debit is the day after the member's cover ends**, and at the QR that date is whatever the member typed. A member who understates it is debited for a month they have already paid for, and a Razorpay subscription's start date cannot be quietly corrected afterwards. So the existing-member answer is acted on twice — on the reference-code screen, where the offer **states the first debit date** so a wrong one is noticed two steps from the desk; and again at approval, where staff have checked that date and `startMandate` WhatsApps the link. A mandate that exists is returned rather than duplicated, so two paths cannot make two debits.
+
+`findCandidate` now falls back to the pending request's declared end date. Without it a member with no membership had `coveredUntil: null` — meaning the first debit **tomorrow**. That was live, and it would have fired from the CRM's own button on an unapproved member.
+
+**2. New members at the QR can pay online.** They could not: `payAtReception: true` was hardcoded, and Razorpay ran only on the website. Choosing online now hands the registration token to the existing `PayStep`, which makes its own order, opens Razorpay and polls — then offers autopay. A failed card falls back to holding the place, exactly as cash does. This reverses part of ADR-076 at the owner's request.
+
+**3. The selfie is taken live.** The gallery option is gone (reverses ADR-081) and the gate runs at capture time through a new `POST /api/v1/selfie/check`, which stores nothing and takes no name. The member hears "hold the phone closer" while still looking at the picture instead of eight screens later. An unreachable engine lets the photo through; the server runs the same gate on submission.
+
+**4. The ID upload has always taken a PDF** — in both forms, with the help text saying so. Only the button's own label never mentioned it. Fixed.
+
+**Migration applied to production:** `20261007140000_qr_wants_autopay` — one additive column, `NOT NULL DEFAULT false`.
+
+**Tests:** every web test passes (1930). Core `src/qr` and `src/crm` 279/279. DB integration 83/83 **with `--no-file-parallelism`** — in parallel they fail with `max clients reached in session mode: pool_size 15`, which is a connection limit and not a flake. See ADR-110; it has now cost time three times and wants its own database or a serial lane.
+
+**Pending**
+
+- Deploy, then walk both QR journeys live end to end.
+- Security review before deployment: still unfinished.
+- Offline mitigations: still unanswered.
+- `EXPIRED_MEMBER_VISIT` alert is still created by nothing (ADR-108).

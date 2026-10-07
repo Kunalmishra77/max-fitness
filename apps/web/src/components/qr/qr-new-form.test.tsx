@@ -20,7 +20,7 @@ const PLANS = [
   { planId: 'plan_m1_female', durationMonths: 1, pricePaise: 120_000, gender: 'FEMALE' as const },
 ];
 
-const ok: QrJoinResult = { ok: true, firstName: 'Sanjay', amountPaise: 400_000, reservedUntil: '2026-10-03T04:30:00.000Z' };
+const ok: QrJoinResult = { ok: true, kind: 'RESERVED' as const, firstName: 'Sanjay', amountPaise: 400_000, reservedUntil: '2026-10-03T04:30:00.000Z' };
 
 const PT_PLANS = [
   { planId: 'plan_pt1_male', durationMonths: 1, pricePaise: 500_000, gender: 'MALE' as const },
@@ -60,7 +60,10 @@ function form(over: { result?: QrJoinResult; ptPlans?: typeof PT_PLANS; trialOpt
 const next = () => userEvent.click(screen.getByRole('button', { name: /Next/i }));
 const setDate = (label: RegExp, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
 
-async function walk(stop: 'plan' | 'pt' | 'slot' | 'govId' | 'consent' = 'consent', { hasPt = false } = {}) {
+async function walk(
+  stop: 'plan' | 'pt' | 'payMethod' | 'slot' | 'govId' | 'consent' = 'consent',
+  { hasPt = false, pay = 'Cash at the counter' }: { hasPt?: boolean; pay?: string } = {},
+) {
   await userEvent.type(screen.getByLabelText(/Full name/i), 'Sanjay Tomar');
   await userEvent.type(screen.getByLabelText(/Mobile number/i), '9876543210');
   await next();
@@ -82,6 +85,10 @@ async function walk(stop: 'plan' | 'pt' | 'slot' | 'govId' | 'consent' = 'consen
   if (hasPt) {
     await next();
   }
+  if (stop === 'payMethod') return;
+
+  await userEvent.click(screen.getByRole('radio', { name: new RegExp(pay, 'i') }));
+  await next();
   if (stop === 'slot') return;
 
   await userEvent.click(screen.getByRole('radio', { name: /^Morning$/i }));
@@ -116,12 +123,28 @@ describe('QrNewForm', () => {
     expect(screen.queryByText(/₹1,200/)).toBeNull();
   });
 
-  it('never offers to take money online, only at the desk', async () => {
+  /**
+   * ADR-076 kept money off this form entirely: opening a checkout in front of somebody
+   * already standing at the desk was theatre. The owner asked for the question back
+   * (2026-10-07), so the form asks — and cash, which is what the gym runs on, still never
+   * sees a checkout.
+   */
+  it('keeps a member who pays cash away from any checkout', async () => {
     form();
     await walk();
 
     expect(screen.queryByRole('button', { name: /Pay ₹|Pay now|online/i })).toBeNull();
     expect(screen.getByText(/Pay at the desk/i)).toBeTruthy();
+  });
+
+  it('asks how the member pays, and assumes neither answer for them', async () => {
+    form();
+    await walk('payMethod');
+
+    const cash = screen.getByRole('radio', { name: /Cash at the counter/i });
+    const online = screen.getByRole('radio', { name: /^Online/i });
+    expect((cash as HTMLInputElement).checked).toBe(false);
+    expect((online as HTMLInputElement).checked).toBe(false);
   });
 
   it('registers and holds the plan when the member sends it', async () => {
@@ -166,6 +189,8 @@ describe('QrNewForm', () => {
 
       await user.click(screen.getByRole('radio', { name: /3 day trial/i }));
       await next();
+      await user.click(screen.getByRole('radio', { name: /Cash at the counter/i }));
+      await next();
       await user.click(screen.getByRole('radio', { name: /^Morning$/i }));
       await next();
       await user.selectOptions(screen.getByLabelText(/Upload a Govt ID/i), 'PAN');
@@ -191,9 +216,9 @@ describe('QrNewForm', () => {
     it('does not ask at all when the gym sells none', async () => {
       form();
       await walk('pt');
-      // Straight on to "when do you train?", with no empty screen in between.
+      // Straight on to the fees question, with no empty screen in between.
       expect(screen.queryByText(/personal training/i)).toBeNull();
-      expect(screen.getByText(/When will you train/i)).toBeTruthy();
+      expect(screen.getByText(/How will you pay/i)).toBeTruthy();
     });
 
     it('asks after the plan, offering only terms that fit inside it', async () => {
@@ -214,6 +239,8 @@ describe('QrNewForm', () => {
 
       await user.click(screen.getByRole('radio', { name: /^Yes$/i }));
       await user.click(screen.getByRole('radio', { name: /3 Months/i }));
+      await next();
+      await user.click(screen.getByRole('radio', { name: /Cash at the counter/i }));
       await next();
       await user.click(screen.getByRole('radio', { name: /^Morning$/i }));
       await next();

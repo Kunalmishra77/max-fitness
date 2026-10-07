@@ -2101,7 +2101,8 @@
     },
     "errors": {
       "plan": "Please choose a plan.",
-      "pt": "Choose a personal training plan, or answer No."
+      "pt": "Choose a personal training plan, or answer No.",
+      "payMethod": "Please choose how you will pay."
     },
     "ptTitle": "Do you need personal training?",
     "ptHelp": "A trainer with you for every session, on top of your membership.",
@@ -2111,7 +2112,17 @@
     "ptSummary": "With {months, plural, one {1 month} other {# months}} of personal training {pt} — total {total}",
     "trialTitle": "Or try us first",
     "trialHelp": "₹100 a day. Come in for a few days before deciding on a plan.",
-    "trialDays": "{count, plural, one {1 day trial} other {# day trial}}"
+    "trialDays": "{count, plural, one {1 day trial} other {# day trial}}",
+    "paid": {
+      "body": "Paid. Your membership starts today — show this screen at the desk if anyone asks."
+    },
+    "payTitle": "How will you pay?",
+    "payMethods": {
+      "CASH": "Cash at the counter",
+      "CASHHelp": "Hand it to whoever is at the desk. Cash, UPI or card.",
+      "ONLINE": "Online, now, on this phone",
+      "ONLINEHelp": "Pay here and your membership starts straight away. We can also set the next one to pay itself."
+    }
   },
   "qrNew": {
     "title": "Max Fitness Gym, at a glance",

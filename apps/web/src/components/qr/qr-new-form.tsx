@@ -8,6 +8,10 @@ import { renderIdPhoto } from '@/components/join/render-photo';
 import { SelfieCapture, type SelfieCaptureProps } from '@/components/join/selfie-capture';
 import { cn } from '@/lib/cn';
 import { Field, GovIdStep, isPdf, MAX_UPLOAD_BYTES, QR_INPUT_CLASS, QrProgress } from './qr-form-parts';
+import { membershipEndDate } from '@mfp/core';
+import type { ISTDate } from '@mfp/shared';
+import { AutopayOffer } from '@/components/join/autopay-offer';
+import { PayStep } from '@/components/join/pay-step';
 import { SELFIE_REASONS } from './selfie-reasons';
 
 /**
@@ -28,7 +32,14 @@ export interface QrPlanCard {
 }
 
 export type QrJoinResult =
-  | { readonly ok: true; readonly firstName: string; readonly amountPaise: number; readonly reservedUntil: string }
+  /** Cash: the place is held and the member pays whoever is at the counter (ADR-076). */
+  | { readonly ok: true; readonly kind: 'RESERVED'; readonly firstName: string; readonly amountPaise: number; readonly reservedUntil: string }
+  /**
+   * Online: the member is registered and nothing is charged yet. The token is handed to
+   * the checkout, which creates the order itself — so a member who closes the sheet and
+   * changes their mind has not left a stale order behind.
+   */
+  | { readonly ok: true; readonly kind: 'ONLINE'; readonly firstName: string; readonly token: string }
   | {
       readonly ok: false;
       readonly code: string;
@@ -45,9 +56,12 @@ export type QrJoin = (input: {
   trialDays: number | null;
   ptPlanId: string | null;
   startDate: string;
+  /** False when the member chose to pay online from their own phone. */
+  payAtReception: boolean;
 }) => Promise<QrJoinResult>;
 
 const GENDERS = ['MALE', 'FEMALE'] as const;
+const PAY_METHODS = ['CASH', 'ONLINE'] as const;
 
 /** Which answer a server complaint belongs beside. */
 const FIELD_OF: Record<string, string> = {
@@ -58,6 +72,7 @@ const FIELD_OF: Record<string, string> = {
   email: 'email',
   selfie: 'selfie',
   planId: 'plan',
+  payMethod: 'payMethod',
   ptPlanId: 'pt',
   govId: 'govId',
   govIdType: 'govId',
@@ -120,6 +135,8 @@ export function QrNewForm({
   /** Days of trial, chosen instead of a plan (ADR-088). */
   const [trialDays, setTrialDays] = useState<number | null>(null);
   const [slot, setSlot] = useState<TrainingSlot | null>(null);
+  // Nothing pre-selected: cash is the common answer, not one to assume for somebody.
+  const [payMethod, setPayMethod] = useState<(typeof PAY_METHODS)[number] | null>(null);
   const [govIdType, setGovIdType] = useState<GovIdType | ''>('');
   const [govIdFront, setGovIdFront] = useState<Blob | null>(null);
   const [govIdBack, setGovIdBack] = useState<Blob | null>(null);
@@ -131,6 +148,9 @@ export function QrNewForm({
   const [problems, setProblems] = useState<Record<string, string>>({});
   const [failure, setFailure] = useState<string | null>(null);
   const [done, setDone] = useState<{ firstName: string; amountPaise: number } | null>(null);
+  // Set when the member chose to pay online: the checkout takes over from here.
+  const [online, setOnline] = useState<{ firstName: string; token: string } | null>(null);
+  const [paid, setPaid] = useState<{ firstName: string; amountPaise: number; endDate: string } | null>(null);
   const [pending, start] = useTransition();
   const photoUrl = useRef<string | null>(null);
 
@@ -203,6 +223,7 @@ export function QrNewForm({
     // A plan or a trial: one of the two has to be chosen (ADR-088).
     if (chosen === null && trial === null) found['plan'] = t('errors.plan');
     if (wantsPt && myPt.length > 0 && ptChosen === null) found['pt'] = t('errors.pt');
+    if (payMethod === null) found['payMethod'] = t('errors.payMethod');
     if (slot === null) found['slot'] = te('errors.slot');
     if (govIdType === '') found['govId'] = te('errors.govIdType');
     else if (govIdFront === null || (!govIdIsFile && govIdType !== 'PAN' && govIdBack === null)) found['govId'] = te('errors.govIdPhotos');
@@ -217,6 +238,52 @@ export function QrNewForm({
         <p className="font-display text-display-m font-bold text-brand-accent-deep">{price(done.amountPaise)}</p>
         <p className="text-body leading-body">{t('done.body')}</p>
       </div>
+    );
+  }
+
+  /**
+   * Paid online, at the desk, on the member's own phone — and then offered the standing
+   * instruction, which is the reason the form asked how they pay at all.
+   *
+   * A new member has no cover to carry over, so the first debit falls a month after the
+   * term they have just paid for, and the offer names that date.
+   */
+  if (paid !== null) {
+    return (
+      <div className="grid gap-4 rounded-panel bg-tint-fee-paid-bg p-6">
+        <h2 className="font-display text-title font-bold text-brand-obsidian">{t('done.title', { name: paid.firstName })}</h2>
+        <p className="font-display text-display-m font-bold text-brand-accent-deep">{price(paid.amountPaise)}</p>
+        <p className="text-body leading-body">{t('paid.body')}</p>
+        <AutopayOffer auth={{ kind: 'registration', token: online?.token ?? '' }} endDate={paid.endDate} />
+      </div>
+    );
+  }
+
+  // The checkout takes the screen once the member is registered: it makes its own order,
+  // opens Razorpay, and polls until the gateway has actually said yes.
+  if (online !== null && chosen !== null) {
+    const endDate = membershipEndDate(today as ISTDate, chosen.durationMonths);
+    return (
+      <PayStep
+        auth={{ kind: 'registration', token: online.token }}
+        planId={chosen.planId}
+        ptPlanId={wantsPt ? (ptChosen?.planId ?? null) : null}
+        startDate={today as ISTDate}
+        phoneDisplay={mobile.replace(/\D/g, '')}
+        summary={{
+          firstName: online.firstName,
+          planLabel: t('months', { count: chosen.durationMonths }),
+          startDate: today as ISTDate,
+          endDate,
+          planPricePaise: chosen.pricePaise,
+          admissionPaise: admissionFeePaise,
+          ...(wantsPt && ptChosen !== null ? { ptLabel: t('months', { count: ptChosen.durationMonths }), ptPricePaise: ptChosen.pricePaise } : {}),
+        }}
+        onPaid={(result) => setPaid({ firstName: online.firstName, amountPaise: result.amountPaise, endDate: result.membership?.endDate ?? endDate })}
+        // The member opened a checkout and ended up holding a place instead — a failed card,
+        // or they closed it. The desk takes the money, exactly as for anybody paying cash.
+        onReserved={(result) => setDone({ firstName: online.firstName, amountPaise: result.amountPaise })}
+      />
     );
   }
 
@@ -412,6 +479,41 @@ export function QrNewForm({
           },
         ]),
     {
+      /**
+       * "How will you pay?" (owner, 2026-10-07).
+       *
+       * Asked straight after the plan, while the amount is still in the member's head.
+       * Cash is what the gym has always run on and is first; nothing is pre-selected.
+       *
+       * Online opens a real Razorpay checkout on the member's own phone and then offers
+       * the standing instruction — which is the whole reason for asking. A new member has
+       * no cover to carry over, so the first debit is a month from the term they are
+       * paying for now, and the screen says so.
+       */
+      keys: ['payMethod'],
+      body: (
+        <fieldset>
+          <legend className="text-body font-semibold text-brand-ink">{t('payTitle')}</legend>
+          <div className="mt-3 grid gap-2">
+            {PAY_METHODS.map((value) => (
+              <label key={value} className={cn(chip(payMethod === value), 'px-5 py-3 text-left')}>
+                <input type="radio" name="payMethod" value={value} checked={payMethod === value} onChange={() => setPayMethod(value)} className="sr-only" />
+                <span className="block">{t(`payMethods.${value}` as never)}</span>
+                <span className={cn('mt-0.5 block text-small font-normal', payMethod === value ? 'text-brand-white/80' : 'text-brand-stone')}>
+                  {t(`payMethods.${value}Help` as never)}
+                </span>
+              </label>
+            ))}
+          </div>
+          {problems['payMethod'] === undefined ? null : (
+            <p role="alert" className="mt-1 text-small font-semibold text-semantic-fee-expired">
+              {problems['payMethod']}
+            </p>
+          )}
+        </fieldset>
+      ),
+    },
+    {
       keys: ['slot'],
       body: (
         <fieldset>
@@ -559,9 +661,11 @@ export function QrNewForm({
         trialDays: trial?.days ?? null,
         ptPlanId: chosen === null || !wantsPt ? null : (ptChosen?.planId ?? null),
         startDate: today,
+        payAtReception: payMethod !== 'ONLINE',
       });
       if (result.ok) {
-        setDone({ firstName: result.firstName, amountPaise: result.amountPaise });
+        if (result.kind === 'ONLINE') setOnline({ firstName: result.firstName, token: result.token });
+        else setDone({ firstName: result.firstName, amountPaise: result.amountPaise });
         return;
       }
       const beside: Record<string, string> = {};

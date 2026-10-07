@@ -16,8 +16,10 @@ async function joinAtReception({
   trialDays,
   ptPlanId,
   startDate,
+  payAtReception,
 }: {
   form: FormData;
+  payAtReception: boolean;
   planId: string | null;
   trialDays: number | null;
   ptPlanId: string | null;
@@ -52,6 +54,13 @@ async function joinAtReception({
     const token = registeredBody.data?.['registrationToken'];
     if (!registered.ok || typeof token !== 'string') return refusal(registeredBody, registered.status);
 
+    const given = form.get('fullName');
+    const firstName = (typeof given === 'string' ? given : '').trim().split(/\s+/)[0] ?? '';
+
+    // Paying online: no order is made here. The checkout makes its own, so a member who
+    // opens it, thinks better of it and closes the sheet has not left one behind.
+    if (!payAtReception) return { ok: true, kind: 'ONLINE', firstName, token };
+
     const held = await fetch('/api/v1/checkout/orders', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-registration-token': token },
@@ -62,11 +71,10 @@ async function joinAtReception({
     const heldBody = await envelope(held);
     if (!held.ok) return refusal(heldBody, held.status);
 
-    const given = form.get('fullName');
-    const firstName = (typeof given === 'string' ? given : '').trim().split(/\s+/)[0] ?? '';
     const reserved = heldBody.data?.['reservedUntil'];
     return {
       ok: true,
+      kind: 'RESERVED',
       firstName,
       amountPaise: Number(heldBody.data?.['amountPaise'] ?? 0),
       reservedUntil: typeof reserved === 'string' ? reserved : '',
