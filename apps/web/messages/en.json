@@ -1653,6 +1653,16 @@
       "open": "Message plan"
     },
     "kiosk": {
+      "setup": {
+        "title": "Putting this on a phone",
+        "openThis": "Open this address on the phone that will sit at reception:",
+        "copy": "Copy",
+        "copied": "Copied",
+        "step1": "Open that address on the reception phone, in its browser.",
+        "step2": "Tap “Pair again” below to get a six-digit code. It works for ten minutes.",
+        "step3": "Type the code into the phone. It stays paired after that — no code again, and no code every day.",
+        "step4": "To stop using that phone, tap “Remove this phone” below. It stops marking anybody in straight away."
+      },
       "title": "Attendance phone",
       "helper": "The phone at reception that marks members in by face",
       "none": "No attendance phone yet",

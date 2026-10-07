@@ -4,6 +4,8 @@ import { PrismaKioskDevices } from '@mfp/db';
 import { pairKioskAction, revokeKioskAction, setKioskShadowModeAction, unlockSettingsAction } from '@/app/crm/actions';
 import { BottomNav, CrmHeader } from '@/components/crm/crm-chrome';
 import { KioskDevices, type KioskDeviceItem, type KioskHealthView } from '@/components/crm/kiosk-devices';
+import { KioskSetupSteps } from '@/components/crm/kiosk-setup-steps';
+import { siteUrl } from '@/lib/seo';
 import { getContainer } from '@/lib/container';
 import { requireCrmContext } from '@/lib/crm';
 
@@ -91,6 +93,9 @@ export default async function KioskSettingsPage() {
     <>
       <CrmHeader title={t('kiosk.title')} subtitle={t('kiosk.helper')} back="/crm/settings" />
       <div className="grid gap-4 p-4 pb-24 lg:p-0">
+        {/* The address first. A six-digit code with nowhere to type it is half an
+            instruction, and whoever is reading this is usually holding the phone. */}
+        <KioskSetupSteps url={`${siteUrl()}/checkin`} />
         <KioskDevices devices={items} pair={pairKioskAction} revoke={revokeKioskAction} setShadowMode={setKioskShadowModeAction} unlock={unlockSettingsAction} />
       </div>
       <BottomNav active="more" />
