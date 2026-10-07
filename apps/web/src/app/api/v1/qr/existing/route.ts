@@ -104,6 +104,7 @@ export async function POST(request: NextRequest) {
         declaredAmountPaise: parsed.declaredAmountPaise,
         joinedOn: parsed.joinedOn,
         trainingSlot: parsed.trainingSlot,
+        wantsAutopay: parsed.wantsAutopay,
         // Re-encoded from pixels like the selfie, so the EXIF a phone photo carries —
         // including where it was taken — never reaches storage (ADR-074).
         govId:

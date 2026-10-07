@@ -29,6 +29,8 @@ export interface LockedVerification {
   readonly declaredEndDate: ISTDate;
   readonly declaredAmountPaise: number | null;
   readonly matchedImportMemberId: string | null;
+  /** The member chose "online" at the QR and is waiting for a standing instruction. */
+  readonly wantsAutopay: boolean;
 }
 
 export interface DeclaredMembershipRecord {
@@ -103,7 +105,18 @@ async function lockPending(store: VerificationStore, actor: CrmActor, verificati
 export async function approveVerification(
   input: { readonly verificationId: string; readonly approvedEndDate?: ISTDate; readonly planMonths?: PlanDurationMonths },
   deps: Deps,
-): Promise<{ readonly memberId: string; readonly memberCode: string; readonly startDate: ISTDate | null; readonly endDate: ISTDate }> {
+): Promise<{
+  readonly memberId: string;
+  readonly memberCode: string;
+  readonly startDate: ISTDate | null;
+  readonly endDate: ISTDate;
+  /**
+   * Carried out rather than acted on: starting a mandate is a call to Razorpay, and this
+   * runs inside the transaction that writes the membership. The caller does it, now that
+   * the end date behind the first debit is the gym's own and no longer a claim.
+   */
+  readonly wantsAutopay: boolean;
+}> {
   const { actor, clock } = deps;
   const now = clock.now();
   assertCan(actor, 'verification.approve', now);
@@ -158,7 +171,7 @@ export async function approveVerification(
       },
     });
 
-    return { memberId: member.id, memberCode, startDate, endDate };
+    return { memberId: member.id, memberCode, startDate, endDate, wantsAutopay: request.wantsAutopay };
   });
 }
 

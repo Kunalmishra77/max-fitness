@@ -157,6 +157,7 @@ function existingMemberStore(tx: TransactionClient): ExistingMemberStore {
           declaredAmountPaise: record.declaredAmountPaise,
           govIdType: record.govIdType,
           matchedImportMemberId: record.matchedImportMemberId,
+          wantsAutopay: record.wantsAutopay,
         },
         select: { id: true },
       });
@@ -183,9 +184,10 @@ function verificationStore(tx: TransactionClient): VerificationStore {
           declaredEndDate: Date;
           declaredAmountPaise: number | null;
           matchedImportMemberId: string | null;
+          wantsAutopay: boolean;
         }>
       >`
-        SELECT "id", "memberId", "status", "declaredPlanMonths", "declaredEndDate", "declaredAmountPaise", "matchedImportMemberId"
+        SELECT "id", "memberId", "status", "declaredPlanMonths", "declaredEndDate", "declaredAmountPaise", "matchedImportMemberId", "wantsAutopay"
         FROM "VerificationRequest" WHERE "id" = ${verificationId} AND "gymId" = ${gymId}
         FOR UPDATE
       `;

@@ -1,0 +1,11 @@
+-- How a member who registered at the reception QR says they pay (owner, 2026-10-07).
+--
+-- The QR form now asks, in as many words, "cash at the counter or online?". Cash is what
+-- the gym has always done and needs nothing recorded. Online is a standing instruction the
+-- member wants, and this is where that answer waits until somebody approves them — because
+-- the mandate's first debit is the day after their cover ends, and until staff have checked
+-- the date the member typed, that day is a claim rather than a fact.
+--
+-- Default false: every row already in the table was written before the question existed,
+-- and none of those members asked for autopay.
+ALTER TABLE "VerificationRequest" ADD COLUMN IF NOT EXISTS "wantsAutopay" BOOLEAN NOT NULL DEFAULT false;

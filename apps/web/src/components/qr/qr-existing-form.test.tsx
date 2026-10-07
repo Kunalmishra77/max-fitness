@@ -49,7 +49,7 @@ const setDate = (label: RegExp, value: string) => fireEvent.change(screen.getByL
 const next = () => userEvent.click(screen.getByRole('button', { name: /Next/i }));
 
 /** Walk forward to a named screen, answering only what each one insists on. */
-async function walkTo(stop: 'dob' | 'selfie' | 'plan' | 'slot' | 'govId' | 'optional' | 'consent') {
+async function walkTo(stop: 'dob' | 'selfie' | 'plan' | 'payMethod' | 'slot' | 'govId' | 'optional' | 'consent') {
   await userEvent.type(screen.getByLabelText(/Full name/i), 'Sanjay Tomar');
   await userEvent.type(screen.getByLabelText(/Mobile number/i), '9876543210');
   await next();
@@ -67,6 +67,10 @@ async function walkTo(stop: 'dob' | 'selfie' | 'plan' | 'slot' | 'govId' | 'opti
 
   await userEvent.click(screen.getByRole('radio', { name: /3 Months/i }));
   setDate(/Fees paid until/i, '2026-11-30');
+  await next();
+  if (stop === 'payMethod') return;
+
+  await userEvent.click(screen.getByRole('radio', { name: /Cash at the counter/i }));
   await next();
   if (stop === 'slot') return;
 

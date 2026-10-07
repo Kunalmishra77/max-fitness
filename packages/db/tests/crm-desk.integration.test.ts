@@ -793,6 +793,7 @@ suite('CRM fee desk against Postgres', () => {
           declaredAmountPaise: 400_000,
           joinedOn: extra.joinedOn === undefined ? null : istDate(extra.joinedOn),
           trainingSlot: null,
+          wantsAutopay: false,
           govId:
             extra.govIdType === undefined
               ? null

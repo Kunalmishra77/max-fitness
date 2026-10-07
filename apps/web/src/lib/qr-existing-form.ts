@@ -22,6 +22,8 @@ export type QrExistingFormResult =
       readonly joinedOn: ISTDate | null;
       /** Morning, evening or both — the gym shuts between noon and five (ADR-082). */
       readonly trainingSlot: TrainingSlot | null;
+      /** "Online" on the fees question: a standing instruction the member has asked for. */
+      readonly wantsAutopay: boolean;
       /**
        * Pictures only. The parser never reads, and the form never asks for, a number.
        * Either photographs of each side, or the one file the member had (ADR-081).
@@ -87,6 +89,9 @@ export async function parseQrExistingForm(form: FormData): Promise<QrExistingFor
   const joinedOn = joinedText === '' ? null : realDate(joinedText);
   if (joinedText !== '' && joinedOn === null) fields['joinedOn'] = 'joinedOn';
 
+  // Only an explicit "online" counts. A form that never answered, or that answered cash,
+  // is a member who pays at the counter as they always have.
+  const wantsAutopay = text(form, 'payMethod') === 'ONLINE';
   const slotText = text(form, 'trainingSlot');
   const trainingSlot = slotText === '' ? null : isTrainingSlot(slotText) ? slotText : undefined;
   if (trainingSlot === undefined) fields['trainingSlot'] = 'trainingSlot';
@@ -139,5 +144,5 @@ export async function parseQrExistingForm(form: FormData): Promise<QrExistingFor
   ) {
     return { ok: false, fields };
   }
-  return { ok: true, fields: base.fields, selfie: base.selfie, declaredPlanMonths, declaredEndDate, declaredAmountPaise, joinedOn, trainingSlot, govId };
+  return { ok: true, fields: base.fields, selfie: base.selfie, declaredPlanMonths, declaredEndDate, declaredAmountPaise, joinedOn, trainingSlot, wantsAutopay, govId };
 }

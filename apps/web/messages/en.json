@@ -2000,7 +2000,8 @@
       "plan": "Which plan do you have?",
       "endDate": "Fees paid until",
       "slot": "When do you usually train?",
-      "govIdType": "Upload a Govt ID"
+      "govIdType": "Upload a Govt ID",
+      "payMethod": "How do you pay your fees?"
     },
     "slotHelp": "The gym is open 4:30 am – 12:00 pm and 5:00 – 10:00 pm.",
     "slots": {
@@ -2072,7 +2073,14 @@
       "selfieUnreadable": "That photo couldn't be opened. Please take it again.",
       "selfieUnsupported": "That file isn't a photo we can use. Take a new selfie, or choose a JPEG or PNG photo.",
       "selfieTooLarge": "That photo is too large. Please take it again.",
-      "selfieTooSmall": "That photo is too small. Move closer and take it again."
+      "selfieTooSmall": "That photo is too small. Move closer and take it again.",
+      "payMethod": "Please choose how you pay."
+    },
+    "payMethods": {
+      "CASH": "Cash at the counter",
+      "CASHHelp": "The way it works today. Nothing changes.",
+      "ONLINE": "Online",
+      "ONLINEHelp": "We can set your fee to pay itself each time. You approve it with your own bank or UPI app, and nothing is taken today."
     }
   },
   "qrNewForm": {

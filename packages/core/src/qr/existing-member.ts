@@ -80,6 +80,14 @@ export interface VerificationRequestRecord {
   readonly declaredPlanMonths: PlanDurationMonths | null;
   readonly declaredEndDate: ISTDate;
   readonly declaredAmountPaise: number | null;
+  /**
+   * The member said they pay online and want the fee to collect itself (owner, 2026-10-07).
+   *
+   * Kept, not acted on. The mandate's first debit is the day after their cover ends, and
+   * the date they typed is a claim until staff approve it — so approval is what starts the
+   * standing instruction, by which time the date is the gym's own.
+   */
+  readonly wantsAutopay: boolean;
   /** Which card the photographs are of. The number itself is never stored (ADR-074). */
   readonly govIdType: GovIdType | null;
   readonly matchedImportMemberId: string | null;
@@ -138,6 +146,7 @@ export async function submitExistingMember(
     readonly declaredPlanMonths: PlanDurationMonths | null;
     readonly declaredEndDate: ISTDate;
     readonly declaredAmountPaise: number | null;
+    readonly wantsAutopay: boolean;
     /** Optional: plenty of members will not remember the day they joined. */
     readonly joinedOn: ISTDate | null;
     /** Morning, evening, or both — the gym is shut between noon and five (ADR-082). */
@@ -292,6 +301,7 @@ export async function submitExistingMember(
         declaredPlanMonths: input.declaredPlanMonths,
         declaredEndDate: input.declaredEndDate,
         declaredAmountPaise: amount,
+        wantsAutopay: input.wantsAutopay,
         govIdType: input.govId?.type ?? null,
         matchedImportMemberId: imported?.id ?? null,
       });

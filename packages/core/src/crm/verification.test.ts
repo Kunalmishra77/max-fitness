@@ -32,6 +32,7 @@ class FakeStore implements VerificationStore {
     declaredEndDate: istDate('2026-09-30'),
     declaredAmountPaise: 400_000,
     matchedImportMemberId: null,
+    wantsAutopay: false,
   };
   member = { id: 'mem_1', memberCode: null as string | null, status: 'PENDING_VERIFICATION' };
   importMembership: { id: string; endDate: ISTDate } | null = null;
@@ -105,7 +106,7 @@ describe('approveVerification', () => {
   it('activates a new member with a declared membership on the date they gave (BR-3.6)', async () => {
     const result = await approve();
 
-    expect(result).toEqual({ memberId: 'mem_1', memberCode: 'MF-0042', startDate: '2026-07-01', endDate: '2026-09-30' });
+    expect(result).toEqual({ memberId: 'mem_1', memberCode: 'MF-0042', startDate: '2026-07-01', endDate: '2026-09-30', wantsAutopay: false });
     expect(store.created).toEqual([
       {
         gymId: 'gym_1',
@@ -177,6 +178,25 @@ describe('approveVerification', () => {
     await expect(approve()).rejects.toMatchObject({ code: 'CONFLICT' });
     store.request = null;
     await expect(approve()).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
+  /**
+   * The member said "online" at the reception QR, and this is the moment that answer
+   * becomes safe to act on (owner, 2026-10-07).
+   *
+   * The mandate's first debit falls the day after their cover ends. Until now that date
+   * was a claim typed into a phone; approval is where staff either accept it or correct
+   * it. So the answer is carried out of here rather than acted on at the QR, and the
+   * caller — which can reach Razorpay, and this cannot — starts the standing instruction.
+   */
+  it('says the member asked to pay online, so the caller can start the mandate', async () => {
+    store.request = { ...store.request, wantsAutopay: true } as typeof store.request;
+
+    await expect(approve()).resolves.toMatchObject({ wantsAutopay: true });
+  });
+
+  it('says nothing of the sort for a member who pays cash at the counter', async () => {
+    await expect(approve()).resolves.toMatchObject({ wantsAutopay: false });
   });
 
   it('is for owner and reception, not trainers', async () => {

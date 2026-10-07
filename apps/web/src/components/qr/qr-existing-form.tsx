@@ -53,6 +53,9 @@ const STEP_KEYS: ReadonlyArray<readonly string[]> = [
   ['dob', 'gender'],
   ['selfie'],
   ['plan', 'endDate'],
+  // Straight after the fee, because it is the same subject and the member has the amount
+  // in their head (owner, 2026-10-07).
+  ['payMethod'],
   ['slot'],
   ['govId'],
   [],
@@ -60,6 +63,7 @@ const STEP_KEYS: ReadonlyArray<readonly string[]> = [
 ];
 
 const PLANS = ['1', '3', '6', '12', 'unsure'] as const;
+const PAY_METHODS = ['CASH', 'ONLINE'] as const;
 const GENDERS = ['MALE', 'FEMALE', 'OTHER'] as const;
 
 /** Which answer a server complaint belongs beside. */
@@ -73,6 +77,7 @@ const FIELD_OF: Record<string, string> = {
   selfie: 'selfie',
   declaredPlanMonths: 'plan',
   declaredEndDate: 'endDate',
+  payMethod: 'payMethod',
   declaredAmount: 'amount',
   govId: 'govId',
   govIdType: 'govId',
@@ -153,6 +158,8 @@ export function QrExistingForm({
   const [cameraOpen, setCameraOpen] = useState(false);
   const [plan, setPlan] = useState<(typeof PLANS)[number] | null>(null);
   const [endDate, setEndDate] = useState('');
+  // Nothing pre-selected: cash is the common answer, not an answer to assume.
+  const [payMethod, setPayMethod] = useState<(typeof PAY_METHODS)[number] | null>(null);
   const [slot, setSlot] = useState<TrainingSlot | null>(null);
   const [govIdType, setGovIdType] = useState<GovIdType | ''>('');
   // Shrunk in the browser as soon as it is picked: a raw phone photo of an Aadhaar is
@@ -252,6 +259,7 @@ export function QrExistingForm({
     if (photo === null) found['selfie'] = t('errors.selfie');
     if (plan === null) found['plan'] = t('errors.plan');
     if (endDate === '') found['endDate'] = t('errors.endDate');
+    if (payMethod === null) found['payMethod'] = t('errors.payMethod');
     if (slot === null) found['slot'] = t('errors.slot');
     if (govIdType === '') found['govId'] = t('errors.govIdType');
     else if (govIdFront === null || (sides.includes('BACK') && govIdBack === null)) found['govId'] = t('errors.govIdPhotos');
@@ -280,6 +288,7 @@ export function QrExistingForm({
     form.set('declaredPlanMonths', plan === 'unsure' ? '' : plan);
     form.set('declaredEndDate', endDate);
     if (slot !== null) form.set('trainingSlot', slot);
+    if (payMethod !== null) form.set('payMethod', payMethod);
     form.set('selfie', photo.blob, 'selfie.jpg');
     if (email.trim() !== '') form.set('email', email.trim());
     if (joinedOn !== '') form.set('joinedOn', joinedOn);
@@ -422,9 +431,46 @@ export function QrExistingForm({
       ),
     },
     {
+      /**
+       * "How do you pay?" (owner, 2026-10-07).
+       *
+       * Cash is what this gym has always run on and is the honest default, so it is first
+       * and nothing is pre-selected — a member who pays at the counter should not have to
+       * undo an answer somebody else chose for them.
+       *
+       * Picking online does not set anything up here. The standing instruction's first
+       * debit falls the day after this member's cover ends, and that date is still only
+       * what they typed; the gym checks it at the desk within minutes, and the link goes
+       * out then.
+       */
+      keys: STEP_KEYS[4] ?? [],
+      body: (
+      <fieldset>
+        <legend className="text-body font-semibold text-brand-ink">{t('fields.payMethod')}</legend>
+        <div className="mt-2 grid gap-2">
+          {PAY_METHODS.map((value) => (
+            <label
+              key={value}
+              className={cn(
+                'min-h-14 cursor-pointer rounded-button border-2 px-5 py-3 font-semibold',
+                payMethod === value ? 'border-brand-accent bg-brand-accent text-brand-white' : 'border-brand-stone/40 bg-white',
+              )}
+            >
+              <input type="radio" name="payMethod" value={value} checked={payMethod === value} onChange={() => setPayMethod(value)} className="sr-only" />
+              <span className="block">{t(`payMethods.${value}` as never)}</span>
+              <span className={cn('mt-0.5 block text-small font-normal', payMethod === value ? 'text-brand-white/80' : 'text-brand-stone')}>
+                {t(`payMethods.${value}Help` as never)}
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      ),
+    },
+    {
       // The gym shuts between noon and five, so this is a real question with a real use:
       // it tells the owner when to have a trainer on the floor (ADR-082).
-      keys: STEP_KEYS[4] ?? [],
+      keys: STEP_KEYS[5] ?? [],
       body: (
       <fieldset>
         <legend className="text-body font-semibold text-brand-ink">{t('fields.slot')}</legend>
@@ -452,7 +498,7 @@ export function QrExistingForm({
       ),
     },
     {
-      keys: STEP_KEYS[5] ?? [],
+      keys: STEP_KEYS[6] ?? [],
       body: (
       <section className="grid gap-3">
         <Field {...field('govId')} label={t('fields.govIdType')}>
@@ -514,7 +560,7 @@ export function QrExistingForm({
     },
     {
       // Both optional, on a screen of their own so nobody is held up by them.
-      keys: STEP_KEYS[6] ?? [],
+      keys: STEP_KEYS[7] ?? [],
       body: (
       <div className="grid gap-4">
         <h2 className="text-body font-semibold text-brand-ink">{t('optionalTitle')}</h2>
@@ -530,7 +576,7 @@ export function QrExistingForm({
       ),
     },
     {
-      keys: STEP_KEYS[7] ?? [],
+      keys: STEP_KEYS[8] ?? [],
       body: (
       <section className="grid gap-3">
         <h2 className="text-body font-semibold text-brand-ink">{t('beforeSend')}</h2>

@@ -744,7 +744,7 @@ export async function approveVerificationAction(verificationId: string, change: 
   if (months !== undefined && !(PLAN_DURATIONS as readonly number[]).includes(months)) return { ok: false, code: 'VALIDATION_FAILED' };
 
   try {
-    await approveVerification(
+    const approved = await approveVerification(
       {
         verificationId,
         ...(date === undefined ? {} : { approvedEndDate: istDate(date) }),
@@ -752,9 +752,33 @@ export async function approveVerificationAction(verificationId: string, change: 
       },
       { actor, clock, uow },
     );
+
+    // The member answered "online" at the QR, and this is the first moment it is safe to
+    // act on: the end date the first debit hangs off has just been approved, so it is the
+    // gym's own rather than something typed into a phone. `notify` sends them the link on
+    // WhatsApp, because they walked away from the desk minutes ago.
+    //
+    // **It never fails the approval.** The member is verified and their membership is
+    // written; a mandate that could not be created is a button on their profile, while an
+    // approval rolled back over Razorpay being slow is a member standing at the desk.
+    if (approved.wantsAutopay) await startAutopayAfterApproval(approved.memberId, actor.gymId);
+
     return { ok: true };
   } catch (error) {
     return verifyOutcome(error);
+  }
+}
+
+/** Best-effort: the desk can always set this up by hand from the member's profile. */
+async function startAutopayAfterApproval(memberId: string, gymId: string): Promise<void> {
+  const { clock, subscriptions, startMandateUow } = getContainer();
+  if (subscriptions === null) return;
+  try {
+    await startMandate({ memberId, gymId, notify: true }, { clock, provider: subscriptions, uow: startMandateUow });
+  } catch {
+    // Never the member in this line, and never a thrown error: nothing here is worth
+    // undoing an approval for.
+    console.warn('[crm] approved, but could not start the standing instruction');
   }
 }
 

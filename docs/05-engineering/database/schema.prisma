@@ -514,6 +514,9 @@ model VerificationRequest {
   declaredPlanMonths    Int?
   declaredEndDate       DateTime           @db.Date
   declaredAmountPaise   Int?
+  /// "Cash at the counter" or "online": online waits here until approval, when the
+  /// end date stops being a claim and the mandate's first debit can be trusted.
+  wantsAutopay          Boolean            @default(false)
   matchedImportMemberId String?
   status                VerificationStatus @default(PENDING)
   decidedById           String?

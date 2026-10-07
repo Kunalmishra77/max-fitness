@@ -128,6 +128,7 @@ describe('submitExistingMember', () => {
       claimedMemberId: string;
       joinedOn: string | null;
       trainingSlot: 'MORNING' | 'EVENING' | 'BOTH' | null;
+      wantsAutopay: boolean;
       govId: { type: 'AADHAAR' | 'PAN' | 'DL' | 'VOTER'; images: Array<{ side: 'FRONT' | 'BACK'; body: Uint8Array; width: number; height: number }> } | null;
     }> = {},
   ) =>
@@ -140,6 +141,7 @@ describe('submitExistingMember', () => {
         declaredAmountPaise: declared.amountPaise === undefined ? 400_000 : declared.amountPaise,
         joinedOn: declared.joinedOn === undefined ? null : declared.joinedOn === null ? null : istDate(declared.joinedOn),
         trainingSlot: declared.trainingSlot ?? null,
+        wantsAutopay: declared.wantsAutopay ?? false,
         govId: declared.govId === undefined ? null : declared.govId,
         ...(declared.claimedMemberId === undefined ? {} : { claimedMemberId: declared.claimedMemberId }),
       },
@@ -183,6 +185,7 @@ describe('submitExistingMember', () => {
         declaredAmountPaise: 400_000,
         govIdType: null,
         matchedImportMemberId: null,
+        wantsAutopay: false,
       },
     ]);
     // The alert names the reference, never the person.
@@ -351,6 +354,25 @@ describe('submitExistingMember', () => {
 
     expect(store.govIdMedia).toEqual([]);
     expect(store.requests[0]).toMatchObject({ govIdType: null });
+  });
+
+  /**
+   * "Cash at the counter, or online?" (owner, 2026-10-07).
+   *
+   * The answer is kept on the request rather than acted on, because the mandate's first
+   * debit falls the day after the member's cover ends — and until staff have checked the
+   * date the member typed, that day is a claim. Approval is what turns it into a fact.
+   */
+  it('records that the member asked to pay online', async () => {
+    await submit({ wantsAutopay: true });
+
+    expect(store.requests[0]).toMatchObject({ wantsAutopay: true });
+  });
+
+  it('records cash at the counter as no standing instruction', async () => {
+    await submit({ wantsAutopay: false });
+
+    expect(store.requests[0]).toMatchObject({ wantsAutopay: false });
   });
 
   /**
