@@ -1,5 +1,4 @@
-import { DEFAULT_PHOTO_GATES, type FaceMeasurement, type PhotoGates } from '@mfp/core';
-import type { AttendanceSettings } from '@mfp/shared';
+import type { FaceMeasurement } from '@mfp/core/ports';
 
 /**
  * Talking to `apps/face` (ADR-107).
@@ -120,23 +119,4 @@ export class FaceClient {
       tookMs: body.tookMs ?? 0,
     };
   }
-}
-
-/**
- * The gym's own gates, or the measured defaults.
- *
- * Settings win, so the owner can tighten them from Max Register without a deploy — but the
- * defaults are the numbers ADR-107 measured, not round figures, so a gym that never touches
- * settings still gets the behaviour the POC proved.
- */
-export function photoGatesFrom(attendance: AttendanceSettings): PhotoGates {
-  return {
-    enrolmentMinFacePx: attendance.enrolmentMinFacePx ?? DEFAULT_PHOTO_GATES.enrolmentMinFacePx,
-    checkInMinFacePx: attendance.checkInMinFacePx ?? DEFAULT_PHOTO_GATES.checkInMinFacePx,
-    minConfidence: attendance.faceMinConfidence ?? DEFAULT_PHOTO_GATES.minConfidence,
-    minBrightness: attendance.faceMinBrightness ?? DEFAULT_PHOTO_GATES.minBrightness,
-    maxBrightness: attendance.faceMaxBrightness ?? DEFAULT_PHOTO_GATES.maxBrightness,
-    minAlignedSharpness: attendance.faceMinSharpness ?? DEFAULT_PHOTO_GATES.minAlignedSharpness,
-    secondFaceRatio: attendance.secondFaceRatio ?? DEFAULT_PHOTO_GATES.secondFaceRatio,
-  };
 }

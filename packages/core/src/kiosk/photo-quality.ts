@@ -134,3 +134,30 @@ export function assessEnrolmentPhoto(measurement: FaceMeasurement, gates: PhotoG
 export function assessCheckInFrame(measurement: FaceMeasurement, gates: PhotoGates): PhotoVerdict {
   return assess(measurement, gates, gates.checkInMinFacePx);
 }
+
+/**
+ * The gym's own gates, or the measured defaults.
+ *
+ * Settings win, so the owner can tighten them from Max Register without a deploy — but the
+ * defaults are the numbers ADR-107 measured rather than round figures, so a gym that never
+ * opens the settings screen still gets the behaviour the POC proved.
+ */
+export function photoGatesFrom(attendance: {
+  readonly enrolmentMinFacePx?: number;
+  readonly checkInMinFacePx?: number;
+  readonly faceMinConfidence?: number;
+  readonly faceMinBrightness?: number;
+  readonly faceMaxBrightness?: number;
+  readonly faceMinSharpness?: number;
+  readonly secondFaceRatio?: number;
+}): PhotoGates {
+  return {
+    enrolmentMinFacePx: attendance.enrolmentMinFacePx ?? DEFAULT_PHOTO_GATES.enrolmentMinFacePx,
+    checkInMinFacePx: attendance.checkInMinFacePx ?? DEFAULT_PHOTO_GATES.checkInMinFacePx,
+    minConfidence: attendance.faceMinConfidence ?? DEFAULT_PHOTO_GATES.minConfidence,
+    minBrightness: attendance.faceMinBrightness ?? DEFAULT_PHOTO_GATES.minBrightness,
+    maxBrightness: attendance.faceMaxBrightness ?? DEFAULT_PHOTO_GATES.maxBrightness,
+    minAlignedSharpness: attendance.faceMinSharpness ?? DEFAULT_PHOTO_GATES.minAlignedSharpness,
+    secondFaceRatio: attendance.secondFaceRatio ?? DEFAULT_PHOTO_GATES.secondFaceRatio,
+  };
+}

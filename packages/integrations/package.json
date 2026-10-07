@@ -10,7 +10,8 @@
     "./storage": "./src/storage/index.ts",
     "./auth": "./src/auth/index.ts",
     "./otp": "./src/otp/index.ts",
-    "./ai": "./src/ai/index.ts"
+    "./ai": "./src/ai/index.ts",
+    "./face": "./src/face/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

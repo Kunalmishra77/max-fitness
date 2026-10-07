@@ -37,3 +37,7 @@ export * from './message-log';
 export * from './auth';
 export * from './otp';
 export * from './ai';
+
+// The face engine's measurements cross into `packages/integrations`, so the type lives
+// here: ADR-017 lets an adapter import this directory and nothing else in core.
+export type { FaceMeasurement, PhotoGates, PhotoRejection, PhotoVerdict } from '../kiosk/photo-quality';

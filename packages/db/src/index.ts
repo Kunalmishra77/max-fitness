@@ -18,6 +18,7 @@ export * from './repositories/checkout.repository';
 export * from './repositories/payment.repository';
 export * from './repositories/mandate.repository';
 export * from './field-encryption';
+export * from './repositories/face.repository';
 export * from './repositories/signup-read.repository';
 export * from './repositories/receipt.repository';
 export * from './repositories/outbox-dispatch.repository';
