@@ -480,7 +480,13 @@
       "serverSaid": "We could not complete this ({code}). Please show reception this reference: {reference}",
       "startAgain": "Start again",
       "needDetails": "To pick a plan we need your details first — it takes about a minute.",
-      "startSignUp": "Start sign-up"
+      "startSignUp": "Start sign-up",
+      "selfieNoFace": "We could not see a face in that photo. Please take a photo of yourself.",
+      "selfieTooFar": "Your face is too small in the photo. Hold the phone closer and take it again — this is the photo we will recognise you by at the gym.",
+      "selfieTooDark": "That photo is too dark. Move somewhere brighter and take it again.",
+      "selfieTooBright": "There is too much light behind you. Turn around and take it again.",
+      "selfieBlurred": "That photo is blurred. Hold still and take it again.",
+      "selfieAnotherFace": "There is somebody else in that photo. Please take one of just you."
     },
     "camera": {
       "title": "Take a selfie",

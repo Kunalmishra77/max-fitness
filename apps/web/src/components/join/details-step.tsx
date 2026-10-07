@@ -34,7 +34,15 @@ type ErrorKey =
   | 'selfieUnsupported'
   | 'selfieUnreadable'
   | 'selfieTooLarge'
-  | 'selfieTooSmall';
+  | 'selfieTooSmall'
+  // The face gate (ADR-107). Each names what the member has to do differently; "that photo
+  // will not work" is not something anybody can act on.
+  | 'selfieNoFace'
+  | 'selfieTooFar'
+  | 'selfieTooDark'
+  | 'selfieTooBright'
+  | 'selfieBlurred'
+  | 'selfieAnotherFace';
 type Problem = 'rateLimited' | 'network' | 'generic';
 
 export type RegisteredState = Required<Pick<JoinState, 'registrationToken' | 'firstName' | 'gender' | 'isMinor' | 'whatsappUpdates'>>;
@@ -57,6 +65,16 @@ const SELFIE_REASONS: Record<string, ErrorKey> = {
   unreadable: 'selfieUnreadable',
   too_large: 'selfieTooLarge',
   too_small: 'selfieTooSmall',
+  // The face gate (ADR-107). Each one names what the member has to do differently, because
+  // "that photo will not work" is not something anybody can act on.
+  NO_FACE: 'selfieNoFace',
+  NOT_AN_IMAGE: 'selfieUnreadable',
+  NOT_A_FACE: 'selfieNoFace',
+  TOO_FAR: 'selfieTooFar',
+  TOO_DARK: 'selfieTooDark',
+  TOO_BRIGHT: 'selfieTooBright',
+  BLURRED: 'selfieBlurred',
+  ANOTHER_FACE: 'selfieAnotherFace',
 };
 const SERVER_FIELDS: Record<string, Field> = {
   fullName: 'fullName',

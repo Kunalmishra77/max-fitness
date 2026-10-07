@@ -7,6 +7,8 @@ import { loadGym } from '@/lib/gym';
 import { clientIp, limiterKey, registrationLimiters } from '@/lib/rate-limit';
 import { parseRegistrationForm } from '@/lib/registration-form';
 import { MAX_SELFIE_BYTES, processSelfie } from '@/lib/selfie-image';
+import { checkSelfieFace } from '@/lib/selfie-face-gate';
+import { enrolFromSignup } from '@/lib/enrol-on-signup';
 import { hashIp } from '@/lib/signup-access';
 
 /**
@@ -59,6 +61,19 @@ export async function POST(request: NextRequest) {
     const selfie = await processSelfie(parsed.selfie);
     const gym = await loadGym(container);
 
+    // Only approve a selfie that will actually mark this member in later (ADR-107). The
+    // member is still holding the phone, so "come a little closer" costs them five seconds;
+    // finding out three weeks later costs a conversation at the desk every day.
+    const faceCheck = await checkSelfieFace(selfie.body, gym.settings.attendance);
+    if (!faceCheck.ok) {
+      // `details.reason` is the shape the sign-up form already reads for a refused selfie,
+      // so the message lands beside the selfie box rather than at the top of a form the
+      // member has already filled in.
+      return apiError(400, 'SELFIE_REJECTED', 'That photo will not work for attendance', requestId, {
+        details: { reason: faceCheck.reason },
+      });
+    }
+
     const result = await registerMember(parsed.fields, selfie, {
       clock,
       uow: registrationUow,
@@ -71,6 +86,11 @@ export async function POST(request: NextRequest) {
       ipHash: hashIp(ip, env.LINK_TOKEN_SECRET),
       userAgent: request.headers.get('user-agent')?.slice(0, MAX_USER_AGENT) ?? null,
     });
+
+    // Enrolled from the embedding the gate already computed, rather than a second pass over
+    // a photograph that has just been through the engine. A failure here never fails the
+    // sign-up: the member is registered, and the backfill script catches them.
+    await enrolFromSignup(result, faceCheck, gym.id, gym.settings.attendance);
 
     return apiData(result, requestId, 201);
   } catch (error) {
