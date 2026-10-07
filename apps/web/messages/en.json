@@ -784,6 +784,7 @@
       "attendanceMonth": "Attendance — this month",
       "idOnFile": "ID on file",
       "attendanceDays": "Came {count} days this month",
+      "attendanceAll": "Every month — {count, plural, one {# day} other {# days}} in all",
       "plansAndMoney": "Plans and payments",
       "noPayments": "No payments yet",
       "months": "{count} months",

@@ -424,8 +424,12 @@ suite('CRM fee desk against Postgres', () => {
     const first = await markAttendance({ memberId, clientEventId: unique('tap'), feeStateAtCheckIn: 'EXPIRED' }, { actor, clock, uow, cooldownMinutes: 180 });
     expect(first).toMatchObject({ decision: 'RECORD', callTaskRaised: true });
 
-    // A second recorded visit (no cooldown here) must not stack a second open task.
-    const second = await markAttendance({ memberId, clientEventId: unique('tap'), feeStateAtCheckIn: 'EXPIRED' }, { actor, clock, uow, cooldownMinutes: 0 });
+    // **The next day**, because one visit a day is the rule now (ADR-108) and two recorded
+    // visits cannot share one. This used to pass a zero cooldown to force a second visit on
+    // the same day, which the day rule rightly refuses — so the thing being tested, that a
+    // member who keeps coming back does not stack a second open task, now needs a second day.
+    const tomorrow = fakeClockAt('2026-09-13T11:30');
+    const second = await markAttendance({ memberId, clientEventId: unique('tap'), feeStateAtCheckIn: 'EXPIRED' }, { actor, clock: tomorrow, uow, cooldownMinutes: 180 });
     expect(second).toMatchObject({ decision: 'RECORD', callTaskRaised: false });
 
     const tasks = await prisma.callTask.findMany({ where: { memberId, reason: 'EXPIRED_BUT_VISITING' } });

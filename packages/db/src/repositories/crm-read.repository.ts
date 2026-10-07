@@ -114,6 +114,17 @@ export interface MemberProfile extends MemberListItem {
   } | null;
   /** Days this month the member came in, for the calendar dots. */
   readonly attendanceDays: readonly number[];
+  /**
+   * Every month the member has ever come in, newest first (owner, 2026-10-07).
+   *
+   * The profile used to show the current month and nothing else, so a member's whole history
+   * was in the database and invisible — and "has this member been coming?" is the question
+   * the screen exists to answer. Days rather than visits, because one visit a day is the
+   * rule (ADR-108), and a count of visits would be the same number with a misleading name.
+   */
+  readonly attendanceByMonth: ReadonlyArray<{ readonly month: ISTDate; readonly days: number }>;
+  /** How many days in all, so the heading can say it without adding the months up. */
+  readonly attendanceTotalDays: number;
 }
 
 export interface AttendanceTodayItem {
@@ -436,13 +447,27 @@ export class PrismaCrmReader {
     if (member === null) return null;
 
     const monthStart = toDbDate(`${today.slice(0, 8)}01` as ISTDate);
-    const [fees, attendance] = await Promise.all([
+    const [fees, attendance, allVisits] = await Promise.all([
       this.#feeStates(gymId, today),
       this.#prisma.attendanceEvent.findMany({
         where: { memberId, attendanceDate: { gte: monthStart }, voidedAt: null },
         select: { attendanceDate: true },
       }),
+      // The whole history. A gym member visiting every day for five years is under two
+      // thousand rows of one date each, so this is a small read — and the alternative, a
+      // grouped query, would have to be raw SQL for a shape the page then has to re-sort.
+      this.#prisma.attendanceEvent.findMany({
+        where: { memberId, voidedAt: null },
+        select: { attendanceDate: true },
+        orderBy: { attendanceDate: 'desc' },
+      }),
     ]);
+
+    // Distinct days first, then grouped: two check-ins on one day are one day, and a visit
+    // recorded before the one-a-day rule existed must not count twice now.
+    const everyDay = new Set(allVisits.map((visit) => fromDbDate(visit.attendanceDate)));
+    const byMonth = new Map<string, number>();
+    for (const day of everyDay) byMonth.set(day.slice(0, 7), (byMonth.get(day.slice(0, 7)) ?? 0) + 1);
     const fee = fees.find((f) => f.memberId === memberId);
 
     return {
@@ -502,6 +527,10 @@ export class PrismaCrmReader {
               nextChargeOn: member.mandates[0].nextChargeOn === null ? null : fromDbDate(member.mandates[0].nextChargeOn),
             },
       attendanceDays: [...new Set(attendance.map((a) => Number(fromDbDate(a.attendanceDate).slice(8, 10))))],
+      attendanceByMonth: [...byMonth.entries()]
+        .sort((a, b) => b[0].localeCompare(a[0]))
+        .map(([month, days]) => ({ month: `${month}-01` as ISTDate, days })),
+      attendanceTotalDays: everyDay.size,
     };
   }
 

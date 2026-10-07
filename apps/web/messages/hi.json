@@ -784,6 +784,7 @@
       "attendanceMonth": "हाज़िरी — इस महीने",
       "idOnFile": "फ़ाइल पर ID",
       "attendanceDays": "इस महीने {count} दिन आए",
+      "attendanceAll": "हर महीना — कुल {count, plural, one {# दिन} other {# दिन}}",
       "plansAndMoney": "प्लान और पैसे",
       "noPayments": "अभी कोई पेमेंट नहीं",
       "months": "{count} महीने",

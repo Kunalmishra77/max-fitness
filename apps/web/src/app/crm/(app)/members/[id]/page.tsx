@@ -28,6 +28,20 @@ import { dietReader, requireCrmContext } from '@/lib/crm';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * "October 2026" — the month on its own.
+ *
+ * Not `formatISTDate` with the day trimmed off: that reads the day out of a formatted
+ * string, which is a different string in Hindi and would quietly leave a stray number.
+ */
+function monthLabel(month: string, locale: 'en' | 'hi'): string {
+  return new Intl.DateTimeFormat(locale === 'en' ? 'en-IN' : 'hi-IN', {
+    timeZone: 'Asia/Kolkata',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(`${month}T00:00:00+05:30`));
+}
+
 export default async function CrmMemberPage({ params }: { params: Promise<{ id: string }> }) {
   const { actor, gym, today, reader } = await requireCrmContext();
   const t = await getTranslations('crm');
@@ -309,6 +323,25 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
           ))}
         </div>
         <p className="mt-3 text-crm-body">{t('profile.attendanceDays', { count: member.attendanceDays.length })}</p>
+
+        {/* Every month, not just this one (owner, 2026-10-07). The whole history was in the
+            database and invisible, while "has this member been coming?" is the question this
+            screen exists to answer — and the month a member stopped is the one worth seeing. */}
+        {member.attendanceByMonth.length === 0 ? null : (
+          <details className="mt-4 border-t border-brand-stone/15 pt-3">
+            <summary className="min-h-14 cursor-pointer list-none text-crm-body font-semibold text-brand-crimson">
+              {t('profile.attendanceAll', { count: member.attendanceTotalDays })}
+            </summary>
+            <ul className="mt-2 divide-y divide-brand-stone/15">
+              {member.attendanceByMonth.map((row) => (
+                <li key={row.month} className="flex items-baseline justify-between gap-3 py-2">
+                  <span className="text-crm-body text-brand-obsidian">{monthLabel(row.month, locale)}</span>
+                  <span className="text-crm-body font-semibold text-brand-obsidian">{t('profile.attendanceDays', { count: row.days })}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
       </section>
 
       <section className="mt-3 bg-white px-4 py-4 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:px-6 lg:shadow-sm">
