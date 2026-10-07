@@ -106,6 +106,19 @@ export const EnvSchema = z
     AI_API_KEY: z.string().default(''),
     AI_MODEL: z.string().default('claude-sonnet-5-5'),
 
+    // ── Face attendance (ADR-107) ───────────────────────────────────────
+    /**
+     * Where `apps/face` is reachable, on the project's **private** network —
+     * `http://face:8000`, not a public address. It is given members' faces, and a public
+     * URL would make it a face search engine for anyone who found it.
+     *
+     * Empty means no face recognition: the check-in screen falls back to the keypad and
+     * says so, rather than failing at a member standing in front of it.
+     */
+    FACE_SERVICE_URL: z.string().default(''),
+    /** Shared with the service. Never logged, like every secret. */
+    FACE_SERVICE_TOKEN: z.string().default(''),
+
     // ── Observability ───────────────────────────────────────────────────
     SENTRY_DSN: z.string().default(''),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),

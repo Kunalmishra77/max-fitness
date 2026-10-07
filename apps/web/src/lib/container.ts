@@ -27,6 +27,7 @@ import { createStorageDriver } from '@mfp/integrations/storage';
 import { SimulatedPaymentProvider, RazorpayPaymentProvider } from '@mfp/integrations/payments';
 import { SimulatorWhatsAppProvider, MetaCloudWhatsAppProvider } from '@mfp/integrations/whatsapp';
 import { SimulatedOtpSender, WhatsAppOtpSender } from '@mfp/integrations/otp';
+import { FaceClient } from '@/lib/face-client';
 import type { OtpSender } from '@mfp/core';
 
 /**
@@ -65,6 +66,12 @@ export interface Container {
   readonly startMandateUow: StartMandateUnitOfWork;
   /** Writes diet plans and answers members (ADR-089, ADR-090); unavailable with no key. */
   readonly ai: AiTextGenerator;
+  /**
+   * Turns a photograph into numbers (ADR-107). `configured` is false when no service URL
+   * is set, and the check-in screen falls back to the keypad rather than failing at a
+   * member standing in front of it.
+   */
+  readonly face: FaceClient;
 }
 
 /**
@@ -154,5 +161,6 @@ function build(): Container {
     startMandateUow: new PrismaStartMandateUnitOfWork(prisma),
     // Empty key means unavailable: the CRM says so rather than failing at the last moment.
     ai: createAiGenerator({ apiKey: env.AI_API_KEY, model: env.AI_MODEL }),
+    face: new FaceClient({ baseUrl: env.FACE_SERVICE_URL, token: env.FACE_SERVICE_TOKEN }),
   };
 }

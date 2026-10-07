@@ -155,21 +155,61 @@ export const AttendanceSettingsSchema = z.object({
   /** The kiosk speaks its greeting (api-specification §7 pairing `settings.voice`). */
   kioskVoice: z.boolean().default(true),
   /**
-   * Face-match thresholds, pushed to the kiosk (attendance spec §6).
+   * Face-match thresholds (attendance spec §6).
    *
-   * The starting values are placeholders: the real ones come from the chosen engine's
-   * ROC curve at FAR ≤ 0.1% and are calibrated during shadow mode, so they live in
-   * settings rather than in the app. Owner and vendor only.
+   * **No longer placeholders.** They come from running YuNet + SFace over the gym's own
+   * selfies (ADR-107): two different members never scored above **0.387** against each
+   * other, while a well-enrolled member scored **0.681–0.99** against degraded versions of
+   * themselves. 0.55 sits between the two with room on both sides.
+   *
+   * They stay in settings rather than in code because a bigger gallery has more chances of
+   * a close pair, and shadow mode exists to recalibrate them against real traffic before
+   * any member is greeted by name. Owner only.
    */
-  acceptThreshold: z.number().min(0).max(1).default(0.72),
+  acceptThreshold: z.number().min(0).max(1).default(0.55),
   /** How far below `acceptThreshold` still asks the member to confirm rather than greeting. */
-  confirmBand: z.number().min(0).max(0.5).default(0.08),
+  confirmBand: z.number().min(0).max(0.5).default(0.12),
   /** The gap the best match needs over the runner-up, so siblings are not confused. */
-  matchMargin: z.number().min(0).max(0.5).default(0.06),
+  matchMargin: z.number().min(0).max(0.5).default(0.1),
   /** Frames that must agree before the kiosk decides anything. */
   framesToAgree: z.number().int().min(1).max(10).default(3),
   /** How many face templates one member may have (1–2 selfie, 3–5 assisted, rest adaptive). */
   maxTemplatesPerMember: z.number().int().min(1).max(20).default(8),
+
+  /**
+   * Whether a photograph is good enough to recognise the member by (ADR-107).
+   *
+   * `enrolmentMinFacePx` is the single number this whole feature rests on. Measured: the
+   * two selfies whose faces were 43 px and 129 px fell to 0.59 and 0.42 against themselves
+   * — *below* where different people score — while every selfie from 192 px up stayed
+   * above 0.84. 180 sits between them with room on both sides.
+   *
+   * The check-in floor is deliberately far lower: a well-enrolled member still scored 0.98
+   * at a third of their enrolment size, so demanding a big face at the desk would only have
+   * members leaning into the phone.
+   */
+  enrolmentMinFacePx: z.number().int().min(60).max(600).default(180),
+  checkInMinFacePx: z.number().int().min(20).max(400).default(60),
+  /** Below this the detector is not really claiming a face. The gym's selfies ran 0.79–0.95. */
+  faceMinConfidence: z.number().min(0).max(1).default(0.7),
+  faceMinBrightness: z.number().int().min(0).max(255).default(45),
+  faceMaxBrightness: z.number().int().min(0).max(255).default(225),
+  /**
+   * A floor that catches a smeared photograph — **not** a quality ranking.
+   *
+   * Sharpness was measured across the gym's selfies and does not separate good enrolments
+   * from bad: the two that failed scored 236 and 858, while a member who recognised
+   * perfectly scored 130. Used as a score it would reject the wrong people.
+   */
+  faceMinSharpness: z.number().min(0).max(5000).default(60),
+  /**
+   * How big a second face must be, next to the main one, to count as another person.
+   *
+   * Two of the gym's selfies contain a detection a few pixels across — a pattern on a wall.
+   * Counting faces would refuse a member because of their wallpaper; comparing them refuses
+   * only somebody actually standing there.
+   */
+  secondFaceRatio: z.number().min(0.1).max(1).default(0.45),
 });
 export type AttendanceSettings = z.infer<typeof AttendanceSettingsSchema>;
 
