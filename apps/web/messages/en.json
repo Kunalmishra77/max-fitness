@@ -1539,6 +1539,10 @@
         "label": "Staff",
         "desc": "Who can log in, their PINs"
       },
+      "kiosk": {
+        "label": "Attendance phone",
+        "desc": "Pair the phone members check in on"
+      },
       "settings": {
         "label": "Settings",
         "desc": "Prices, hours, messages and more"

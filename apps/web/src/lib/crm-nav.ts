@@ -25,6 +25,7 @@ export type CrmNavKey =
   | 'reports'
   | 'import'
   | 'staff'
+  | 'kiosk'
   | 'settings'
   | 'pin';
 
@@ -63,6 +64,9 @@ export function crmNavItems(actor: CrmActor, now: Date): CrmNavItem[] {
     may('money.view') && { key: 'reports', href: '/crm/reports', icon: 'reports', group: 'business' },
     afterPin('member.import') && { key: 'import', href: '/crm/import', icon: 'import', group: 'business' },
     afterPin('settings.manage') && { key: 'staff', href: '/crm/settings/staff', icon: 'staff', group: 'business' },
+    // The attendance phone had no way in at all: the page existed and nothing linked to it,
+    // so the owner could only reach it by typing the URL (ADR-107).
+    afterPin('settings.manage') && { key: 'kiosk', href: '/crm/settings/kiosk', icon: 'attendance', group: 'business' },
     afterPin('settings.manage') && { key: 'settings', href: '/crm/settings', icon: 'settings', group: 'business' },
     { key: 'pin', href: '/crm/more/pin', icon: 'pin', group: 'account' },
   ];
