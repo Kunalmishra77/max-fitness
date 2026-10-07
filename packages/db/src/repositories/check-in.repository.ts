@@ -115,6 +115,11 @@ export class PrismaCheckIn {
                   capturedAt: record.capturedAt,
                   attendanceDate: toDbDate(record.attendanceDate),
                   feeStateAtCheckIn: record.feeStateAtCheckIn,
+                  // Which phone saw them, how sure it was, and which engine decided. Empty
+                  // for a visit marked by hand at the desk, which is itself the answer.
+                  kioskDeviceId: record.kioskDeviceId ?? null,
+                  matchScore: record.matchScore ?? null,
+                  modelVersion: record.modelVersion ?? null,
                 },
                 select: { id: true },
               });

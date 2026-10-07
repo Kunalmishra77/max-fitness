@@ -65,6 +65,19 @@ export interface CheckInEventRecord {
   readonly capturedAt: Date;
   readonly attendanceDate: ISTDate;
   readonly feeStateAtCheckIn: FeeState;
+  /**
+   * How the visit was recognised, kept because the register has to be answerable later
+   * (owner, 2026-10-07: "sab kuchh pata chale").
+   *
+   * `matchScore` is the one that earns its place. During shadow mode it is the only
+   * evidence for whether the thresholds are right — a fortnight of scores says where to set
+   * them far better than thirteen selfies did — and if a member is ever greeted by the
+   * wrong name, it is the difference between knowing why and guessing. The columns have
+   * existed since the first migration and were being left empty.
+   */
+  readonly kioskDeviceId?: string | null;
+  readonly matchScore?: number | null;
+  readonly modelVersion?: string | null;
 }
 
 export interface CheckInStore {
@@ -86,7 +99,16 @@ export interface CheckInResult {
 const NOTHING = { eventId: null, greeting: null, memberName: null, callTaskRaised: false } as const;
 
 export async function selfCheckIn(
-  input: { gymId: string; memberId: string; clientEventId: string; method: CheckInMethod },
+  input: {
+    gymId: string;
+    memberId: string;
+    clientEventId: string;
+    method: CheckInMethod;
+    /** Which phone, how sure it was, which engine — kept on the event (ADR-108). */
+    kioskDeviceId?: string | null;
+    matchScore?: number | null;
+    modelVersion?: string | null;
+  },
   deps: {
     clock: Clock;
     cooldownMinutes: number;
@@ -119,6 +141,9 @@ export async function selfCheckIn(
       capturedAt: now,
       attendanceDate: attendanceDateOf(now),
       feeStateAtCheckIn: member.feeState,
+      kioskDeviceId: input.kioskDeviceId ?? null,
+      matchScore: input.matchScore ?? null,
+      modelVersion: input.modelVersion ?? null,
     });
 
     // BR-7 / BR-9.3: somebody still turning up after their fees ran out is the warmest

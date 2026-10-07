@@ -24,16 +24,23 @@ describe('receptionQrUrl', () => {
 });
 
 describe('buildPosterSvg', () => {
-  it('draws an A4 poster in millimetres with a 9 cm code and both languages', () => {
+  it('draws an A4 poster in millimetres with an 11 cm code, in English', () => {
     const svg = buildPosterSvg({ qr: QR, size: 'A4', demo: false, url: 'https://maxfitness.in/qr' });
 
     expect(svg).toContain(`width="${POSTER_SIZES.A4.width}mm" height="${POSTER_SIZES.A4.height}mm"`);
     expect(svg).toMatch(/<g id="qr" transform="translate\([\d.]+ [\d.]+\) scale\(([\d.]+)\)">/);
-    // 29 modules + 4 quiet modules on each side = 37 modules across 90 mm.
+    // 29 modules + 4 quiet modules on each side = 37 modules across 110 mm. The code grew
+    // from 90: it is the only thing on this sheet with a job, and a bigger one scans from
+    // further away and through a worse camera — which at a gym door is every camera.
     const scale = Number(/scale\(([\d.]+)\)/.exec(svg)?.[1]);
-    expect(scale * 37).toBeCloseTo(90, 1);
-    expect(svg).toContain('Scan once. Train stress-free.');
-    expect(svg).toContain('एक बार स्कैन करें।');
+    expect(scale * 37).toBeCloseTo(110, 1);
+
+    // English only. The owner is printing this to put on a wall, and a poster saying one
+    // thing twice is a poster nobody finishes reading.
+    expect(svg).toContain('SCAN TO JOIN');
+    expect(svg).toContain('New here, or already a member — start here.');
+    expect(svg).toContain('THANK YOU');
+    expect(svg).not.toMatch(/[ऀ-ॿ]/);
     expect(svg).not.toContain('DEMO');
   });
 
@@ -54,7 +61,14 @@ describe('buildPosterSvg', () => {
     expect(buildPosterSvg({ qr: QR, size: 'A4', demo: false, url: 'https://x.in/qr' })).not.toContain('<image');
   });
 
-  it('escapes the printed link', () => {
-    expect(buildPosterSvg({ qr: QR, size: 'A4', demo: false, url: 'https://x.in/qr?a=1&b=2' })).toContain('a=1&amp;b=2');
+  it('prints the domain, not the tracking link inside the code', () => {
+    // The link in the code carries forty characters of UTM parameters. Printed, nobody
+    // reads it and nobody could type it; what somebody with a dead camera needs is an
+    // address they can actually reach.
+    const svg = buildPosterSvg({ qr: QR, size: 'A4', demo: false, url: 'https://maxfitnessgym.co.in/qr?src=reception&utm_source=qr' });
+
+    expect(svg).toContain('maxfitnessgym.co.in');
+    expect(svg).not.toContain('utm_source');
+    expect(svg).not.toContain('src=reception');
   });
 });

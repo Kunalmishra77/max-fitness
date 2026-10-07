@@ -8,8 +8,10 @@
  */
 
 export const POSTER_SIZES = {
-  A4: { width: 210, height: 297, qrMm: 90 },
-  A5: { width: 148, height: 210, qrMm: 64 },
+  // 110 mm on A4. The code is the only thing on this sheet that has a job, and a bigger one
+  // scans from further away and through a worse camera — which at a gym door is every camera.
+  A4: { width: 210, height: 297, qrMm: 110 },
+  A5: { width: 148, height: 210, qrMm: 78 },
 } as const;
 export type PosterSize = keyof typeof POSTER_SIZES;
 
@@ -62,43 +64,70 @@ export function buildPosterSvg(input: { qr: QrMatrix; size: PosterSize; demo: bo
   const modulesAcross = input.qr.size + 2 * QUIET_MODULES;
   const scale = Number((qrMm / modulesAcross).toFixed(4));
   const qrX = Number(((width - qrMm) / 2).toFixed(2));
-  // With the logo on top, everything below it moves down to make room.
-  const drop = input.logo === undefined ? 0 : 18;
-  const qrY = mm(92 + drop);
+
+  const text = (y: number, size: number, weight: number, fill: string, content: string, spacing = 0) =>
+    `<text x="${width / 2}" y="${y}" text-anchor="middle" font-family="Khand, 'Arial Narrow', Arial, sans-serif" font-size="${size}" font-weight="${weight}" fill="${fill}"${spacing === 0 ? '' : ` letter-spacing="${spacing}"`}>${escape(content)}</text>`;
+  const body = (y: number, size: number, weight: number, fill: string, content: string) =>
+    `<text x="${width / 2}" y="${y}" text-anchor="middle" font-family="Hind, Arial, sans-serif" font-size="${size}" font-weight="${weight}" fill="${fill}">${escape(content)}</text>`;
+
+  // ── The dark head ────────────────────────────────────────────────────────
+  // A block rather than a thin rule: on a wall at three metres this is what a member sees
+  // first, and it is what makes a white sheet of paper look like the gym's.
+  const headH = mm(72);
+  const logoH = mm(34);
+  const logoW = input.logo === undefined ? 0 : Number((logoH * input.logo.aspect).toFixed(2));
+
+  // ── The code ─────────────────────────────────────────────────────────────
+  const qrY = headH + mm(26);
   const below = qrY + qrMm;
-  const text = (y: number, size: number, weight: number, fill: string, content: string, family = 'Khand, Arial, sans-serif') =>
-    `<text x="${width / 2}" y="${y}" text-anchor="middle" font-family="${family}" font-size="${size}" font-weight="${weight}" fill="${fill}">${escape(content)}</text>`;
-  const hindi = "'Noto Sans Devanagari', 'Mukta', sans-serif";
 
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}mm" height="${height}mm" viewBox="0 0 ${width} ${height}">`,
-    `<rect width="${width}" height="${height}" fill="${CHALK}"/>`,
-    `<rect width="${width}" height="${mm(8)}" fill="${RED}"/>`,
+    `<rect width="${width}" height="${height}" fill="#FFFFFF"/>`,
+
+    `<rect width="${width}" height="${headH}" fill="${NAVY}"/>`,
+    `<rect y="${headH}" width="${width}" height="${mm(2.4)}" fill="${RED}"/>`,
     ...(input.logo === undefined
-      ? [text(mm(34), mm(20), 700, NAVY, 'MAX FITNESS'), text(mm(43), mm(6), 600, GREY, 'Indirapuram · Since 2000')]
+      ? [text(mm(42), mm(22), 700, '#FFFFFF', 'MAX FITNESS GYM', mm(0.6))]
       : [
-          `<image href="${input.logo.dataUri}" x="${Number((width / 2 - (mm(38) * input.logo.aspect) / 2).toFixed(2))}" y="${mm(13)}" width="${Number((mm(38) * input.logo.aspect).toFixed(2))}" height="${mm(38)}"/>`,
-          text(mm(60), mm(9), 700, NAVY, 'MAX FITNESS GYM'),
-          text(mm(67), mm(4.6), 600, GREY, 'Indirapuram · Since 2000'),
+          `<image href="${input.logo.dataUri}" x="${Number((width / 2 - logoW / 2).toFixed(2))}" y="${mm(12)}" width="${logoW}" height="${logoH}"/>`,
+          text(mm(58), mm(11), 700, '#FFFFFF', 'MAX FITNESS GYM', mm(0.5)),
+          body(mm(66), mm(4.6), 500, '#A3A5A9', 'Indirapuram · Since 2000'),
         ]),
-    text(mm(62 + drop), mm(11), 700, NAVY, 'Scan once. Train stress-free.'),
-    text(mm(77 + drop), mm(9), 700, NAVY, 'एक बार स्कैन करें।', hindi),
-    // Under the code, never over it: a tint across the modules can stop a scan.
+
+    // The instruction above the code, not below it: somebody walking up reads downward, and
+    // by the time their eye reaches the code they should already know what it is for.
+    text(headH + mm(17), mm(13), 700, NAVY, 'SCAN TO JOIN', mm(0.8)),
+
     input.demo
       ? `<text x="${width / 2}" y="${height / 2}" text-anchor="middle" font-family="Khand, Arial, sans-serif" font-size="${mm(60)}" font-weight="700" fill="${RED}" fill-opacity="0.18" transform="rotate(-35 ${width / 2} ${height / 2})">DEMO</text>`
       : '',
-    `<rect x="${qrX - mm(4)}" y="${qrY - mm(4)}" width="${qrMm + mm(8)}" height="${qrMm + mm(8)}" rx="${mm(4)}" fill="#FFFFFF" stroke="${NAVY}" stroke-width="${mm(1)}"/>`,
+
+    // White, framed, with its quiet zone inside the frame. Nothing is ever drawn over the
+    // modules: a tint across them is the classic way to make a poster that will not scan.
+    `<rect x="${qrX - mm(5)}" y="${qrY - mm(5)}" width="${qrMm + mm(10)}" height="${qrMm + mm(10)}" rx="${mm(3)}" fill="#FFFFFF" stroke="${NAVY}" stroke-width="${mm(0.8)}"/>`,
     `<g id="qr" transform="translate(${qrX} ${qrY}) scale(${scale})">`,
     `<rect width="${modulesAcross}" height="${modulesAcross}" fill="#FFFFFF"/>`,
     `<path d="${qrPath(input.qr)}" fill="#000000" shape-rendering="crispEdges"/>`,
     `</g>`,
-    text(below + mm(20), mm(7), 600, NAVY, 'Already a member? Confirm your details & fee date.'),
-    text(below + mm(30), mm(7), 600, NAVY, 'New? Join in 2 minutes.'),
-    text(below + mm(42), mm(6.2), 600, NAVY, 'पहले से मेंबर? अपनी जानकारी और फीस की तारीख दें।', hindi),
-    text(below + mm(51), mm(6.2), 600, NAVY, 'नए हैं? 2 मिनट में जॉइन करें।', hindi),
-    `<rect x="${mm(20)}" y="${height - mm(30)}" width="${width - mm(40)}" height="${mm(0.6)}" fill="${RED}"/>`,
-    text(height - mm(20), mm(5.2), 500, GREY, 'Open camera → point at the code  ·  Help? Ask reception.'),
-    text(height - mm(12), mm(3.6), 400, GREY, input.url),
+
+    // One line, and it has to answer both people who will stand here — the newcomer and the
+    // member who has been coming for six years. Two lines of instructions is one too many.
+    body(below + mm(16), mm(6.4), 600, NAVY, 'New here, or already a member — start here.'),
+    body(below + mm(25), mm(4.8), 400, GREY, 'Open the camera and point it at the code.'),
+
+    // ── Thank you ────────────────────────────────────────────────────────────
+    `<rect x="${mm(42)}" y="${height - mm(44)}" width="${width - mm(84)}" height="${mm(0.5)}" fill="${RED}"/>`,
+    ...(input.logo === undefined
+      ? []
+      : [
+          `<image href="${input.logo.dataUri}" x="${Number((width / 2 - (mm(13) * input.logo.aspect) / 2).toFixed(2))}" y="${height - mm(38)}" width="${Number((mm(13) * input.logo.aspect).toFixed(2))}" height="${mm(13)}" opacity="0.9"/>`,
+        ]),
+    text(height - mm(16), mm(8), 700, NAVY, 'THANK YOU', mm(1.2)),
+    // The bare domain, not the link inside the code. That link carries tracking parameters
+    // forty characters long; printed, nobody reads it and nobody could type it. What a
+    // person stuck at a dead camera needs is somewhere they can actually get to.
+    body(height - mm(9), mm(4), 500, GREY, new URL(input.url).host),
     `</svg>`,
     '',
   ].join('\n');

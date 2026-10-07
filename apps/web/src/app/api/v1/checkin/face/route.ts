@@ -110,6 +110,11 @@ export async function POST(request: NextRequest) {
       // marks one visit. The member and the minute are what make it the same event.
       clientEventId: `face:${match.memberId}:${today}:${Math.floor(container.clock.now().getTime() / 60_000)}`,
       method: 'FACE',
+      // Kept so the register can be answered later: which phone saw them, how sure the
+      // match was, and which engine decided. The score is what shadow mode is read from.
+      kioskDeviceId: caller.deviceId,
+      matchScore: match.score,
+      modelVersion: measured.modelVersion,
     },
     {
       clock: container.clock,
