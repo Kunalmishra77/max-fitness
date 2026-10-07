@@ -25,8 +25,22 @@ COPY apps/face/requirements.txt ./requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --no-cache-dir -r requirements.txt
 
-ADD https://raw.githubusercontent.com/opencv/opencv_zoo/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx /models/yunet.onnx
-ADD https://raw.githubusercontent.com/opencv/opencv_zoo/main/models/face_recognition_sface/face_recognition_sface_2021dec.onnx /models/sface.onnx
+# **`github.com/.../raw/...`, never `raw.githubusercontent.com`.**
+#
+# OpenCV Zoo keeps these models in Git LFS. `raw.githubusercontent.com` serves the LFS
+# *pointer* — 133 bytes of text — with a cheerful 200, while `github.com/.../raw/...`
+# redirects to the real 38 MB file. The first build here used the wrong one and the
+# checksum below caught it, which is the whole reason the checksum is there.
+#
+# `curl`, not `ADD`: it follows the redirect, and `-f` turns an HTTP error into a failed
+# build instead of a file containing an error page.
+RUN mkdir -p /models \
+ && curl -fsSL --retry 3 --retry-delay 2 \
+      -o /models/yunet.onnx \
+      https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx \
+ && curl -fsSL --retry 3 --retry-delay 2 \
+      -o /models/sface.onnx \
+      https://github.com/opencv/opencv_zoo/raw/main/models/face_recognition_sface/face_recognition_sface_2021dec.onnx
 
 # **The build fails if either model is not byte-for-byte the one the POC measured.**
 #
@@ -40,7 +54,8 @@ RUN printf '%s  /models/yunet.onnx\n%s  /models/sface.onnx\n' \
       8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4 \
       0ba9fbfa01b5270c96627c4ef784da859931e02f04419c829e83484087c34e79 \
     > /models/SHA256SUMS \
- && sha256sum -c /models/SHA256SUMS
+ && sha256sum -c /models/SHA256SUMS \
+ && ls -l /models/yunet.onnx /models/sface.onnx
 
 COPY apps/face/app ./app
 

@@ -46,6 +46,20 @@ and a newer model would quietly stop matching every template already in the data
 nothing failing loudly. If that check ever fires, somebody re-runs the POC before the engine
 changes.
 
+That guard earned its place on the very first build, catching a mistake of mine. OpenCV Zoo
+keeps these models in **Git LFS**: `raw.githubusercontent.com` serves the LFS *pointer* —
+133 bytes of text — with a perfectly cheerful `200`, while `github.com/.../raw/...` redirects
+to the real 38 MB file. The Dockerfile had the first URL and the checksums came from the
+second, so the image would have shipped two text files where two models should be and
+recognised nobody, for a reason nothing in the logs would have explained.
+
+**A note on the token.** Coolify passes every environment variable into the build as a build
+argument, so `FACE_SERVICE_TOKEN` ends up in the image's layer history — the build log says
+so itself (`SecretsUsedInArgOrEnv`). It is a shared secret between two containers on a
+private network rather than anything a member owns, so the exposure is small, but it is real:
+anybody who can read the image can read the token. Rotating it is two environment variables
+and two redeploys.
+
 Check it afterwards from the web container, or from the Coolify terminal on the face service:
 
 ```
