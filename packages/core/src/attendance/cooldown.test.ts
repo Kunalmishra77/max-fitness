@@ -11,57 +11,65 @@ import { ist } from '../testing/builders';
 
 const COOLDOWN = 180;
 
-describe('cooldownDecision — BR-9.1, one visit per 180 minutes', () => {
+describe('cooldownDecision — one visit per day (owner, 2026-10-07)', () => {
   const capturedAt = ist('2026-09-10T18:00');
 
   it('records a first-ever visit', () => {
     expect(cooldownDecision({ capturedAt, lastAttendanceAt: null, cooldownMinutes: COOLDOWN })).toBe('RECORD');
   });
 
-  it('rejects a second check-in 179 minutes later', () => {
-    expect(
-      cooldownDecision({
-        capturedAt,
-        lastAttendanceAt: new Date(capturedAt.getTime() - 179 * 60_000),
-        cooldownMinutes: COOLDOWN,
-      }),
-    ).toBe('WITHIN_COOLDOWN');
+  it('refuses a second visit the same day, however many hours later', () => {
+    // The owner's rule, in their words: "in india 1 din me ek bar attendance, chahe sham ko
+    // aaye chahe morning me". A member who trains morning and evening is one day's
+    // attendance, not two — the register counts days a member came, not times they walked in.
+    for (const hoursEarlier of [1, 3, 6, 11]) {
+      expect(
+        cooldownDecision({
+          capturedAt,
+          lastAttendanceAt: new Date(capturedAt.getTime() - hoursEarlier * 60 * 60_000),
+          cooldownMinutes: COOLDOWN,
+        }),
+        `${hoursEarlier}h earlier`,
+      ).toBe('ALREADY_TODAY');
+    }
   });
 
-  it('records one 181 minutes later', () => {
+  it('records the next day, even a few hours after the last visit', () => {
+    // 11pm then 7am is eight hours apart and two different days. The old 180-minute rule
+    // and this one agree here; what matters is that the *day* decides, not the gap.
     expect(
       cooldownDecision({
-        capturedAt,
-        lastAttendanceAt: new Date(capturedAt.getTime() - 181 * 60_000),
+        capturedAt: ist('2026-09-11T07:00'),
+        lastAttendanceAt: ist('2026-09-10T23:00'),
         cooldownMinutes: COOLDOWN,
       }),
     ).toBe('RECORD');
   });
 
-  it('records at exactly the boundary — the window is "less than N minutes"', () => {
+  it('uses the Asia/Kolkata day, not UTC', () => {
+    // 01:00 IST on the 11th is 19:30 UTC on the 10th. Deciding in UTC would call these the
+    // same day and refuse a member their morning visit.
     expect(
       cooldownDecision({
-        capturedAt,
-        lastAttendanceAt: new Date(capturedAt.getTime() - 180 * 60_000),
+        capturedAt: ist('2026-09-11T01:00'),
+        lastAttendanceAt: ist('2026-09-10T22:00'),
         cooldownMinutes: COOLDOWN,
       }),
     ).toBe('RECORD');
   });
 
-  it('rejects the same second twice — the camera catching one person twice', () => {
-    expect(cooldownDecision({ capturedAt, lastAttendanceAt: capturedAt, cooldownMinutes: COOLDOWN })).toBe(
-      'WITHIN_COOLDOWN',
-    );
+  it('refuses the same second twice — the camera catching one person twice', () => {
+    expect(cooldownDecision({ capturedAt, lastAttendanceAt: capturedAt, cooldownMinutes: COOLDOWN })).toBe('ALREADY_TODAY');
   });
 
-  it('rejects a clock-skewed event from before the last one', () => {
+  it('refuses a clock-skewed event from before the last one', () => {
     expect(
       cooldownDecision({
         capturedAt,
         lastAttendanceAt: new Date(capturedAt.getTime() + 60_000),
         cooldownMinutes: COOLDOWN,
       }),
-    ).toBe('WITHIN_COOLDOWN');
+    ).toBe('ALREADY_TODAY');
   });
 
   it('reports a replayed upload separately from a cooldown skip', () => {
@@ -75,14 +83,17 @@ describe('cooldownDecision — BR-9.1, one visit per 180 minutes', () => {
     ).toBe('DUPLICATE_EVENT');
   });
 
-  it('honours a custom cooldown', () => {
+  it('ignores the old cooldown setting entirely — the day decides', () => {
+    // A gym could once set its own window, and a 30-minute one would have let this second
+    // visit count. It no longer does, and the setting is deliberately inert rather than
+    // quietly honoured: two rules that disagree is worse than one that is plainly gone.
     expect(
       cooldownDecision({
         capturedAt,
         lastAttendanceAt: new Date(capturedAt.getTime() - 45 * 60_000),
         cooldownMinutes: 30,
       }),
-    ).toBe('RECORD');
+    ).toBe('ALREADY_TODAY');
   });
 
   it('shouldRecordAttendance agrees with the decision', () => {

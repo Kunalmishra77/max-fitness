@@ -14,7 +14,7 @@ import { useState, useTransition } from 'react';
 
 export type MarkResult =
   | { ok: true; decision: 'RECORD'; eventId: string; callTaskRaised: boolean }
-  | { ok: true; decision: 'WITHIN_COOLDOWN' | 'DUPLICATE_EVENT'; eventId: null }
+  | { ok: true; decision: 'ALREADY_TODAY' | 'DUPLICATE_EVENT'; eventId: null }
   | { ok: false; code: 'FORBIDDEN' | 'NOT_FOUND' | 'generic' };
 
 export type UndoResult = { ok: true } | { ok: false };

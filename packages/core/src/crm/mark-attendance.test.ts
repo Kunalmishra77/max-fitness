@@ -95,12 +95,17 @@ describe('markAttendance', () => {
     expect(store.created[0]).toMatchObject({ feeStateAtCheckIn: 'EXPIRED' });
   });
 
-  it('counts one visit per cooldown, however many times someone walks past (BR-9.1)', async () => {
+  it('counts one visit a day, whether they come in the morning or the evening (owner, 2026-10-07)', async () => {
+    // The desk follows the same rule as the camera: the register counts the days a member
+    // turned up, not the times they walked past. Three hours apart used to count twice.
     store.member = { ...member, lastAttendanceAt: new Date(clock.now().getTime() - 179 * 60_000) };
-    await expect(mark()).resolves.toEqual({ decision: 'WITHIN_COOLDOWN', eventId: null, callTaskRaised: false });
+    await expect(mark()).resolves.toEqual({ decision: 'ALREADY_TODAY', eventId: null, callTaskRaised: false });
     expect(store.created).toEqual([]);
 
     store.member = { ...member, lastAttendanceAt: new Date(clock.now().getTime() - 181 * 60_000) };
+    await expect(mark()).resolves.toMatchObject({ decision: 'ALREADY_TODAY' });
+
+    store.member = { ...member, lastAttendanceAt: new Date(clock.now().getTime() - 25 * 60 * 60_000) };
     await expect(mark()).resolves.toMatchObject({ decision: 'RECORD' });
   });
 
@@ -125,7 +130,7 @@ describe('markAttendance', () => {
 
     store.member = { ...member, lastAttendanceAt: new Date(clock.now().getTime() - 60_000) };
     await expect(mark({ clientEventId: 'tap_4', feeStateAtCheckIn: 'EXPIRED' })).resolves.toMatchObject({
-      decision: 'WITHIN_COOLDOWN',
+      decision: 'ALREADY_TODAY',
       callTaskRaised: false,
     });
 

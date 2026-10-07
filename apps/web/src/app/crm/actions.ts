@@ -433,7 +433,7 @@ export async function markAttendanceAction(memberId: string, clientEventId: stri
     const result = await markAttendance({ memberId, clientEventId, feeStateAtCheckIn: member.feeState }, { actor, ...attendanceDeps(gym) });
     return result.decision === 'RECORD' && result.eventId !== null
       ? { ok: true, decision: 'RECORD', eventId: result.eventId, callTaskRaised: result.callTaskRaised }
-      : { ok: true, decision: result.decision === 'DUPLICATE_EVENT' ? 'DUPLICATE_EVENT' : 'WITHIN_COOLDOWN', eventId: null };
+      : { ok: true, decision: result.decision === 'DUPLICATE_EVENT' ? 'DUPLICATE_EVENT' : 'ALREADY_TODAY', eventId: null };
   } catch (error) {
     const code = (error as { code?: string }).code;
     if (code === 'FORBIDDEN') return { ok: false, code: 'FORBIDDEN' };

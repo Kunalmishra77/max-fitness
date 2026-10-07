@@ -146,7 +146,14 @@ export const ReminderSettingsSchema = z.object({
 export type ReminderSettings = z.infer<typeof ReminderSettingsSchema>;
 
 export const AttendanceSettingsSchema = z.object({
-  /** BR-9.1. A second check-in inside this window is ignored, not recorded. */
+  /**
+   * **No longer used** (owner, 2026-10-07): a member counts **once a day**, morning or
+   * evening, and the Asia/Kolkata date decides rather than any interval.
+   *
+   * Kept so existing gym settings documents still parse, and deliberately inert. Honouring
+   * it as well would be two rules disagreeing about the same question, and the one that
+   * matters is the day.
+   */
   checkInCooldownMinutes: z.number().int().min(1).max(1440).default(180),
   /** BR-7 ABSENT_7_DAYS. Days without attendance before a call task is raised. */
   absentDaysThreshold: z.number().int().min(1).max(90).default(7),

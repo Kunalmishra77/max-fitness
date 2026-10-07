@@ -125,15 +125,24 @@ describe('selfCheckIn', () => {
     expect(JSON.stringify(await run(s))).not.toMatch(/amount|paise|₹/i);
   });
 
-  it('counts a second tap inside the cooldown as the same visit', async () => {
+  it('counts a member who came earlier today as already marked', async () => {
     const s = store({ lastAttendanceAt: new Date(NOW.getTime() - 60 * 60_000) });
 
-    expect(await run(s)).toMatchObject({ decision: 'WITHIN_COOLDOWN', eventId: null });
+    expect(await run(s)).toMatchObject({ decision: 'ALREADY_TODAY', eventId: null });
     expect(s.events).toEqual([]);
   });
 
-  it('lets them in again once the cooldown has passed', async () => {
+  it('counts the evening visit of a morning member as the same day (owner, 2026-10-07)', async () => {
+    // One visit a day, whichever end of it they come. Three hours used to be enough to
+    // count twice; the register now says how many *days* a member turned up.
     const s = store({ lastAttendanceAt: new Date(NOW.getTime() - 181 * 60_000) });
+
+    expect(await run(s)).toMatchObject({ decision: 'ALREADY_TODAY', eventId: null });
+    expect(s.events).toEqual([]);
+  });
+
+  it('lets them in again the next day', async () => {
+    const s = store({ lastAttendanceAt: new Date(NOW.getTime() - 24 * 60 * 60_000) });
 
     expect(await run(s)).toMatchObject({ decision: 'RECORD' });
   });

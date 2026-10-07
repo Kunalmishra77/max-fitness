@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useScreenAwake } from './use-screen-awake';
 
 /**
  * The reception camera (ADR-107).
@@ -34,12 +35,24 @@ export interface KioskGreetingView {
 
 export type ScanOutcome =
   | { kind: 'RECORD'; memberName: string | null; greeting: KioskGreetingView | null }
-  | { kind: 'WITHIN_COOLDOWN' | 'DUPLICATE_EVENT'; memberName: string | null }
+  | { kind: 'ALREADY_TODAY' | 'DUPLICATE_EVENT'; memberName: string | null }
   | { kind: 'CONFIRM'; memberId: string; memberName: string }
   | { kind: 'NO_MATCH'; reason: string }
   | { kind: 'NOBODY_ENROLLED' }
   | { kind: 'UNAVAILABLE' }
   | { kind: 'ERROR' };
+
+/**
+ * **The screen only reacts to somebody who came close and looked at it** (owner, 2026-10-07).
+ *
+ * The distinction is already made on the server, and it is the useful one. A frame is only
+ * matched against the gallery once the face is big enough to be a person standing at the
+ * desk; so `TOO_FAR` means "somebody is over there", and `UNKNOWN` means "somebody is right
+ * here and we do not know them". The first is ignored completely — the camera watches a
+ * doorway all day and most of what crosses it is not a member — and the second is worth an
+ * answer, because that person is waiting for one.
+ */
+const IGNORED_AT_A_DISTANCE: ReadonlySet<string> = new Set(['TOO_FAR', 'NO_FACE', 'NOT_A_FACE', 'NOT_AN_IMAGE']);
 
 /** How long a greeting stays up before the camera starts looking again. */
 const SHOW_RESULT_MS = 4000;
@@ -68,8 +81,12 @@ export function FaceScan({
   const pausedRef = useRef(false);
 
   const [camera, setCamera] = useState<'starting' | 'running' | 'denied' | 'missing'>('starting');
+  // Without this the phone locks after half a minute and the first member through the door
+  // finds a black screen, every single time.
+  useScreenAwake(camera === 'running');
   const [outcome, setOutcome] = useState<ScanOutcome | null>(null);
-  const [hint, setHint] = useState<string | null>(null);
+  /** `null` while nobody is close; otherwise why the person in front could not be placed. */
+  const [mood, setMood] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -136,13 +153,18 @@ export function FaceScan({
         if (frame === null) return;
         const result = await scan(frame);
 
-        // A frame with nothing usable in it is not news: the camera is simply pointed at an
-        // empty desk most of the time. Only the reason is shown, quietly, as a hint.
-        if (result.kind === 'NO_MATCH') {
-          setHint(result.reason);
+        // Somebody over there, or nobody at all: the screen keeps watching and says nothing.
+        if (result.kind === 'NO_MATCH' && IGNORED_AT_A_DISTANCE.has(result.reason)) {
+          setMood(null);
           return;
         }
-        setHint(null);
+        // Somebody close, whom we could not place — or could not see properly. They are
+        // standing there waiting, so the face answers them.
+        if (result.kind === 'NO_MATCH') {
+          setMood(result.reason);
+          return;
+        }
+        setMood(null);
         setOutcome(result);
         // Stop scanning while the member reads their greeting — otherwise they would be
         // recognised again as they turn away, and the cooldown would answer instead.
@@ -186,27 +208,97 @@ export function FaceScan({
   }
 
   return (
-    <div className="grid gap-4">
-      <div className="relative overflow-hidden rounded-panel bg-brand-obsidian">
-        {/* Mirrored, because a member expects to see themselves the way a mirror shows them.
-            Only the preview is flipped; the frame sent to the engine is not. */}
-        <video ref={videoRef} playsInline muted className="h-auto w-full -scale-x-100" aria-label={t('cameraLabel')} />
-        <canvas ref={canvasRef} className="hidden" />
+    // Full screen. This phone has one job and sits on a desk doing it; a camera in a little
+    // box with the page's margins around it is a web page, and a member walking up to a web
+    // page does not know it is for them.
+    <div className="fixed inset-0 z-50 overflow-hidden bg-brand-obsidian">
+      {/* Mirrored, because a member expects to see themselves the way a mirror shows them.
+          Only the preview is flipped; the frame sent to the engine is not. */}
+      <video
+        ref={videoRef}
+        playsInline
+        muted
+        className="absolute inset-0 h-full w-full -scale-x-100 object-cover"
+        aria-label={t('cameraLabel')}
+      />
+      <canvas ref={canvasRef} className="hidden" />
 
-        {outcome === null ? (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-brand-obsidian/70 px-4 py-3 text-center">
-            <p className="text-crm-body font-semibold text-brand-white">{hint === null ? t('lookAtCamera') : t(`hint.${hint}` as never)}</p>
-          </div>
-        ) : (
-          <div className="absolute inset-0 grid place-content-center gap-3 bg-brand-obsidian/90 px-6 text-center">
-            <Result outcome={outcome} onConfirm={answerConfirm} onFallback={onFallback} />
-          </div>
-        )}
-      </div>
+      {outcome === null ? (
+        <Waiting mood={mood} />
+      ) : (
+        <div className="absolute inset-0 grid place-content-center gap-4 bg-brand-obsidian/90 px-8 text-center">
+          <Result outcome={outcome} onConfirm={answerConfirm} onFallback={onFallback} />
+        </div>
+      )}
 
-      <button type="button" onClick={onFallback} className="min-h-16 rounded-button border-2 border-brand-stone/30 text-crm-body font-semibold text-brand-obsidian">
+      {/* Small, out of the way, and always there — the way out for anybody the camera
+          cannot help. */}
+      <button
+        type="button"
+        onClick={onFallback}
+        className="absolute right-4 bottom-4 min-h-14 rounded-button bg-brand-obsidian/70 px-5 text-crm-body font-semibold text-brand-white backdrop-blur"
+      >
         {t('useNumber')}
       </button>
+    </div>
+  );
+}
+
+/**
+ * What the screen does while nobody it knows is in front of it.
+ *
+ * A face that looks slowly from side to side, as though watching the door. It is there
+ * because the alternative — a live video feed of the room with no sign of life — reads as a
+ * security camera, and because the owner asked for something that looks like it is paying
+ * attention. It also answers the question a member actually has, which is "is this thing
+ * on?", without saying anything about anybody.
+ */
+/**
+ * The face on the screen while it waits, and how it answers somebody who is standing there.
+ *
+ * Three states, and the difference between them is distance:
+ *
+ * - **Nobody close** — eyes looking slowly from side to side, watching the door. No words.
+ *   This is most of the day, and a live camera feed with no sign of life reads as CCTV.
+ * - **Somebody close we cannot place** — a frown, and "try again". They came up and looked
+ *   at it; being ignored at that point is the one thing that would feel broken.
+ * - **Somebody close we cannot see properly** — a puzzled face and the one thing to fix.
+ *
+ * The emoji is `aria-hidden` and the words carry the meaning, so the screen reads the same
+ * to somebody who cannot see it.
+ */
+function Waiting({ mood }: { mood: string | null }) {
+  const t = useTranslations('checkin.face');
+  const unknown = mood === 'UNKNOWN';
+  const emoji = mood === null ? '👀' : unknown ? '😠' : '🤔';
+  const line = mood === null ? t('lookAtCamera') : unknown ? t('tryAgain') : t(`hint.${mood}` as never);
+
+  return (
+    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-end gap-6 pb-28">
+      <span
+        aria-hidden
+        key={emoji}
+        className={`${mood === null ? 'mfp-looking' : 'mfp-react'} text-[4.5rem] leading-none drop-shadow-lg select-none`}
+      >
+        {emoji}
+      </span>
+      <p className="rounded-full bg-brand-obsidian/70 px-5 py-2 text-crm-body font-semibold text-brand-white backdrop-blur">{line}</p>
+      <style>{`
+        @keyframes mfp-look {
+          0%, 100% { transform: translateX(-22px) rotate(-7deg); }
+          50%      { transform: translateX(22px)  rotate(7deg); }
+        }
+        @keyframes mfp-pop {
+          0%   { transform: scale(0.6); opacity: 0; }
+          60%  { transform: scale(1.12); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        .mfp-looking { animation: mfp-look 2.6s ease-in-out infinite; }
+        .mfp-react   { animation: mfp-pop 0.32s ease-out both; }
+        @media (prefers-reduced-motion: reduce) {
+          .mfp-looking, .mfp-react { animation: none; }
+        }
+      `}</style>
     </div>
   );
 }
@@ -225,6 +317,9 @@ function Result({
   if (outcome.kind === 'RECORD') {
     const name = outcome.memberName ?? '';
     const greeting = outcome.greeting;
+    // A smile for somebody the gym knows. The one place on this screen where a face is
+    // shown because a person did something right rather than wrong.
+    const face = greeting?.kind === 'SEE_RECEPTION' ? '🙂' : '😊';
     // Withheld in shadow mode, and then the member simply sees that they were marked in —
     // which is true, and all they need. What is never shown is an amount: the next person
     // in the queue is reading this over their shoulder (BR-9.3).
@@ -239,14 +334,31 @@ function Result({
     const tone = greeting?.tone === 'red' ? 'text-semantic-fee-expired' : greeting?.tone === 'amber' ? 'text-semantic-fee-due' : 'text-brand-white/90';
     return (
       <>
-        <p className="font-display text-[2rem] leading-tight font-bold text-brand-white">{name}</p>
+        <span aria-hidden className="mfp-greet text-[4rem] leading-none select-none">
+          {face}
+        </span>
+        <p className="font-display text-[2.25rem] leading-tight font-bold text-brand-white">{name}</p>
         <p className={`text-crm-body font-semibold ${tone}`}>{line}</p>
+        <style>{`
+          @keyframes mfp-greet {
+            0%   { transform: scale(0.5) rotate(-12deg); opacity: 0; }
+            55%  { transform: scale(1.18) rotate(6deg);  opacity: 1; }
+            100% { transform: scale(1) rotate(0deg);     opacity: 1; }
+          }
+          .mfp-greet { animation: mfp-greet 0.45s ease-out both; }
+          @media (prefers-reduced-motion: reduce) { .mfp-greet { animation: none; } }
+        `}</style>
       </>
     );
   }
-  if (outcome.kind === 'WITHIN_COOLDOWN' || outcome.kind === 'DUPLICATE_EVENT') {
+  if (outcome.kind === 'ALREADY_TODAY' || outcome.kind === 'DUPLICATE_EVENT') {
     return (
       <>
+        {/* Recognised, and nothing to do about it — a thumbs up rather than a greeting,
+            because they are already in today's register. */}
+        <span aria-hidden className="text-[3.5rem] leading-none select-none">
+          👍
+        </span>
         <p className="font-display text-[1.75rem] leading-tight font-bold text-brand-white">{outcome.memberName ?? ''}</p>
         <p className="text-crm-body text-brand-white/90">{t('alreadyMarked')}</p>
       </>

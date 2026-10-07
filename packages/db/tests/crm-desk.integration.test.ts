@@ -371,7 +371,7 @@ suite('CRM fee desk against Postgres', () => {
 
     // Walking past again inside the cooldown is the same visit (BR-9.1).
     const again = await markAttendance({ memberId, clientEventId: unique('tap') }, { actor, clock, uow: attendanceUow, cooldownMinutes: 180 });
-    expect(again).toEqual({ decision: 'WITHIN_COOLDOWN', eventId: null, callTaskRaised: false });
+    expect(again).toEqual({ decision: 'ALREADY_TODAY', eventId: null, callTaskRaised: false });
     expect(await prisma.attendanceEvent.count({ where: { memberId, voidedAt: null } })).toBe(1);
 
     await undoAttendance({ eventId: marked.eventId! }, { actor, clock, uow: attendanceUow });

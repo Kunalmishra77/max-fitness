@@ -142,7 +142,7 @@ export function CheckInApp() {
           greeting: greeting !== null && typeof greeting === 'object' ? (greeting as { kind: string; tone: string; daysLeft?: number }) : null,
         };
       }
-      if (decision === 'WITHIN_COOLDOWN' || decision === 'DUPLICATE_EVENT') return { kind: decision, memberName };
+      if (decision === 'ALREADY_TODAY' || decision === 'DUPLICATE_EVENT') return { kind: decision, memberName };
       if (decision === 'CONFIRM') return { kind: 'CONFIRM', memberId: String(data['memberId']), memberName: memberName ?? '' };
       if (decision === 'NOBODY_ENROLLED') return { kind: 'NOBODY_ENROLLED' };
       if (decision === 'UNAVAILABLE') return { kind: 'UNAVAILABLE' };
@@ -157,7 +157,7 @@ export function CheckInApp() {
     const result = await mark(memberId);
     if (!result.ok) return { kind: 'ERROR' };
     if (result.decision === 'RECORD') return { kind: 'RECORD', memberName: result.memberName, greeting: result.greeting };
-    return { kind: 'WITHIN_COOLDOWN', memberName: result.memberName };
+    return { kind: 'ALREADY_TODAY', memberName: result.memberName };
   };
 
   // Nothing is rendered until localStorage has been read, so a paired tablet never
