@@ -1467,3 +1467,76 @@ never arrives. A test tool that invents an outage is worse than no test.
   templates have nowhere to send, like every other template.
 - `pnpm lint` has still never completed on the whole repo; it does complete on individual files,
   and the autopay files are clean.
+
+## 2026-10-07 — Face attendance, built
+
+### What the register actually said
+The owner asked "attendance ka kya scene hai". Measured rather than assumed: the Android
+kiosk folder is **empty** — Phase 7 never started, because it was blocked on a licence. The
+browser check-in page exists, a phone was paired to it on 2026-09-23, and **not one
+attendance event has ever been recorded**. No face templates, no enrolment jobs. Fifteen
+members, all `PENDING_PAYMENT` or `PENDING_VERIFICATION`, and **zero confirmed memberships**.
+
+The owner then said what they had always meant: a phone at reception, a member's face
+scanned against the selfie they uploaded at signup, marked in on the spot — and no money for
+a licence.
+
+### The engine, and the only honest way to get one for nothing
+InsightFace's models are non-commercial (the MIT licence covers the code, not the weights)
+and dlib's recogniser carries a training-dataset restriction its own repository warns
+excludes commercial products. **OpenCV Zoo's YuNet (MIT) and SFace (Apache 2.0)** do permit
+commercial use, and SFace benchmarks at 0.9940 against the 0.9562–0.9907 of the FaceX model
+ADR-072 had chosen and never managed to integrate.
+
+### The POC — on the gym's own selfies, not a benchmark
+Each of thirteen members' selfies degraded the way a reception camera degrades a face: a
+third the size, 45% darker, 60% brighter, turned twelve degrees, JPEG quality 35, motion
+blurred, and all of those at once.
+
+| Enrolment face, shorter side | Members | Worst same-person score | Margin over the closest different pair (0.387) |
+|---|---|---|---|
+| no floor | 13/13 | 0.420 | **+0.033** |
+| ≥ 160 px | 11/13 | **0.681** | **+0.294** |
+
+**The finding is not about the model. It is about the photograph.** Every member whose
+selfie held a face of 192 px or more stayed between 0.84 and 0.99 through all seven
+conditions; the only two that collapsed had faces of 43 px and 129 px. Different members
+never scored above 0.387 against each other.
+
+Two things were measured and deliberately **not** used. OpenCV's suggested threshold of
+0.363 is too loose for this gallery — two different members score 0.387 — so the thresholds
+come from the measurement instead. And sharpness does not separate good enrolments from bad:
+the two photographs that failed scored 236 and 858 while a member who recognises perfectly
+scored 130, so it is kept only as a floor that catches a genuine smear.
+
+### Built
+- **`apps/face`** — Python, stateless, stores nothing, never learns a member's name, not
+  reachable from the internet. Python for one reason: OpenCV's `alignCrop` applies the exact
+  five-point transform SFace was trained against, and hand-rolling that warp is arithmetic
+  that, when subtly wrong, does not crash — it quietly costs accuracy for ever. Weights baked
+  into the image and **checksummed**, so an upstream change stops the build rather than
+  silently invalidating every template. Measured 122–233 ms steady state.
+- **The gates, in core and tested** — and the owner's two instructions are the same rule:
+  only approve a selfie that will work, and refuse anything that is not the member. YuNet is
+  a *human face* detector, so an animal, a product or a wall is refused by construction;
+  verified against all three. Second-face **size** rather than count, because two of the
+  gym's own selfies contain a few-pixel detection on a wall and counting would have refused
+  real members.
+- **Enrolment** — at signup, from the embedding the gate already computed, and `enrol:faces`
+  for everybody who joined before it existed. Run against production, dry: **9 would enrol,
+  7 refused** — three who did not consent, three photographed from too far away, one with a
+  second person in it. The whole chain proven end to end.
+- **The camera screen** — a frame every 700 ms, one round trip to measure, match and mark.
+  It asks rather than assumes when a match is good but close to somebody else, and every
+  refusal says what to do: "come a little closer", "one person at a time".
+- **Templates encrypted at rest** (AES-256-GCM), gallery cached ten seconds.
+
+### Pending
+- **Deploy the face container** — `docs/09-operations/face-attendance-setup.md` has the
+  Coolify steps. Nothing recognises anybody until it is up.
+- **Shadow mode for a fortnight** before any member is greeted by name.
+- **No anti-spoofing.** A photograph held to the camera would pass. Written down rather than
+  designed around: no permissively licensed liveness model was found, and what stands in its
+  place is the frames-agree rule, the cooldown, a staffed desk, and a prize worth nothing.
+- The CRM does not yet show who is enrolled and who still owes a photograph.
+- The thresholds come from thirteen people. A bigger gallery is what shadow mode is for.
