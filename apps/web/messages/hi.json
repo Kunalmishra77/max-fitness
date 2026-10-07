@@ -849,7 +849,12 @@
       "whatsappPrefillOverdue": "नमस्ते {name}, मैक्स फिटनेस जिम से। आपकी मेंबरशिप {date} को खत्म हो गई थी। रिन्यू कर दें?",
       "whatsappPrefillPlain": "नमस्ते {name}, मैक्स फिटनेस जिम से।",
       "download": "सब कुछ डाउनलोड करें",
-      "remove": "इस मेंबर को हटाएँ"
+      "remove": "इस मेंबर को हटाएँ",
+      "declaredPlan": "{count, plural, one {# महीना} other {# महीने}} — जाँच बाकी है",
+      "declaredUntil": "{date} तक की फ़ीस बताई — जाँच बाकी है",
+      "declaredTitle": "जाँच बाकी है",
+      "declaredBody": "इस मेंबर ने रिसेप्शन QR भरा और बताया: {plan}, {date} तक फ़ीस दी हुई। जब तक कोई मंज़ूरी नहीं देता, कुछ नहीं गिना जाएगा — न मेंबरशिप, न फ़ीस की तारीख़, न रिमाइंडर।",
+      "declaredCheck": "{code} जाँचें"
     },
     "renew": {
       "title": "फीस लें",

@@ -185,8 +185,14 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
               ['gender', t(`gender.${member.gender}` as never)],
               ['joinedOn', member.joinedOn === null ? null : formatISTDate(member.joinedOn, locale)],
               ['slot', member.trainingSlot === null ? null : t(`verify.slot.${member.trainingSlot}` as never)],
-              ['plan', planLine],
-              ['settlement', settlementLine],
+              // While a QR declaration is waiting, it fills these rather than "not given":
+              // the member did answer, and saying otherwise sends staff looking for a bug.
+              ['plan', planLine ?? (member.declared === null ? null : t('profile.declaredPlan', { count: member.declared.planMonths ?? 0 }))],
+              [
+                'settlement',
+                settlementLine ??
+                  (member.declared?.endDate == null ? null : t('profile.declaredUntil', { date: formatISTDate(member.declared.endDate, locale) })),
+              ],
               ['status', t(`status.${member.status}` as never)],
             ] as const
           ).map(([key, value]) => (
@@ -237,6 +243,27 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
           ) : null}
         </div>
       </div>
+
+      {/* A declaration that nobody has approved yet. The member filled the form in and is
+          waiting; until somebody acts there is no membership, no fee date that counts and
+          no reminder — so the screen says so, and says where to go (ADR-075). */}
+      {member.declared === null ? null : (
+        <section className="mt-3 rounded-panel border border-semantic-fee-due/40 bg-tint-fee-due-bg px-4 py-4 lg:px-6">
+          <h2 className="text-crm-body font-bold text-brand-obsidian">{t('profile.declaredTitle')}</h2>
+          <p className="mt-1 text-crm-body text-brand-obsidian">
+            {t('profile.declaredBody', {
+              plan: member.declared.planMonths === null ? t('profile.notGiven') : t('profile.plan', { count: member.declared.planMonths }),
+              date: member.declared.endDate === null ? t('profile.notGiven') : formatISTDate(member.declared.endDate, locale),
+            })}
+          </p>
+          <Link
+            href="/crm/verify"
+            className="mt-3 inline-flex min-h-14 items-center rounded-button bg-brand-obsidian px-5 text-crm-body font-semibold text-brand-white"
+          >
+            {t('profile.declaredCheck', { code: member.declared.referenceCode })}
+          </Link>
+        </section>
+      )}
 
       {!maySeeId || govIdPhotos.length === 0 ? null : (
         <section className="mt-3 bg-white px-4 py-4 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:px-6 lg:shadow-sm">

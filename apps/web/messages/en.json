@@ -849,7 +849,12 @@
       "whatsappPrefillOverdue": "Namaste {name}, this is Max Fitness Gym. Your membership ended on {date}. Shall we renew it?",
       "whatsappPrefillPlain": "Namaste {name}, this is Max Fitness Gym.",
       "download": "Download everything",
-      "remove": "Remove this member"
+      "remove": "Remove this member",
+      "declaredPlan": "{count, plural, one {# month} other {# months}} — waiting to be checked",
+      "declaredUntil": "Said to be paid until {date} — waiting to be checked",
+      "declaredTitle": "Waiting to be checked",
+      "declaredBody": "This member filled in the reception QR and said: {plan}, paid until {date}. Nothing counts yet — no membership, no fee date and no reminders — until somebody approves it.",
+      "declaredCheck": "Check {code}"
     },
     "renew": {
       "title": "Take fees",

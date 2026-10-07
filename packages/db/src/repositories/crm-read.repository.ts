@@ -83,6 +83,20 @@ export interface MemberProfile extends MemberListItem {
   }>;
   /** Which card the member showed at the QR, and a photograph of each side (ADR-074). */
   readonly govIdType: string | null;
+  /**
+   * What the member said about themselves at the QR, while it is still waiting to be checked.
+   *
+   * A QR existing-member is `PENDING_VERIFICATION` with no membership until staff approve
+   * them (ADR-075), so the profile has nothing to show under "Plan" — and said "not given",
+   * which reads as the form having thrown the answer away. It did not: it is here, and it
+   * becomes a membership the moment somebody approves it.
+   */
+  readonly declared: {
+    readonly referenceCode: string;
+    readonly planMonths: number | null;
+    readonly endDate: ISTDate | null;
+    readonly amountPaise: number | null;
+  } | null;
   readonly govIdPhotos: readonly { readonly side: string; readonly storageKey: string }[];
   readonly payments: ReadonlyArray<{
     readonly id: string;
@@ -406,7 +420,18 @@ export class PrismaCrmReader {
         verifications: {
           orderBy: { createdAt: 'desc' },
           take: 1,
-          select: { govIdType: true },
+          // What the member declared at the QR, not only which card they showed. A member
+          // who filled the form in is PENDING_VERIFICATION with no membership until staff
+          // approve them, and the profile used to say "Plan: not given" — which reads as
+          // the form having lost it (owner, 2026-10-07).
+          select: {
+            govIdType: true,
+            status: true,
+            referenceCode: true,
+            declaredPlanMonths: true,
+            declaredEndDate: true,
+            declaredAmountPaise: true,
+          },
         },
         memberships: {
           select: { id: true, durationMonths: true, startDate: true, endDate: true, status: true, pricePaise: true, isDeclared: true, isTrial: true, trialDays: true },
@@ -493,6 +518,17 @@ export class PrismaCrmReader {
       isMinor: member.isMinor,
       notes: member.notes,
       govIdType: member.verifications[0]?.govIdType ?? null,
+      // Only while it is still waiting. Once approved it becomes a real membership, and
+      // showing the declaration beside it would be the same fact twice.
+      declared:
+        member.verifications[0] === undefined || member.verifications[0].status !== 'PENDING'
+          ? null
+          : {
+              referenceCode: member.verifications[0].referenceCode,
+              planMonths: member.verifications[0].declaredPlanMonths,
+              endDate: member.verifications[0].declaredEndDate === null ? null : fromDbDate(member.verifications[0].declaredEndDate),
+              amountPaise: member.verifications[0].declaredAmountPaise,
+            },
       // The label is written as "<card>-<side>"; only the side is needed here, because
       // the card is named once above the photographs.
       govIdPhotos: member.media.map((file) => ({
