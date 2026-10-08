@@ -42,15 +42,9 @@ export default async function QrDonePage({ params }: { params: Promise<{ locale:
           <span className="block text-small tracking-wide uppercase">{t('codeLabel')}</span>
           <span className="mt-2 block font-display text-display-xl font-bold tracking-[0.15em]">{ref}</span>
         </p>
-        {/* Only for the member who just said they pay online; silent for everybody else. */}
-        <QrDoneAutopay />
-
-        <a
-          href={getPathname({ href: '/', locale: ctx.locale })}
-          className="mt-8 inline-flex min-h-14 items-center justify-center rounded-panel border-2 border-brand-obsidian px-6 text-body-l font-semibold text-brand-obsidian"
-        >
-          {t('home')}
-        </a>
+        {/* Carries the way home: for a member who chose to pay online it waits until their
+            standing instruction is dealt with, so the familiar button cannot skip it. */}
+        <QrDoneAutopay home={{ href: getPathname({ href: '/', locale: ctx.locale }), label: t('home') }} />
       </div>
     </QrPage>
   );

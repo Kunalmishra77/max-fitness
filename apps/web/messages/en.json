@@ -597,7 +597,14 @@
       "almostTitle": "One more tap",
       "almostBody": "Approve it in your UPI app or with your bank. The first payment would be on {date}.",
       "almostBodyNoDate": "Approve it in your UPI app or with your bank.",
-      "approve": "Approve automatic payment"
+      "approve": "Approve automatic payment",
+      "requiredTitle": "One last step",
+      "requiredWorking": "Setting up your automatic payment…",
+      "requiredReady": "Open your bank or UPI app and approve it. Nothing is taken today — the first payment is on {date}.",
+      "requiredReadyNoDate": "Open your bank or UPI app and approve it. Nothing is taken today.",
+      "requiredFailed": "That did not go through. Try once more, or the desk can set it up for you.",
+      "retry": "Try again",
+      "atDesk": "I will do this at the desk"
     }
   },
   "receipt": {
@@ -2090,7 +2097,7 @@
       "CASH": "Cash at the counter",
       "CASHHelp": "The way it works today. Nothing changes.",
       "ONLINE": "Online",
-      "ONLINEHelp": "We can set your fee to pay itself each time. You approve it with your own bank or UPI app, and nothing is taken today."
+      "ONLINEHelp": "Your fee collects itself from here on. You approve it once with your own bank or UPI app — nothing is taken today."
     }
   },
   "qrNewForm": {
@@ -2131,7 +2138,7 @@
       "CASH": "Cash at the counter",
       "CASHHelp": "Hand it to whoever is at the desk. Cash, UPI or card.",
       "ONLINE": "Online, now, on this phone",
-      "ONLINEHelp": "Pay here and your membership starts straight away. We can also set the next one to pay itself."
+      "ONLINEHelp": "Pay here and your membership starts straight away, then your fee collects itself each time. You approve that once with your own bank or UPI app."
     }
   },
   "qrNew": {

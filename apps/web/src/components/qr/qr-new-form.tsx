@@ -254,7 +254,7 @@ export function QrNewForm({
         <h2 className="font-display text-title font-bold text-brand-obsidian">{t('done.title', { name: paid.firstName })}</h2>
         <p className="font-display text-display-m font-bold text-brand-accent-deep">{price(paid.amountPaise)}</p>
         <p className="text-body leading-body">{t('paid.body')}</p>
-        <AutopayOffer auth={{ kind: 'registration', token: online?.token ?? '' }} endDate={paid.endDate} />
+        <AutopayOffer required auth={{ kind: 'registration', token: online?.token ?? '' }} endDate={paid.endDate} />
       </div>
     );
   }

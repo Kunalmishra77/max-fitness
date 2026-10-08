@@ -620,3 +620,21 @@ Starting the mandate never fails the approval. A member whose mandate could not 
 **Found, not a defect:** the ID upload has always accepted a PDF, in both QR forms, and the help text says so. Only the button's own label never mentioned it.
 
 **Recorded because it keeps costing time:** the integration tests share one Postgres and fail in parallel with `max clients reached in session mode — pool_size: 15`. They pass with `--no-file-parallelism`. This is not a flake to re-run; it is a limit, and it will keep being mistaken for a real failure until the suite is given its own database or a serial lane.
+
+## ADR-111
+
+**Date:** 2026-10-08
+**Status:** Accepted
+**Context:** ADR-110 put the standing instruction on the screen after the QR form as an *offer* — a "would you like your fee to pay itself?" panel with a Set up button beside a Home button. The owner's answer: a member who has already chosen **online** is not being asked again. "Online to wahi e-mandate karna compulsory hoga."
+
+**Decision — choosing online is the answer; the screen afterwards carries it out.**
+
+`AutopayOffer` gains a `required` mode. It creates the mandate on arrival rather than waiting to be asked, states the date of the first debit, and shows one action: approve it. There is no Set up button to ignore, and the reassuring "nothing is taken today, you can decline" framing goes with it — the member decided this on the form, and the help text under **Online** now says so plainly rather than "we can also".
+
+**The way home waits.** It used to sit directly under the offer, which is how the step gets skipped: Home is the familiar button. It now belongs to the client component and appears only once the standing instruction has been dealt with.
+
+**There is a way out, and it is deliberate.** The bank's authorisation is not ours to give. A member whose UPI app will not open, in front of a reception desk with a queue behind them, must not be stranded — so a quiet "I will do this at the desk" is always there. Taking it loses nothing: approval starts the same mandate and WhatsApps the same link (ADR-110), so the desk path is a real fallback rather than an excuse.
+
+This is the honest limit of "compulsory": the gym can make the step unavoidable on its own screens, and cannot make somebody's bank say yes.
+
+**New members get the same treatment**, after the payment rather than instead of it: Razorpay first, then the standing instruction on the paid screen in the same required mode.

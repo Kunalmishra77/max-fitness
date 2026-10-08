@@ -47,10 +47,11 @@ function readQrAutopay(): QrAutopayHandover | null {
   }
 }
 
-export function QrDoneAutopay() {
+export function QrDoneAutopay({ home }: { home: { href: string; label: string } }) {
   // Read after mount: `sessionStorage` does not exist while this is rendered on the server,
   // and a guess either way would be the wrong markup to hydrate against.
   const [handover, setHandover] = useState<QrAutopayHandover | null>(null);
+  const [deferred, setDeferred] = useState(false);
   useEffect(() => {
     setHandover(readQrAutopay());
     // Used once. Coming back to this screen later should not re-offer something the member
@@ -62,10 +63,34 @@ export function QrDoneAutopay() {
     }
   }, []);
 
-  if (handover === null) return null;
+  /**
+   * The way home is in here rather than on the page, because for a member who chose to pay
+   * online it has to wait (owner, 2026-10-08). Leaving a "Home" button beside "approve your
+   * automatic payment" is how the step gets skipped: it is the familiar one.
+   *
+   * It is hidden, not removed. The offer itself carries "I will do this at the desk", and
+   * taking that shows this again.
+   */
+  const homeLink = (
+    <a
+      href={home.href}
+      className="inline-flex min-h-14 items-center justify-center rounded-panel border-2 border-brand-obsidian px-6 text-body-l font-semibold text-brand-obsidian"
+    >
+      {home.label}
+    </a>
+  );
+
+  if (handover === null) return <div className="mt-8">{homeLink}</div>;
+
   return (
-    <div className="mt-8">
-      <AutopayOffer auth={{ kind: 'autopay', token: handover.token }} endDate={handover.coveredUntil} />
+    <div className="mt-8 grid gap-4">
+      <AutopayOffer
+        required
+        auth={{ kind: 'autopay', token: handover.token }}
+        endDate={handover.coveredUntil}
+        onDeferred={() => setDeferred(true)}
+      />
+      {deferred ? homeLink : null}
     </div>
   );
 }

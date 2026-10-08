@@ -2,7 +2,7 @@
 
 import { formatISTDate, type ISTDate } from '@mfp/shared/time';
 import { useLocale, useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { buttonVariants } from '@/components/ui/button';
 import { track } from '@/lib/analytics';
 import { cn } from '@/lib/cn';
@@ -24,6 +24,8 @@ import { cn } from '@/lib/cn';
 export function AutopayOffer({
   auth,
   endDate,
+  required = false,
+  onDeferred,
 }: {
   /**
    * The same shape `PayStep` takes. A renewing member reaches this by a WhatsApp link and
@@ -36,10 +38,23 @@ export function AutopayOffer({
   auth: { readonly kind: 'registration' | 'renew' | 'autopay'; readonly token: string };
   /** The last date the member is covered for. The first debit is the day after. */
   endDate: string;
+  /**
+   * The member already chose to pay online, so this is not a question any more (owner,
+   * 2026-10-08).
+   *
+   * It sets itself up on arrival and the approve link is the only thing on the screen —
+   * no "would you like", nothing to decline. The bank's own authorisation is still the
+   * member's to give, which is why there is a way to finish at the desk rather than a
+   * member stuck in front of a failed UPI app with a queue behind them.
+   */
+  required?: boolean;
+  /** Called when the member takes the "I will do this at the desk" way out. */
+  onDeferred?: () => void;
 }) {
   const t = useTranslations('signup.autopay');
   const locale = useLocale();
   const [state, setState] = useState<'offer' | 'working' | 'failed'>('offer');
+  const [gaveUp, setGaveUp] = useState(false);
   const [link, setLink] = useState<string | null>(null);
   const [firstChargeOn, setFirstChargeOn] = useState<string | null>(null);
 
@@ -65,6 +80,74 @@ export function AutopayOffer({
       })
       .catch(() => setState('failed'));
   };
+
+  // Fired once on arrival in required mode. A ref rather than a state flag: React may run
+  // an effect twice in development, and two calls would make two subscriptions at Razorpay.
+  const started = useRef(false);
+  useEffect(() => {
+    if (!required || started.current) return;
+    started.current = true;
+    setUp();
+    // Deliberately keyed on `required` alone: `setUp` is rebuilt every render, and listing
+    // it would start a second subscription at Razorpay on the next one. The ref above is
+    // what actually guarantees once.
+  }, [required]);
+
+  /**
+   * The member chose online, so this is the rest of that choice rather than a new question.
+   *
+   * It sets itself up, says what will happen and when, and offers one thing: approve it.
+   * The quiet way out exists because the bank's authorisation is not ours to give — a UPI
+   * app that will not open must not strand somebody at a reception desk — and taking it
+   * loses nothing: the desk sets the same mandate up when it approves them, and the link
+   * goes out again on WhatsApp.
+   */
+  // Stepped away from it: the desk does this one. Falling through to the optional offer
+  // would put the same question back on the screen it was just dismissed from.
+  if (required && gaveUp) return null;
+
+  if (required) {
+    return (
+      <div className="grid gap-3 rounded-input bg-tint-fee-paid-bg p-4 text-left">
+        <p className="text-body-l font-semibold text-brand-obsidian">{t('requiredTitle')}</p>
+
+        {link !== null ? (
+          <>
+            <p className="text-body leading-body">
+              {firstChargeOn === null
+                ? t('requiredReadyNoDate')
+                : t('requiredReady', { date: formatISTDate(firstChargeOn as ISTDate, locale) })}
+            </p>
+            <a href={link} target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: 'primary', full: true })}>
+              {t('approve')}
+            </a>
+          </>
+        ) : state === 'failed' ? (
+          <>
+            <p role="alert" className="text-body leading-body text-semantic-fee-expired">
+              {t('requiredFailed')}
+            </p>
+            <button type="button" onClick={setUp} className={buttonVariants({ variant: 'primary', full: true })}>
+              {t('retry')}
+            </button>
+          </>
+        ) : (
+          <p className="text-body leading-body text-brand-ink/80">{t('requiredWorking')}</p>
+        )}
+
+        <button
+          type="button"
+          onClick={() => {
+            setGaveUp(true);
+            onDeferred?.();
+          }}
+          className="min-h-11 text-small font-semibold text-brand-ink/70 underline underline-offset-2"
+        >
+          {t('atDesk')}
+        </button>
+      </div>
+    );
+  }
 
   // Once there is a link, the offer is done and the only thing left is to open it.
   if (link !== null) {
