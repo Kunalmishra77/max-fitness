@@ -14,7 +14,8 @@
     "./face": "./src/face/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "templates:sheet": "tsx scripts/template-sheet.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "catalog:",

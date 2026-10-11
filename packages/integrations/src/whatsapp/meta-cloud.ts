@@ -52,6 +52,14 @@ interface Attempt {
 /** Meta takes the number without a `+`. */
 const digits = (mobile: string) => mobile.replace(/\D/g, '');
 
+/**
+ * What a dynamic URL button actually takes.
+ *
+ * The approved template holds `https://maxfitnessgym.co.in/r/{{1}}`, so the send supplies
+ * only the token. Passing the whole link would produce `…/r/https://…/r/token`.
+ */
+const urlSuffix = (link: string) => link.split('/').filter((part) => part !== '').pop() ?? link;
+
 const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export class MetaCloudWhatsAppProvider implements WhatsAppProvider {
@@ -70,15 +78,16 @@ export class MetaCloudWhatsAppProvider implements WhatsAppProvider {
     const parameters = definition.variables.map((key) => ({ type: 'text' as const, text: request.variables[key] ?? '' }));
 
     const components: unknown[] = [{ type: 'body', parameters }];
-    // Quick replies carry a signed payload that comes back on the webhook, which is how a
-    // tap on "Unsubscribe" is tied to the member who tapped it (BR-6.1).
+    // The two kinds are not interchangeable, and the reminders carry one of each: "Renew
+    // now" is a URL button, "Unsubscribe" a quick reply whose payload comes back on the
+    // webhook and ties the tap to the member who made it (BR-6.1). Sending either as the
+    // other is a component mismatch and Meta refuses the entire message.
     (request.buttons ?? []).forEach((button, index) => {
-      components.push({
-        type: 'button',
-        sub_type: 'quick_reply',
-        index: String(index),
-        parameters: [{ type: 'payload', payload: button.payload }],
-      });
+      components.push(
+        button.kind === 'url'
+          ? { type: 'button', sub_type: 'url', index: String(index), parameters: [{ type: 'text', text: urlSuffix(button.payload) }] }
+          : { type: 'button', sub_type: 'quick_reply', index: String(index), parameters: [{ type: 'payload', payload: button.payload }] },
+      );
     });
 
     return this.#post({

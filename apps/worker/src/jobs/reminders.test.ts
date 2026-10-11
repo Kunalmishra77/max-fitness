@@ -174,8 +174,10 @@ describe('sendReminder', () => {
 
     expect(log).toEqual([expect.objectContaining({ status: 'QUEUED', idempotencyKey: intent.idempotencyKey, purpose: 'REMINDER', ruleCode: 'PRE_7' })]);
     expect(sent[0]).toMatchObject({ to: MOBILE, templateName: 'mf_renewal_due', language: 'en', idempotencyKey: intent.idempotencyKey });
+    // The two are not the same kind at Meta, and the order is the index the template
+    // uses: a URL button sent as a quick reply has the whole message refused.
     expect(sent[0]?.buttons).toEqual([
-      { payload: 'https://max.test/r/mem_1', label: 'renew' },
+      { kind: 'url', payload: 'https://max.test/r/mem_1', label: 'renew' },
       { payload: 'UNSUB.mem_1', label: 'unsubscribe' },
     ]);
     expect(updates).toEqual([{ key: intent.idempotencyKey, status: 'SENT', error: null }]);

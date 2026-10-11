@@ -22,6 +22,19 @@ interface TemplateDefinition {
   readonly variables: readonly string[];
   readonly body: TemplateBodies;
   readonly footer: TemplateBodies;
+  /**
+   * The buttons the approved template carries, in the order Meta indexes them.
+   *
+   * Kept here because Meta holds the buttons, not the send: the adapter supplies a URL
+   * button's tail and a quick reply's payload by index, so a template submitted with its
+   * buttons in a different order silently sends the wrong one.
+   */
+  readonly buttons?: ReadonlyArray<{ readonly kind: 'url' | 'quick_reply'; readonly label: TemplateBodies }>;
+  /**
+   * One sample per variable, in the same order. Meta requires these at submission and
+   * rejects a template whose samples do not fit the body.
+   */
+  readonly samples?: readonly string[];
 }
 
 const FOOTER: TemplateBodies = {
@@ -51,6 +64,10 @@ const RENEWAL_DUE: TemplateDefinition = {
     ].join('\n'),
   },
   footer: FOOTER,
+  buttons: [
+    { kind: 'url', label: { en: 'Renew now', hi: 'अभी रिन्यू करें' } },
+    { kind: 'quick_reply', label: { en: 'Unsubscribe', hi: 'अनसब्सक्राइब' } },
+  ],
 };
 
 /** T2 — used by DUE_TODAY. */
@@ -75,6 +92,10 @@ const RENEWAL_DUE_TODAY: TemplateDefinition = {
     ].join('\n'),
   },
   footer: FOOTER,
+  buttons: [
+    { kind: 'url', label: { en: 'Renew now', hi: 'अभी रिन्यू करें' } },
+    { kind: 'quick_reply', label: { en: 'Unsubscribe', hi: 'अनसब्सक्राइब' } },
+  ],
 };
 
 /** T3 — used by POST, at three slots a day up to the cap (BR-5.1, BR-5.2). */
@@ -99,6 +120,10 @@ const MEMBERSHIP_EXPIRED: TemplateDefinition = {
     ].join('\n'),
   },
   footer: FOOTER,
+  buttons: [
+    { kind: 'url', label: { en: 'Renew now', hi: 'अभी रिन्यू करें' } },
+    { kind: 'quick_reply', label: { en: 'Unsubscribe', hi: 'अनसब्सक्राइब' } },
+  ],
 };
 
 /** T4 — sent after a payment confirms (BR-11). */

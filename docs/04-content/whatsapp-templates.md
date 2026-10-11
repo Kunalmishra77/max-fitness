@@ -1,3 +1,12 @@
+> **Superseded for submission (2026-10-11).** Submit from
+> [`whatsapp-template-submission.md`](whatsapp-template-submission.md), which is generated
+> from `packages/integrations/src/whatsapp/templates.ts` — what the product actually sends.
+>
+> This file drifted: it carries ten of the twenty-one templates, and names four the product
+> no longer sends (`mf_signup_payment_pending`, and three `mf_owner_alert_*` variants that
+> the generic `mf_owner_alert` replaced). It is kept for the reasoning behind the wording;
+> the wording itself now lives in the code.
+
 # WhatsApp Message Templates
 
 Submitted in WhatsApp Manager (or via API) **in week 0–1**. Business-initiated messages outside a 24-hour customer-service window must use approved templates. Keep reminder templates strictly **transactional (Utility)** — no offers, discounts or promotional language, or Meta may reclassify them as Marketing (higher price, stricter limits).

@@ -1592,3 +1592,27 @@ The part that mattered: a mandate's **first debit is the day after the member's 
 - Security review before deployment: still unfinished.
 - Offline mitigations: still unanswered.
 - `EXPIRED_MEMBER_VISIT` alert is still created by nothing (ADR-108).
+
+## 2026-10-11 — WhatsApp: the client that was a stub, and the sheet to submit from
+
+**Changed**
+
+- `packages/integrations/src/whatsapp/meta-cloud.ts` — the real Cloud API client. It was a typed stub whose `send` and `sendText` both rejected; the webhook has been complete all along, so nothing could go **out**. Template variables are ordered from the template's own declaration, never from the caller's object: Meta takes them positionally, and getting it wrong returns 200 and delivers "Hi 15 Sep 2026, your membership ends on Ravi". Three attempts on 5xx and dead sockets, one on a plain 4xx, rate limiting treated as "later". A 200 with no `wamid` counts as a failure. Nothing throws.
+- `packages/core/src/ports/whatsapp.ts`, `apps/worker/src/jobs/reminders.ts` — `WhatsAppButton.kind`. **Caught while writing the sheet:** the reminders send two buttons and they are not the same kind — "Renew now" is a URL button, "Unsubscribe" a quick reply — and the first version of the adapter sent both as quick replies. Meta refuses the whole message on a component mismatch, so **every reminder would have failed on the first real send**. A URL button now sends only the token, because the approved template holds everything before it.
+- `packages/integrations/src/whatsapp/templates.ts` — definitions carry their buttons, in the order Meta indexes them.
+- `packages/integrations/scripts/template-sheet.ts` (new, `pnpm wa:templates`) → `docs/04-content/whatsapp-template-submission.md`. All 21 templates with category, both languages, ordered variables and the sample values Meta demands at submission.
+
+**Correction to what I told the owner:** I said eleven templates had no wording. They all did — in `templates.ts`, both languages, with their positional order. I had read the markdown doc, which is the stale copy: it carries ten and names four the product no longer sends (`mf_signup_payment_pending`, three `mf_owner_alert_*` superseded by the generic one). Submitting from it would have missed templates and created dead ones. The doc now says so at the top and points at the generated sheet.
+
+**Meta setup so far:** webhook verified and tested live (`GET` echoes the challenge). Business verification approved. Number +91 98114 26350, WABA `1378611114040117`, phone number id `1394917043704455`, Graph `v26.0`. **Do not touch +91 78945 61230** — it is live on a handset.
+
+**Tests:** 1919 passing. Every non-`|db|` suite green; the `|db|` failures are the shared-Postgres `pool_size: 15` limit (ADR-110) and pass with `--no-file-parallelism`.
+
+**Pending**
+
+- Display name "Max Fitness Gym" is still `Pending / In Review` at Meta — the number cannot register until it clears.
+- `WHATSAPP_PROVIDER` stays `simulator` until it does; `meta_cloud` before then fails every send.
+- 21 templates to submit, from the generated sheet.
+- The owner's App Secret was pasted into chat and needs resetting, as does the Razorpay secret.
+- Google Business Profile lists 098714 06350, which is neither number: members messaging it reach nothing.
+- Security review, offline mitigations, CRM screenshots for the UI pass — all still open.

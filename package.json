@@ -28,7 +28,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "qr:poster": "tsx infra/scripts/generate-qr-poster.ts",
-    "wipe:members": "pnpm --filter @mfp/worker run wipe:members"
+    "wipe:members": "pnpm --filter @mfp/worker run wipe:members",
+    "wa:templates": "pnpm --filter @mfp/integrations run templates:sheet"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

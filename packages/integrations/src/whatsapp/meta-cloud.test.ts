@@ -115,6 +115,44 @@ describe('MetaCloudWhatsAppProvider', () => {
     });
   });
 
+  /**
+   * The reminders carry two buttons and they are not the same kind. "Renew now" is a URL
+   * button whose template holds `https://…/r/{{1}}` and takes only the token; "Unsubscribe"
+   * is a quick reply whose payload comes back on the webhook. Sending either as the other
+   * is a component mismatch, and Meta refuses the whole message — so every reminder would
+   * have failed on the first real send.
+   */
+  it('sends the renew button as a URL suffix and the unsubscribe as a payload', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(ok()));
+
+    await provider(fetchImpl).send({
+      to: TO,
+      templateName: 'mf_renewal_due',
+      language: 'en',
+      variables: { firstName: 'Ravi', endDate: '15 Sep 2026', whenPhrase: 'in 7 days' },
+      idempotencyKey: 'rem:3',
+      buttons: [
+        { kind: 'url', payload: 'https://maxfitnessgym.co.in/r/sIgNeDtOkEn', label: 'renew' },
+        { payload: 'UNSUB.tok', label: 'unsubscribe' },
+      ],
+    });
+
+    const components = (bodyOf(fetchImpl.mock.calls[0])['template'] as { components: unknown[] }).components;
+    expect(components).toContainEqual({
+      type: 'button',
+      sub_type: 'url',
+      index: '0',
+      // Only the tail: the template already holds everything before it.
+      parameters: [{ type: 'text', text: 'sIgNeDtOkEn' }],
+    });
+    expect(components).toContainEqual({
+      type: 'button',
+      sub_type: 'quick_reply',
+      index: '1',
+      parameters: [{ type: 'payload', payload: 'UNSUB.tok' }],
+    });
+  });
+
   it('sends a free-form reply as a plain text message, with no link preview', async () => {
     const fetchImpl = vi.fn(() => Promise.resolve(ok()));
 

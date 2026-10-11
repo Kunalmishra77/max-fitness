@@ -163,6 +163,7 @@ export default tseslint.config(
       'packages/db/seed/**/*.ts',
       'packages/db/scripts/**/*.ts',
       'packages/config/scripts/**/*.ts',
+      'packages/integrations/scripts/**/*.ts',
       'apps/worker/**/*.ts',
       'apps/web/scripts/**/*.mjs',
       'infra/scripts/**/*.ts',
