@@ -1,51 +1,171 @@
 import type { WhatsAppProvider, WhatsAppSendOutcome, WhatsAppSendRequest, WhatsAppTextRequest } from '@mfp/core/ports';
+import { templateDefinition } from './templates';
 
 /**
- * Meta WhatsApp Cloud API adapter — TYPED STUB, implemented in Phase 6.
+ * Meta WhatsApp Cloud API adapter (TRD §7; whatsapp-automation-engine.md; api-spec §4).
  *
- * Contract to implement (TRD §7, whatsapp-automation-engine.md, api-specification.md §4):
- * - Send: `POST https://graph.facebook.com/{version}/{phone-number-id}/messages`
- *   with a Bearer system-user token and a `template` payload carrying the approved
- *   template name, language code and the ordered body variables. Pin the Graph API
- *   version via WHATSAPP_GRAPH_API_VERSION — an unpinned version breaks silently
- *   when Meta deprecates one.
- * - The response's `messages[0].id` (`wamid...`) becomes `MessageLog.providerMessageId`.
- * - Retries: 3 attempts with backoff on 5xx and rate limits; a 4xx other than
- *   rate-limiting is permanent and must not be retried.
- * - Quality: pause sends automatically on a quality-rating downgrade notification
- *   and alert the owner (system-architecture.md §7).
+ * Meta holds the approved template and renders it; we supply the variables. The domain
+ * names them — `firstName`, `endDate` — and Meta takes them **positionally**, so the one
+ * mistake that ruins every message without failing is the order. It is read from the
+ * template's own declaration rather than from the order the caller happened to build the
+ * object in, because "Hi 15 Sep 2026, your membership ends on Ravi" is a 200 OK.
  *
- * Inbound (a separate handler, not this class): verify `X-Hub-Signature-256` as
- * HMAC-SHA256 of the RAW body keyed with WHATSAPP_APP_SECRET, then handle
- * `statuses[]` and `messages[]` of type `button`, `interactive` and `text`.
+ * **What is retried, and what is not.** A 5xx or a dead connection is Meta or the network
+ * having a bad minute: nothing was delivered and the same request will work later. A 4xx
+ * is a request that is wrong — a template that does not exist, a number that is not on
+ * WhatsApp — and sending it again produces the same refusal while holding up everything
+ * behind it. Rate limiting is the exception, because it is a 4xx that means "later".
+ *
+ * **It never throws.** Every path returns an outcome, because the caller writes that
+ * outcome to `MessageLog` and a thrown error would lose which member it was about.
  */
 
 export interface MetaCloudConfig {
   readonly phoneNumberId: string;
   readonly accessToken: string;
+  /** Pinned: an unpinned version breaks silently the day Meta deprecates one. */
   readonly graphApiVersion: string;
   readonly appSecret: string;
+  /** Injected in tests. */
+  readonly fetch?: typeof globalThis.fetch;
+  readonly sleep?: (ms: number) => Promise<void>;
 }
 
-/**
- * Built against the Cloud API once the number is approved: the request bodies are
- * verified against Meta's own reference then, not guessed now, because a wrong field
- * name is only discovered on a live send (Phase 6 live-test plan).
- */
-const NOT_LIVE_YET = "The WhatsApp Cloud API client is built when the gym's number is approved; the demo uses the simulator.";
+/** Three attempts, then the message is left for the next run rather than blocking it. */
+const MAX_ATTEMPTS = 3;
+const BACKOFF_MS = [500, 2_000];
+/** Meta's own rate-limit codes: a 4xx that means "later" rather than "no". */
+const RATE_LIMIT_CODES = new Set([4, 80007, 130429, 131048, 131056]);
+
+interface MetaError {
+  readonly code: number;
+  readonly message: string;
+}
+
+interface Attempt {
+  readonly ok: boolean;
+  readonly status: number;
+  readonly messageId?: string;
+  readonly error?: MetaError;
+}
+
+/** Meta takes the number without a `+`. */
+const digits = (mobile: string) => mobile.replace(/\D/g, '');
+
+const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export class MetaCloudWhatsAppProvider implements WhatsAppProvider {
   readonly name = 'meta_cloud' as const;
+  readonly #config: MetaCloudConfig;
 
-  constructor(_config: MetaCloudConfig) {
-    // TODO(Phase 6): retain config; no network client is built until first use.
+  constructor(config: MetaCloudConfig) {
+    this.#config = config;
   }
 
-  send(_request: WhatsAppSendRequest): Promise<WhatsAppSendOutcome> {
-    return Promise.reject(new Error(NOT_LIVE_YET));
+  send(request: WhatsAppSendRequest): Promise<WhatsAppSendOutcome> {
+    const definition = templateDefinition(request.templateName);
+
+    // The template's own order, not the caller's. A variable the caller did not supply
+    // becomes an empty string rather than the literal "undefined" in a member's message.
+    const parameters = definition.variables.map((key) => ({ type: 'text' as const, text: request.variables[key] ?? '' }));
+
+    const components: unknown[] = [{ type: 'body', parameters }];
+    // Quick replies carry a signed payload that comes back on the webhook, which is how a
+    // tap on "Unsubscribe" is tied to the member who tapped it (BR-6.1).
+    (request.buttons ?? []).forEach((button, index) => {
+      components.push({
+        type: 'button',
+        sub_type: 'quick_reply',
+        index: String(index),
+        parameters: [{ type: 'payload', payload: button.payload }],
+      });
+    });
+
+    return this.#post({
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: digits(request.to),
+      type: 'template',
+      template: { name: request.templateName, language: { code: request.language }, components },
+    });
   }
 
-  sendText(_request: WhatsAppTextRequest): Promise<WhatsAppSendOutcome> {
-    return Promise.reject(new Error(NOT_LIVE_YET));
+  sendText(request: WhatsAppTextRequest): Promise<WhatsAppSendOutcome> {
+    return this.#post({
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: digits(request.to),
+      type: 'text',
+      // These are the unsubscribe and restart confirmations (BR-6.3). A preview would
+      // expand whatever a member happened to quote back at us.
+      text: { body: request.body, preview_url: false },
+    });
   }
+
+  async #post(payload: Record<string, unknown>): Promise<WhatsAppSendOutcome> {
+    const url = `https://graph.facebook.com/${this.#config.graphApiVersion}/${this.#config.phoneNumberId}/messages`;
+    const send = this.#config.fetch ?? globalThis.fetch;
+    const sleep = this.#config.sleep ?? defaultSleep;
+
+    let last: Attempt = { ok: false, status: 0, error: { code: 0, message: 'not attempted' } };
+
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+      last = await this.#attempt(send, url, payload);
+      if (last.ok && last.messageId !== undefined) {
+        return { status: 'SENT', providerMessageId: last.messageId };
+      }
+      if (!isRetryable(last)) break;
+      if (attempt < MAX_ATTEMPTS - 1) await sleep(BACKOFF_MS[attempt] ?? 2_000);
+    }
+
+    return {
+      status: 'FAILED',
+      errorCode: String(last.error?.code ?? last.status),
+      errorMessage: last.error?.message ?? `HTTP ${last.status}`,
+      retryable: isRetryable(last),
+    };
+  }
+
+  async #attempt(send: typeof globalThis.fetch, url: string, payload: Record<string, unknown>): Promise<Attempt> {
+    try {
+      const response = await send(url, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${this.#config.accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const body = (await response.json().catch(() => ({}))) as {
+        messages?: ReadonlyArray<{ id?: string }>;
+        error?: { code?: number; message?: string };
+      };
+
+      if (response.ok) {
+        const id = body.messages?.[0]?.id;
+        // A 200 with no id is not a send. Treating it as one would log a message that
+        // never arrives and can never be matched to a delivery status.
+        return id === undefined
+          ? { ok: false, status: response.status, error: { code: 0, message: 'no message id in the reply' } }
+          : { ok: true, status: response.status, messageId: id };
+      }
+
+      return {
+        ok: false,
+        status: response.status,
+        error: { code: body.error?.code ?? response.status, message: body.error?.message ?? `HTTP ${response.status}` },
+      };
+    } catch (error) {
+      // The request never reached Meta, so nothing was sent and trying again is safe.
+      // The message itself is never logged here: a member's number is not an error.
+      return { ok: false, status: 0, error: { code: 0, message: error instanceof Error ? error.name : 'network error' } };
+    }
+  }
+}
+
+function isRetryable(attempt: Attempt): boolean {
+  if (attempt.ok) return false;
+  // Nothing left the machine.
+  if (attempt.status === 0) return true;
+  if (attempt.status >= 500) return true;
+  if (attempt.status === 429) return true;
+  return RATE_LIMIT_CODES.has(attempt.error?.code ?? -1);
 }

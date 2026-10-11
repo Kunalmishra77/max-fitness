@@ -638,3 +638,23 @@ Starting the mandate never fails the approval. A member whose mandate could not 
 This is the honest limit of "compulsory": the gym can make the step unavoidable on its own screens, and cannot make somebody's bank say yes.
 
 **New members get the same treatment**, after the payment rather than instead of it: Razorpay first, then the standing instruction on the paid screen in the same required mode.
+
+## ADR-112
+
+**Date:** 2026-10-11
+**Status:** Accepted
+**Context:** The gym's WhatsApp number reached Meta setup, and the env vars went in — at which point the outbound client turned out to be a typed stub. `send` and `sendText` both rejected with "the Cloud API client is built when the gym's number is approved; the demo uses the simulator". The inbound webhook was complete and verified; nothing could go out.
+
+**Decision — build the adapter now, against the port rather than against a live number.**
+
+The stub deferred this so the request bodies could be checked against Meta's own reference rather than guessed. That reason is satisfied by building it with the reference in hand; it does not require the number to be registered, because the simulator only reaches the real provider for an allow-listed number anyway, and the display name is still in review.
+
+**The ordering is the whole risk.** The domain hands over named variables (`firstName`, `endDate`) and Meta takes them positionally. The order is therefore read from the template's own `variables` declaration, never from the shape of the object the caller built. Getting it wrong does not fail: it returns 200 and delivers "Hi 15 Sep 2026, your membership ends on Ravi". Most of the tests are about this.
+
+**What is retried, and what is not.** A 5xx or a dead socket is a bad minute — nothing was delivered and the same request will work later, so three attempts with backoff. A plain 4xx is a wrong request: a template that does not exist, a number not on WhatsApp. Retrying it earns the same refusal and holds up everything behind it, so it stops at one. Rate limiting is the exception, being the one 4xx that means "later" — matched by status 429 and by Meta's own codes (4, 80007, 130429, 131048, 131056).
+
+**A 200 with no `wamid` is a failure.** It would otherwise log a message that never arrives and can never be matched to a delivery status.
+
+**It never throws.** The caller writes the outcome to `MessageLog`, and an exception would lose which member it was about. Network errors are logged by name only — a member's number is not an error message.
+
+**Correction to the record:** a comparison of `WHATSAPP_TEMPLATES` against `docs/04-content/whatsapp-templates.md` suggested eleven templates had no wording. They do: all twenty-one are defined in `packages/integrations/src/whatsapp/templates.ts`, in both languages, with their positional variable order. **The markdown doc is the stale copy, not the code.** It documents ten, and names four that no longer exist (`mf_signup_payment_pending`, three `mf_owner_alert_*` variants superseded by the generic `mf_owner_alert`). Submitting from the doc would both miss templates and create dead ones. The doc should be regenerated from `templates.ts`, which is the source of truth.
