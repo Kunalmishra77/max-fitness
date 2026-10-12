@@ -133,20 +133,24 @@ const PAYMENT_RECEIPT: TemplateDefinition = {
   variables: ['firstName', 'amount', 'planName', 'startDate', 'endDate', 'receiptNo'],
   body: {
     en: [
-      'Payment received. Thank you, {{1}}.',
+      'Payment received — thank you, {{1}}. Your membership at Max Fitness Gym is active and you can train from today.',
       '',
-      'Amount: {{2}}',
+      'Amount paid: {{2}}',
       'Plan: {{3}}',
-      'Valid: {{4}} to {{5}}',
-      'Receipt no: {{6}}',
+      'Valid from {{4}} until {{5}}',
+      'Receipt number: {{6}}',
+      '',
+      'Please keep this message. Show it at the reception desk if there is ever a question about this payment.',
     ].join('\n'),
     hi: [
-      'भुगतान मिल गया। धन्यवाद, {{1}}।',
+      'भुगतान मिल गया — धन्यवाद, {{1}}। Max Fitness Gym में आपकी मेंबरशिप चालू है और आप आज से ट्रेनिंग कर सकते हैं।',
       '',
       'राशि: {{2}}',
       'प्लान: {{3}}',
       'वैधता: {{4}} से {{5}} तक',
       'रसीद नंबर: {{6}}',
+      '',
+      'यह मैसेज सँभाल कर रखिए। इस भुगतान को लेकर कभी कोई सवाल हो तो रिसेप्शन पर दिखा दीजिए।',
     ].join('\n'),
   },
   footer: FOOTER,
@@ -220,7 +224,7 @@ const OWNER_DIGEST: TemplateDefinition = {
   variables: ['ownerName', 'endingToday', 'overdue', 'dueThisWeek', 'callsToday', 'birthdays', 'collectedYesterday'],
   body: {
     en: [
-      'Good morning {{1}}. Today at a glance:',
+      'Good morning {{1}}. Here is where the gym stands this morning, before the floor fills up:',
       '',
       'Fees ending today: {{2}}',
       'Fees overdue: {{3}}',
@@ -228,9 +232,11 @@ const OWNER_DIGEST: TemplateDefinition = {
       "Today's calls: {{5}}",
       'Birthdays: {{6}}',
       'Collected yesterday: {{7}}',
+      '',
+      'Every one of these opens as a list in Max Register.',
     ].join('\n'),
     hi: [
-      'सुप्रभात {{1}}। आज का हिसाब:',
+      'सुप्रभात {{1}}। सुबह-सुबह जिम का हाल, भीड़ आने से पहले:',
       '',
       'फीस आज खत्म: {{2}}',
       'फीस बाकी: {{3}}',
@@ -238,6 +244,8 @@ const OWNER_DIGEST: TemplateDefinition = {
       'आज के कॉल: {{5}}',
       'जन्मदिन: {{6}}',
       'कल आए पैसे: {{7}}',
+      '',
+      'इनमें से हर एक Max Register में लिस्ट की तरह खुलती है।',
     ].join('\n'),
   },
   footer: FOOTER,
@@ -253,7 +261,27 @@ const OWNER_ALERT: TemplateDefinition = {
   name: 'mf_owner_alert',
   category: 'UTILITY',
   variables: ['sentence'],
-  body: { en: '{{1}}', hi: '{{1}}' },
+  /**
+   * The sentence needs a message around it. A template whose whole body is `{{1}}` is
+   * refused, and fairly: there is nothing for a reviewer to read, and a body that is only
+   * a variable is a blank cheque to send anything under an approved name.
+   */
+  body: {
+    en: [
+      'Max Fitness Gym — something at the gym needs your attention:',
+      '',
+      '{{1}}',
+      '',
+      'Open Max Register to see which members this is about.',
+    ].join('\n'),
+    hi: [
+      'Max Fitness Gym — जिम में एक बात आपके ध्यान देने लायक है:',
+      '',
+      '{{1}}',
+      '',
+      'किन मेंबर की बात है, यह देखने के लिए Max Register खोलिए।',
+    ].join('\n'),
+  },
   footer: FOOTER,
 };
 
@@ -290,8 +318,20 @@ const ANNOUNCEMENT: TemplateDefinition = {
   category: 'MARKETING',
   variables: ['firstName', 'message'],
   body: {
-    en: 'Hi {{1}}, a message from Max Fitness Gym: {{2}}',
-    hi: 'नमस्ते {{1}}, Max Fitness Gym की ओर से सूचना: {{2}}',
+    en: [
+      'Hi {{1}}, a message from everyone at Max Fitness Gym:',
+      '',
+      '{{2}}',
+      '',
+      'If anything about this is unclear, ask at the reception desk on your next visit.',
+    ].join('\n'),
+    hi: [
+      'नमस्ते {{1}}, Max Fitness Gym की ओर से एक सूचना:',
+      '',
+      '{{2}}',
+      '',
+      'इसमें कुछ समझ न आए तो अगली बार रिसेप्शन पर पूछ लीजिए।',
+    ].join('\n'),
   },
   footer: FOOTER,
 };

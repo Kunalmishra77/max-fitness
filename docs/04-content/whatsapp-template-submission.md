@@ -14,7 +14,66 @@ Each template is submitted **twice**, once per language, under the same name.
 
 ---
 
-## `mf_renewal_due`
+## Tick list
+
+| # | Template | Category | Why it matters | English | Hindi |
+|---|---|---|---|---|---|
+| 1 | `mf_autopay_invite` | UTILITY | the e-mandate link — without it autopay cannot reach anybody | ☐ | ☐ |
+| 2 | `mf_renewal_due` | UTILITY | the reminders the gym runs on | ☐ | ☐ |
+| 3 | `mf_renewal_due_today` | UTILITY | the reminders the gym runs on | ☐ | ☐ |
+| 4 | `mf_membership_expired` | UTILITY | the reminders the gym runs on | ☐ | ☐ |
+| 5 | `mf_payment_receipt` | UTILITY | every payment sends one | ☐ | ☐ |
+| 6 | `mf_welcome_member` | UTILITY | the first message a new member gets | ☐ | ☐ |
+| 7 | `mf_verification_approved` | UTILITY | the QR arrivals | ☐ | ☐ |
+| 8 | `mf_login_code` | AUTHENTICATION | staff sign-in | ☐ | ☐ |
+| 9 | `mf_owner_daily_digest` | UTILITY | later | ☐ | ☐ |
+| 10 | `mf_owner_alert` | UTILITY | later | ☐ | ☐ |
+| 11 | `mf_birthday_wish` | MARKETING | later | ☐ | ☐ |
+| 12 | `mf_announcement` | MARKETING | later | ☐ | ☐ |
+| 13 | `mf_diet_question` | UTILITY | later | ☐ | ☐ |
+| 14 | `mf_diet_plan_ready` | UTILITY | later | ☐ | ☐ |
+| 15 | `mf_diet_follow_up` | UTILITY | later | ☐ | ☐ |
+| 16 | `mf_trial_welcome` | UTILITY | later | ☐ | ☐ |
+| 17 | `mf_trial_check_in` | UTILITY | later | ☐ | ☐ |
+| 18 | `mf_trial_last_day` | UTILITY | later | ☐ | ☐ |
+| 19 | `mf_trial_join` | UTILITY | later | ☐ | ☐ |
+| 20 | `mf_autopay_halted` | UTILITY | later | ☐ | ☐ |
+| 21 | `mf_autopay_cancelled` | UTILITY | later | ☐ | ☐ |
+
+---
+
+## 1 of 21 — `mf_autopay_invite`
+
+**Category:** UTILITY
+
+**Variables**, in this order:
+
+| # | Meaning | Sample to paste |
+|---|---|---|
+| {{1}} | firstName | Ravi |
+| {{2}} | amount | ₹4,000 |
+| {{3}} | firstChargeDate | 1 Oct 2026 |
+| {{4}} | link | https://maxfitnessgym.co.in/r/abc123 |
+
+### English (en)
+
+```
+Hi {{1}}, you can set your Max Fitness Gym fee to pay itself. {{2}} would be taken automatically from {{3}}, and nothing before that. Set it up here: {{4}} — you can stop it any time from your own UPI app.
+```
+
+Footer: `Max Fitness Gym, Nyay Khand 1, Indirapuram`
+
+### Hindi (hi)
+
+```
+नमस्ते {{1}}, आप अपनी Max Fitness Gym की फ़ीस ऑटोमैटिक कर सकते हैं। {{3}} से {{2}} अपने आप कट जाएगा, उससे पहले कुछ नहीं। यहाँ सेट कीजिए: {{4}} — अपने UPI ऐप से कभी भी बंद कर सकते हैं।
+```
+
+Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापुरम`
+
+---
+
+## 2 of 21 — `mf_renewal_due`
 
 **Category:** UTILITY
 
@@ -59,7 +118,7 @@ The product sends only the token, because the template already holds everything 
 
 ---
 
-## `mf_renewal_due_today`
+## 3 of 21 — `mf_renewal_due_today`
 
 **Category:** UTILITY
 
@@ -103,7 +162,7 @@ The product sends only the token, because the template already holds everything 
 
 ---
 
-## `mf_membership_expired`
+## 4 of 21 — `mf_membership_expired`
 
 **Category:** UTILITY
 
@@ -147,7 +206,7 @@ The product sends only the token, because the template already holds everything 
 
 ---
 
-## `mf_payment_receipt`
+## 5 of 21 — `mf_payment_receipt`
 
 **Category:** UTILITY
 
@@ -165,12 +224,14 @@ The product sends only the token, because the template already holds everything 
 ### English (en)
 
 ```
-Payment received. Thank you, {{1}}.
+Payment received — thank you, {{1}}. Your membership at Max Fitness Gym is active and you can train from today.
 
-Amount: {{2}}
+Amount paid: {{2}}
 Plan: {{3}}
-Valid: {{4}} to {{5}}
-Receipt no: {{6}}
+Valid from {{4}} until {{5}}
+Receipt number: {{6}}
+
+Please keep this message. Show it at the reception desk if there is ever a question about this payment.
 ```
 
 Footer: `Max Fitness Gym, Nyay Khand 1, Indirapuram`
@@ -178,47 +239,21 @@ Footer: `Max Fitness Gym, Nyay Khand 1, Indirapuram`
 ### Hindi (hi)
 
 ```
-भुगतान मिल गया। धन्यवाद, {{1}}।
+भुगतान मिल गया — धन्यवाद, {{1}}। Max Fitness Gym में आपकी मेंबरशिप चालू है और आप आज से ट्रेनिंग कर सकते हैं।
 
 राशि: {{2}}
 प्लान: {{3}}
 वैधता: {{4}} से {{5}} तक
 रसीद नंबर: {{6}}
+
+यह मैसेज सँभाल कर रखिए। इस भुगतान को लेकर कभी कोई सवाल हो तो रिसेप्शन पर दिखा दीजिए।
 ```
 
 Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापुरम`
 
 ---
 
-## `mf_login_code`
-
-**Category:** AUTHENTICATION
-
-**Variables**, in this order:
-
-| # | Meaning | Sample to paste |
-|---|---|---|
-| {{1}} | code | 418266 |
-
-### English (en)
-
-```
-{{1}} is your verification code. For your security, do not share this code.
-```
-
-Footer: `This code expires in 10 minutes.`
-
-### Hindi (hi)
-
-```
-{{1}} आपका वेरिफिकेशन कोड है। अपनी सुरक्षा के लिए यह कोड किसी को न बताएँ।
-```
-
-Footer: `यह कोड 10 मिनट में खत्म हो जाएगा।`
-
----
-
-## `mf_welcome_member`
+## 6 of 21 — `mf_welcome_member`
 
 **Category:** UTILITY
 
@@ -254,7 +289,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## `mf_verification_approved`
+## 7 of 21 — `mf_verification_approved`
 
 **Category:** UTILITY
 
@@ -291,7 +326,35 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## `mf_owner_daily_digest`
+## 8 of 21 — `mf_login_code`
+
+**Category:** AUTHENTICATION
+
+**Variables**, in this order:
+
+| # | Meaning | Sample to paste |
+|---|---|---|
+| {{1}} | code | 418266 |
+
+### English (en)
+
+```
+{{1}} is your verification code. For your security, do not share this code.
+```
+
+Footer: `This code expires in 10 minutes.`
+
+### Hindi (hi)
+
+```
+{{1}} आपका वेरिफिकेशन कोड है। अपनी सुरक्षा के लिए यह कोड किसी को न बताएँ।
+```
+
+Footer: `यह कोड 10 मिनट में खत्म हो जाएगा।`
+
+---
+
+## 9 of 21 — `mf_owner_daily_digest`
 
 **Category:** UTILITY
 
@@ -310,7 +373,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 ### English (en)
 
 ```
-Good morning {{1}}. Today at a glance:
+Good morning {{1}}. Here is where the gym stands this morning, before the floor fills up:
 
 Fees ending today: {{2}}
 Fees overdue: {{3}}
@@ -318,6 +381,8 @@ Fees due this week: {{4}}
 Today's calls: {{5}}
 Birthdays: {{6}}
 Collected yesterday: {{7}}
+
+Every one of these opens as a list in Max Register.
 ```
 
 Footer: `Max Fitness Gym, Nyay Khand 1, Indirapuram`
@@ -325,7 +390,7 @@ Footer: `Max Fitness Gym, Nyay Khand 1, Indirapuram`
 ### Hindi (hi)
 
 ```
-सुप्रभात {{1}}। आज का हिसाब:
+सुप्रभात {{1}}। सुबह-सुबह जिम का हाल, भीड़ आने से पहले:
 
 फीस आज खत्म: {{2}}
 फीस बाकी: {{3}}
@@ -333,13 +398,15 @@ Footer: `Max Fitness Gym, Nyay Khand 1, Indirapuram`
 आज के कॉल: {{5}}
 जन्मदिन: {{6}}
 कल आए पैसे: {{7}}
+
+इनमें से हर एक Max Register में लिस्ट की तरह खुलती है।
 ```
 
 Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापुरम`
 
 ---
 
-## `mf_owner_alert`
+## 10 of 21 — `mf_owner_alert`
 
 **Category:** UTILITY
 
@@ -352,7 +419,11 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 ### English (en)
 
 ```
+Max Fitness Gym — something at the gym needs your attention:
+
 {{1}}
+
+Open Max Register to see which members this is about.
 ```
 
 Footer: `Max Fitness Gym, Nyay Khand 1, Indirapuram`
@@ -360,14 +431,18 @@ Footer: `Max Fitness Gym, Nyay Khand 1, Indirapuram`
 ### Hindi (hi)
 
 ```
+Max Fitness Gym — जिम में एक बात आपके ध्यान देने लायक है:
+
 {{1}}
+
+किन मेंबर की बात है, यह देखने के लिए Max Register खोलिए।
 ```
 
 Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापुरम`
 
 ---
 
-## `mf_birthday_wish`
+## 11 of 21 — `mf_birthday_wish`
 
 **Category:** MARKETING
 
@@ -395,7 +470,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## `mf_announcement`
+## 12 of 21 — `mf_announcement`
 
 **Category:** MARKETING
 
@@ -409,7 +484,11 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 ### English (en)
 
 ```
-Hi {{1}}, a message from Max Fitness Gym: {{2}}
+Hi {{1}}, a message from everyone at Max Fitness Gym:
+
+{{2}}
+
+If anything about this is unclear, ask at the reception desk on your next visit.
 ```
 
 Footer: `Max Fitness Gym, Nyay Khand 1, Indirapuram`
@@ -417,14 +496,18 @@ Footer: `Max Fitness Gym, Nyay Khand 1, Indirapuram`
 ### Hindi (hi)
 
 ```
-नमस्ते {{1}}, Max Fitness Gym की ओर से सूचना: {{2}}
+नमस्ते {{1}}, Max Fitness Gym की ओर से एक सूचना:
+
+{{2}}
+
+इसमें कुछ समझ न आए तो अगली बार रिसेप्शन पर पूछ लीजिए।
 ```
 
 Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापुरम`
 
 ---
 
-## `mf_diet_question`
+## 13 of 21 — `mf_diet_question`
 
 **Category:** UTILITY
 
@@ -461,7 +544,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## `mf_diet_plan_ready`
+## 14 of 21 — `mf_diet_plan_ready`
 
 **Category:** UTILITY
 
@@ -500,7 +583,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## `mf_diet_follow_up`
+## 15 of 21 — `mf_diet_follow_up`
 
 **Category:** UTILITY
 
@@ -537,7 +620,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## `mf_trial_welcome`
+## 16 of 21 — `mf_trial_welcome`
 
 **Category:** UTILITY
 
@@ -572,7 +655,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## `mf_trial_check_in`
+## 17 of 21 — `mf_trial_check_in`
 
 **Category:** UTILITY
 
@@ -600,7 +683,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## `mf_trial_last_day`
+## 18 of 21 — `mf_trial_last_day`
 
 **Category:** UTILITY
 
@@ -628,7 +711,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## `mf_trial_join`
+## 19 of 21 — `mf_trial_join`
 
 **Category:** UTILITY
 
@@ -656,38 +739,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## `mf_autopay_invite`
-
-**Category:** UTILITY
-
-**Variables**, in this order:
-
-| # | Meaning | Sample to paste |
-|---|---|---|
-| {{1}} | firstName | Ravi |
-| {{2}} | amount | ₹4,000 |
-| {{3}} | firstChargeDate | 1 Oct 2026 |
-| {{4}} | link | https://maxfitnessgym.co.in/r/abc123 |
-
-### English (en)
-
-```
-Hi {{1}}, you can set your Max Fitness Gym fee to pay itself. {{2}} would be taken automatically from {{3}}, and nothing before that. Set it up here: {{4}} — you can stop it any time from your own UPI app.
-```
-
-Footer: `Max Fitness Gym, Nyay Khand 1, Indirapuram`
-
-### Hindi (hi)
-
-```
-नमस्ते {{1}}, आप अपनी Max Fitness Gym की फ़ीस ऑटोमैटिक कर सकते हैं। {{3}} से {{2}} अपने आप कट जाएगा, उससे पहले कुछ नहीं। यहाँ सेट कीजिए: {{4}} — अपने UPI ऐप से कभी भी बंद कर सकते हैं।
-```
-
-Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापुरम`
-
----
-
-## `mf_autopay_halted`
+## 20 of 21 — `mf_autopay_halted`
 
 **Category:** UTILITY
 
@@ -715,7 +767,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## `mf_autopay_cancelled`
+## 21 of 21 — `mf_autopay_cancelled`
 
 **Category:** UTILITY
 

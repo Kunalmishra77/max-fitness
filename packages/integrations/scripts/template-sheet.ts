@@ -70,8 +70,39 @@ const lines: string[] = [
   '',
 ];
 
-for (const definition of Object.values(TEMPLATES)) {
-  lines.push(`## \`${definition.name}\``, '', `**Category:** ${definition.category}`, '');
+/**
+ * A tick list before the templates themselves (owner, 2026-10-12).
+ *
+ * Forty-two entries typed into Meta over several sittings is a job you lose your place in.
+ * The order is the order to do them in: the gym runs on the first eight, and the rest can
+ * follow once it is sending.
+ */
+const PRIORITY: Readonly<Record<string, string>> = {
+  mf_autopay_invite: 'the e-mandate link — without it autopay cannot reach anybody',
+  mf_renewal_due: 'the reminders the gym runs on',
+  mf_renewal_due_today: 'the reminders the gym runs on',
+  mf_membership_expired: 'the reminders the gym runs on',
+  mf_payment_receipt: 'every payment sends one',
+  mf_welcome_member: 'the first message a new member gets',
+  mf_verification_approved: 'the QR arrivals',
+  mf_login_code: 'staff sign-in',
+};
+
+const ordered = Object.values(TEMPLATES).sort((a, b) => {
+  const rank = (name: string) => (name in PRIORITY ? Object.keys(PRIORITY).indexOf(name) : 100);
+  return rank(a.name) - rank(b.name);
+});
+
+lines.push('## Tick list', '', '| # | Template | Category | Why it matters | English | Hindi |', '|---|---|---|---|---|---|');
+ordered.forEach((definition, index) => {
+  lines.push(
+    `| ${index + 1} | \`${definition.name}\` | ${definition.category} | ${PRIORITY[definition.name] ?? 'later' } | ☐ | ☐ |`,
+  );
+});
+lines.push('', '---', '');
+
+ordered.forEach((definition, index) => {
+  lines.push(`## ${index + 1} of ${ordered.length} — \`${definition.name}\``, '', `**Category:** ${definition.category}`, '');
 
   if (definition.variables.length === 0) {
     lines.push('**Variables:** none', '');
@@ -104,7 +135,7 @@ for (const definition of Object.values(TEMPLATES)) {
   }
 
   lines.push('---', '');
-}
+});
 
 // Relative to this file, so it writes the same place whatever the working directory is.
 const out = join(dirname(fileURLToPath(import.meta.url)), '../../../docs/04-content/whatsapp-template-submission.md');

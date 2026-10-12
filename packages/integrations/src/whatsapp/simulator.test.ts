@@ -57,9 +57,9 @@ describe('renderTemplate', () => {
       endDate: '9 Dec 2026',
       receiptNo: 'MF/2026-27/000123',
     });
-    expect(body).toContain('Payment received. Thank you, Rohit.');
-    expect(body).toContain('Amount: ₹4,000');
-    expect(body).toContain('Receipt no: MF/2026-27/000123');
+    expect(body).toContain('thank you, Rohit.');
+    expect(body).toContain('Amount paid: ₹4,000');
+    expect(body).toContain('Receipt number: MF/2026-27/000123');
     expect(body).not.toContain('{{');
   });
 
@@ -118,8 +118,10 @@ describe('the messages the gym sends besides reminders (T5, T6, T9, T10)', () =>
         expect(templateDefinition(name).body[language].length).toBeGreaterThan(10);
       }
     }
-    // The owner alert is one controlled sentence, so its body is just the variable.
-    expect(templateDefinition('mf_owner_alert').body.hi).toBe('{{1}}');
+    // The owner alert used to be nothing but its variable. Meta refuses that — there is
+    // nothing for a reviewer to read — so the sentence now sits inside a message.
+    expect(templateDefinition('mf_owner_alert').body.hi).toContain('{{1}}');
+    expect(templateDefinition('mf_owner_alert').body.hi.replace('{{1}}', '').trim().length).toBeGreaterThan(10);
   });
 });
 
