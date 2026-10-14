@@ -176,7 +176,7 @@ const WELCOME_MEMBER: TemplateDefinition = {
   name: 'mf_welcome_member',
   category: 'UTILITY',
   /**
-   * The timings are written out rather than passed in (Meta rejection, 2026-10-14).
+   * Two refusals from Meta, both on 2026-10-14, and the second is the instructive one.
    *
    * They were `{{3}}`, and they are the same for every member who will ever read
    * this. Meta refuses a variable whose value never varies, and it is right to: a
@@ -184,21 +184,30 @@ const WELCOME_MEMBER: TemplateDefinition = {
    * words inside an approved template.
    *
    * The cost is that changing the gym's hours in Settings no longer changes this
-   * message. The template has to be edited and approved again, which is what the
-   * test below is here to make impossible to forget.
+   * message. The template has to be edited and approved again.
+   *
+   * Then Meta pushed it into the Authentication category, because "your member code
+   * is {{2}}" reads exactly like a one-time passcode and their classifier only sees the
+   * words. An authentication template is a different thing with different rules, and a
+   * welcome is not one — so the number is now a labelled line, `Member ID: {{2}}`, which
+   * reads like a membership card rather than a code somebody is meant to type in.
    */
   variables: ['firstName', 'memberCode'],
   body: {
     en: [
-      'Welcome to Max Fitness Gym, {{1}}. Your member code is {{2}}.',
+      'Welcome to Max Fitness Gym, {{1}}! Your membership is active and you can start training today.',
       '',
+      'Member ID: {{2}}',
       'Gym timings: Monday to Saturday, 4:30 am to 10 pm. Closed on Sunday.',
+      '',
       'On your first visit, please meet reception so we can set up your attendance.',
     ].join('\n'),
     hi: [
-      'Max Fitness Gym में आपका स्वागत है, {{1}}। आपका मेंबर कोड {{2}} है।',
+      'Max Fitness Gym में आपका स्वागत है, {{1}}! आपकी मेंबरशिप चालू है और आप आज से ट्रेनिंग शुरू कर सकते हैं।',
       '',
+      'मेंबर आईडी: {{2}}',
       'जिम का समय: सोमवार से शनिवार, सुबह 4:30 से रात 10 बजे तक। रविवार बंद।',
+      '',
       'पहली बार आएँ तो रिसेप्शन पर मिलें, ताकि आपकी हाज़िरी सेट की जा सके।',
     ].join('\n'),
   },

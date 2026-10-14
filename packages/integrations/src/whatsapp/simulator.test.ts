@@ -80,9 +80,17 @@ describe('renderTemplate', () => {
 });
 
 describe('the messages the gym sends besides reminders (T5, T6, T9, T10)', () => {
-  it('welcomes a new member with their code and the gym hours, in both languages', () => {
-    const values = { firstName: 'Priya', memberCode: 'MF-0231', hours: 'Mon–Sat 4:30 am – 10:00 pm' };
-    expect(renderTemplate('mf_welcome_member', 'en', values)).toContain('Welcome to Max Fitness Gym, Priya. Your member code is MF-0231.');
+  /**
+   * The member's number is a labelled line rather than "your member code is" (Meta,
+   * 2026-10-14): the old wording read like a one-time passcode, and Meta's classifier
+   * moved the whole template into Authentication, which is a different thing with
+   * different rules. The hours are in the template now, not sent as a variable.
+   */
+  it('welcomes a new member with their member id, in both languages', () => {
+    const values = { firstName: 'Priya', memberCode: 'MF-0231' };
+    expect(renderTemplate('mf_welcome_member', 'en', values)).toContain('Welcome to Max Fitness Gym, Priya!');
+    expect(renderTemplate('mf_welcome_member', 'en', values)).toContain('Member ID: MF-0231');
+    expect(renderTemplate('mf_welcome_member', 'en', values)).not.toContain('code');
     expect(renderTemplate('mf_welcome_member', 'hi', values)).toContain('MF-0231');
     expect(renderTemplate('mf_welcome_member', 'hi', values)).toContain('प्रिया'.slice(0, 0) + 'Priya');
   });
