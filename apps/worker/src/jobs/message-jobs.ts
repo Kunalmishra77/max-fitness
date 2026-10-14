@@ -54,7 +54,6 @@ export interface MessageJobDeps {
   readonly clock: Clock;
   readonly gymId: () => Promise<string>;
   /** "Mon–Sat 4:30 am – 10:00 pm", for the welcome message. */
-  readonly hoursLine: () => Promise<string>;
   readonly unsubscribePayload: (memberId: string) => string;
   /** The model that writes diet plans; unavailable until a key is configured (ADR-089). */
   readonly ai: AiTextGenerator;
@@ -211,7 +210,7 @@ export function messageOutboxHandlers(deps: MessageJobDeps): OutboxHandlers {
         }
         const member = await data().member(receipt.memberId);
         if (member?.memberCode != null) {
-          await sendTemplate(deps, buildWelcomeMessage({ memberId: member.memberId, firstName: member.firstName, language: member.language, memberCode: member.memberCode, hoursLine: await deps.hoursLine() }), member.mobile, member.memberId, receipt.membershipId);
+          await sendTemplate(deps, buildWelcomeMessage({ memberId: member.memberId, firstName: member.firstName, language: member.language, memberCode: member.memberCode }), member.mobile, member.memberId, receipt.membershipId);
         }
       }
     },
@@ -221,7 +220,7 @@ export function messageOutboxHandlers(deps: MessageJobDeps): OutboxHandlers {
       if (memberId === null) return;
       const member = await data().member(memberId);
       if (member?.memberCode == null) return;
-      await sendTemplate(deps, buildWelcomeMessage({ memberId, firstName: member.firstName, language: member.language, memberCode: member.memberCode, hoursLine: await deps.hoursLine() }), member.mobile, memberId, null);
+      await sendTemplate(deps, buildWelcomeMessage({ memberId, firstName: member.firstName, language: member.language, memberCode: member.memberCode }), member.mobile, memberId, null);
     },
 
     'whatsapp.verification_approved': async (event) => {

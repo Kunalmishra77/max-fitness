@@ -45,13 +45,15 @@ export function buildReceiptMessage(input: {
   };
 }
 
-export function buildWelcomeMessage(input: { memberId: string; firstName: string; language: Language; memberCode: string; hoursLine: string }): TransactionalMessage {
+export function buildWelcomeMessage(input: { memberId: string; firstName: string; language: Language; memberCode: string }): TransactionalMessage {
   return {
     templateName: 'mf_welcome_member',
     language: input.language,
     idempotencyKey: `welcome:${input.memberId}`,
     purpose: 'WELCOME',
-    variables: { firstName: input.firstName, memberCode: input.memberCode, hours: input.hoursLine },
+    // The gym's hours are written into the approved template: they are the same for
+    // every member, and Meta refuses a variable that never varies (2026-10-14).
+    variables: { firstName: input.firstName, memberCode: input.memberCode },
   };
 }
 

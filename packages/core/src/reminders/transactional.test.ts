@@ -57,15 +57,17 @@ describe('buildReceiptMessage', () => {
 });
 
 describe('buildWelcomeMessage', () => {
-  it('welcomes the member with their code and the gym hours, once per member', () => {
-    const message = buildWelcomeMessage({ memberId: 'mem_1', firstName: 'Priya', language: 'en', memberCode: 'MF-0231', hoursLine: 'Mon–Sat 4:30 am – 10:00 pm' });
+  it('welcomes the member with their code, once per member', () => {
+    const message = buildWelcomeMessage({ memberId: 'mem_1', firstName: 'Priya', language: 'en', memberCode: 'MF-0231' });
 
     expect(message).toEqual({
       templateName: 'mf_welcome_member',
       language: 'en',
       idempotencyKey: 'welcome:mem_1',
       purpose: 'WELCOME',
-      variables: { firstName: 'Priya', memberCode: 'MF-0231', hours: 'Mon–Sat 4:30 am – 10:00 pm' },
+      // The hours are written into the approved template, not sent: they are the same
+      // for every member, and Meta refuses a variable that never varies (2026-10-14).
+      variables: { firstName: 'Priya', memberCode: 'MF-0231' },
     });
   });
 });

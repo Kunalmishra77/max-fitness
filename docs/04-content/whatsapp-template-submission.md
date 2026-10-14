@@ -263,14 +263,13 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 |---|---|---|
 | {{1}} | firstName | Ravi |
 | {{2}} | memberCode | MF-0231 |
-| {{3}} | hours | Mon-Sat 4:30 am - 10 pm |
 
 ### English (en)
 
 ```
 Welcome to Max Fitness Gym, {{1}}. Your member code is {{2}}.
 
-Gym timings: {{3}}
+Gym timings: Monday to Saturday, 4:30 am to 10 pm. Closed on Sunday.
 On your first visit, please meet reception so we can set up your attendance.
 ```
 
@@ -281,7 +280,7 @@ Footer: `Max Fitness Gym, Nyay Khand 1, Indirapuram`
 ```
 Max Fitness Gym में आपका स्वागत है, {{1}}। आपका मेंबर कोड {{2}} है।
 
-जिम का समय: {{3}}
+जिम का समय: सोमवार से शनिवार, सुबह 4:30 से रात 10 बजे तक। रविवार बंद।
 पहली बार आएँ तो रिसेप्शन पर मिलें, ताकि आपकी हाज़िरी सेट की जा सके।
 ```
 

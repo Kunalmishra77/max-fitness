@@ -4,7 +4,7 @@ import { GymSettingsSchema, parseEnv, systemClock, WORKER_HEARTBEAT_STALE_SECOND
 import { createPrismaClient } from '@mfp/db';
 import { createStorageDriver } from '@mfp/integrations/storage';
 import { createAiGenerator } from '@mfp/integrations/ai';
-import { issueToken, sessionsForDay, startDietFollowUps } from '@mfp/core';
+import { issueToken, startDietFollowUps } from '@mfp/core';
 import { PrismaDietFollowUps } from '@mfp/db';
 import { MetaCloudWhatsAppProvider, SimulatorWhatsAppProvider } from '@mfp/integrations/whatsapp';
 import { PrismaMessageLogWriter } from '@mfp/db';
@@ -142,15 +142,6 @@ async function main(): Promise<void> {
     log,
     clock: systemClock,
     gymId: async () => (await prisma.gym.findUniqueOrThrow({ where: { slug: env.GYM_SLUG }, select: { id: true } })).id,
-    hoursLine: async () => {
-      const gym = await prisma.gym.findUniqueOrThrow({ where: { slug: env.GYM_SLUG }, select: { settings: true } });
-      const hours = GymSettingsSchema.parse(gym.settings).hours;
-      // Every session of the first open day, so a gym that shuts at midday does not tell
-      // a new member it is open all afternoon (ADR-082).
-      const openDay = hours.find((day) => !day.closed)?.day;
-      const sessions = openDay === undefined ? [] : sessionsForDay(hours, openDay);
-      return sessions.map((session) => `${session.open} – ${session.close}`).join(', ');
-    },
     unsubscribePayload: phase6.unsubscribePayload,
     // No key means no plans: the CRM says the key is missing rather than inventing one.
     ai: createAiGenerator({ apiKey: env.AI_API_KEY, model: env.AI_MODEL }),

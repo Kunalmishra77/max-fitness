@@ -275,7 +275,7 @@ describe('submitExistingMember', () => {
     await expect(
       submitExistingMember(
         { fields, selfie, declaredPlanMonths: 3, declaredEndDate: istDate('2026-09-30'), declaredAmountPaise: null, joinedOn: null,
-      trainingSlot: null, govId: null },
+      trainingSlot: null, wantsAutopay: false, govId: null },
         { clock, uow: failing, storage, gymId: 'gym_1', minAge: 16, ipHash: null, userAgent: null },
       ),
     ).rejects.toThrow('db down');
@@ -340,6 +340,7 @@ describe('submitExistingMember', () => {
           declaredAmountPaise: null,
           joinedOn: null,
       trainingSlot: null,
+      wantsAutopay: false,
           govId: { type: 'AADHAAR', images: [card('FRONT'), card('BACK')] },
         },
         { clock, uow: failing, storage, gymId: 'gym_1', minAge: 16, ipHash: null, userAgent: null },

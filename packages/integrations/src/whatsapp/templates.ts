@@ -175,18 +175,30 @@ const LOGIN_CODE: TemplateDefinition = {
 const WELCOME_MEMBER: TemplateDefinition = {
   name: 'mf_welcome_member',
   category: 'UTILITY',
-  variables: ['firstName', 'memberCode', 'hours'],
+  /**
+   * The timings are written out rather than passed in (Meta rejection, 2026-10-14).
+   *
+   * They were `{{3}}`, and they are the same for every member who will ever read
+   * this. Meta refuses a variable whose value never varies, and it is right to: a
+   * placeholder that always carries the same sentence is a way to put unreviewed
+   * words inside an approved template.
+   *
+   * The cost is that changing the gym's hours in Settings no longer changes this
+   * message. The template has to be edited and approved again, which is what the
+   * test below is here to make impossible to forget.
+   */
+  variables: ['firstName', 'memberCode'],
   body: {
     en: [
       'Welcome to Max Fitness Gym, {{1}}. Your member code is {{2}}.',
       '',
-      'Gym timings: {{3}}',
+      'Gym timings: Monday to Saturday, 4:30 am to 10 pm. Closed on Sunday.',
       'On your first visit, please meet reception so we can set up your attendance.',
     ].join('\n'),
     hi: [
       'Max Fitness Gym में आपका स्वागत है, {{1}}। आपका मेंबर कोड {{2}} है।',
       '',
-      'जिम का समय: {{3}}',
+      'जिम का समय: सोमवार से शनिवार, सुबह 4:30 से रात 10 बजे तक। रविवार बंद।',
       'पहली बार आएँ तो रिसेप्शन पर मिलें, ताकि आपकी हाज़िरी सेट की जा सके।',
     ].join('\n'),
   },
