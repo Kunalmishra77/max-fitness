@@ -51,6 +51,7 @@ async function main(): Promise<void> {
         kind: true,
         label: true,
         createdAt: true,
+        deletedAt: true,
         member: { select: { memberCode: true, fullName: true } },
       },
     });
@@ -65,10 +66,16 @@ async function main(): Promise<void> {
      * pointing at a file that is not there. The screen shows a broken photograph and
      * the desk has no way to tell whether it was never uploaded or quietly swept.
      *
+     * **A row with `deletedAt` set is not one of these.** Erasing a member deletes the
+     * object and keeps the row on purpose, as the record that a file once existed — so
+     * having no object is exactly right for it. The first version of this report left
+     * them in and announced eleven missing photographs that were all working as
+     * designed, which is the kind of alarm that teaches people to ignore the report.
+     *
      * It is only ever reported. Deleting the row would hide the problem and lose the
      * only record that the file was ever expected.
      */
-    const missing = rows.filter((row) => !inBucket.has(row.storageKey));
+    const missing = rows.filter((row) => row.deletedAt === null && !inBucket.has(row.storageKey));
     if (missing.length > 0) {
       console.log(`\n⚠ ${missing.length} file(s) the database expects but the bucket does not have:\n`);
       for (const row of missing) {

@@ -1633,3 +1633,22 @@ The part that mattered: a mandate's **first debit is the day after the member's 
 - **MF-0014 is a duplicate record** created by the owner's test and needs erasing, along with the three duplicate *Ayan Saifi* records.
 - `pnpm lint` has **33 pre-existing errors** — all in scripts and test files (`look-qr.mjs`, `smoke-*.mjs`, `enrol-faces.ts`, `qr-poster.ts`, `message-log-read.repository.ts`, `messages.test.ts`, `seo.test.ts`, `use-screen-awake.ts`, `backup-members.ts`). Confirmed present without this change. Not touched here; needs its own pass.
 - The security review is still the oldest outstanding commitment.
+
+## 2026-10-15 (later) — a clean register, and Messages that opens on people
+
+**The register.** `wipe:members --unconfirmed` removed 16 records nobody at the gym had ever confirmed; 9 real members remain, 0 test rows. The criterion is in ADR-125: staff approved them, or they hold a confirmed plan, or they paid, or they have been marked present.
+
+It did not go cleanly. The script was missing five tables added since it was written and died on `PtEnrolment_memberId_fkey` with the members already stripped. Fixed, along with two things the failure exposed: the backup was not saving storage keys, and `find:orphans` now exists. It found **454** orphaned objects in the bucket, not the 13 from that failure — months of test wipes had been deleting rows and leaving files. All removed. The reverse report found 11 rows pointing at files that are gone, every one of them belonging to an erased member, so **no live member's photograph is missing**.
+
+- `enrol:faces` enrolled Trilok Singh. Three members are refused for **NO_CONSENT**, not a bad photograph, and the script used to tell staff to chase them for a new selfie — fixed to say what the desk should actually do.
+- The report's first version also claimed 11 photographs were missing. They were not: erasing a member deletes the object and keeps the row with `deletedAt` set, on purpose, as the record that a file once existed. The report was counting those and crying wolf; it now skips them.
+
+**ADR-125 — waiting for payment.** A QR sign-up landed in the Members list with no payment minutes after the wipe. The list no longer shows people who have never paid; they sit on `/crm/members/waiting` with call, message and take-fees on each row, and return to the register by themselves when the money lands. One `awaitingPaymentWhere` fragment serves the list, the counts and the new screen.
+
+**ADR-126 — Messages opens on people.** The people view was already built and was the second tab; it is now the default, with the flat stream under "All messages". The member page's WhatsApp button opens that member's thread instead of `wa.me`.
+
+**Pending.**
+- Demo mode is still on, and nothing can complete a payment until Razorpay is live — so every QR sign-up will land in the waiting screen.
+- The message log holds ~430 SIMULATED and ~1068 SKIPPED rows; clear them before demo mode goes off, or the new inbox opens full of noise.
+- MF-0001's PAN photograph is 338×338 — too small to read.
+- The security review.

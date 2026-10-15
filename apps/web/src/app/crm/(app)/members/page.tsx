@@ -29,20 +29,26 @@ export default async function CrmMembersPage({ searchParams }: { searchParams: P
   const waiting = can(actor, 'verification.approve', getContainer().clock.now()) ? await verificationDeps().queue.count(gym.id) : 0;
 
   const feeState = FEE_FILTERS.includes(fee as FeeState) ? (fee as FeeState) : undefined;
+  // The chips count the whole gym; a search narrows the list but not what is out there.
+  const searching = (q ?? '').trim() !== '';
   const LIMIT = 100;
   const [members, counts] = await Promise.all([
     reader.members(gym.id, today, {
       ...(q === undefined ? {} : { search: q }),
       ...(feeState === undefined ? {} : { feeState }),
       ...(status === 'ACTIVE' ? { status: 'ACTIVE' as MemberStatus } : {}),
+      /**
+       * Not people who have never paid (ADR-125) — unless the desk is searching, when
+       * the only sane answer to a typed name is everybody of that name. Somebody
+       * ringing about their sign-up must be findable from this box.
+       */
+      ...(searching ? {} : { awaitingPayment: false }),
       limit: LIMIT,
     }),
     // Numbers for the filter chips (ADR-097). They answer "is there anything to do?"
     // before reception has to tap anything to find out.
     reader.memberCounts(gym.id, today),
   ]);
-  // The chips count the whole gym; a search narrows the list but not what is out there.
-  const searching = (q ?? '').trim() !== '';
   const totalForFilter = feeState === undefined ? counts.total : counts[feeState];
   const truncated = !searching && members.length >= LIMIT && totalForFilter > members.length;
 
@@ -81,6 +87,21 @@ export default async function CrmMembersPage({ searchParams }: { searchParams: P
         <Link href="/crm/verify" className={cn(CRM_CARD, 'mt-3 flex min-h-16 items-center justify-between gap-3 px-4 py-3 hover:border-brand-accent')}>
           <span className="text-crm-body font-semibold text-brand-obsidian">{t('members.waiting', { count: waiting })}</span>
           <span className="rounded-full bg-brand-accent px-3 py-1 text-small font-bold text-brand-white">{t('members.check')}</span>
+        </Link>
+      )}
+
+      {/* People who filled the form and never paid (ADR-125). Out of the register, but
+          in front of the desk — the money is one phone call away and nobody is going to
+          scroll a list looking for them. */}
+      {counts.awaitingPayment === 0 ? null : (
+        <Link
+          href="/crm/members/waiting"
+          className={cn(CRM_CARD, 'mt-3 flex min-h-16 items-center justify-between gap-3 px-4 py-3 hover:border-brand-accent')}
+        >
+          <span className="text-crm-body font-semibold text-brand-obsidian">
+            {t('members.awaitingPayment', { count: counts.awaitingPayment })}
+          </span>
+          <span className="rounded-full bg-semantic-fee-due-soon px-3 py-1 text-small font-bold text-brand-white">{t('members.chase')}</span>
         </Link>
       )}
 

@@ -99,16 +99,6 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
 
   const daysInMonth = new Date(Number(today.slice(0, 4)), Number(today.slice(5, 7)), 0).getDate();
   const attended = new Set(member.attendanceDays);
-  // What the WhatsApp button opens with. An empty chat means reception types the same
-  // sentence forty times a week; this is that sentence, in their language, already there.
-  // It is a convenience, not a tracked send — the reminder engine owns real messages.
-  const whatsappText =
-    member.effectiveEndDate === null || member.daysLeft === null
-      ? t('profile.whatsappPrefillPlain', { name: member.fullName.split(' ')[0] ?? member.fullName })
-      : t(member.daysLeft < 0 ? 'profile.whatsappPrefillOverdue' : 'profile.whatsappPrefillDue', {
-          name: member.fullName.split(' ')[0] ?? member.fullName,
-          date: formatISTDate(member.effectiveEndDate, locale),
-        });
 
   const feeLine =
     member.daysLeft === null
@@ -223,15 +213,22 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
             <CrmIcon name="calls" className="size-5" />
             {t('profile.call')}
           </a>
-          <a
-            href={`https://wa.me/${member.mobile.replace(/\D/g, '')}?text=${encodeURIComponent(whatsappText)}`}
-            target="_blank"
-            rel="noopener noreferrer"
+          {/**
+           * Their thread in Max Register, not WhatsApp on the phone (ADR-126).
+           *
+           * This used to open wa.me, which leaves the CRM, lands in whichever WhatsApp
+           * account the staff phone happens to be signed into, and writes from *that*
+           * number — so the reply comes back to a person rather than to the gym, and the
+           * register never hears about the conversation. What the desk wants first is
+           * what the gym has already said to this member, which is here.
+           */}
+          <Link
+            href={`/crm/messages?member=${member.id}`}
             className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-panel border-2 border-brand-obsidian text-small font-semibold text-brand-obsidian transition-colors hover:bg-brand-obsidian hover:text-brand-white"
           >
             <CrmIcon name="whatsapp" className="size-5" />
             {t('profile.whatsapp')}
-          </a>
+          </Link>
           {mayTakeFees ? (
             <Link
               href={`/crm/members/${member.id}/renew`}

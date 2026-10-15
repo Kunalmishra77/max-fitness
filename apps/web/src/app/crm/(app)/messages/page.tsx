@@ -25,8 +25,19 @@ export default async function CrmMessagesPage({ searchParams }: { searchParams: 
   const t = await getTranslations('crm');
   const { clock, prisma } = getContainer();
   const { only, member, view: viewMode } = await searchParams;
-  // One member's thread is a thread, not the people list (ADR-091).
-  const byPerson = viewMode === 'people' && member === undefined;
+  const failedOnly = only === 'failed';
+  /**
+   * People first, because a gym thinks in people (ADR-091, ADR-126).
+   *
+   * This was the second tab and the flat log was the first, so opening Messages showed
+   * every send the engine had ever made — on the day the owner looked, four hundred and
+   * seventy-eight cards of "Welcome, Test" in a row. Nobody can find anything in that,
+   * and nobody needs to: the question is always *what did we send this person*.
+   *
+   * The log is still there under "All messages", because when a send goes wrong the
+   * stream is exactly what you want to read.
+   */
+  const byPerson = member === undefined && !failedOnly && viewMode !== 'log';
 
   if (!can(actor, 'member.view', clock.now())) {
     return (
@@ -41,7 +52,6 @@ export default async function CrmMessagesPage({ searchParams }: { searchParams: 
   }
 
   const reader = new PrismaMessageLogReader(prisma);
-  const failedOnly = only === 'failed';
   const [rows, counts] = await Promise.all([
     reader.list(gym.id, {
       ...(member === undefined ? {} : { memberId: member }),
@@ -84,22 +94,22 @@ export default async function CrmMessagesPage({ searchParams }: { searchParams: 
       <CrmHeader
         title={threadName === null ? t('messages.title') : t('messages.threadOf', { name: threadName })}
         {...(threadName === null ? { subtitle: t('messages.helper') } : {})}
-        back={member === undefined ? '/crm/more' : '/crm/messages?view=people'}
+        back={member === undefined ? '/crm/more' : '/crm/messages'}
       />
       <div className="grid gap-4 p-4 lg:p-0">
         <p className="text-small text-brand-stone">{t('messages.today', { sent: sentToday, skipped: notSentToday })}</p>
         <div className="flex flex-wrap gap-2">
           {member === undefined ? null : (
-            <Link href="/crm/messages?view=people" className={pillClass(false)}>
+            <Link href="/crm/messages" className={pillClass(false)}>
               {t('messages.backToPeople')}
             </Link>
           )}
-          <Link href="/crm/messages" className={pillClass(!failedOnly && !byPerson && member === undefined)}>
-            {t('messages.filterAll')}
-          </Link>
-          {/* A gym thinks in people, not in a stream of sends (ADR-091). */}
-          <Link href="/crm/messages?view=people" className={pillClass(byPerson)}>
+          {/* A gym thinks in people, not in a stream of sends (ADR-091, ADR-126). */}
+          <Link href="/crm/messages" className={pillClass(byPerson)}>
             {t('messages.filterPeople')}
+          </Link>
+          <Link href="/crm/messages?view=log" className={pillClass(!failedOnly && !byPerson && member === undefined)}>
+            {t('messages.filterAll')}
           </Link>
           <Link href="/crm/messages?only=failed" className={pillClass(failedOnly)}>
             {t('messages.filterFailed')}

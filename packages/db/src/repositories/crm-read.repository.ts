@@ -191,6 +191,35 @@ interface FeeRow {
   effectiveEndDate: Date | null;
 }
 
+/**
+ * Somebody who filled a form and never paid (ADR-125).
+ *
+ * The owner found *Ishita mehta* sitting in the Members list: name, number, selfie, a
+ * plan she had chosen and no payment at all. They had just finished deleting sixteen
+ * records exactly like it, and asked the obvious question — how is she a member?
+ *
+ * She is not one yet. **The register is for people the gym has, and the gym does not
+ * have somebody who has not paid.** They are not deleted and not hidden: they move to
+ * their own screen, where the desk can ring them, and they walk into the register by
+ * themselves the moment the money lands.
+ *
+ * The escape hatch is a paid payment rather than the status alone, because a member can
+ * be left on `PENDING_PAYMENT` by a desk that took cash and moved on, and a member who
+ * has paid belongs in the register whatever a column says.
+ *
+ * It is written once and used by the list, the counts and the waiting screen, so those
+ * three can never disagree about who is a member.
+ *
+ * @param awaiting `true` for only these people, `false` for everybody else, `undefined`
+ *   to not ask — which is what a search across the whole register wants.
+ */
+function awaitingPaymentWhere(awaiting: boolean | undefined) {
+  if (awaiting === undefined) return {};
+  return awaiting
+    ? { status: 'PENDING_PAYMENT' as const, payments: { none: { status: 'PAID' as const } } }
+    : { OR: [{ status: { not: 'PENDING_PAYMENT' as const } }, { payments: { some: { status: 'PAID' as const } } }] };
+}
+
 export class PrismaCrmReader {
   readonly #prisma: PrismaClient;
 
@@ -310,20 +339,26 @@ export class PrismaCrmReader {
    * without a query each. "Expired" with a 12 beside it saves reception a tap and, more
    * to the point, tells them there is something to do before they go looking.
    */
-  async memberCounts(gymId: string, today: ISTDate): Promise<{ total: number } & Record<FeeState, number>> {
-    const rows = await this.#feeStates(gymId, today);
-    const counts = { total: rows.length, PAID: 0, DUE_SOON: 0, EXPIRED: 0, NONE: 0 };
+  async memberCounts(gymId: string, today: ISTDate): Promise<{ total: number; awaitingPayment: number } & Record<FeeState, number>> {
+    const [rows, waiting] = await Promise.all([
+      this.#feeStates(gymId, today),
+      this.#prisma.member.count({ where: { gymId, deletedAt: null, ...awaitingPaymentWhere(true) } }),
+    ]);
+    const counts = { total: rows.length, awaitingPayment: waiting, PAID: 0, DUE_SOON: 0, EXPIRED: 0, NONE: 0 };
     for (const row of rows) {
       const state = row.feeState as FeeState;
       if (state in counts) counts[state] += 1;
     }
+    // The chip says how many members there are, and somebody who never paid is not one
+    // of them yet — they are counted on their own screen (ADR-125).
+    counts.total = Math.max(0, counts.total - waiting);
     return counts;
   }
 
   async members(
     gymId: string,
     today: ISTDate,
-    options: { search?: string; feeState?: FeeState; status?: MemberStatus; limit?: number } = {},
+    options: { search?: string; feeState?: FeeState; status?: MemberStatus; limit?: number; awaitingPayment?: boolean } = {},
   ): Promise<MemberListItem[]> {
     const search = (options.search ?? '').trim();
     const digits = search.replace(/\D/g, '');
@@ -341,6 +376,7 @@ export class PrismaCrmReader {
         deletedAt: null,
         ...(matching === null ? {} : { id: { in: matching } }),
         ...(options.status === undefined ? {} : { status: options.status }),
+        ...awaitingPaymentWhere(options.awaitingPayment),
         ...(search === ''
           ? {}
           : {

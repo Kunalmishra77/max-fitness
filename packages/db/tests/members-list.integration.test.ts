@@ -71,6 +71,7 @@ suite('members list against Postgres', () => {
 
   afterAll(async () => {
     if (prisma === undefined) return;
+    await prisma.payment.deleteMany({ where: { gymId } });
     await prisma.membership.deleteMany({ where: { gymId } });
     await prisma.member.deleteMany({ where: { gymId } });
     await prisma.gym.deleteMany({ where: { id: gymId } });
@@ -107,7 +108,7 @@ suite('members list against Postgres', () => {
   it('counts every fee state in one pass, so the filter chips can carry numbers', async () => {
     const counts = await reader.memberCounts(gymId, TODAY);
 
-    expect(counts).toEqual({ total: 5, PAID: 3, DUE_SOON: 0, EXPIRED: 1, NONE: 1 });
+    expect(counts).toEqual({ total: 5, awaitingPayment: 0, PAID: 3, DUE_SOON: 0, EXPIRED: 1, NONE: 1 });
   });
 
   it('does not count or list another gym’s members', async () => {
@@ -124,5 +125,53 @@ suite('members list against Postgres', () => {
 
     await prisma.member.deleteMany({ where: { gymId: otherGym } });
     await prisma.gym.deleteMany({ where: { id: otherGym } });
+  });
+
+
+
+  /**
+   * Somebody who filled the form and never paid is not a member yet (ADR-125).
+   *
+   * The owner found one in the Members list minutes after deleting sixteen records of
+   * exactly that shape. These two are created last on purpose, so the counts the earlier
+   * tests assert are the ones they were written against.
+   */
+  it('keeps people who never paid out of the register, and lets a payment bring them in', async () => {
+    const unpaidId = `mem_it_mlist_${run}_06`;
+    await prisma.member.create({
+      data: { id: unpaidId, gymId, fullName: 'Ishita Unpaid', mobile: '+919000500006', gender: 'FEMALE', status: 'PENDING_PAYMENT', source: 'QR_NEW' },
+    });
+
+    const register = await reader.members(gymId, TODAY, { awaitingPayment: false, limit: 50 });
+    expect(register.map((m) => m.fullName)).not.toContain('Ishita Unpaid');
+
+    const waiting = await reader.members(gymId, TODAY, { awaitingPayment: true, limit: 50 });
+    expect(waiting.map((m) => m.fullName)).toEqual(['Ishita Unpaid']);
+
+    // Not asking is how the search box behaves: somebody ringing about their own
+    // sign-up has to be findable by name.
+    const everybody = await reader.members(gymId, TODAY, { limit: 50 });
+    expect(everybody.map((m) => m.fullName)).toContain('Ishita Unpaid');
+
+    expect(await reader.memberCounts(gymId, TODAY)).toMatchObject({ total: 5, awaitingPayment: 1 });
+
+    /**
+     * A desk that takes cash and moves on can leave the status behind, so the escape
+     * hatch is the payment and not the column.
+     */
+    await prisma.payment.create({
+      data: {
+        gymId,
+        memberId: unpaidId,
+        amountPaise: 150000,
+        status: 'PAID',
+        method: 'CASH',
+        paidAt: new Date('2026-09-30T04:00:00.000Z'),
+      },
+    });
+
+    const afterPaying = await reader.members(gymId, TODAY, { awaitingPayment: false, limit: 50 });
+    expect(afterPaying.map((m) => m.fullName)).toContain('Ishita Unpaid');
+    expect(await reader.memberCounts(gymId, TODAY)).toMatchObject({ total: 6, awaitingPayment: 0 });
   });
 });

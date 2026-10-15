@@ -99,13 +99,13 @@ async function main(): Promise<void> {
     });
 
     let enrolled = 0;
-    const refused: Array<{ name: string; why: string }> = [];
+    const refused: Array<{ name: string; why: string; reason: EnrolmentRefusal | 'NO_PHOTO' }> = [];
 
     for (const member of members) {
       const label = member.fullName.slice(0, 22).padEnd(23);
       const photo = member.photo;
       if (photo === null || photo.deletedAt !== null) {
-        refused.push({ name: member.fullName, why: 'has no photo at all' });
+        refused.push({ name: member.fullName, why: 'has no photo at all', reason: 'NO_PHOTO' });
         console.log(`${label} skipped   no photo`);
         continue;
       }
@@ -144,7 +144,7 @@ async function main(): Promise<void> {
 
       const size = result.measurement.found ? `${result.measurement.facePx}px` : '—';
       if (!decision.enrol) {
-        refused.push({ name: member.fullName, why: EXPLAIN[decision.reason] });
+        refused.push({ name: member.fullName, why: EXPLAIN[decision.reason], reason: decision.reason });
         console.log(`${label} refused   ${size.padEnd(6)} ${decision.reason} — ${EXPLAIN[decision.reason]}`);
         continue;
       }
@@ -172,8 +172,26 @@ async function main(): Promise<void> {
 
     console.log(`\n${enrolled} ${commit ? 'enrolled' : 'would be enrolled'} · ${refused.length} refused · ${members.length} members looked at`);
     if (refused.length > 0) {
-      console.log('\nThese members cannot be recognised until they give a better photograph:');
-      for (const r of refused) console.log(`   ${r.name} — ${r.why}`);
+      /**
+       * Split by what the desk has to actually do, because the two are opposite jobs.
+       *
+       * This used to say "cannot be recognised until they give a better photograph" for
+       * every refusal, including the ones whose photograph is perfectly good and who
+       * simply never agreed to face attendance. Staff would chase a member for a new
+       * selfie that would be refused exactly the same way.
+       */
+      const noConsent = refused.filter((r) => r.reason === 'NO_CONSENT' || r.reason === 'MINOR');
+      const badPhoto = refused.filter((r) => !noConsent.includes(r));
+
+      if (noConsent.length > 0) {
+        console.log('\nThe photograph is fine — these members have not agreed to face attendance:');
+        for (const r of noConsent) console.log(`   ${r.name} — ${r.why}`);
+        console.log('   Ask them at the desk. Until then they check in on the keypad.');
+      }
+      if (badPhoto.length > 0) {
+        console.log('\nThese members cannot be recognised until they give a better photograph:');
+        for (const r of badPhoto) console.log(`   ${r.name} — ${r.why}`);
+      }
     }
     if (!commit && enrolled > 0) console.log('\nRe-run with -- --yes to write the templates.');
   } finally {

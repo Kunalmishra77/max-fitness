@@ -792,7 +792,9 @@
       "seenDaysAgo": "{count, plural, one {1 day ago} other {# days ago}}",
       "neverSeen": "Never came",
       "trialDays": "{count, plural, one {Trial, 1 day} other {Trial, # days}}",
-      "countOf": "{shown} of {total} members — refine the search to see the rest"
+      "countOf": "{shown} of {total} members — refine the search to see the rest",
+      "awaitingPayment": "{count, plural, one {# person filled the form but has not paid} other {# people filled the form but have not paid}}",
+      "chase": "See them"
     },
     "profile": {
       "call": "Call",
@@ -1909,6 +1911,14 @@
       "PENDING_VERIFICATION": "To check",
       "LEFT": "Left",
       "BLOCKED": "Blocked"
+    },
+    "waiting": {
+      "title": "Waiting for payment",
+      "subtitle": "They chose a plan and stopped. A call now is worth more than a reminder later.",
+      "empty": "Nobody is waiting. Everybody who filled a form has paid.",
+      "noPlan": "No plan chosen",
+      "chose": "Chose {months, plural, one {# month} other {# months}}",
+      "since": "waiting {days, plural, =0 {since today} one {# day} other {# days}}"
     }
   },
   "photos": {

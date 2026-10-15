@@ -792,7 +792,9 @@
       "seenDaysAgo": "{count, plural, one {1 दिन पहले} other {# दिन पहले}}",
       "neverSeen": "कभी नहीं आए",
       "trialDays": "{count, plural, one {ट्रायल, 1 दिन} other {ट्रायल, # दिन}}",
-      "countOf": "{total} में से {shown} मेंबर — बाक़ी देखने के लिए खोज छाँटें"
+      "countOf": "{total} में से {shown} मेंबर — बाक़ी देखने के लिए खोज छाँटें",
+      "awaitingPayment": "{count, plural, one {# ने फ़ॉर्म भरा पर फ़ीस नहीं दी} other {# लोगों ने फ़ॉर्म भरा पर फ़ीस नहीं दी}}",
+      "chase": "देखिए"
     },
     "profile": {
       "call": "कॉल",
@@ -1909,6 +1911,14 @@
       "PENDING_VERIFICATION": "जाँचना है",
       "LEFT": "छोड़ा",
       "BLOCKED": "रोका"
+    },
+    "waiting": {
+      "title": "फ़ीस का इंतज़ार",
+      "subtitle": "इन्होंने प्लान चुना और रुक गए। अभी एक कॉल बाद के रिमाइंडर से ज़्यादा काम की है।",
+      "empty": "कोई इंतज़ार में नहीं है। जिसने भी फ़ॉर्म भरा, फ़ीस दे दी।",
+      "noPlan": "कोई प्लान नहीं चुना",
+      "chose": "{months, plural, one {# महीना} other {# महीने}} चुना",
+      "since": "{days, plural, =0 {आज से} one {# दिन से} other {# दिन से}} इंतज़ार"
     }
   },
   "photos": {

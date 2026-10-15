@@ -870,3 +870,34 @@ The existing-member form exists so a paper-register entry can be finished, so th
 **Neither field identifies anybody alone.** A gym has two Sharmas, so a name is not an identity; a family shares a handset, so a number is not one either. Together they are the pair the register was written down with, and a member who cannot supply both is claiming a record that is not theirs — at which point their face is checked against the whole register, which is the point.
 
 **The new-member journey claims no record**, passes nothing, and is excused nothing: any face already enrolled is a stop.
+
+## ADR-125
+
+**Date:** 2026-10-15
+**Status:** Accepted
+**Context:** Minutes after deleting sixteen records of exactly this shape, the owner found *Ishita mehta* in the Members list — name, number, date of birth, selfie, a one-month plan chosen, and no payment at all — and asked the only sensible question: *"ye member me kaise aa gyi?"*
+
+She had not become a member. The Members list showed everybody in the register regardless of status, and the filter chips already knew it: `Fees due 2 + this week 2 + paid 5 = 9` out of "All 10". The screen was counting somebody it could not place.
+
+**Decision — the register is for people the gym has, and the gym does not have somebody who has not paid.**
+
+They are not deleted and not hidden. They move to **Waiting for payment**, a worklist reached from a card on the Members screen, where the desk can ring them — they are the most likely new member the gym has. They walk into the register by themselves the moment the money lands, because `awaitingPaymentWhere` is written once and read by the list, the counts and the waiting screen, so those three can never disagree.
+
+**The test is a paid payment, not the status column alone.** A desk that takes cash and moves on can leave a member on `PENDING_PAYMENT`, and a member who has paid belongs in the register whatever a column says.
+
+**A search still finds them.** Somebody ringing about their own sign-up must be findable by name from the box that finds everybody else; only the unsearched list is filtered.
+
+**This will keep happening until Razorpay is live.** In demo mode no QR sign-up can complete a payment, so every one of them lands here. That is the screen working, not the screen filling up.
+
+## ADR-126
+
+**Date:** 2026-10-15
+**Status:** Accepted
+**Context:** Two complaints about the same screen. The Messages log opened on a flat stream — 478 cards of "Welcome to Max Fitness Gym, Test!" on the day the owner looked — and the WhatsApp button on a member's page opened `wa.me`.
+
+**Decision — people first, and the conversation stays inside Max Register.**
+
+The people view already existed (ADR-091) but was the second tab. It is now the default, and the stream lives under "All messages", which is what you want when a send goes wrong rather than when you want to know what the gym has said to somebody.
+
+**`wa.me` was worse than untidy.** It leaves the CRM, lands in whichever WhatsApp account the staff phone is signed into, and writes from *that* number — so the member's reply goes to a person instead of to the gym, and the register never hears about it. The button now opens that member's thread. The pre-filled sentence it used to carry goes with it; a template the engine owns is a tracked send, and a sentence typed from a personal phone never was.
+
