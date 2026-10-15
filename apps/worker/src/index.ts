@@ -3,7 +3,7 @@ import { PgBoss } from 'pg-boss';
 import { GymSettingsSchema, parseEnv, systemClock, WORKER_HEARTBEAT_STALE_SECONDS } from '@mfp/shared';
 import { createPrismaClient } from '@mfp/db';
 import { createStorageDriver } from '@mfp/integrations/storage';
-import { createAiGenerator } from '@mfp/integrations/ai';
+import { createAiTextGenerator } from '@mfp/integrations/ai';
 import { issueToken, startDietFollowUps } from '@mfp/core';
 import { PrismaDietFollowUps } from '@mfp/db';
 import { MetaCloudWhatsAppProvider, SimulatorWhatsAppProvider } from '@mfp/integrations/whatsapp';
@@ -146,7 +146,7 @@ async function main(): Promise<void> {
     gymId: async () => (await prisma.gym.findUniqueOrThrow({ where: { slug: env.GYM_SLUG }, select: { id: true } })).id,
     unsubscribePayload: phase6.unsubscribePayload,
     // No key means no plans: the CRM says the key is missing rather than inventing one.
-    ai: createAiGenerator({ apiKey: env.AI_API_KEY, model: env.AI_MODEL }),
+    ai: createAiTextGenerator({ provider: env.AI_PROVIDER, apiKey: env.AI_API_KEY, model: env.AI_MODEL }),
     gymName: async () => (await prisma.gym.findUniqueOrThrow({ where: { slug: env.GYM_SLUG }, select: { name: true } })).name,
     // A member's own plan, behind a signed link that lasts as long as a plan stays current.
     dietPlanUrl: (memberId) =>

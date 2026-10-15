@@ -22,7 +22,7 @@ import type {
   WebhookEventStore,
 } from '@mfp/core';
 import type { AiTextGenerator, MessageLogWriter, PaymentProvider, StorageDriver, WhatsAppProvider } from '@mfp/core/ports';
-import { createAiGenerator } from '@mfp/integrations/ai';
+import { createAiTextGenerator } from '@mfp/integrations/ai';
 import { createStorageDriver } from '@mfp/integrations/storage';
 import { SimulatedPaymentProvider, RazorpayPaymentProvider } from '@mfp/integrations/payments';
 import { SimulatorWhatsAppProvider, MetaCloudWhatsAppProvider } from '@mfp/integrations/whatsapp';
@@ -162,7 +162,7 @@ function build(): Container {
     mandateStatusUow: new PrismaMandateStatusUnitOfWork(prisma),
     startMandateUow: new PrismaStartMandateUnitOfWork(prisma),
     // Empty key means unavailable: the CRM says so rather than failing at the last moment.
-    ai: createAiGenerator({ apiKey: env.AI_API_KEY, model: env.AI_MODEL }),
+    ai: createAiTextGenerator({ provider: env.AI_PROVIDER, apiKey: env.AI_API_KEY, model: env.AI_MODEL }),
     face: new FaceClient({ baseUrl: env.FACE_SERVICE_URL, token: env.FACE_SERVICE_TOKEN }),
   };
 }

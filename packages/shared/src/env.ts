@@ -136,6 +136,12 @@ export const EnvSchema = z
      */
     AI_API_KEY: z.string().default(''),
     AI_MODEL: z.string().default('claude-sonnet-5-5'),
+    /**
+     * Which service the key belongs to. Named rather than guessed from the key's shape:
+     * a prefix is a convention, and silently talking to the wrong service with somebody's
+     * paid key is not a mistake worth leaving room for.
+     */
+    AI_PROVIDER: z.enum(['anthropic', 'openai']).default('anthropic'),
 
     // ── Face attendance (ADR-107) ───────────────────────────────────────
     /**

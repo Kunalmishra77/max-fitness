@@ -676,3 +676,19 @@ The simulator applies the same fallback, so the preview the owner reads in the M
 **This is reversible by configuration.** The day the Hindi templates are approved, `WHATSAPP_TEMPLATE_LANGUAGES=en,hi` puts every Hindi member back on their own language with no code change and no deploy of new logic.
 
 **Not recorded as a limitation of the product:** members still choose Hindi everywhere else — the website, the QR form, the CRM, the attendance phone. Only the WhatsApp templates are English, and only until the gym decides otherwise.
+
+## ADR-114
+
+**Date:** 2026-10-15
+**Status:** Accepted
+**Context:** The AI port has had one adapter since ADR-089, against Anthropic. The owner has a paid OpenAI key and no Anthropic one, and the WhatsApp assistant (ADR-090) and diet plans (ADR-089) have been waiting on a key since.
+
+**Decision — a second adapter behind the same port, chosen by name.**
+
+`AiTextGenerator` asks for one thing: "ask this, get words back". OpenAI answers that as well as Anthropic does, so the adapter is forty lines of `fetch` against Chat Completions — no SDK, for the same reason the Anthropic one has none: one request, one answer, no streaming and no tools, so a dependency would buy nothing and would have to be kept in step with the lockfile.
+
+**`AI_PROVIDER` names the service rather than the code guessing it from the key.** An `sk-` prefix is a convention, not a guarantee, and quietly sending somebody's paid key to the wrong service is not a mistake worth leaving room for.
+
+Nothing in `packages/core` knows which service answered. It already records *which model* did, with every plan, so a bad batch can be traced — and that stays true whichever adapter is configured.
+
+The failure codes are deliberately identical across both adapters (`AI_NOT_CONFIGURED`, `AI_UNREACHABLE`, `AI_REFUSED`, `AI_EMPTY`), because the CRM shows them to whoever is standing there and the distinction that matters to them — my key, my account, or a bad minute — does not change with the provider. Neither adapter forwards a failed request as a `cause`: it carries the headers, and the key is in them.
