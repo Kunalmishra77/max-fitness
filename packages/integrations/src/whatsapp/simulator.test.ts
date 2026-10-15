@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { E164Mobile, WhatsAppSendRequest } from '@mfp/core/ports';
 import { InMemoryMessageLog, SimulatorWhatsAppProvider } from './simulator';
 import { BUTTON_LABELS, daysLeftPhrase, renderTemplate, templateDefinition } from './templates';
@@ -358,5 +358,57 @@ describe('InMemoryMessageLog', () => {
         payload: null,
       }),
     ).toBe(true);
+  });
+});
+
+/**
+ * Who writes the `MessageLog` row (ADR-115).
+ *
+ * The worker's jobs insert the row themselves, with the member, the membership and the
+ * rule the message came from — context the provider does not have. The simulator then
+ * inserted a second row under the same idempotency key, lost to the unique constraint,
+ * and reported `ALREADY_SENT`. Every transactional message in production was skipped
+ * this way: 1,050 of them, not one ever sent or even simulated.
+ *
+ * So the composition root decides. Given no writer, the provider sends and says what
+ * happened, and leaves the log to whoever asked.
+ */
+describe('when the caller keeps the message log', () => {
+  const request = {
+    to: '+919876543210' as E164Mobile,
+    templateName: 'mf_renewal_due' as const,
+    language: 'en' as const,
+    variables: { firstName: 'Ravi', endDate: '15 Sep 2026', whenPhrase: 'in 7 days' },
+    idempotencyKey: 'rem:owned:1',
+  };
+
+  it('simulates without writing a row of its own', async () => {
+    const provider = new SimulatorWhatsAppProvider({ gymId: 'gym_1', allowlist: [] });
+
+    const outcome = await provider.send(request);
+
+    expect(outcome).toMatchObject({ status: 'SIMULATED' });
+  });
+
+  it('still reaches the real provider for an allow-listed number', async () => {
+    const real = {
+      name: 'meta_cloud' as const,
+      send: vi.fn(() => Promise.resolve({ status: 'SENT' as const, providerMessageId: 'wamid.1' })),
+      sendText: vi.fn(),
+    };
+    const provider = new SimulatorWhatsAppProvider({ gymId: 'gym_1', allowlist: [request.to], realProvider: real });
+
+    const outcome = await provider.send(request);
+
+    expect(real.send).toHaveBeenCalledOnce();
+    expect(outcome).toEqual({ status: 'SENT', providerMessageId: 'wamid.1' });
+  });
+
+  it('does the same for a free-form message', async () => {
+    const provider = new SimulatorWhatsAppProvider({ gymId: 'gym_1', allowlist: [] });
+
+    const outcome = await provider.sendText({ to: request.to, body: 'Reminders are off.', idempotencyKey: 'u:1', purpose: 'OTHER' });
+
+    expect(outcome).toMatchObject({ status: 'SIMULATED', bodyPreview: 'Reminders are off.' });
   });
 });

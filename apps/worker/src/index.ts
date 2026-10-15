@@ -7,7 +7,6 @@ import { createAiTextGenerator } from '@mfp/integrations/ai';
 import { issueToken, startDietFollowUps } from '@mfp/core';
 import { PrismaDietFollowUps } from '@mfp/db';
 import { MetaCloudWhatsAppProvider, SimulatorWhatsAppProvider } from '@mfp/integrations/whatsapp';
-import { PrismaMessageLogWriter } from '@mfp/db';
 import { nightlyCallTasksHandler, registerReceiptPdfWorker, RECEIPT_PDF_QUEUE, startOutboxPoller, type Phase3Deps } from './jobs/phase3-jobs';
 import { messageOutboxHandlers, type MessageJobDeps } from './jobs/message-jobs';
 import { kioskOfflineHandler } from './jobs/kiosk-wiring';
@@ -112,7 +111,10 @@ async function main(): Promise<void> {
     env.DEMO_MODE || realWhatsApp === undefined
       ? new SimulatorWhatsAppProvider({
           gymId: env.GYM_SLUG,
-          log: new PrismaMessageLogWriter(prisma),
+          // No writer on purpose (ADR-115): in the worker the jobs own the MessageLog
+          // row, because they know the member, the membership and the rule. A second
+          // insert under the same key is refused, and the provider would then report a
+          // message as already sent that nobody had sent.
           allowlist: env.WHATSAPP_ALLOWLIST,
           templateLanguages: env.WHATSAPP_TEMPLATE_LANGUAGES,
           ...(realWhatsApp === undefined ? {} : { realProvider: realWhatsApp }),

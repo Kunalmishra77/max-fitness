@@ -692,3 +692,25 @@ The simulator applies the same fallback, so the preview the owner reads in the M
 Nothing in `packages/core` knows which service answered. It already records *which model* did, with every plan, so a bad batch can be traced — and that stays true whichever adapter is configured.
 
 The failure codes are deliberately identical across both adapters (`AI_NOT_CONFIGURED`, `AI_UNREACHABLE`, `AI_REFUSED`, `AI_EMPTY`), because the CRM shows them to whoever is standing there and the distinction that matters to them — my key, my account, or a bad minute — does not change with the provider. Neither adapter forwards a failed request as a `cause`: it carries the headers, and the key is in them.
+
+## ADR-115
+
+**Date:** 2026-10-15
+**Status:** Accepted
+**Context:** Reading the live database to confirm the WhatsApp setup, the `MessageLog` held **1,050 rows for the real gym and every one of them was `SKIPPED` with `ALREADY_SENT`**. Not one message had ever been sent, and not one had even been simulated — across receipts, welcomes, reminders, the autopay invite, the owner's digest and alerts, since the worker's message jobs were written.
+
+**Cause — two owners for one row.**
+
+The worker's jobs insert the `MessageLog` row first, with the member, the membership, the purpose and the rule the message came from, and use the unique constraint on `idempotencyKey` as the duplicate guard. They then call the provider with the same key. `SimulatorWhatsAppProvider` inserts a row too (ADR-017, so it could be used standalone), loses to the constraint it has just lost to itself, and returns `SKIPPED / ALREADY_SENT`. The job writes that back and sends nothing.
+
+The outbox was healthy throughout, every event `DISPATCHED`. Nothing retried, nothing errored, nothing alerted. It looked exactly like a working system with nothing to send.
+
+**Decision — the composition root says who writes the log, and `log` is optional.**
+
+In the worker there is now one rule: **the job owns the row, the provider never writes one.** `sendConfirmation` was the odd one out — it let the provider log — and now records first like every other path, which also gives it the duplicate guard it never had.
+
+In the web app the provider keeps its writer, because the callers there (the assistant's reply on the webhook, the OTP sender) do not log and have no richer context to add.
+
+**Why this hid for so long:** `SKIPPED` is not an error. It is the correct, quiet outcome for a message that genuinely should not go twice, so it raised nothing — no retry, no alert, no failed status on a member's record. The only way to see it was to count the rows. A send path whose success and its most common failure look the same from the outside needs counting, not watching; worth remembering before the next integration is called done.
+
+**Not fixed here, and worth its own look:** 12 of the 13 gyms in the production database are `gym_it_*` leftovers from integration-test runs (ADR-110's shared-database problem, now visible as data rather than as flaky tests). They are inert — every query is scoped by `gymId` — but a `findFirst` without a slug picks one, which is how this investigation began.

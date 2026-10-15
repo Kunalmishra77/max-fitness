@@ -26,7 +26,16 @@ import { renderTemplate } from './templates';
 
 export interface SimulatorOptions {
   readonly gymId: string;
-  readonly log: MessageLogWriter;
+  /**
+   * Who writes the `MessageLog` row (ADR-115).
+   *
+   * Omit it when the caller keeps its own log, which the worker's jobs do: they insert
+   * the row first, with the member, the membership and the rule the message came from.
+   * A second insert under the same idempotency key loses to the unique constraint, and
+   * the provider then reports `ALREADY_SENT` for a message nobody had sent — which is
+   * how 1,050 production messages were skipped without one of them going out.
+   */
+  readonly log?: MessageLogWriter;
   /** Numbers that may receive a genuine send even in demo mode. */
   readonly allowlist: readonly string[];
   /**
@@ -68,7 +77,8 @@ export class SimulatorWhatsAppProvider implements WhatsAppProvider {
 
     // The unique constraint on idempotencyKey is the real guard against a double
     // send; `record` returning false means a row already existed (BR-5.3 rule 6).
-    const inserted = await this.#options.log.record({
+    // With no writer the caller is keeping that guard itself, and has already applied it.
+    const inserted = this.#options.log === undefined ? true : await this.#options.log.record({
       gymId: this.#options.gymId,
       ...context,
       direction: 'OUTBOUND',
@@ -92,7 +102,7 @@ export class SimulatorWhatsAppProvider implements WhatsAppProvider {
     if (allowlisted && real !== undefined) {
       const outcome = await real.send(request);
       if (outcome.status === 'SENT') {
-        await this.#options.log.updateStatus(outcome.providerMessageId, 'SENT', new Date());
+        await this.#options.log?.updateStatus(outcome.providerMessageId, 'SENT', new Date());
       }
       return outcome;
     }
@@ -108,7 +118,7 @@ export class SimulatorWhatsAppProvider implements WhatsAppProvider {
     const allowlisted = this.#options.allowlist.includes(request.to);
     const real = this.#options.realProvider;
 
-    const recorded = await this.#options.log.record({
+    const recorded = this.#options.log === undefined ? true : await this.#options.log.record({
       gymId: this.#options.gymId,
       memberId: request.memberId ?? null,
       membershipId: null,
@@ -128,7 +138,7 @@ export class SimulatorWhatsAppProvider implements WhatsAppProvider {
 
     if (allowlisted && real !== undefined) {
       const outcome = await real.sendText(request);
-      if (outcome.status === 'SENT') await this.#options.log.updateStatus(outcome.providerMessageId, 'SENT', new Date());
+      if (outcome.status === 'SENT') await this.#options.log?.updateStatus(outcome.providerMessageId, 'SENT', new Date());
       return outcome;
     }
     return { status: 'SIMULATED', bodyPreview: request.body };

@@ -143,6 +143,32 @@ async function sendConfirmation(deps: MessageJobDeps, event: ClaimedOutboxEvent,
   if (member === null) return;
 
   const purpose: MessagePurpose = kind === 'UNSUBSCRIBED' ? 'UNSUBSCRIBE_CONFIRM' : 'RESTART_CONFIRM';
+
+  // The job owns the row here too (ADR-115), so every worker path logs the same way and
+  // the provider never writes one. Recording first is also the duplicate guard: a
+  // redelivered outbox event finds its key taken and sends nothing.
+  const gymId = await deps.gymId();
+  const inserted = await new PrismaMessageLogWriter(deps.prisma).record({
+    gymId,
+    memberId,
+    membershipId: null,
+    direction: 'OUTBOUND',
+    purpose,
+    ruleCode: null,
+    templateName: null,
+    language: null,
+    toNumber: member.mobile,
+    idempotencyKey: event.dedupeKey,
+    providerMessageId: null,
+    status: 'QUEUED',
+    bodyPreview: confirmationText(kind, member.language),
+    payload: null,
+  });
+  if (!inserted) {
+    deps.log.info({ key: event.dedupeKey }, 'confirmation already logged — not sending again');
+    return;
+  }
+
   const outcome = await deps.whatsapp.sendText({
     to: member.mobile,
     body: confirmationText(kind, member.language),
@@ -150,6 +176,14 @@ async function sendConfirmation(deps: MessageJobDeps, event: ClaimedOutboxEvent,
     purpose,
     memberId,
   });
+  const updates = new PrismaMessageLogUpdates(deps.prisma);
+  if (outcome.status === 'SENT') await updates.updateByIdempotencyKey(event.dedupeKey, 'SENT', { providerMessageId: outcome.providerMessageId });
+  else if (outcome.status === 'SIMULATED') await updates.updateByIdempotencyKey(event.dedupeKey, 'SIMULATED', { bodyPreview: outcome.bodyPreview });
+  else if (outcome.status === 'FAILED') {
+    await updates.updateByIdempotencyKey(event.dedupeKey, 'FAILED', { errorCode: outcome.errorCode, errorMessage: outcome.errorMessage });
+    if (outcome.retryable) throw new Error(`WhatsApp send failed (${outcome.errorCode})`);
+  } else await updates.updateByIdempotencyKey(event.dedupeKey, 'SKIPPED', { errorCode: outcome.reason });
+
   deps.log.info({ key: event.dedupeKey, outcome: outcome.status }, 'confirmation handled');
 }
 
