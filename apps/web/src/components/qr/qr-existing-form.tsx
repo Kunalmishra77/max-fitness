@@ -638,7 +638,11 @@ export function QrExistingForm({
   const serverCheckFor = (keys: readonly string[]): Record<string, string | Blob> | null => {
     if (keys.includes('mobile')) return { step: 'mobile', journey: 'existing', mobile: mobile.replace(/\D/g, '') };
     if (keys.includes('dob') && dob !== '') return { step: 'dob', dob };
-    if (keys.includes('selfie') && photo !== null) return { step: 'selfie', selfie: photo.blob, fullName: fullName.trim() };
+    // The name *and* the number: the record a face is allowed to match is the one
+    // carrying both, so sending one without the other excuses nobody (ADR-124).
+    if (keys.includes('selfie') && photo !== null) {
+      return { step: 'selfie', selfie: photo.blob, fullName: fullName.trim(), mobile: mobile.replace(/\D/g, '') };
+    }
     if (keys.includes('govId') && govIdFront !== null && govIdType !== '') {
       return { step: 'govId', govIdFront, govIdType, fullName: fullName.trim(), dob };
     }

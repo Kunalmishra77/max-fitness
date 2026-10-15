@@ -105,14 +105,18 @@ export async function POST(request: NextRequest) {
      * else". The face says who this is; the name says who they claim to be, and when the
      * two disagree it is a second record for one person.
      *
-     * This keyed on the number at first, and the owner walked straight through it by
-     * registering a new name on their own existing number. The number was never the
-     * identity.
+     * Which record they are claiming is the name *and* the number together (ADR-124).
+     * Keyed on the number alone, the owner walked through by registering a new name on
+     * their own existing number. Keyed on the name alone, they walked through again
+     * under a name the gym already held, on a number it had never seen.
      *
      * The reply names nobody. Telling a stranger whose face they matched would hand them
      * another member's identity, and the desk can see it in Max Register anyway.
      */
-    const twin = await alreadyAMember(faceCheck, gym.id, gym.settings.attendance, { fullName: parsed.fields.fullName });
+    const twin = await alreadyAMember(faceCheck, gym.id, gym.settings.attendance, {
+      fullName: parsed.fields.fullName,
+      mobile: parsed.fields.mobile,
+    });
     if (twin !== null) {
       console.warn(`[qr-existing] a face in the register arrived under a different name ${requestId}`);
       return apiError(409, 'ALREADY_A_MEMBER', 'This person is already a member', requestId);

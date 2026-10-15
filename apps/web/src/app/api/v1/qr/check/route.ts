@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 
   if (step === 'mobile') return checkMobile(container, gym.id, text('mobile'), text('journey'), requestId);
   if (step === 'dob') return checkDob(container, gym.id, text('dob'), requestId);
-  if (step === 'selfie') return checkSelfie(form.get('selfie'), gym.id, settings, text('fullName'), requestId);
+  if (step === 'selfie') return checkSelfie(form.get('selfie'), gym.id, settings, text('fullName'), text('mobile'), requestId);
   if (step === 'govId') return checkGovId(form.get('govIdFront'), text('govIdType'), text('fullName'), text('dob'), requestId);
 
   return apiError(400, 'VALIDATION_FAILED', 'Unknown step', requestId);
@@ -135,12 +135,16 @@ async function checkDob(container: ReturnType<typeof getContainer>, gymId: strin
  * already somebody's face. The second is the only check that names a member — a face is
  * proof of who is holding the phone, so telling them their own record is not telling
  * them anything they do not know, and it ends the guessing.
+ *
+ * The name and the number both reach this step, because the record a member is allowed
+ * to match is the one carrying both (ADR-124).
  */
 async function checkSelfie(
   file: FormDataEntryValue | null,
   gymId: string,
   attendance: Parameters<typeof checkSelfieFace>[1],
   fullName: string | null,
+  rawMobile: string | null,
   requestId: string,
 ) {
   if (!(file instanceof Blob) || file.size === 0) return apiData({ ok: true as const }, requestId);
@@ -156,7 +160,9 @@ async function checkSelfie(
   const verdict = await checkSelfieFace(selfie.body, attendance);
   if (!verdict.ok) return apiData({ ok: false as const, reason: verdict.reason }, requestId);
 
-  const twin = await alreadyAMember(verdict, gymId, attendance, fullName === null ? undefined : { fullName });
+  const mobile = normaliseIndianMobile(rawMobile ?? '');
+  const claiming = fullName === null || mobile === null ? undefined : { fullName, mobile };
+  const twin = await alreadyAMember(verdict, gymId, attendance, claiming);
   return twin === null
     ? apiData({ ok: true as const }, requestId)
     : apiData({ ok: false as const, reason: 'ALREADY_A_MEMBER' as const, member: { fullName: twin.fullName } }, requestId);

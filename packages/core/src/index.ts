@@ -90,3 +90,4 @@ export * from './qr/existing-member';
 export * from './crm/verification';
 export * from './otp/otp.service';
 export * from './qr/lookup';
+export * from './qr/claimed-member';

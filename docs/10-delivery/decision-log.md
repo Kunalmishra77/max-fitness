@@ -854,3 +854,19 @@ They were right and my framing had been too broad.
 **Context:** The face image failed to build: `pytesseract==0.3.16` does not exist. The latest is `0.3.13`.
 
 **Decision — recorded because it is the second time.** The same mistake was made with `uvicorn` on 2026-10-07, and `apps/face/requirements.txt` carries the line *"Verified resolvable at these versions"* directly above where it happened. A pinned version that was never looked up is not a pin; it is a guess that fails at deploy time instead of at review time. Every version added to that file is to be checked against the index before it is written, not after the build says so.
+
+## ADR-124
+
+**Date:** 2026-10-15
+**Status:** Accepted
+**Context:** The owner filled the existing-member form as **Indresh Mishra** — a name the register already held — on a number the register had never seen, with their own face. Every step passed and the gym ended up with MF-0001 and MF-0014, both of them him. Their instruction had been plain: *"ek hi face se do log to nhi ho skte hai so unhe target karo"*, and alongside it *"ek name ke do member ho skte hai so name se mat karo"*.
+
+ADR-118 keyed the face exemption on the **number**, and the owner walked through it by registering a new name on their own number. The fix keyed it on the **name**, and they walked through that one too. Both were a single field, and a single field is something anybody can type.
+
+**Decision — the record a face may match is the one carrying the claimed name *and* the claimed number.**
+
+The existing-member form exists so a paper-register entry can be finished, so that member's face matching their own record is the form working. Which record counts as "their own" is now `claimedMemberId` in `packages/core/src/qr/claimed-member.ts` — a pure function with the two failures above as tests — rather than a line of adapter code that has been rewritten twice.
+
+**Neither field identifies anybody alone.** A gym has two Sharmas, so a name is not an identity; a family shares a handset, so a number is not one either. Together they are the pair the register was written down with, and a member who cannot supply both is claiming a record that is not theirs — at which point their face is checked against the whole register, which is the point.
+
+**The new-member journey claims no record**, passes nothing, and is excused nothing: any face already enrolled is a stop.

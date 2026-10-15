@@ -1616,3 +1616,20 @@ The part that mattered: a mandate's **first debit is the day after the member's 
 - The owner's App Secret was pasted into chat and needs resetting, as does the Razorpay secret.
 - Google Business Profile lists 098714 06350, which is neither number: members messaging it reach nothing.
 - Security review, offline mitigations, CRM screenshots for the UI pass — all still open.
+
+## 2026-10-15 — one face, one member (ADR-124)
+
+**What changed.** The owner proved the duplicate check wrong a second time: their own face, their own existing name *Indresh Mishra*, a number the gym had never seen — straight through, leaving MF-0001 and MF-0014 both pointing at him.
+
+- `packages/core/src/qr/claimed-member.ts` (new, with tests) — `claimedMemberId` decides which record a submission is allowed to match: the one on the given **number** carrying the given **name**. Either field alone is something anybody can type, and keying on either alone is exactly how the check was broken twice.
+- `apps/web/src/lib/duplicate-member.ts` — the name-only exemption is gone; the claimed record is looked up by both fields and passed to `findDuplicateFace` as `exceptMemberId`.
+- `apps/web/src/app/api/v1/qr/check/route.ts` and `qr-existing-form.tsx` — the selfie step now sends the number as well as the name, so the per-step check reaches the same verdict as the submission.
+- `apps/web/src/app/api/v1/qr/existing/route.ts` — same pair on the submission, which is the guard a browser cannot skip.
+- `apps/web/src/app/favicon.ico` (new) — `app/icon.png` only answers `/icon`; browsers ask for `/favicon.ico` directly and were getting a 404 in the console.
+
+**Verified.** `claimedMemberId` tests written and watched fail first. Full suite 2125 passed, typecheck clean across all 8 packages.
+
+**Pending.**
+- **MF-0014 is a duplicate record** created by the owner's test and needs erasing, along with the three duplicate *Ayan Saifi* records.
+- `pnpm lint` has **33 pre-existing errors** — all in scripts and test files (`look-qr.mjs`, `smoke-*.mjs`, `enrol-faces.ts`, `qr-poster.ts`, `message-log-read.repository.ts`, `messages.test.ts`, `seo.test.ts`, `use-screen-awake.ts`, `backup-members.ts`). Confirmed present without this change. Not touched here; needs its own pass.
+- The security review is still the oldest outstanding commitment.
