@@ -63,8 +63,10 @@ class FakeStore implements ExistingMemberStore {
 
   /** Register entries by id, each with its number: what a proven number may claim. */
   byId = new Map<string, E164Mobile>();
+  /** Set when the matched member already has an approved request of their own. */
+  importedAlreadyUsedForm = false;
   findExistingMember() {
-    return Promise.resolve(this.imported);
+    return Promise.resolve(this.imported === null ? null : { ...this.imported, alreadyUsedThisForm: this.importedAlreadyUsedForm });
   }
   findImportedMemberById(_gymId: string, mobile: E164Mobile, memberId: string) {
     return Promise.resolve(this.byId.get(memberId) === mobile ? { id: memberId } : null);
@@ -409,5 +411,30 @@ describe('submitExistingMember', () => {
     const result = await submit();
 
     expect(result).toEqual({ referenceCode: 'Q-7777', matchedExisting: false, memberId: 'mem_already' });
+  });
+
+  /**
+   * A member who is already properly in the register has nothing left to do here
+   * (owner, 2026-10-15).
+   *
+   * `source` stays `IMPORT` for ever, so the paper-register exemption would otherwise let
+   * the same person fill this form in every day. No duplicate member — that is caught
+   * elsewhere — but a fresh request in the verify queue each time, for staff to wade
+   * through. The owner's words: nobody should be able to put in pointless details.
+   */
+  it('refuses somebody who has already been through this form', async () => {
+    store.imported = { id: 'mem_done' };
+    store.importedAlreadyUsedForm = true;
+
+    await expect(submit()).rejects.toMatchObject({ code: 'ALREADY_A_MEMBER' });
+    expect(store.requests).toEqual([]);
+    expect(storage.objects.size).toBe(0);
+  });
+
+  it('still takes the paper-register entry that has not been finished', async () => {
+    store.imported = { id: 'mem_paper' };
+    store.importedAlreadyUsedForm = false;
+
+    await expect(submit()).resolves.toMatchObject({ matchedExisting: true, memberId: 'mem_paper' });
   });
 });

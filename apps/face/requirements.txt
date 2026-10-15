@@ -18,4 +18,4 @@ numpy==2.5.3
 # Reading a government ID well enough to know it is one (ADR-120). The binary comes from
 # the image; this is the thin wrapper that calls it. Pinned like everything else here:
 # an OCR engine that changes behaviour changes which members get turned away at the desk.
-pytesseract==0.3.16
+pytesseract==0.3.13

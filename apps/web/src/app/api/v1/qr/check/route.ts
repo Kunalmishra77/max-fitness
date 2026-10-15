@@ -87,11 +87,24 @@ async function checkMobile(
 
   const found = await container.prisma.member.findFirst({
     where: { gymId, mobile, deletedAt: null, status: { notIn: ['LEFT', 'BLOCKED'] } },
-    select: { source: true },
+    select: { source: true, memberships: { where: { status: 'CONFIRMED' }, select: { id: true }, take: 1 } },
     orderBy: { createdAt: 'asc' },
   });
   if (found === null) return apiData({ ok: true as const }, requestId);
-  if (journey === 'existing' && found.source === 'IMPORT') return apiData({ ok: true as const }, requestId);
+
+  /**
+   * The one case that passes: a paper-register entry that has not been finished yet.
+   *
+   * Turning one of those into a real record is the entire purpose of the existing-member
+   * form, so blocking it would mean nobody could ever use the form. **But only until it
+   * is done.** `source` stays `IMPORT` for ever, so without the membership test the same
+   * member could fill the form in every day — no duplicate member, because that is caught
+   * elsewhere, but a fresh request in the verify queue each time for staff to wade
+   * through. Once they hold a confirmed membership they are properly in the register and
+   * there is nothing left for this form to do for them.
+   */
+  const unfinishedPaperEntry = found.source === 'IMPORT' && found.memberships.length === 0;
+  if (journey === 'existing' && unfinishedPaperEntry) return apiData({ ok: true as const }, requestId);
 
   // Never who. "Is this number a member here" must not be a question the form answers.
   return apiData({ ok: false as const, reason: 'MOBILE_IN_USE' as const }, requestId);

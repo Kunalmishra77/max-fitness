@@ -94,12 +94,19 @@ export interface VerificationRequestRecord {
 }
 
 export interface ExistingMemberStore {
-  /** An imported, not-deleted member of this gym with this mobile and name (case and spacing ignored). */
+  /**
+   * Any live member of this gym on this mobile under this name (case and spacing
+   * ignored), with whether they are already properly in the register.
+   */
   findExistingMember(
     gymId: string,
     mobile: E164Mobile,
     fullName: string,
-  ): Promise<{ readonly id: string } | null>;
+  ): Promise<{
+    readonly id: string;
+    /** They have already been through this form and staff approved it (ADR-122). */
+    readonly alreadyUsedThisForm: boolean;
+  } | null>;
   /** The imported member with this id, only if it is on this mobile. */
   findImportedMemberById(
     gymId: string,
@@ -243,8 +250,25 @@ export async function submitExistingMember(
         input.claimedMemberId === undefined
           ? null
           : await store.findImportedMemberById(deps.gymId, fields.mobile, input.claimedMemberId);
-      const imported =
-        claimed ?? (await store.findExistingMember(deps.gymId, fields.mobile, fields.fullName));
+      const matched = await store.findExistingMember(deps.gymId, fields.mobile, fields.fullName);
+
+      /**
+       * Somebody who has already been through this form has nothing left to do here
+       * (ADR-122).
+       *
+       * The test is an approved verification request, not a confirmed membership: a
+       * paper-register entry arrives *with* a membership, carried over from the book, and
+       * turning that entry into a real record is exactly what this form is for. What
+       * marks it done is staff having approved it once.
+       *
+       * Without this the same person could fill the form in every day. No second member
+       * — that is caught above — but a fresh request in front of staff each time.
+       */
+      if (matched !== null && matched.alreadyUsedThisForm) {
+        throw new DomainError('ALREADY_A_MEMBER', 'This person is already a member of this gym');
+      }
+
+      const imported = claimed ?? (matched === null ? null : { id: matched.id });
       let memberId: string;
       if (imported === null) {
         memberId = await store.createMember({

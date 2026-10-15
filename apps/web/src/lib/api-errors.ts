@@ -29,6 +29,8 @@ const STATUS: Partial<Record<DomainErrorCode, number>> = {
   MEMBERSHIP_NOT_FOUND: 404,
   CONFLICT: 409,
   PAYMENT_ALREADY_SETTLED: 409,
+  // Already properly in the register: the QR form has nothing to do for them (ADR-122).
+  ALREADY_A_MEMBER: 409,
   // The gateway created an order for a different amount than we asked: its fault, not the client's.
   PRICE_MISMATCH: 502,
 };
@@ -46,6 +48,7 @@ const MESSAGES: Partial<Record<DomainErrorCode, string>> = {
   UNDER_MINIMUM_AGE: 'Below the minimum age to join',
   INVALID_PAYMENT_SIGNATURE: 'The payment could not be verified',
   CONFLICT: 'This has already been completed',
+  ALREADY_A_MEMBER: 'This person is already a member',
   OTP_INVALID: 'That code is not right',
   OTP_EXPIRED: 'That code has expired',
   OTP_LOCKED: 'Too many wrong codes',

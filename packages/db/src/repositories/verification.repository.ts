@@ -34,14 +34,21 @@ function existingMemberStore(tx: TransactionClient): ExistingMemberStore {
      * by itself would hand one family member another one's record.
      */
     async findExistingMember(gymId: string, mobile: E164Mobile, fullName: string) {
-      const rows = await tx.$queryRaw<Array<{ id: string }>>`
-        SELECT "id" FROM "Member"
-        WHERE "gymId" = ${gymId} AND "mobile" = ${mobile} AND "deletedAt" IS NULL
-          AND lower(regexp_replace(trim("fullName"), '\\s+', ' ', 'g')) = ${personName(fullName)}
-        ORDER BY "createdAt" ASC
+      const rows = await tx.$queryRaw<Array<{ id: string; confirmed: bigint }>>`
+        SELECT m."id",
+               (SELECT count(*) FROM "VerificationRequest" v
+                 WHERE v."memberId" = m."id" AND v."status" = 'APPROVED') AS confirmed
+        FROM "Member" m
+        WHERE m."gymId" = ${gymId} AND m."mobile" = ${mobile} AND m."deletedAt" IS NULL
+          AND lower(regexp_replace(trim(m."fullName"), '\\s+', ' ', 'g')) = ${personName(fullName)}
+        ORDER BY m."createdAt" ASC
         LIMIT 1
       `;
-      return rows[0] ?? null;
+      const row = rows[0];
+      // An approved request means they have been through this form already (ADR-122):
+      // the caller refuses rather than queueing another one for staff. Deliberately not
+      // "has a membership" — a paper-register entry arrives with one.
+      return row === undefined ? null : { id: row.id, alreadyUsedThisForm: Number(row.confirmed) > 0 };
     },
 
     async findImportedMemberById(gymId: string, mobile: E164Mobile, memberId: string) {

@@ -79,6 +79,8 @@ export const DOMAIN_ERROR_CODES = [
   'FORBIDDEN',
   /** An erasure stopped because the member's standing instruction is still live (ADR-116). */
   'MANDATE_STILL_LIVE',
+  /** They are already properly in the register; the QR form has nothing to do (ADR-122). */
+  'ALREADY_A_MEMBER',
   'CONFLICT',
 ] as const;
 

@@ -830,3 +830,27 @@ Free OCR rather than a verification API (owner's choice): tesseract in the exist
 **A check that cannot be made lets the member through.** Offline, slow, a server having a bad minute — being unable to reach the gym must not be the same as being refused by it, and the submission catches anything this missed.
 
 **Known and left alone for now:** households share a mobile, so a genuinely new member joining on a relative's number is stopped on the new-member journey. The desk is the way round it. Worth revisiting if it turns out to happen often.
+
+## ADR-122
+
+**Date:** 2026-10-15
+**Status:** Accepted
+**Context:** ADR-121 let a paper-register entry through the existing-member form's number check, because turning one into a real record is the form's whole purpose. The owner pushed back: *"agar mai already member list me hu and agar dubara QR scan kar ke existing member form fill karta hu to rules hona chahiye ya nhi? Jisse koi bhi ise faltu ka detail na fill kar paye."*
+
+They were right and my framing had been too broad.
+
+**Decision — the exemption lasts until the form has done its job, and not a moment longer.**
+
+`source` stays `IMPORT` for ever, so the exemption as written was permanent: the same member could fill the form in every day. ADR-117 stopped that making a second member, but each attempt still put a fresh request in front of staff — which is the pointless detail the owner meant.
+
+**The test is an approved verification request, not a confirmed membership.** The first attempt at this used the membership and broke the case it was meant to protect: a paper-register entry arrives *with* a membership, carried over from the book, so every genuine user of the form was refused. What marks the form as done for somebody is staff having approved their request once.
+
+**It is enforced in the submission, not only in the step check.** ADR-121's per-step check is a courtesy to the member; this is the guard. A browser can skip the first and cannot skip the second.
+
+## ADR-123
+
+**Date:** 2026-10-15
+**Status:** Accepted
+**Context:** The face image failed to build: `pytesseract==0.3.16` does not exist. The latest is `0.3.13`.
+
+**Decision — recorded because it is the second time.** The same mistake was made with `uvicorn` on 2026-10-07, and `apps/face/requirements.txt` carries the line *"Verified resolvable at these versions"* directly above where it happened. A pinned version that was never looked up is not a pin; it is a guess that fails at deploy time instead of at review time. Every version added to that file is to be checked against the index before it is written, not after the build says so.
