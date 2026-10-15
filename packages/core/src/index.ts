@@ -17,6 +17,7 @@ export * from './reminders/inbound';
 export * from './reminders/transactional';
 export * from './kiosk/check-in';
 export * from './qr/gov-id';
+export * from './qr/gov-id-text';
 export * from './kiosk/face-engine';
 export * from './kiosk/matcher';
 export * from './kiosk/photo-quality';

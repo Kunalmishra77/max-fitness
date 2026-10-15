@@ -14,11 +14,8 @@ import { findDuplicateFace } from './duplicate-face';
  * already joined, at a desk with a queue behind them, costs the gym the member.
  */
 
-const template = (memberId: string, vector: readonly number[]): FaceTemplateRow => ({
-  memberId,
-  vector,
-  modelVersion: 'sface-1',
-});
+let nextId = 0;
+const template = (memberId: string, vector: readonly number[]): FaceTemplateRow => ({ id: `tmpl_${(nextId += 1)}`, memberId, vector });
 
 /** Unit vectors, so cosine similarity is easy to reason about. */
 const RAVI = [1, 0, 0];
