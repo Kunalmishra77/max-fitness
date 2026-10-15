@@ -808,3 +808,25 @@ Free OCR rather than a verification API (owner's choice): tesseract in the exist
 **An unreachable reader accepts the card**, exactly as the selfie gate does. A gym that cannot take a member because a container is restarting is a worse failure than one whose newest member handed over a photograph nobody read. A PDF passes too: DigiLocker gives members one and it is not an image.
 
 **Each refusal names what to do differently** — the wrong kind of card, a name that is not theirs, a photograph too dark to read. "Bad photo" is not something a member holding a card at a desk can act on.
+
+## ADR-121
+
+**Date:** 2026-10-15
+**Status:** Accepted
+**Context:** The owner filled the reception form in as a duplicate — their own face, a different name — worked through every screen, pressed send, and only then was told the gym already had them. Their words: check each thing where it is asked, not all of it at the end.
+
+**Decision — one screen, one question, answered on the spot.**
+
+`POST /api/v1/qr/check` answers a single step: the number, the date, the photograph or the card. The form asks before letting the member move on.
+
+**It changes nothing and guards nothing.** The submission still repeats every check, because a check a browser can skip is not a guard — this exists so a member is not made to fill in eight screens before being told. The two must not drift, which is why both call the same functions rather than describing the same rule twice.
+
+**It says as little as it can.** A number or a date that belongs to somebody is answered with *that it does* and never with whose, because otherwise the form becomes a way of asking "is this person a member here" — and a reception QR is a public URL. The face is the one exception, at the owner's request: a face is proof of who is holding the phone, so showing them their own record tells them nothing they do not know and ends the guessing. It is rate-limited harder than the form it serves, for the same reason.
+
+**A shared date of birth is a remark, not a refusal.** In a gym of two hundred, birthdays repeat; the owner said so plainly. The member is told and carries on with one tap.
+
+**The two journeys differ on the number, and have to.** On the new-member form any number already in the register is a stop. On the existing-member form a **paper-register entry passes** — turning one into a real record is the entire purpose of that form, and blocking it would mean nobody could ever use it. Anyone else on the number is already in the register, which is the duplicate being prevented.
+
+**A check that cannot be made lets the member through.** Offline, slow, a server having a bad minute — being unable to reach the gym must not be the same as being refused by it, and the submission catches anything this missed.
+
+**Known and left alone for now:** households share a mobile, so a genuinely new member joining on a relative's number is stopped on the new-member journey. The desk is the way round it. Worth revisiting if it turns out to happen often.

@@ -2107,6 +2107,13 @@
       "WRONG_TYPE": "That is a different kind of ID from the one you chose. Pick the right one above, or photograph the card you chose.",
       "NAME_MISMATCH": "The name on that card is not the name you entered. Please use your own ID.",
       "DOB_MISMATCH": "The date of birth on that card does not match the one you entered."
+    },
+    "stepCheck": {
+      "MOBILE_IN_USE": "This number is already in the member list. Please speak to the reception desk.",
+      "DOB_IN_USE": "Somebody here already has this date of birth. That is common enough — if it is yours, carry on.",
+      "DOB_CONTINUE": "It is my date of birth — continue",
+      "ALREADY_A_MEMBER_NAMED": "You are already a member here, as {name}. Please speak to the reception desk.",
+      "checking": "Checking…"
     }
   },
   "qrNewForm": {

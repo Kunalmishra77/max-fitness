@@ -8,6 +8,7 @@ import { SelfieCapture, type SelfieCaptureProps } from '@/components/join/selfie
 import { cn } from '@/lib/cn';
 import { CrmIcon } from '@/components/crm/crm-icons';
 import { SELFIE_REASONS } from './selfie-reasons';
+import { checkStep } from './step-check';
 
 /**
  * "I am already a member", on one page (client decision, ADR-075).
@@ -168,6 +169,8 @@ export function QrExistingForm({
   const [endDate, setEndDate] = useState('');
   // Nothing pre-selected: cash is the common answer, not an answer to assume.
   const [payMethod, setPayMethod] = useState<(typeof PAY_METHODS)[number] | null>(null);
+  /** Something worth saying that the member may accept and move past (ADR-121). */
+  const [softWarning, setSoftWarning] = useState<string | null>(null);
   const [slot, setSlot] = useState<TrainingSlot | null>(null);
   const [govIdType, setGovIdType] = useState<GovIdType | ''>('');
   // Shrunk in the browser as soon as it is picked: a raw phone photo of an Aadhaar is
@@ -625,14 +628,56 @@ export function QrExistingForm({
   const last = steps.length - 1;
   const here = steps[Math.min(step, last)];
 
+  /**
+   * What this screen alone can be asked about on the server (ADR-121).
+   *
+   * One screen, one question. The number, the date, the photograph and the card are each
+   * answered where they are given, rather than all of them after the member has filled in
+   * eight screens and pressed the button.
+   */
+  const serverCheckFor = (keys: readonly string[]): Record<string, string | Blob> | null => {
+    if (keys.includes('mobile')) return { step: 'mobile', journey: 'existing', mobile: mobile.replace(/\D/g, '') };
+    if (keys.includes('dob') && dob !== '') return { step: 'dob', dob };
+    if (keys.includes('selfie') && photo !== null) return { step: 'selfie', selfie: photo.blob, fullName: fullName.trim() };
+    if (keys.includes('govId') && govIdFront !== null && govIdType !== '') {
+      return { step: 'govId', govIdFront, govIdType, fullName: fullName.trim(), dob };
+    }
+    return null;
+  };
+
   /** Only this screen's answers hold the member up; the rest are asked later. */
   const goNext = () => {
     setFailure(null);
+    setSoftWarning(null);
     const found = missing();
     const mine = Object.fromEntries(Object.entries(found).filter(([key]) => here?.keys.includes(key)));
     setProblems(mine);
     if (Object.keys(mine).length > 0) return;
-    setStep((current) => Math.min(current + 1, last));
+
+    const ask = serverCheckFor(here?.keys ?? []);
+    if (ask === null) {
+      setStep((current) => Math.min(current + 1, last));
+      return;
+    }
+
+    start(async () => {
+      const verdict = await checkStep(ask);
+      if (verdict.ok) {
+        setStep((current) => Math.min(current + 1, last));
+        return;
+      }
+      // A shared date of birth is a remark, not a refusal: the member says it is theirs
+      // and carries on. Everything else is a stop, with the desk as the way round it.
+      if (verdict.soft === true) {
+        setSoftWarning(t(`stepCheck.${verdict.reason}` as never));
+        return;
+      }
+      setFailure(
+        verdict.member === undefined
+          ? t(`stepCheck.${verdict.reason}` as never)
+          : t('stepCheck.ALREADY_A_MEMBER_NAMED', { name: verdict.member.fullName }),
+      );
+    });
   };
 
   return (
@@ -652,6 +697,24 @@ export function QrExistingForm({
         <p role="alert" className="rounded-panel bg-tint-fee-expired-bg p-4 text-body font-semibold text-semantic-fee-expired">
           {failure}
         </p>
+      )}
+
+      {/* A remark the member can accept: somebody here shares their date of birth, which
+          in a gym of two hundred is unremarkable. Carrying on is one tap (ADR-121). */}
+      {softWarning === null ? null : (
+        <div role="status" className="grid gap-3 rounded-panel bg-tint-fee-due-soon-bg p-4">
+          <p className="text-body leading-body text-brand-ink">{softWarning}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setSoftWarning(null);
+              setStep((current) => Math.min(current + 1, last));
+            }}
+            className="min-h-14 rounded-button border-2 border-brand-obsidian px-6 text-body font-semibold text-brand-obsidian"
+          >
+            {t('stepCheck.DOB_CONTINUE')}
+          </button>
+        </div>
       )}
 
       <div className="flex gap-3">

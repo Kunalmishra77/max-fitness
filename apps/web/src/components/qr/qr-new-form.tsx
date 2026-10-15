@@ -13,6 +13,7 @@ import type { ISTDate } from '@mfp/shared';
 import { AutopayOffer } from '@/components/join/autopay-offer';
 import { PayStep } from '@/components/join/pay-step';
 import { SELFIE_REASONS } from './selfie-reasons';
+import { checkStep } from './step-check';
 
 /**
  * "I am new here", at the reception desk (client request, ADR-083).
@@ -137,6 +138,8 @@ export function QrNewForm({
   const [slot, setSlot] = useState<TrainingSlot | null>(null);
   // Nothing pre-selected: cash is the common answer, not one to assume for somebody.
   const [payMethod, setPayMethod] = useState<(typeof PAY_METHODS)[number] | null>(null);
+  /** Something worth saying that the member may accept and move past (ADR-121). */
+  const [softWarning, setSoftWarning] = useState<string | null>(null);
   const [govIdType, setGovIdType] = useState<GovIdType | ''>('');
   const [govIdFront, setGovIdFront] = useState<Blob | null>(null);
   const [govIdBack, setGovIdBack] = useState<Blob | null>(null);
@@ -618,13 +621,54 @@ export function QrNewForm({
   const last = steps.length - 1;
   const here = steps[Math.min(step, last)];
 
+  /**
+   * What this screen alone can be asked about on the server (ADR-121).
+   *
+   * Nobody joining for the first time should reach the last screen before being told the
+   * gym already has them. On this journey any number already in the register is a stop —
+   * unlike the existing-member form, where a paper-register entry is exactly who is
+   * expected.
+   */
+  const serverCheckFor = (keys: readonly string[]): Record<string, string | Blob> | null => {
+    if (keys.includes('mobile')) return { step: 'mobile', journey: 'new', mobile: mobile.replace(/\D/g, '') };
+    if (keys.includes('dob') && dob !== '') return { step: 'dob', dob };
+    if (keys.includes('selfie') && photo !== null) return { step: 'selfie', selfie: photo.blob };
+    if (keys.includes('govId') && govIdFront !== null && govIdType !== '') {
+      return { step: 'govId', govIdFront, govIdType, fullName: fullName.trim(), dob };
+    }
+    return null;
+  };
+
   const goNext = () => {
     setFailure(null);
+    setSoftWarning(null);
     const found = missing();
     const mine = Object.fromEntries(Object.entries(found).filter(([key]) => here?.keys.includes(key)));
     setProblems(mine);
     if (Object.keys(mine).length > 0) return;
-    setStep((current) => Math.min(current + 1, last));
+
+    const ask = serverCheckFor(here?.keys ?? []);
+    if (ask === null) {
+      setStep((current) => Math.min(current + 1, last));
+      return;
+    }
+
+    start(async () => {
+      const verdict = await checkStep(ask);
+      if (verdict.ok) {
+        setStep((current) => Math.min(current + 1, last));
+        return;
+      }
+      if (verdict.soft === true) {
+        setSoftWarning(te(`stepCheck.${verdict.reason}` as never));
+        return;
+      }
+      setFailure(
+        verdict.member === undefined
+          ? te(`stepCheck.${verdict.reason}` as never)
+          : te('stepCheck.ALREADY_A_MEMBER_NAMED', { name: verdict.member.fullName }),
+      );
+    });
   };
 
   const send = () => {
@@ -703,6 +747,24 @@ export function QrNewForm({
         <p role="alert" className="rounded-panel bg-tint-fee-expired-bg p-4 text-body font-semibold text-semantic-fee-expired">
           {failure}
         </p>
+      )}
+
+      {/* A remark the member can accept: somebody here shares their date of birth, which
+          in a gym of two hundred is unremarkable. Carrying on is one tap (ADR-121). */}
+      {softWarning === null ? null : (
+        <div role="status" className="grid gap-3 rounded-panel bg-tint-fee-due-soon-bg p-4">
+          <p className="text-body leading-body text-brand-ink">{softWarning}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setSoftWarning(null);
+              setStep((current) => Math.min(current + 1, last));
+            }}
+            className="min-h-14 rounded-button border-2 border-brand-obsidian px-6 text-body font-semibold text-brand-obsidian"
+          >
+            {te('stepCheck.DOB_CONTINUE')}
+          </button>
+        </div>
       )}
 
       <div className="flex gap-3">

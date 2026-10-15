@@ -1,7 +1,22 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WithIntl } from '@/test/intl';
+
+/**
+ * The per-step checks the form now makes before letting a member move on (ADR-121).
+ *
+ * Stubbed to say yes, because these tests are about the form's own behaviour; the checks
+ * have their own tests, and a `fetch` that is simply absent would exercise the
+ * fail-open path in every single one of them without saying so.
+ */
+beforeEach(() => {
+  vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ data: { ok: true } }) })));
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 import { QrExistingForm, type QrSubmit } from './qr-existing-form';
 
 /**
