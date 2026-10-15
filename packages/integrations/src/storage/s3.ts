@@ -1,5 +1,12 @@
 import { createHash } from 'node:crypto';
-import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import type { PutObjectRequest, StorageDriver, StoredObject } from '@mfp/core/ports';
 import { assertObjectKey, newObjectKey, SignedFileUrls } from './keys';
 
@@ -128,4 +135,30 @@ export function createS3Client(options: S3ConnectionOptions): S3Client {
     requestChecksumCalculation: 'WHEN_REQUIRED',
     responseChecksumValidation: 'WHEN_REQUIRED',
   });
+}
+
+/**
+ * Every key in the bucket, for the one job that needs the bucket's own view: finding
+ * objects the database has forgotten (`find:orphans`).
+ *
+ * It is deliberately **not** on `StorageDriver`. Nothing the gym does at runtime should
+ * ever enumerate the bucket — a request that walks every selfie is either a mistake or
+ * an attack, and the port not having the verb is the cheapest way to keep it that way.
+ * This is a function the cleanup script reaches for on purpose.
+ *
+ * Paginated, because S3 returns a thousand keys at a time and quietly stops there.
+ */
+export async function listAllObjects(client: S3Client, bucket: string): Promise<string[]> {
+  const keys: string[] = [];
+  let token: string | undefined;
+
+  do {
+    const page = await client.send(
+      new ListObjectsV2Command({ Bucket: bucket, ...(token === undefined ? {} : { ContinuationToken: token }) }),
+    );
+    for (const object of page.Contents ?? []) if (object.Key !== undefined) keys.push(object.Key);
+    token = page.IsTruncated === true ? page.NextContinuationToken : undefined;
+  } while (token !== undefined);
+
+  return keys;
 }

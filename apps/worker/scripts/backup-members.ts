@@ -34,6 +34,15 @@ async function main(): Promise<void> {
         attendance: { select: { attendanceDate: true, method: true, capturedAt: true } },
         callTasks: true,
         verifications: true,
+        /**
+         * The storage keys, which is what makes the photographs findable again.
+         *
+         * Added after a wipe died halfway through on 2026-10-15: the media *rows* were
+         * deleted, the objects were not, and nothing left in the database knew where
+         * they were. The backup is the only thing that can name an orphan afterwards,
+         * and it was not naming them.
+         */
+        media: { select: { id: true, kind: true, label: true, storageKey: true, sha256: true, createdAt: true } },
         messages: { select: { purpose: true, status: true, sentAt: true, bodyPreview: true, createdAt: true } },
       },
       orderBy: { createdAt: 'asc' },
