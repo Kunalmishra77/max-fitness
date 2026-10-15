@@ -32,16 +32,13 @@ export interface WhatsAppButton {
    * For a quick reply, what the webhook receives back, e.g. `UNSUB.<signed token>`
    * (BR-6.1). For a URL button it is the **link**, of which only the tail is sent: the
    * approved template already holds everything up to `{{1}}`.
+   *
+   * Which of the two this is comes from the template, not from here (ADR-119): the
+   * buttons are filled by position, and the template is the only thing that knows its
+   * own shape.
    */
   readonly payload: string;
   readonly label: string;
-  /**
-   * Defaults to a quick reply, which is what most buttons are.
-   *
-   * The two are not interchangeable at Meta — sending one as the other is a component
-   * mismatch and the whole message is refused — and the reminders carry one of each.
-   */
-  readonly kind?: 'quick_reply' | 'url';
 }
 
 export type WhatsAppSendOutcome =

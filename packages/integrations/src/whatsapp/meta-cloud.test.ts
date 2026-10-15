@@ -95,27 +95,6 @@ describe('MetaCloudWhatsAppProvider', () => {
     expect(result).toEqual({ status: 'SENT', providerMessageId: 'wamid.XYZ' });
   });
 
-  it('carries quick-reply buttons as payloads, so a tap comes back identifiable', async () => {
-    const fetchImpl = vi.fn(() => Promise.resolve(ok()));
-
-    await provider(fetchImpl).send({
-      to: TO,
-      templateName: 'mf_renewal_due',
-      language: 'en',
-      variables: { firstName: 'Ravi', endDate: '15 Sep 2026', whenPhrase: 'in 7 days' },
-      idempotencyKey: 'rem:2',
-      buttons: [{ payload: 'UNSUB.tok', label: 'Unsubscribe' }],
-    });
-
-    const components = (bodyOf(fetchImpl.mock.calls[0])['template'] as { components: unknown[] }).components;
-    expect(components).toContainEqual({
-      type: 'button',
-      sub_type: 'quick_reply',
-      index: '0',
-      parameters: [{ type: 'payload', payload: 'UNSUB.tok' }],
-    });
-  });
-
   /**
    * The reminders carry two buttons and they are not the same kind. "Renew now" is a URL
    * button whose template holds `https://…/r/{{1}}` and takes only the token; "Unsubscribe"
@@ -186,6 +165,52 @@ describe('MetaCloudWhatsAppProvider', () => {
     });
 
     expect((bodyOf(fetchImpl.mock.calls[0])['template'] as { language: unknown }).language).toEqual({ code: 'hi' });
+  });
+
+  /**
+   * A template Meta approved with no buttons must not be sent one (ADR-119).
+   *
+   * `mf_verification_approved` has a body and a footer and nothing else, and the worker
+   * passed it an unsubscribe button anyway. Meta answered 132018 and dropped the message:
+   * the first real send the gym ever attempted, refused for a component the template does
+   * not have. The template knows its own shape, so it decides.
+   */
+  it('sends no button component to a template that has none', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(ok()));
+
+    await provider(fetchImpl).send({
+      to: TO,
+      templateName: 'mf_verification_approved',
+      language: 'en',
+      variables: { firstName: 'Kunal', endDate: '15 Oct 2026' },
+      idempotencyKey: 'ver:1',
+      buttons: [{ payload: 'UNSUB.tok', label: 'unsubscribe' }],
+    });
+
+    const components = (bodyOf(fetchImpl.mock.calls[0])['template'] as { components: Array<{ type: string }> }).components;
+    expect(components.map((component) => component.type)).toEqual(['body']);
+  });
+
+  /** And the kind comes from the template too, not from whatever the caller guessed. */
+  it('takes each button kind from the template rather than the caller', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(ok()));
+
+    await provider(fetchImpl).send({
+      to: TO,
+      templateName: 'mf_renewal_due',
+      language: 'en',
+      variables: { firstName: 'Ravi', endDate: '15 Sep 2026', whenPhrase: 'in 7 days' },
+      idempotencyKey: 'rem:6',
+      // Both passed as plain payloads, with no kind: the template says the first is a URL.
+      buttons: [
+        { payload: 'https://maxfitnessgym.co.in/r/tok123', label: 'renew' },
+        { payload: 'UNSUB.tok', label: 'unsubscribe' },
+      ],
+    });
+
+    const components = (bodyOf(fetchImpl.mock.calls[0])['template'] as { components: unknown[] }).components;
+    expect(components).toContainEqual({ type: 'button', sub_type: 'url', index: '0', parameters: [{ type: 'text', text: 'tok123' }] });
+    expect(components).toContainEqual({ type: 'button', sub_type: 'quick_reply', index: '1', parameters: [{ type: 'payload', payload: 'UNSUB.tok' }] });
   });
 
   it('sends a free-form reply as a plain text message, with no link preview', async () => {

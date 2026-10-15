@@ -177,7 +177,7 @@ describe('sendReminder', () => {
     // The two are not the same kind at Meta, and the order is the index the template
     // uses: a URL button sent as a quick reply has the whole message refused.
     expect(sent[0]?.buttons).toEqual([
-      { kind: 'url', payload: 'https://max.test/r/mem_1', label: 'renew' },
+      { payload: 'https://max.test/r/mem_1', label: 'renew' },
       { payload: 'UNSUB.mem_1', label: 'unsubscribe' },
     ]);
     expect(updates).toEqual([{ key: intent.idempotencyKey, status: 'SENT', error: null }]);

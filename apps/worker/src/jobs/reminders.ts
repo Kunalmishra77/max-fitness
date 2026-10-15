@@ -206,8 +206,9 @@ export async function sendReminder(intent: SendIntent, deps: SendDeps): Promise<
     variables: intent.variables,
     idempotencyKey: intent.idempotencyKey,
     buttons: [
-      // Order matters: these fill the template's buttons by index.
-      { kind: 'url', payload: intent.buttons.renewUrl, label: 'renew' },
+      // Order matters: these fill the template's buttons by index, and the template says
+      // which is a link and which a quick reply (ADR-119).
+      { payload: intent.buttons.renewUrl, label: 'renew' },
       { payload: intent.buttons.unsubscribePayload, label: 'unsubscribe' },
     ],
   });

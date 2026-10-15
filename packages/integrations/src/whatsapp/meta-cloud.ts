@@ -86,15 +86,25 @@ export class MetaCloudWhatsAppProvider implements WhatsAppProvider {
     const parameters = definition.variables.map((key) => ({ type: 'text' as const, text: request.variables[key] ?? '' }));
 
     const components: unknown[] = [{ type: 'body', parameters }];
-    // The two kinds are not interchangeable, and the reminders carry one of each: "Renew
-    // now" is a URL button, "Unsubscribe" a quick reply whose payload comes back on the
-    // webhook and ties the tap to the member who made it (BR-6.1). Sending either as the
-    // other is a component mismatch and Meta refuses the entire message.
-    (request.buttons ?? []).forEach((button, index) => {
+
+    /**
+     * **The template decides which buttons exist, and of what kind** (ADR-119).
+     *
+     * Meta refuses the whole message for a component the approved template does not have
+     * — `mf_verification_approved` has a body and a footer and nothing else, and the
+     * worker sent it an unsubscribe button. That was 132018 on the first real send the
+     * gym ever attempted. The caller supplies values; what they fill is not its business.
+     *
+     * The two kinds are not interchangeable either: a URL button takes the tail of the
+     * link, a quick reply takes a payload that comes back on the webhook (BR-6.1).
+     */
+    (definition.buttons ?? []).forEach((button, index) => {
+      const supplied = request.buttons?.[index];
+      if (supplied === undefined) return;
       components.push(
         button.kind === 'url'
-          ? { type: 'button', sub_type: 'url', index: String(index), parameters: [{ type: 'text', text: urlSuffix(button.payload) }] }
-          : { type: 'button', sub_type: 'quick_reply', index: String(index), parameters: [{ type: 'payload', payload: button.payload }] },
+          ? { type: 'button', sub_type: 'url', index: String(index), parameters: [{ type: 'text', text: urlSuffix(supplied.payload) }] }
+          : { type: 'button', sub_type: 'quick_reply', index: String(index), parameters: [{ type: 'payload', payload: supplied.payload }] },
       );
     });
 

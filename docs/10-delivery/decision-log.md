@@ -767,3 +767,19 @@ The name is never grounds for refusal; two people can share one. It is used in o
 **The refusal names nobody.** It says the desk can sort it out and nothing else. Telling a stranger whose face they matched would hand them another member's identity, and the desk can see it in Max Register anyway.
 
 **It is silent whenever it cannot be sure** — no engine, no embedding, nobody enrolled, or a score below the line. A sign-up refused by mistake is worse than a duplicate the desk can merge.
+
+## ADR-119
+
+**Date:** 2026-10-15
+**Status:** Accepted
+**Context:** The first real WhatsApp send the gym ever attempted came back `(#132018) There's an issue with the parameters in your template`. The variables were right — two of them, both filled, matching the approved template exactly. The approved template has a body and a footer and nothing else; the worker sent it an unsubscribe button.
+
+**Decision — the template declares its buttons, and the adapter sends no others.**
+
+The caller supplies values, by position. What those values fill is not its business, because only the template knows its own shape: how many buttons there are, and whether each is a link or a quick reply. Meta refuses the entire message over a component the template does not have, so a caller that guesses wrong loses the message rather than the button.
+
+`WhatsAppButton.kind` is gone. It was added hours earlier for the same class of bug — the renew button being sent as a quick reply — and it put the knowledge in the wrong place: every caller had to know the shape of every template it sent. One source of truth is `templates.ts`, which already carries the buttons for the submission sheet.
+
+**Worth keeping for the next integration:** the payload was correct in every part anybody had thought to check. The variables matched, the names matched, the language matched, the number was registered and the template was approved. What was wrong was a component nobody had asked for. A gateway that refuses the whole message for an *extra* field punishes generosity, and the only safe posture is to send exactly what the other side has agreed to and nothing more.
+
+**Not fixed here:** the body of `mf_verification_approved` says "If you do not want reminders, please unsubscribe" and now has no button to do it with. Replying STOP still works — the webhook handles it — but the template should either gain the button or lose the sentence.
