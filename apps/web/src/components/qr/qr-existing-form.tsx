@@ -310,6 +310,7 @@ export function QrExistingForm({
         if (key !== undefined) beside[key] = t(`errors.${key}` as never);
       }
       if (result.code === 'UNDER_MINIMUM_AGE') beside['dob'] = t('errors.underAge', { minAge: result.minAge ?? minAge });
+      if (result.code === 'ALREADY_A_MEMBER') setFailure(t('errors.alreadyAMember'));
       if (result.code === 'SELFIE_REJECTED') {
         beside['selfie'] = t(`errors.${SELFIE_REASONS[result.selfieReason ?? ''] ?? 'selfie'}` as never);
       }

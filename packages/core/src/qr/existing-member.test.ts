@@ -63,7 +63,7 @@ class FakeStore implements ExistingMemberStore {
 
   /** Register entries by id, each with its number: what a proven number may claim. */
   byId = new Map<string, E164Mobile>();
-  findImportedMember() {
+  findExistingMember() {
     return Promise.resolve(this.imported);
   }
   findImportedMemberById(_gymId: string, mobile: E164Mobile, memberId: string) {

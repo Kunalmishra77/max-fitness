@@ -9,6 +9,7 @@ import { parseQrExistingForm } from '@/lib/qr-existing-form';
 import { qrOtpGate } from '@/lib/qr-otp-gate';
 import { clientIp, limiterKey, registrationLimiters } from '@/lib/rate-limit';
 import { enrolFromSignup } from '@/lib/enrol-on-signup';
+import { alreadyAMember } from '@/lib/duplicate-member';
 import { checkSelfieFace } from '@/lib/selfie-face-gate';
 import { MAX_GOV_ID_BYTES, MAX_SELFIE_BYTES, processGovIdImage, processSelfie } from '@/lib/selfie-image';
 import { AUTOPAY_TOKEN_TTL_SECONDS, hashIp } from '@/lib/signup-access';
@@ -94,6 +95,23 @@ export async function POST(request: NextRequest) {
       { clock, secret: env.LINK_TOKEN_SECRET },
     );
     if (!gate.ok) return apiError(401, 'OTP_REQUIRED', 'Confirm the mobile number first', requestId);
+
+    /**
+     * The same face under another number (ADR-118).
+     *
+     * Matching an existing member is the *normal* case here — that is what this form is
+     * for — so the test is not "is this face known" but "is this face known as somebody
+     * else". The owner registered as "Kunal Mishra" on one number and "Indresh Mishra"
+     * on another, with one face, and both were taken.
+     *
+     * The reply names nobody. Telling a stranger whose face they matched would hand them
+     * another member's identity, and the desk can see it in Max Register anyway.
+     */
+    const twin = await alreadyAMember(faceCheck, gym.id, gym.settings.attendance);
+    if (twin !== null && twin.mobile !== parsed.fields.mobile) {
+      console.warn(`[qr-existing] a face in the register arrived under a different number ${requestId}`);
+      return apiError(409, 'ALREADY_A_MEMBER', 'This person is already a member', requestId);
+    }
 
     const result = await submitExistingMember(
       {

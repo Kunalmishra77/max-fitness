@@ -732,3 +732,38 @@ So the mandates are found and cancelled **at the gateway before anything here ch
 In DEMO_MODE there is no gateway and nothing real to stop, so nothing can refuse.
 
 **Found at the same time, not yet fixed:** four member records share one mobile number (three "Ayan Saifi", one "Mohd Ayan"). The QR form catches a repeat scan only while the first submission is still `PENDING`; once staff approve or reject it, the same person submitting again becomes a second member. A different spelling of the name defeats the register match as well.
+
+## ADR-117
+
+**Date:** 2026-10-15
+**Status:** Accepted
+**Context:** One mobile number carried four member records in production — three "Ayan Saifi" and one "Mohd Ayan".
+
+**Decision — the reception QR recognises anyone already on that number under that name, not only the paper register.**
+
+Two guards were meant to stop a second record and neither covered this. The repeat-scan guard looks for a `PENDING` verification, so it stops working the moment staff approve or reject one. The register match looked only at `source = 'IMPORT'`, so a member who had come through the QR before was invisible to it. Between them, a member filling the form in again after being approved became a new member every time.
+
+`findExistingMember` now matches any live member on that number with that name, whatever created them.
+
+**The name is matched as well as the number, deliberately.** Households share a mobile, and with OTP off (ADR-077) the number alone proves nothing: matching on it by itself would hand one family member another one's record. The cost is the opposite case — two people of the same name on one number would be merged — which the face check (ADR-118) is the real answer to.
+
+## ADR-118
+
+**Date:** 2026-10-15
+**Status:** Accepted
+**Context:** The owner registered twice with their own face: once as "Kunal Mishra" on one number, once as "Indresh Mishra" on another. Both were accepted. Nothing matched, because nothing that was checked had stayed the same — only the face had.
+
+**Decision — the face is what makes a member unique, and it is the only thing a sign-up is refused over.**
+
+The name is never grounds for refusal; two people can share one. It is used in one place only — recognising a repeat submission from the same number (ADR-117) — and never to turn anybody away.
+
+`findDuplicateFace` runs on the embedding the selfie gate has already computed, so it costs a gallery read and no second pass through the engine. The two routes ask different questions, because they mean different things:
+
+- **`/registrations`** (a new member): any match at all means they have already joined.
+- **`/qr/existing`**: matching an existing member is the *normal* case — that is what the form is for — so the test is whether the face is known **as somebody else**, which here means under a different number.
+
+**`duplicateThreshold` is 0.75, well above check-in's 0.55.** Greeting the wrong member at the door costs one tap to correct. Telling somebody who really is new that they have already joined, at a desk with a queue behind them, costs them the sign-up and the gym the member. Measured (ADR-107): two selfies of the same person score 0.84–0.99, two different members below 0.60. 0.75 is clear of both.
+
+**The refusal names nobody.** It says the desk can sort it out and nothing else. Telling a stranger whose face they matched would hand them another member's identity, and the desk can see it in Max Register anyway.
+
+**It is silent whenever it cannot be sure** — no engine, no embedding, nobody enrolled, or a score below the line. A sign-up refused by mistake is worse than a duplicate the desk can merge.

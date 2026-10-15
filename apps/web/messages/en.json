@@ -486,7 +486,8 @@
       "selfieTooDark": "That photo is too dark. Move somewhere brighter and take it again.",
       "selfieTooBright": "There is too much light behind you. Turn around and take it again.",
       "selfieBlurred": "That photo is blurred. Hold still and take it again.",
-      "selfieAnotherFace": "There is somebody else in that photo. Please take one of just you."
+      "selfieAnotherFace": "There is somebody else in that photo. Please take one of just you.",
+      "alreadyAMember": "It looks like you are already a member here. Please speak to the reception desk — they can see your record and sort this out in a moment."
     },
     "camera": {
       "title": "Take a selfie",
@@ -2091,7 +2092,8 @@
       "selfieUnsupported": "That file isn't a photo we can use. Take a new selfie, or choose a JPEG or PNG photo.",
       "selfieTooLarge": "That photo is too large. Please take it again.",
       "selfieTooSmall": "That photo is too small. Move closer and take it again.",
-      "payMethod": "Please choose how you pay."
+      "payMethod": "Please choose how you pay.",
+      "alreadyAMember": "It looks like you are already a member here. Please speak to the reception desk — they can see your record and sort this out in a moment."
     },
     "payMethods": {
       "CASH": "Cash at the counter",

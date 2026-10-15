@@ -180,6 +180,16 @@ export const AttendanceSettingsSchema = z.object({
   matchMargin: z.number().min(0).max(0.5).default(0.1),
   /** Frames that must agree before the kiosk decides anything. */
   framesToAgree: z.number().int().min(1).max(10).default(3),
+  /**
+   * How sure we must be before telling somebody they have already joined (ADR-118).
+   *
+   * Higher than `acceptThreshold` on purpose. Greeting the wrong member at the door costs
+   * one tap to correct; turning away somebody who really is new, in front of a queue,
+   * costs them the sign-up and the gym the member. Measured enrolment selfies of the same
+   * person scored 0.84-0.99 against each other and two different members scored below
+   * 0.60 (ADR-107), so 0.75 sits clear of both.
+   */
+  duplicateThreshold: z.number().min(0).max(1).default(0.75),
   /** How many face templates one member may have (1–2 selfie, 3–5 assisted, rest adaptive). */
   maxTemplatesPerMember: z.number().int().min(1).max(20).default(8),
 

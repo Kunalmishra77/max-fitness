@@ -22,10 +22,21 @@ const personName = (fullName: string) => fullName.trim().replace(/\s+/g, ' ').to
 
 function existingMemberStore(tx: TransactionClient): ExistingMemberStore {
   return {
-    async findImportedMember(gymId: string, mobile: E164Mobile, fullName: string) {
+    /**
+     * Anyone already on this number under this name, however they got here (ADR-117).
+     *
+     * It used to look only at `source = 'IMPORT'` — the paper register — so a member who
+     * had come through the QR before was invisible to it, and filling the form in again
+     * made a second member. One mobile number carried four records in production that way.
+     *
+     * The name is matched as well as the number, and that is deliberate: households share
+     * a mobile, and with OTP off (ADR-077) the number alone proves nothing. Matching on it
+     * by itself would hand one family member another one's record.
+     */
+    async findExistingMember(gymId: string, mobile: E164Mobile, fullName: string) {
       const rows = await tx.$queryRaw<Array<{ id: string }>>`
         SELECT "id" FROM "Member"
-        WHERE "gymId" = ${gymId} AND "mobile" = ${mobile} AND "source" = 'IMPORT' AND "deletedAt" IS NULL
+        WHERE "gymId" = ${gymId} AND "mobile" = ${mobile} AND "deletedAt" IS NULL
           AND lower(regexp_replace(trim("fullName"), '\\s+', ' ', 'g')) = ${personName(fullName)}
         ORDER BY "createdAt" ASC
         LIMIT 1

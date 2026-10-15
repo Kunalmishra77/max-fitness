@@ -838,6 +838,28 @@ suite('CRM fee desk against Postgres', () => {
     expect(await prisma.outboxEvent.count({ where: { gymId, dedupeKey: 'verification-approved:' + (freshItem?.id ?? '') } })).toBe(1);
     await expect(approveVerification({ verificationId: freshItem?.id ?? '' }, decide)).rejects.toMatchObject({ code: 'CONFLICT' });
 
+    /**
+     * 1b. The same person fills the form in again, after being approved (ADR-117).
+     *
+     * The repeat-scan guard only looks at requests still `PENDING`, so once staff decide
+     * one it stops catching anything, and the register match only ever looked at rows
+     * imported from the paper book. A member who had come through the QR was therefore
+     * invisible to both, and submitting again made a second member — which is how one
+     * mobile number ended up carrying four records in production.
+     */
+    const again = await submit('Qr  FRESH', '9000060001', '2026-11-30');
+    expect(again.matchedExisting).toBe(true);
+    expect(again.memberId).toBe(freshMember.id);
+    expect(await prisma.member.count({ where: { gymId, mobile: '+919000060001', deletedAt: null } })).toBe(1);
+
+    /**
+     * A different name on the same number is a different person: households share one
+     * mobile, and the number alone is not proof of anything while OTP is off (ADR-077).
+     */
+    const relative = await submit('Qr Fresh Brother', '9000060001', '2026-11-30');
+    expect(relative.matchedExisting).toBe(false);
+    expect(await prisma.member.count({ where: { gymId, mobile: '+919000060001', deletedAt: null } })).toBe(2);
+
     // 2. Someone already in the paper register.
     await commitMemberImport(
       { csv: 'full_name,mobile,gender,month_end_date,plan_months\nVerify Match,9000060002,M,20-09-2026,1\n', deskConsent: false },
@@ -875,7 +897,11 @@ suite('CRM fee desk against Postgres', () => {
     expect(await prisma.mediaFile.count({ where: { memberId: idMember.id, kind: 'GOV_ID' } })).toBe(2);
 
     await approveVerification({ verificationId: idItem?.id ?? '', approvedEndDate: istDate('2026-09-30') }, decide);
-    expect(await queue.count(gymId)).toBe(0);
+
+    // The two left are 1b's: the approved member who filled the form in again, and the
+    // relative on the same number. Joining an existing member still raises a request —
+    // they have re-declared a plan, and somebody has to check it.
+    expect(await queue.count(gymId)).toBe(2);
   });
 
   it('sends a one-time code, takes it once, and then shows the register entries on that number', async () => {

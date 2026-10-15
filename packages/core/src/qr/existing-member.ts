@@ -95,7 +95,7 @@ export interface VerificationRequestRecord {
 
 export interface ExistingMemberStore {
   /** An imported, not-deleted member of this gym with this mobile and name (case and spacing ignored). */
-  findImportedMember(
+  findExistingMember(
     gymId: string,
     mobile: E164Mobile,
     fullName: string,
@@ -244,7 +244,7 @@ export async function submitExistingMember(
           ? null
           : await store.findImportedMemberById(deps.gymId, fields.mobile, input.claimedMemberId);
       const imported =
-        claimed ?? (await store.findImportedMember(deps.gymId, fields.mobile, fields.fullName));
+        claimed ?? (await store.findExistingMember(deps.gymId, fields.mobile, fields.fullName));
       let memberId: string;
       if (imported === null) {
         memberId = await store.createMember({

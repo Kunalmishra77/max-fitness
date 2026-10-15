@@ -17,6 +17,8 @@ export type ApiErrorCode =
   | 'PAYLOAD_TOO_LARGE'
   | 'UNAUTHENTICATED'
   | 'SELFIE_REJECTED'
+  /** This face is already in the register under another name (ADR-118). */
+  | 'ALREADY_A_MEMBER'
   | 'PAYMENT_PROVIDER_UNAVAILABLE'
   /** Autopay needs a live gateway; DEMO_MODE has none to make a real mandate with (ADR-105). */
   | 'AUTOPAY_UNAVAILABLE'

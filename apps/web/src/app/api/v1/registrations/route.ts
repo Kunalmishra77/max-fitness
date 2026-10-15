@@ -9,6 +9,7 @@ import { parseRegistrationForm } from '@/lib/registration-form';
 import { MAX_SELFIE_BYTES, processSelfie } from '@/lib/selfie-image';
 import { checkSelfieFace } from '@/lib/selfie-face-gate';
 import { enrolFromSignup } from '@/lib/enrol-on-signup';
+import { alreadyAMember } from '@/lib/duplicate-member';
 import { hashIp } from '@/lib/signup-access';
 
 /**
@@ -72,6 +73,18 @@ export async function POST(request: NextRequest) {
       return apiError(400, 'SELFIE_REJECTED', 'That photo will not work for attendance', requestId, {
         details: { reason: faceCheck.reason },
       });
+    }
+
+    /**
+     * The same face joining twice under a different name (ADR-118). The owner did exactly
+     * this, as "Kunal Mishra" on one number and "Indresh Mishra" on another, and nothing
+     * caught it. The screen never says whose face it matched — only that the desk can
+     * sort it out — because that would tell a stranger who else trains here.
+     */
+    const twin = await alreadyAMember(faceCheck, gym.id, gym.settings.attendance);
+    if (twin !== null) {
+      console.warn(`[registrations] a face already in the register tried to join again ${requestId}`);
+      return apiError(409, 'ALREADY_A_MEMBER', 'This person is already a member', requestId);
     }
 
     const result = await registerMember(parsed.fields, selfie, {

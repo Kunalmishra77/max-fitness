@@ -676,6 +676,7 @@ export function QrNewForm({
       if (result.code === 'UNDER_MINIMUM_AGE') beside['dob'] = te('errors.underAge', { minAge: result.minAge ?? minAge });
       // The gate names what is wrong with the photograph, and the member is sent back to the
       // screen that holds it rather than left on the last one (ADR-080).
+      if (result.code === 'ALREADY_A_MEMBER') setFailure(te('errors.alreadyAMember'));
       if (result.code === 'SELFIE_REJECTED') {
         beside['selfie'] = te(`errors.${SELFIE_REASONS[result.selfieReason ?? ''] ?? 'selfie'}` as never);
       }
