@@ -182,7 +182,7 @@ async function main(): Promise<void> {
         done.push(['counters reset', count]);
       }
     } else {
-      console.log('  enquiries, queued events and counters: left alone (--only)');
+      console.log(`  enquiries, queued events and counters: left alone (${unconfirmedOnly ? '--unconfirmed' : '--only'})`);
     }
 
     for (const [label, n] of done) console.log(`  ${label}: ${n}`);
