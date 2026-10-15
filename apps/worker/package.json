@@ -27,7 +27,9 @@
     "enrol:faces": "tsx scripts/enrol-faces.ts",
     "set:gym-details": "tsx scripts/set-gym-details.ts",
     "make:coolify-env": "tsx scripts/make-coolify-env.ts",
-    "delete:test-gyms": "tsx scripts/delete-test-gyms.ts"
+    "delete:test-gyms": "tsx scripts/delete-test-gyms.ts",
+    "check:duplicate-faces": "tsx scripts/check-duplicate-faces.ts",
+    "audit:members": "tsx scripts/audit-members.ts"
   },
   "dependencies": {
     "@mfp/core": "workspace:*",
