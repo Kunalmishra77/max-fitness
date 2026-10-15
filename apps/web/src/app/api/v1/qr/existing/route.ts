@@ -97,19 +97,23 @@ export async function POST(request: NextRequest) {
     if (!gate.ok) return apiError(401, 'OTP_REQUIRED', 'Confirm the mobile number first', requestId);
 
     /**
-     * The same face under another number (ADR-118).
+     * The same face under another name (ADR-118).
      *
      * Matching an existing member is the *normal* case here — that is what this form is
      * for — so the test is not "is this face known" but "is this face known as somebody
-     * else". The owner registered as "Kunal Mishra" on one number and "Indresh Mishra"
-     * on another, with one face, and both were taken.
+     * else". The face says who this is; the name says who they claim to be, and when the
+     * two disagree it is a second record for one person.
+     *
+     * This keyed on the number at first, and the owner walked straight through it by
+     * registering a new name on their own existing number. The number was never the
+     * identity.
      *
      * The reply names nobody. Telling a stranger whose face they matched would hand them
      * another member's identity, and the desk can see it in Max Register anyway.
      */
-    const twin = await alreadyAMember(faceCheck, gym.id, gym.settings.attendance);
-    if (twin !== null && twin.mobile !== parsed.fields.mobile) {
-      console.warn(`[qr-existing] a face in the register arrived under a different number ${requestId}`);
+    const twin = await alreadyAMember(faceCheck, gym.id, gym.settings.attendance, { fullName: parsed.fields.fullName });
+    if (twin !== null) {
+      console.warn(`[qr-existing] a face in the register arrived under a different name ${requestId}`);
       return apiError(409, 'ALREADY_A_MEMBER', 'This person is already a member', requestId);
     }
 
