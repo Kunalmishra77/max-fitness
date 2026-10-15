@@ -16,11 +16,12 @@
  */
 import { cosineSimilarity } from '@mfp/core';
 import { createPrismaClient } from '@mfp/db/client';
+import { loadScriptEnv } from './_env';
 import { PrismaFaceTemplates, keyFromEnv } from '@mfp/db';
 import { GymSettingsSchema } from '@mfp/shared';
 
 async function main(): Promise<void> {
-  process.loadEnvFile(new URL('../../../.env', import.meta.url));
+  loadScriptEnv();
   const url = process.env['DATABASE_URL'];
   const key = process.env['FIELD_ENCRYPTION_KEY'];
   if (url === undefined || url === '') throw new Error('DATABASE_URL is not set');

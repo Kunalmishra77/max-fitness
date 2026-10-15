@@ -38,6 +38,7 @@
  * notices until it matters.
  */
 import { createPrismaClient } from '@mfp/db/client';
+import { loadScriptEnv } from './_env';
 import { createStorageDriver, type StorageSettings } from '@mfp/integrations/storage';
 
 const args = process.argv.slice(2);
@@ -59,7 +60,7 @@ const need = (name: string): string => {
 const maskMobile = (mobile: string) => `${mobile.slice(0, 5)}xxxxx${mobile.slice(-3)}`;
 
 async function main(): Promise<void> {
-  process.loadEnvFile(new URL('../../../.env', import.meta.url));
+  loadScriptEnv();
   const prisma = createPrismaClient({ connectionString: need('DATABASE_URL'), poolMax: 3 });
 
   try {

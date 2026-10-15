@@ -18,6 +18,7 @@
  * row mentions is an orphan, and even then it is printed before it is touched.
  */
 import { createPrismaClient } from '@mfp/db/client';
+import { loadScriptEnv } from './_env';
 import { createS3Client, listAllObjects, S3StorageDriver } from '@mfp/integrations/storage';
 
 const commit = process.argv.includes('--yes');
@@ -29,7 +30,7 @@ const need = (name: string): string => {
 };
 
 async function main(): Promise<void> {
-  process.loadEnvFile(new URL('../../../.env', import.meta.url));
+  loadScriptEnv();
   const prisma = createPrismaClient({ connectionString: need('DATABASE_URL'), poolMax: 2 });
 
   try {

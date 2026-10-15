@@ -14,9 +14,10 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createPrismaClient } from '@mfp/db/client';
+import { loadScriptEnv } from './_env';
 
 async function main(): Promise<void> {
-  process.loadEnvFile(new URL('../../../.env', import.meta.url));
+  loadScriptEnv();
   const url = process.env['DATABASE_URL'];
   if (url === undefined || url === '') throw new Error('DATABASE_URL is not set');
   const prisma = createPrismaClient({ connectionString: url, poolMax: 2 });

@@ -25,6 +25,7 @@
  * Mobile numbers are masked. Nothing printed can be pasted into WhatsApp.
  */
 import { createPrismaClient } from '@mfp/db/client';
+import { loadScriptEnv } from './_env';
 
 /** Names the integration tests write. Real people are not called this. */
 const TEST_NAMES = [/^Trend \d+$/i, /^Aaaa Stranger$/i, /^Bday /i, /Tester$/i, /^Demo /i];
@@ -41,7 +42,7 @@ interface Problem {
 }
 
 async function main(): Promise<void> {
-  process.loadEnvFile(new URL('../../../.env', import.meta.url));
+  loadScriptEnv();
   const url = process.env['DATABASE_URL'];
   if (url === undefined || url === '') throw new Error('DATABASE_URL is not set');
   const prisma = createPrismaClient({ connectionString: url, poolMax: 2 });
