@@ -45,11 +45,38 @@ async function main(): Promise<void> {
 
     // Every key the database still knows about, deleted rows included: a row marked
     // deleted but not yet swept is not an orphan, it is a pending sweep.
-    const known = new Set((await prisma.mediaFile.findMany({ select: { storageKey: true } })).map((row) => row.storageKey));
-    const inBucket = await listAllObjects(client, bucket);
+    const rows = await prisma.mediaFile.findMany({
+      select: {
+        storageKey: true,
+        kind: true,
+        label: true,
+        createdAt: true,
+        member: { select: { memberCode: true, fullName: true } },
+      },
+    });
+    const known = new Set(rows.map((row) => row.storageKey));
+    const inBucket = new Set(await listAllObjects(client, bucket));
 
-    const orphans = inBucket.filter((key) => !known.has(key));
-    console.log(`${inBucket.length} objects in the bucket, ${known.size} known to the database.`);
+    const orphans = [...inBucket].filter((key) => !known.has(key));
+    console.log(`${inBucket.size} objects in the bucket, ${known.size} known to the database.`);
+
+    /**
+     * The other direction, and the one that hurts a member rather than the gym: a row
+     * pointing at a file that is not there. The screen shows a broken photograph and
+     * the desk has no way to tell whether it was never uploaded or quietly swept.
+     *
+     * It is only ever reported. Deleting the row would hide the problem and lose the
+     * only record that the file was ever expected.
+     */
+    const missing = rows.filter((row) => !inBucket.has(row.storageKey));
+    if (missing.length > 0) {
+      console.log(`\n⚠ ${missing.length} file(s) the database expects but the bucket does not have:\n`);
+      for (const row of missing) {
+        const owner = row.member === null ? 'no member' : `${row.member.memberCode ?? '—'} ${row.member.fullName}`;
+        console.log(`  ${row.kind.padEnd(8)} ${(row.label ?? '—').padEnd(14)} ${owner.padEnd(28)} added ${row.createdAt.toISOString().slice(0, 10)}`);
+      }
+      console.log('\n  Nothing was changed. These need the member to send the photograph again.');
+    }
 
     if (orphans.length === 0) {
       console.log('No orphans. Nothing to do.');
