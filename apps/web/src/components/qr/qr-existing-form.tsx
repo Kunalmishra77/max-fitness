@@ -27,7 +27,15 @@ import { SELFIE_REASONS } from './selfie-reasons';
 
 export type QrSubmitResult =
   | { ok: true; referenceCode: string; autopay?: { token: string; coveredUntil: string } }
-  | { ok: false; code: string; fields?: readonly string[]; requestId?: string | undefined; minAge?: number | undefined; selfieReason?: string | undefined };
+  | {
+      ok: false;
+      code: string;
+      fields?: readonly string[];
+      requestId?: string | undefined;
+      minAge?: number | undefined;
+      selfieReason?: string | undefined;
+      govIdReason?: string | undefined;
+    };
 
 export type QrSubmit = (form: FormData) => Promise<QrSubmitResult>;
 
@@ -311,6 +319,9 @@ export function QrExistingForm({
       }
       if (result.code === 'UNDER_MINIMUM_AGE') beside['dob'] = t('errors.underAge', { minAge: result.minAge ?? minAge });
       if (result.code === 'ALREADY_A_MEMBER') setFailure(t('errors.alreadyAMember'));
+      // Each refusal says what to do differently; "bad photo" is not something a member
+      // holding a card at a desk can act on.
+      if (result.code === 'GOV_ID_REJECTED') beside['govId'] = t(`govIdReasons.${result.govIdReason ?? 'NOT_AN_ID'}` as never);
       if (result.code === 'SELFIE_REJECTED') {
         beside['selfie'] = t(`errors.${SELFIE_REASONS[result.selfieReason ?? ''] ?? 'selfie'}` as never);
       }

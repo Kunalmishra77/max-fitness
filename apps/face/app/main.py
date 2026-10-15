@@ -22,6 +22,7 @@ from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 from .engine import EMBEDDING_SIZE, MODEL_VERSION, FaceEngine
+from .ocr import read_text
 
 # Bigger than any frame the check-in page sends (it downscales before posting) and than any
 # signup selfie (720×720). A request past this is a mistake or an attack, and decoding it
@@ -134,3 +135,40 @@ async def embed(image: Annotated[UploadFile, File()]) -> JSONResponse:
             "tookMs": round((time.perf_counter() - started) * 1000, 1),
         }
     )
+
+
+@api.post("/v1/read-id", dependencies=[Depends(_authorise)])
+async def read_id(image: Annotated[UploadFile, File()]) -> JSONResponse:
+    """
+    The words on a photographed government ID (ADR-120).
+
+    It judges nothing. Whether the text amounts to a real card of the right kind, in the
+    right name, is decided in `packages/core/src/qr/gov-id-text.ts`, where the rules are
+    unit-tested against real card layouts instead of guessed at inside a container nobody
+    runs locally.
+
+    **Nothing is stored.** The caller reaches a verdict and lets the text go. The gym
+    keeps the photograph of a card and never the number (ADR-074): the Aadhaar Act
+    restricts a private company from holding one, and under DPDP it is a liability with
+    no use.
+
+    Like `/v1/embed`, an unreadable picture is a 200 with empty text rather than an error.
+    "There are no words in this photograph" is an ordinary outcome — somebody uploads a
+    blurred frame — and the caller must be able to tell it from the service being down.
+    """
+    data = await image.read()
+    if len(data) == 0:
+        raise HTTPException(status_code=400, detail="empty image")
+    if len(data) > MAX_IMAGE_BYTES:
+        raise HTTPException(status_code=413, detail="image too large")
+
+    started = time.perf_counter()
+    frame = FaceEngine.decode(data)
+    if frame is None:
+        # Not an image at all: a PDF, a text file, a truncated upload. A PDF is a real
+        # case here — DigiLocker hands members one — and the caller decides what to do
+        # about it rather than being told the service failed.
+        return JSONResponse({"text": "", "reason": "NOT_AN_IMAGE"})
+
+    text = read_text(frame)
+    return JSONResponse({"text": text, "tookMs": round((time.perf_counter() - started) * 1000, 1)})

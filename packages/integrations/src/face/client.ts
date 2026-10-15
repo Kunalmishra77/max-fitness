@@ -54,6 +54,8 @@ export interface FaceClientConfig {
    * "use the keypad", not a longer spinner.
    */
   readonly timeoutMs?: number;
+  /** OCR reads a page of small print, not one face, so it is allowed longer. */
+  readonly ocrTimeoutMs?: number;
 }
 
 export class FaceClient {
@@ -65,6 +67,43 @@ export class FaceClient {
 
   get configured(): boolean {
     return this.#config.baseUrl !== '' && this.#config.token !== '';
+  }
+
+  /**
+   * The words on a photographed government ID (ADR-120).
+   *
+   * OCR is slower than a face measurement — a card is a page of small print, not one
+   * face — so it gets its own, longer timeout. It still has a ceiling: a member is
+   * standing at a desk waiting for the form to move on.
+   *
+   * **The text is never stored by anything that calls this.** The caller reaches a
+   * verdict and lets it go; the gym keeps the photograph of a card and never the number
+   * (ADR-074).
+   */
+  async readId(image: Blob | Buffer, filename = 'id.jpg'): Promise<string> {
+    if (!this.configured) throw new FaceEngineUnavailableError('not configured');
+
+    const form = new FormData();
+    const blob = image instanceof Blob ? image : new Blob([new Uint8Array(image)], { type: 'image/jpeg' });
+    form.append('image', blob, filename);
+
+    let response: Response;
+    try {
+      response = await fetch(`${this.#config.baseUrl.replace(/\/$/, '')}/v1/read-id`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${this.#config.token}` },
+        body: form,
+        signal: AbortSignal.timeout(this.#config.ocrTimeoutMs ?? 15_000),
+      });
+    } catch (error) {
+      const reason = error instanceof Error && error.name === 'TimeoutError' ? 'timed out' : 'unreachable';
+      throw new FaceEngineUnavailableError(reason);
+    }
+
+    if (!response.ok) throw new FaceEngineUnavailableError(`HTTP ${response.status}`);
+
+    const body = (await response.json()) as { text?: string };
+    return body.text ?? '';
   }
 
   async embed(image: Blob | Buffer, filename = 'frame.jpg'): Promise<FaceResult> {

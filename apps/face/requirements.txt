@@ -14,3 +14,8 @@ python-multipart==0.0.32
 # would be dead weight in the image and one more thing to go wrong at startup.
 opencv-python-headless==5.0.0.93
 numpy==2.5.3
+
+# Reading a government ID well enough to know it is one (ADR-120). The binary comes from
+# the image; this is the thin wrapper that calls it. Pinned like everything else here:
+# an OCR engine that changes behaviour changes which members get turned away at the desk.
+pytesseract==0.3.16

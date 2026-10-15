@@ -16,8 +16,14 @@ FROM python:3.13-slim AS runtime
 WORKDIR /srv
 
 # curl for the healthcheck; the slim image has none.
+#
+# tesseract reads the government ID (ADR-120). Both language packs, not just English:
+# an Aadhaar prints the holder's name twice, in English and in the local language, and
+# which one survives a crease and the angle of the light is not ours to choose. `hin`
+# costs a few megabytes and saves turning members away.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends curl ca-certificates \
+ && apt-get install -y --no-install-recommends \
+      curl ca-certificates tesseract-ocr tesseract-ocr-eng tesseract-ocr-hin \
  && rm -rf /var/lib/apt/lists/*
 
 # Dependencies before source, so editing a handler does not reinstall OpenCV.

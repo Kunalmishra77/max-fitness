@@ -35,6 +35,7 @@ export async function postQrExisting(form: FormData): Promise<QrSubmitResult> {
     if (code === 'RATE_LIMITED' || code === 'OTP_REQUIRED') return { ok: false, code, requestId };
     if (code === 'UNDER_MINIMUM_AGE') return { ok: false, code, fields: ['dob'], requestId, minAge: body.error?.details?.minAge };
     if (code === 'SELFIE_REJECTED') return { ok: false, code, fields: ['selfie'], requestId, selfieReason: body.error?.details?.reason };
+    if (code === 'GOV_ID_REJECTED') return { ok: false, code, fields: ['govId'], requestId, govIdReason: body.error?.details?.reason };
     if (code === 'VALIDATION_FAILED') return { ok: false, code, fields, requestId };
     return { ok: false, code: code ?? `HTTP ${response.status}`, requestId };
   } catch {

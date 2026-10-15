@@ -112,7 +112,7 @@ describe('MetaCloudWhatsAppProvider', () => {
       variables: { firstName: 'Ravi', endDate: '15 Sep 2026', whenPhrase: 'in 7 days' },
       idempotencyKey: 'rem:3',
       buttons: [
-        { kind: 'url', payload: 'https://maxfitnessgym.co.in/r/sIgNeDtOkEn', label: 'renew' },
+        { payload: 'https://maxfitnessgym.co.in/r/sIgNeDtOkEn', label: 'renew' },
         { payload: 'UNSUB.tok', label: 'unsubscribe' },
       ],
     });

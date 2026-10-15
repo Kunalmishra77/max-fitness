@@ -783,3 +783,28 @@ The caller supplies values, by position. What those values fill is not its busin
 **Worth keeping for the next integration:** the payload was correct in every part anybody had thought to check. The variables matched, the names matched, the language matched, the number was registered and the template was approved. What was wrong was a component nobody had asked for. A gateway that refuses the whole message for an *extra* field punishes generosity, and the only safe posture is to send exactly what the other side has agreed to and nothing more.
 
 **Not fixed here:** the body of `mf_verification_approved` says "If you do not want reminders, please unsubscribe" and now has no button to do it with. Replying STOP still works — the webhook handles it — but the template should either gain the button or lose the sentence.
+
+## ADR-120
+
+**Date:** 2026-10-15
+**Status:** Accepted
+**Context:** The owner uploaded a fake ID and the gym took it. Nothing ever looked inside the picture — only the file type and the pixel size were checked (ADR-074's `validateGovId` is about how many sides a card has, not what is printed on one). Members were putting in whatever the camera had last.
+
+**Decision — read the card, judge it in the domain, keep nothing.**
+
+Free OCR rather than a verification API (owner's choice): tesseract in the existing `apps/face` service. That container already receives images over the private network behind a token and already does image work, so this is two lines of Dockerfile and a pinned wrapper. Running OCR in Node would have put a CPU-bound WASM pass inside the request loop of the web server.
+
+**The engine returns words; `packages/core` decides.** The rules live in `gov-id-text.ts` where they are unit-tested against real card layouts, rather than guessed at inside a container nobody runs locally.
+
+**Nothing read is stored, and the number is never returned.** ADR-074 is why the gym keeps the photograph and never the number — the Aadhaar Act restricts a private company from holding one, and under DPDP it is a liability with no use. A function that handed the number back would have it in a log within a month, so `checkGovIdText` answers with a verdict and the text goes out of scope.
+
+**It is forgiving where OCR is unreliable and strict where it is not.** The markers a card prints about itself are required, because they are what separates a card from a packet of protein powder. The name and the date are judged only when they can be read:
+
+- A card the engine picked up only in Devanagari cannot answer a Latin name. Aadhaar prints the holder's name twice and which one survives a crease is not the member's fault, so that is "unknown", never "wrong".
+- No date found at all is also unknown. Refusing there would turn members away over a fold, and the desk sees the photograph regardless.
+
+**Only the front is read.** The back of an Aadhaar is an address and the back of a licence a table of vehicle classes; neither carries the name or the markers, so reading them costs seconds at a reception desk and answers nothing.
+
+**An unreachable reader accepts the card**, exactly as the selfie gate does. A gym that cannot take a member because a container is restarting is a worse failure than one whose newest member handed over a photograph nobody read. A PDF passes too: DigiLocker gives members one and it is not an image.
+
+**Each refusal names what to do differently** — the wrong kind of card, a name that is not theirs, a photograph too dark to read. "Bad photo" is not something a member holding a card at a desk can act on.

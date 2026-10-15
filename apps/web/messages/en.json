@@ -2100,6 +2100,13 @@
       "CASHHelp": "The way it works today. Nothing changes.",
       "ONLINE": "Online",
       "ONLINEHelp": "Your fee collects itself from here on. You approve it once with your own bank or UPI app — nothing is taken today."
+    },
+    "govIdReasons": {
+      "UNREADABLE": "We could not read anything on that ID. Hold the card flat, fill the frame and take it again.",
+      "NOT_AN_ID": "That does not look like a government ID. Please photograph the card itself.",
+      "WRONG_TYPE": "That is a different kind of ID from the one you chose. Pick the right one above, or photograph the card you chose.",
+      "NAME_MISMATCH": "The name on that card is not the name you entered. Please use your own ID.",
+      "DOB_MISMATCH": "The date of birth on that card does not match the one you entered."
     }
   },
   "qrNewForm": {

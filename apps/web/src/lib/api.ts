@@ -19,6 +19,8 @@ export type ApiErrorCode =
   | 'SELFIE_REJECTED'
   /** This face is already in the register under another name (ADR-118). */
   | 'ALREADY_A_MEMBER'
+  /** The photograph of the government ID is not one, or not theirs (ADR-120). */
+  | 'GOV_ID_REJECTED'
   | 'PAYMENT_PROVIDER_UNAVAILABLE'
   /** Autopay needs a live gateway; DEMO_MODE has none to make a real mandate with (ADR-105). */
   | 'AUTOPAY_UNAVAILABLE'

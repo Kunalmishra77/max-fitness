@@ -10,6 +10,7 @@ import { qrOtpGate } from '@/lib/qr-otp-gate';
 import { clientIp, limiterKey, registrationLimiters } from '@/lib/rate-limit';
 import { enrolFromSignup } from '@/lib/enrol-on-signup';
 import { alreadyAMember } from '@/lib/duplicate-member';
+import { checkGovIdPhoto } from '@/lib/gov-id-gate';
 import { checkSelfieFace } from '@/lib/selfie-face-gate';
 import { MAX_GOV_ID_BYTES, MAX_SELFIE_BYTES, processGovIdImage, processSelfie } from '@/lib/selfie-image';
 import { AUTOPAY_TOKEN_TTL_SECONDS, hashIp } from '@/lib/signup-access';
@@ -115,6 +116,26 @@ export async function POST(request: NextRequest) {
     if (twin !== null) {
       console.warn(`[qr-existing] a face in the register arrived under a different name ${requestId}`);
       return apiError(409, 'ALREADY_A_MEMBER', 'This person is already a member', requestId);
+    }
+
+    /**
+     * The ID has to be an ID (ADR-120). Only the front is read: the back of an Aadhaar is
+     * an address and the back of a licence a table of vehicle classes, so reading them
+     * costs a member seconds at the desk and answers nothing.
+     *
+     * A PDF is not read at all — DigiLocker hands members one, and it is not an image.
+     */
+    const idFront = parsed.govId?.images.find((image) => image.side === 'FRONT');
+    if (parsed.govId !== null && idFront !== undefined) {
+      const card = await checkGovIdPhoto(parsed.govId.type, idFront.body, {
+        fullName: parsed.fields.fullName,
+        dob: parsed.fields.dob,
+      });
+      if (!card.ok) {
+        return apiError(400, 'GOV_ID_REJECTED', 'That photo of the ID will not do', requestId, {
+          details: { reason: card.reason },
+        });
+      }
     }
 
     const result = await submitExistingMember(
