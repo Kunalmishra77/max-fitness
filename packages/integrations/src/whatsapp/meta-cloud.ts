@@ -1,4 +1,6 @@
 import type { WhatsAppProvider, WhatsAppSendOutcome, WhatsAppSendRequest, WhatsAppTextRequest } from '@mfp/core/ports';
+import type { Language } from '@mfp/shared';
+import { approvedLanguage } from './language';
 import { templateDefinition } from './templates';
 
 /**
@@ -26,6 +28,12 @@ export interface MetaCloudConfig {
   /** Pinned: an unpinned version breaks silently the day Meta deprecates one. */
   readonly graphApiVersion: string;
   readonly appSecret: string;
+  /**
+   * The languages Meta has actually approved. A member's own language is used when it is
+   * among them, and the first listed otherwise — because asking Meta for a template in a
+   * language it has never seen loses the message entirely.
+   */
+  readonly templateLanguages?: readonly Language[];
   /** Injected in tests. */
   readonly fetch?: typeof globalThis.fetch;
   readonly sleep?: (ms: number) => Promise<void>;
@@ -95,7 +103,7 @@ export class MetaCloudWhatsAppProvider implements WhatsAppProvider {
       recipient_type: 'individual',
       to: digits(request.to),
       type: 'template',
-      template: { name: request.templateName, language: { code: request.language }, components },
+      template: { name: request.templateName, language: { code: approvedLanguage(request.language, this.#config.templateLanguages ?? []) }, components },
     });
   }
 

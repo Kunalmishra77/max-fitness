@@ -6,6 +6,8 @@ import type {
   WhatsAppSendRequest,
   WhatsAppTextRequest,
 } from '@mfp/core/ports';
+import type { Language } from '@mfp/shared';
+import { approvedLanguage } from './language';
 import { renderTemplate } from './templates';
 
 /**
@@ -27,6 +29,11 @@ export interface SimulatorOptions {
   readonly log: MessageLogWriter;
   /** Numbers that may receive a genuine send even in demo mode. */
   readonly allowlist: readonly string[];
+  /**
+   * The same approved languages the real provider uses, so the preview the owner reads in
+   * the Message Simulator is the language the member would actually have received.
+   */
+  readonly templateLanguages?: readonly Language[];
   /**
    * The real provider, used only for allowlisted numbers. Omit and even an
    * allowlisted number is simulated — which is the right default for tests.
@@ -54,7 +61,8 @@ export class SimulatorWhatsAppProvider implements WhatsAppProvider {
   }
 
   async send(request: WhatsAppSendRequest): Promise<WhatsAppSendOutcome> {
-    const bodyPreview = renderTemplate(request.templateName, request.language, request.variables);
+    const language = approvedLanguage(request.language, this.#options.templateLanguages ?? []);
+    const bodyPreview = renderTemplate(request.templateName, language, request.variables);
     const context = this.#options.resolveContext?.(request) ?? DEFAULT_CONTEXT;
     const allowlisted = this.#options.allowlist.includes(request.to);
 
@@ -65,7 +73,7 @@ export class SimulatorWhatsAppProvider implements WhatsAppProvider {
       ...context,
       direction: 'OUTBOUND',
       templateName: request.templateName,
-      language: request.language,
+      language,
       toNumber: request.to,
       idempotencyKey: request.idempotencyKey,
       providerMessageId: null,

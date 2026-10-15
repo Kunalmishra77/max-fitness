@@ -105,6 +105,7 @@ async function main(): Promise<void> {
           accessToken: env.WHATSAPP_ACCESS_TOKEN,
           graphApiVersion: env.WHATSAPP_GRAPH_API_VERSION,
           appSecret: env.WHATSAPP_APP_SECRET,
+          templateLanguages: env.WHATSAPP_TEMPLATE_LANGUAGES,
         })
       : undefined;
   const whatsapp =
@@ -113,6 +114,7 @@ async function main(): Promise<void> {
           gymId: env.GYM_SLUG,
           log: new PrismaMessageLogWriter(prisma),
           allowlist: env.WHATSAPP_ALLOWLIST,
+          templateLanguages: env.WHATSAPP_TEMPLATE_LANGUAGES,
           ...(realWhatsApp === undefined ? {} : { realProvider: realWhatsApp }),
         })
       : realWhatsApp;

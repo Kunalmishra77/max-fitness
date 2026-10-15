@@ -658,3 +658,21 @@ The stub deferred this so the request bodies could be checked against Meta's own
 **It never throws.** The caller writes the outcome to `MessageLog`, and an exception would lose which member it was about. Network errors are logged by name only — a member's number is not an error message.
 
 **Correction to the record:** a comparison of `WHATSAPP_TEMPLATES` against `docs/04-content/whatsapp-templates.md` suggested eleven templates had no wording. They do: all twenty-one are defined in `packages/integrations/src/whatsapp/templates.ts`, in both languages, with their positional variable order. **The markdown doc is the stale copy, not the code.** It documents ten, and names four that no longer exist (`mf_signup_payment_pending`, three `mf_owner_alert_*` variants superseded by the generic `mf_owner_alert`). Submitting from the doc would both miss templates and create dead ones. The doc should be regenerated from `templates.ts`, which is the source of truth.
+
+## ADR-113
+
+**Date:** 2026-10-15
+**Status:** Accepted
+**Context:** The owner decided to run WhatsApp in English only and not to submit the Hindi templates. The gym's default language is Hindi, and every member's record carries their own.
+
+**Decision — which languages Meta has approved is configuration, not an assumption in the code.**
+
+Meta keeps a separate approved copy of each template per language and refuses one it has never seen. The domain asks for the member's own language, so English-only templates in a Hindi-default gym would have sent most members **nothing** — and nothing would have looked wrong, because the refusal is a 4xx that reaches neither the member nor the desk. The reminders would simply have stopped working for the majority.
+
+So `WHATSAPP_TEMPLATE_LANGUAGES` lists what is actually approved. A member is sent their own language when it is on the list and the first listed language otherwise. It defaults to `en` alone, which is the safe way round: a language listed but not approved loses every message to the members who read it, while one approved but not listed only means those members read English until somebody notices.
+
+The simulator applies the same fallback, so the preview the owner reads in the Message Simulator is the language the member would really have received — a preview in Hindi of a message that went out in English is worse than no preview.
+
+**This is reversible by configuration.** The day the Hindi templates are approved, `WHATSAPP_TEMPLATE_LANGUAGES=en,hi` puts every Hindi member back on their own language with no code change and no deploy of new logic.
+
+**Not recorded as a limitation of the product:** members still choose Hindi everywhere else — the website, the QR form, the CRM, the attendance phone. Only the WhatsApp templates are English, and only until the gym decides otherwise.

@@ -124,6 +124,7 @@ function build(): Container {
           accessToken: env.WHATSAPP_ACCESS_TOKEN,
           graphApiVersion: env.WHATSAPP_GRAPH_API_VERSION,
           appSecret: env.WHATSAPP_APP_SECRET,
+          templateLanguages: env.WHATSAPP_TEMPLATE_LANGUAGES,
         })
       : undefined;
 
@@ -133,6 +134,7 @@ function build(): Container {
           gymId: env.GYM_SLUG,
           log: messageLog,
           allowlist: env.WHATSAPP_ALLOWLIST,
+          templateLanguages: env.WHATSAPP_TEMPLATE_LANGUAGES,
           ...(realWhatsApp === undefined ? {} : { realProvider: realWhatsApp }),
         })
       : realWhatsApp;

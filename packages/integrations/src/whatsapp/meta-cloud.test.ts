@@ -26,12 +26,13 @@ const fail = (status: number, code: number, message = 'nope') => ({
   json: () => Promise.resolve({ error: { code, message, type: 'OAuthException' } }),
 });
 
-function provider(fetchImpl: unknown) {
+function provider(fetchImpl: unknown, templateLanguages: ReadonlyArray<'en' | 'hi'> = ['en', 'hi']) {
   return new MetaCloudWhatsAppProvider({
     phoneNumberId: '1394917043704455',
     accessToken: 'tok',
     graphApiVersion: 'v26.0',
     appSecret: 'secret',
+    templateLanguages,
     fetch: fetchImpl as typeof globalThis.fetch,
     // Tests must not actually wait out the backoff.
     sleep: () => Promise.resolve(),
@@ -151,6 +152,40 @@ describe('MetaCloudWhatsAppProvider', () => {
       index: '1',
       parameters: [{ type: 'payload', payload: 'UNSUB.tok' }],
     });
+  });
+
+  /**
+   * The gym runs English-only templates for now (owner, 2026-10-15), while members'
+   * records still say Hindi. Asking Meta for a Hindi template it has never approved
+   * loses the message outright — and silently, because the refusal is a 4xx nobody at
+   * the gym ever sees.
+   */
+  it('sends in a language Meta has approved, not the one the member happens to be on', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(ok()));
+
+    await provider(fetchImpl, ['en']).send({
+      to: TO,
+      templateName: 'mf_renewal_due',
+      language: 'hi',
+      variables: { firstName: 'Ravi', endDate: '15 Sep 2026', whenPhrase: 'in 7 days' },
+      idempotencyKey: 'rem:4',
+    });
+
+    expect((bodyOf(fetchImpl.mock.calls[0])['template'] as { language: unknown }).language).toEqual({ code: 'en' });
+  });
+
+  it('leaves a member on their own language once it is approved', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(ok()));
+
+    await provider(fetchImpl, ['en', 'hi']).send({
+      to: TO,
+      templateName: 'mf_renewal_due',
+      language: 'hi',
+      variables: { firstName: 'Ravi', endDate: '15 Sep 2026', whenPhrase: 'in 7 days' },
+      idempotencyKey: 'rem:5',
+    });
+
+    expect((bodyOf(fetchImpl.mock.calls[0])['template'] as { language: unknown }).language).toEqual({ code: 'hi' });
   });
 
   it('sends a free-form reply as a plain text message, with no link preview', async () => {

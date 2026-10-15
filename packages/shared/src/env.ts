@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { Language } from './constants';
 
 /**
  * Environment validation.
@@ -35,6 +36,23 @@ const optionalPostgresUrl = (label: string) =>
     .refine((v) => v === undefined || v.startsWith('postgres://') || v.startsWith('postgresql://'), {
       message: `${label} must be a postgres:// or postgresql:// connection string when set`,
     });
+
+/**
+ * The template languages Meta has approved, as a comma-separated list.
+ *
+ * Defaults to English alone, which is the safe way round: a language listed here but not
+ * approved at Meta loses every message to the members who read it, while one approved
+ * but not listed only means those members read English until somebody notices.
+ */
+const languageList = z
+  .string()
+  .default('en')
+  .transform((v) =>
+    v
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter((s): s is Language => s === 'en' || s === 'hi'),
+  );
 
 /** A comma-separated allowlist of E.164 numbers. */
 const csvList = z
@@ -96,6 +114,19 @@ export const EnvSchema = z
     WHATSAPP_VERIFY_TOKEN: z.string().default(''),
     WHATSAPP_GRAPH_API_VERSION: z.string().default(''),
     WHATSAPP_ALLOWLIST: csvList,
+    /**
+     * The template languages Meta has actually approved (owner, 2026-10-15).
+     *
+     * Meta keeps a separate approved copy of each template per language and refuses one
+     * it has not seen. A member whose record says Hindi, in a gym running English-only
+     * templates, would otherwise get nothing — and nothing would look wrong, because the
+     * refusal is a 4xx nobody at the gym ever sees.
+     *
+     * Defaults to English alone, which is the safe way round: a language listed here but
+     * not approved at Meta loses messages, while one approved but not listed only means
+     * some members read English for a while.
+     */
+    WHATSAPP_TEMPLATE_LANGUAGES: languageList,
     OWNER_WHATSAPP_NUMBER: z.string().default(''),
 
     // ── AI (diet plans, and the WhatsApp assistant) ─────────────────────
