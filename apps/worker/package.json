@@ -26,7 +26,8 @@
     "sync:mandates": "tsx scripts/sync-mandates.ts",
     "enrol:faces": "tsx scripts/enrol-faces.ts",
     "set:gym-details": "tsx scripts/set-gym-details.ts",
-    "make:coolify-env": "tsx scripts/make-coolify-env.ts"
+    "make:coolify-env": "tsx scripts/make-coolify-env.ts",
+    "delete:test-gyms": "tsx scripts/delete-test-gyms.ts"
   },
   "dependencies": {
     "@mfp/core": "workspace:*",

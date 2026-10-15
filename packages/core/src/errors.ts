@@ -77,6 +77,8 @@ export const DOMAIN_ERROR_CODES = [
   'VALIDATION_FAILED',
   'NOT_FOUND',
   'FORBIDDEN',
+  /** An erasure stopped because the member's standing instruction is still live (ADR-116). */
+  'MANDATE_STILL_LIVE',
   'CONFLICT',
 ] as const;
 

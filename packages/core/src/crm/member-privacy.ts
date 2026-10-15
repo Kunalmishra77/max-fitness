@@ -137,6 +137,15 @@ export interface MemberPrivacyStore {
   scrubAlerts(memberId: string): Promise<void>;
   closeCallTasks(memberId: string, at: Date): Promise<void>;
   anonymiseConvertedLeads(memberId: string): Promise<void>;
+  /**
+   * The member's standing instructions that money can still arrive on (ADR-116).
+   *
+   * Erasure used to leave these alone, so a live mandate outlived the person: the bank
+   * kept paying a gym that no longer held their name, and nothing here could say whose
+   * money it was.
+   */
+  findLiveMandates(memberId: string): Promise<ReadonlyArray<{ readonly id: string; readonly providerSubscriptionId: string }>>;
+  cancelMandates(ids: readonly string[], at: Date): Promise<void>;
   writeAudit(entry: PrivacyAuditEntry): Promise<void>;
 }
 
@@ -177,7 +186,18 @@ export async function exportMemberData(
 
 export async function eraseMember(
   input: { readonly memberId: string; readonly reason: string },
-  deps: { readonly actor: CrmActor; readonly clock: Clock; readonly uow: MemberErasureUnitOfWork; readonly storage: StorageDriver },
+  deps: {
+    readonly actor: CrmActor;
+    readonly clock: Clock;
+    readonly uow: MemberErasureUnitOfWork;
+    readonly storage: StorageDriver;
+    /**
+     * Cancels one subscription at the gateway. It is a network call, so it happens before
+     * the transaction rather than inside it — and before the anonymising, so a gateway
+     * that refuses leaves the member intact and the operator able to try again.
+     */
+    readonly cancelAtProvider: (providerSubscriptionId: string) => Promise<void>;
+  },
 ): Promise<{ readonly memberId: string; readonly filesDeleted: number; readonly filesNotDeleted: readonly string[]; readonly faceTemplatesDeleted: number }> {
   const now = deps.clock.now();
   assertCan(deps.actor, 'member.erase', now);
@@ -185,11 +205,30 @@ export async function eraseMember(
   const reason = input.reason.trim();
   if (reason === '') throw new DomainError('VALIDATION_FAILED', 'An erasure needs a reason', { field: 'reason' });
 
+  /**
+   * The standing instructions go first, and at the gateway before anything here changes.
+   *
+   * Erasing somebody whose money can still be taken is worse than an erasure that waits:
+   * the debits would carry on and the record of whose they were would be gone. So a
+   * gateway that will not cancel stops the whole thing, with a code the CRM can explain,
+   * and the member is left exactly as they were.
+   */
+  const live = await deps.uow.transaction((store) => store.findLiveMandates(input.memberId));
+  for (const mandate of live) {
+    try {
+      await deps.cancelAtProvider(mandate.providerSubscriptionId);
+    } catch {
+      // Never the gateway's error text: it can carry the subscription and the key.
+      throw new DomainError('MANDATE_STILL_LIVE', 'This member’s automatic payment could not be stopped, so nothing was erased');
+    }
+  }
+
   const { keys, faceTemplatesDeleted } = await deps.uow.transaction(async (store) => {
     const member = await store.findMemberForErasure(deps.actor.gymId, input.memberId);
     if (member === null) throw new DomainError('NOT_FOUND', 'No such member');
     if (member.deletedAt !== null) throw new DomainError('CONFLICT', "This member's data has already been erased");
 
+    if (live.length > 0) await store.cancelMandates(live.map((mandate) => mandate.id), now);
     await store.anonymiseMember(member.id, now);
     const mediaKeys = await store.markMemberMediaDeleted(member.id, now);
     const templates = await store.deleteFaceData(member.id);

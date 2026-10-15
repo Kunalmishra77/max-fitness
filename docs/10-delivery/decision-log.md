@@ -714,3 +714,21 @@ In the web app the provider keeps its writer, because the callers there (the ass
 **Why this hid for so long:** `SKIPPED` is not an error. It is the correct, quiet outcome for a message that genuinely should not go twice, so it raised nothing — no retry, no alert, no failed status on a member's record. The only way to see it was to count the rows. A send path whose success and its most common failure look the same from the outside needs counting, not watching; worth remembering before the next integration is called done.
 
 **Not fixed here, and worth its own look:** 12 of the 13 gyms in the production database are `gym_it_*` leftovers from integration-test runs (ADR-110's shared-database problem, now visible as data rather than as flaky tests). They are inert — every query is scoped by `gymId` — but a `findFirst` without a slug picks one, which is how this investigation began.
+
+## ADR-116
+
+**Date:** 2026-10-15
+**Status:** Accepted
+**Context:** Asked to remove a member completely, the erasure path turned out to say nothing about their standing instruction. `eraseMember` anonymises the person, deletes their photographs and face data, scrubs their messages and closes their calls — and leaves any mandate exactly as it was.
+
+**Decision — a live mandate is cancelled first, and a gateway that refuses stops the erasure.**
+
+A mandate that outlives the member is money still leaving somebody's bank for a gym that no longer holds their name. Nobody could answer whose it was, because the record that said so has just been erased. It is both a charge nobody can explain and the opposite of what an erasure is for.
+
+So the mandates are found and cancelled **at the gateway before anything here changes**, outside the transaction because it is a network call. If Razorpay will not cancel, the erasure throws `MANDATE_STILL_LIVE` and the member is left exactly as they were.
+
+**That order is the decision.** Erasing somebody whose money can still be taken is worse than an erasure that waits: the debits carry on and the record of whose they are would be gone. A delayed erasure is visible and can be retried; a silent debit against an anonymised person cannot even be investigated.
+
+In DEMO_MODE there is no gateway and nothing real to stop, so nothing can refuse.
+
+**Found at the same time, not yet fixed:** four member records share one mobile number (three "Ayan Saifi", one "Mohd Ayan"). The QR form catches a repeat scan only while the first submission is still `PENDING`; once staff approve or reject it, the same person submitting again becomes a second member. A different spelling of the name defeats the register match as well.

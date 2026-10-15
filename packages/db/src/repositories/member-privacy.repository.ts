@@ -205,6 +205,18 @@ export function memberPrivacyStore(db: Db): MemberPrivacyStore {
       await db.callTask.updateMany({ where: { memberId }, data: { note: null } });
     },
 
+    /** Statuses money can still arrive on, the same set the mandate repository uses. */
+    async findLiveMandates(memberId: string) {
+      return db.mandate.findMany({
+        where: { memberId, status: { in: ['ACTIVE', 'AUTHENTICATED', 'PENDING', 'CREATED'] } },
+        select: { id: true, providerSubscriptionId: true },
+      });
+    },
+
+    async cancelMandates(ids: readonly string[], at: Date): Promise<void> {
+      await db.mandate.updateMany({ where: { id: { in: [...ids] } }, data: { status: 'CANCELLED', cancelledAt: at } });
+    },
+
     async anonymiseConvertedLeads(memberId: string): Promise<void> {
       await db.lead.updateMany({
         where: { convertedMemberId: memberId },

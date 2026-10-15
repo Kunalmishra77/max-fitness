@@ -119,6 +119,15 @@ class FakeStore implements MemberPrivacyStore {
     this.steps.push(`leads:${memberId}`);
     return Promise.resolve();
   }
+  liveMandates: Array<{ id: string; providerSubscriptionId: string }> = [];
+  findLiveMandates(memberId: string) {
+    this.steps.push(`findMandates:${memberId}`);
+    return Promise.resolve(this.liveMandates);
+  }
+  cancelMandates(ids: readonly string[], at: Date) {
+    this.steps.push(`cancelMandates:${ids.join(',')}:${at.toISOString().slice(0, 10)}`);
+    return Promise.resolve();
+  }
   writeAudit(entry: PrivacyAuditEntry) {
     this.audit.push(entry);
     return Promise.resolve();
@@ -192,16 +201,28 @@ describe('eraseMember', () => {
     storage = new FakeStorage();
   });
 
-  const run = (input: { memberId?: string; reason?: string } = {}, actor: CrmActor = owner) =>
+  const run = (
+    input: { memberId?: string; reason?: string } = {},
+    actor: CrmActor = owner,
+    extra: { cancelAtProvider?: (providerSubscriptionId: string) => Promise<void> } = {},
+  ) =>
     eraseMember(
       { memberId: input.memberId ?? 'mem_1', reason: input.reason ?? 'सदस्य ने डेटा हटाने को कहा' },
-      { actor, clock, uow: { transaction: (work) => work(store) }, storage },
+      {
+        actor,
+        clock,
+        uow: { transaction: (work) => work(store) },
+        storage,
+        cancelAtProvider: extra.cancelAtProvider ?? (() => Promise.resolve()),
+      },
     );
 
   it('anonymises the member and removes their photos, receipts, face data, message text, alerts, calls and enquiries', async () => {
     await expect(run()).resolves.toEqual({ memberId: 'mem_1', filesDeleted: 2, filesNotDeleted: [], faceTemplatesDeleted: 1 });
 
     expect(store.steps).toEqual([
+      // Mandates are looked for first, before anything is changed (ADR-116).
+      'findMandates:mem_1',
       'anonymise:mem_1',
       'media:mem_1',
       'face:mem_1',
@@ -249,7 +270,8 @@ describe('eraseMember', () => {
 
     store.member = { id: 'mem_1', memberCode: 'MF-0007', deletedAt: clock.now() };
     await expect(run()).rejects.toMatchObject({ code: 'CONFLICT' });
-    expect(store.steps).toEqual([]);
+    // Looking for mandates changes nothing; what must not have happened is any writing.
+    expect(store.steps.filter((step) => !step.startsWith('findMandates:'))).toEqual([]);
     expect(storage.deleted).toEqual([]);
   });
 
@@ -257,5 +279,44 @@ describe('eraseMember', () => {
     await expect(run({}, ownerWithoutPin)).rejects.toMatchObject({ code: 'FORBIDDEN' });
     await expect(run({}, reception)).rejects.toMatchObject({ code: 'FORBIDDEN' });
     expect(store.steps).toEqual([]);
+  });
+
+  /**
+   * A standing instruction outlives the person it belonged to (ADR-116).
+   *
+   * Erasure anonymises the member but said nothing about their mandate, so a live one
+   * stayed live at Razorpay: money would keep leaving somebody's bank for a gym that no
+   * longer holds their name, and nothing here would say whose it was. That is both a
+   * charge nobody can explain and the opposite of what an erasure is for.
+   */
+  it('stops a live standing instruction before erasing the person it belonged to', async () => {
+    store.liveMandates = [{ id: 'mnd_1', providerSubscriptionId: 'sub_abc' }];
+    const cancelled: string[] = [];
+
+    await run({}, owner, { cancelAtProvider: (id: string) => { cancelled.push(id); return Promise.resolve(); } });
+
+    expect(cancelled).toEqual(['sub_abc']);
+    expect(store.steps).toContain('cancelMandates:mnd_1:2026-09-14');
+  });
+
+  /**
+   * If the gateway will not cancel, the erasure stops. Erasing somebody whose money we
+   * can still take is worse than an erasure that waits: the record of whose money it is
+   * would be gone, and the debits would not be.
+   */
+  it('refuses to erase when the gateway will not cancel the mandate', async () => {
+    store.liveMandates = [{ id: 'mnd_1', providerSubscriptionId: 'sub_abc' }];
+
+    await expect(
+      run({}, owner, { cancelAtProvider: () => Promise.reject(new Error('razorpay down')) }),
+    ).rejects.toMatchObject({ code: 'MANDATE_STILL_LIVE' });
+
+    expect(store.steps).not.toContain('anonymise:mem_1');
+  });
+
+  it('erases without a gateway call when there is nothing to cancel', async () => {
+    await run();
+
+    expect(store.steps).toContain('anonymise:mem_1');
   });
 });

@@ -817,8 +817,22 @@ export async function eraseMemberAction(memberId: string, reason: string, pin: s
   if (!elevated.ok) return { ok: false, code: elevated.code === 'VALIDATION_FAILED' ? 'INVALID_PIN' : elevated.code };
 
   const { clock, storage, uow } = memberPrivacy();
+  const { subscriptions } = getContainer();
   try {
-    const result = await eraseMember({ memberId, reason }, { actor: { ...actor, elevatedUntil: elevated.elevatedUntil }, clock, uow, storage });
+    const result = await eraseMember(
+      { memberId, reason },
+      {
+        actor: { ...actor, elevatedUntil: elevated.elevatedUntil },
+        clock,
+        uow,
+        storage,
+        // In DEMO_MODE there is no gateway and no real subscription to stop, so there is
+        // nothing to refuse the erasure over.
+        cancelAtProvider: async (providerSubscriptionId) => {
+          if (subscriptions !== null) await subscriptions.cancelSubscription(providerSubscriptionId);
+        },
+      },
+    );
     if (result.filesNotDeleted.length > 0) {
       // Keys are random and carry no personal data; the count is what the log needs.
       console.error(`[crm] erasure left ${result.filesNotDeleted.length} stored file(s) to remove again`);

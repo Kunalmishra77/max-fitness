@@ -641,7 +641,7 @@ suite('CRM fee desk against Postgres', () => {
     expect(exported.data.consents.length).toBeGreaterThan(0);
     expect(exported.data.faceTemplates).toEqual({ count: 1 });
 
-    const result = await eraseMember({ memberId, reason: 'सदस्य ने कहा' }, { actor, clock, uow: privacy, storage: new MemoryStorage() });
+    const result = await eraseMember({ memberId, reason: 'सदस्य ने कहा' }, { actor, clock, uow: privacy, storage: new MemoryStorage(), cancelAtProvider: () => Promise.resolve() });
     expect(result).toMatchObject({ filesNotDeleted: [], faceTemplatesDeleted: 1 });
     expect(result.filesDeleted).toBeGreaterThan(0);
 
@@ -667,7 +667,7 @@ suite('CRM fee desk against Postgres', () => {
 
     // Once erased, there is nothing to export and nothing to erase again.
     await expect(exportMemberData({ memberId }, { actor, clock, store: privacy.store })).rejects.toMatchObject({ code: 'NOT_FOUND' });
-    await expect(eraseMember({ memberId, reason: 'again' }, { actor, clock, uow: privacy, storage: new MemoryStorage() })).rejects.toMatchObject({ code: 'CONFLICT' });
+    await expect(eraseMember({ memberId, reason: 'again' }, { actor, clock, uow: privacy, storage: new MemoryStorage(), cancelAtProvider: () => Promise.resolve() })).rejects.toMatchObject({ code: 'CONFLICT' });
   });
 
   it('moves reminder times and the days after expiry, keeping the POST rule and settings in step, and stops automatic messages', async () => {
