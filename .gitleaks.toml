@@ -1,0 +1,47 @@
+# gitleaks configuration (SEC-007; security-plan.md §6).
+#
+# The default rules, plus a deliberately narrow allowlist. Every entry below names a
+# value that was inspected and found to be a placeholder or a test fixture — nothing is
+# excluded because it was inconvenient, and nothing is excluded by a broad pattern that
+# would also hide a real secret arriving later in the same file.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Build output, local caches, and values verified to be fixtures"
+
+paths = [
+  # Build output. Next writes content hashes into its manifests that look like API keys
+  # to a generic entropy rule. Never committed (it is in .gitignore); present on a
+  # developer's disk, and gitleaks' filesystem pass walks the disk.
+  '''^apps/web/\.next/''',
+  '''^apps/face/__pycache__/''',
+  '''(^|/)node_modules/''',
+  '''(^|/)\.turbo/''',
+  '''(^|/)coverage/''',
+  '''(^|/)playwright-report/''',
+  # A Windows pnpm store that a developer's machine left behind at the repository root.
+  # Untracked and already in .gitignore; this stops the filesystem pass walking 1.2 GB
+  # of other people's packages and reporting their test fixtures as ours.
+  '''^E:/''',
+  # The lockfile holds integrity hashes, which are high-entropy by definition.
+  '''^pnpm-lock\.yaml$''',
+]
+
+regexes = [
+  # `.env.example` ships deliberate placeholders, and they have to look long enough to
+  # pass the schema's own length checks to be useful as examples.
+  '''change-me-\d+-random-chars''',
+  '''base64-32-bytes''',
+  # Razorpay's own documented *test* key id, used in the provider's unit tests. A live
+  # key is `rzp_live_`, which is not allowlisted and must still be reported.
+  '''rzp_test_1DP5mmOlF5G5ag''',
+  # Test fixtures that say what they are in the value itself.
+  '''integration-test-secret-of-32-plus-chars''',
+  '''ci-session-secret-at-least-32-characters''',
+  '''test-(key|webhook)-secret-value''',
+  # packages/shared/src/mask.test.ts asserts that `maskToken` leaks nothing. The fixture
+  # it passes in has to look like a live token for the test to mean anything.
+  '''sk_live_verysecretvalue''',
+]

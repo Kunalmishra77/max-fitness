@@ -302,3 +302,79 @@ jobs:
         # security-plan.md §3.1: fail on critical. Lower severities are reported
         # but do not block, so a transitive low does not stop a hotfix shipping.
         run: pnpm audit --audit-level critical
+
+  # ── Secret scanning ────────────────────────────────────────────────────────
+  # security-plan.md §6 requires a gitleaks run before launch; it was never wired up.
+  #
+  # The binary is downloaded from the pinned release rather than using the published
+  # Action, which requires a paid licence for organisation accounts — the tool itself is
+  # MIT and has no such gate, so this works on any plan.
+  #
+  # Two passes, because they catch different mistakes: the working tree catches a secret
+  # committed in the current revision, and the history catches one that was committed and
+  # later "removed" in a follow-up commit, which leaves it fully readable in the log.
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # gitleaks needs the whole history to scan it.
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        env:
+          GITLEAKS_VERSION: '8.21.2'
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" -o /tmp/gitleaks.tar.gz
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          sudo install -m 0755 /tmp/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      # Both passes were run locally against this revision before the job was added:
+      # the tree is clean and 195 commits scanned clean, so this starts green.
+      - name: Scan the working tree
+        run: gitleaks detect --no-git --redact --verbose --exit-code 1 --config .gitleaks.toml
+
+      - name: Scan the history
+        run: gitleaks detect --redact --verbose --exit-code 1 --config .gitleaks.toml
+
+  # ── Static analysis ───────────────────────────────────────────────────────
+  # security-plan.md §4 requires CodeQL on every PR.
+  #
+  # `continue-on-error` is deliberate and temporary. CodeQL is free for public
+  # repositories but needs GitHub Advanced Security on a private one, and which of those
+  # applies here could not be verified from the environment this was written in. A job
+  # that fails for want of a licence would put CI back in the state this branch just
+  # fixed, where a red gate reports nothing.
+  #
+  # **Remove `continue-on-error` once a run has been seen to succeed.** Until then this
+  # job reports and does not block, which is worth saying plainly: it is not yet a gate.
+  codeql:
+    name: CodeQL (JavaScript/TypeScript)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Initialise CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+
+      # No build step: CodeQL extracts JavaScript and TypeScript without one, and
+      # `next build` here would need database credentials it must not have.
+      - name: Analyse
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:javascript-typescript
