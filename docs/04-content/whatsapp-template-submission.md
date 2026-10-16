@@ -7,7 +7,7 @@ Submit each one in Meta → WhatsApp Manager → Message templates → Create te
 The **name must match exactly** — the product sends by that name, and a typo is a message that never arrives.
 Each template is submitted **twice**, once per language, under the same name.
 
-21 templates.
+22 templates.
 
 > Anything in `docs/04-content/whatsapp-templates.md` that is not listed here is obsolete.
 > It names four templates the product no longer sends; do not create them.
@@ -24,25 +24,26 @@ Each template is submitted **twice**, once per language, under the same name.
 | 4 | `mf_membership_expired` | UTILITY | the reminders the gym runs on | ☐ | ☐ |
 | 5 | `mf_payment_receipt` | UTILITY | every payment sends one | ☐ | ☐ |
 | 6 | `mf_welcome_member` | UTILITY | the first message a new member gets | ☐ | ☐ |
-| 7 | `mf_verification_approved` | UTILITY | the QR arrivals | ☐ | ☐ |
-| 8 | `mf_login_code` | AUTHENTICATION | staff sign-in | ☐ | ☐ |
-| 9 | `mf_owner_daily_digest` | UTILITY | later | ☐ | ☐ |
-| 10 | `mf_owner_alert` | UTILITY | later | ☐ | ☐ |
-| 11 | `mf_birthday_wish` | MARKETING | later | ☐ | ☐ |
-| 12 | `mf_announcement` | MARKETING | later | ☐ | ☐ |
-| 13 | `mf_diet_question` | UTILITY | later | ☐ | ☐ |
-| 14 | `mf_diet_plan_ready` | UTILITY | later | ☐ | ☐ |
-| 15 | `mf_diet_follow_up` | UTILITY | later | ☐ | ☐ |
-| 16 | `mf_trial_welcome` | UTILITY | later | ☐ | ☐ |
-| 17 | `mf_trial_check_in` | UTILITY | later | ☐ | ☐ |
-| 18 | `mf_trial_last_day` | UTILITY | later | ☐ | ☐ |
-| 19 | `mf_trial_join` | UTILITY | later | ☐ | ☐ |
-| 20 | `mf_autopay_halted` | UTILITY | later | ☐ | ☐ |
-| 21 | `mf_autopay_cancelled` | UTILITY | later | ☐ | ☐ |
+| 7 | `mf_signup_received` | UTILITY | the moment a QR form is submitted — not a confirmation | ☐ | ☐ |
+| 8 | `mf_verification_approved` | UTILITY | the QR arrivals | ☐ | ☐ |
+| 9 | `mf_login_code` | AUTHENTICATION | staff sign-in | ☐ | ☐ |
+| 10 | `mf_owner_daily_digest` | UTILITY | later | ☐ | ☐ |
+| 11 | `mf_owner_alert` | UTILITY | later | ☐ | ☐ |
+| 12 | `mf_birthday_wish` | MARKETING | later | ☐ | ☐ |
+| 13 | `mf_announcement` | MARKETING | later | ☐ | ☐ |
+| 14 | `mf_diet_question` | UTILITY | later | ☐ | ☐ |
+| 15 | `mf_diet_plan_ready` | UTILITY | later | ☐ | ☐ |
+| 16 | `mf_diet_follow_up` | UTILITY | later | ☐ | ☐ |
+| 17 | `mf_trial_welcome` | UTILITY | later | ☐ | ☐ |
+| 18 | `mf_trial_check_in` | UTILITY | later | ☐ | ☐ |
+| 19 | `mf_trial_last_day` | UTILITY | later | ☐ | ☐ |
+| 20 | `mf_trial_join` | UTILITY | later | ☐ | ☐ |
+| 21 | `mf_autopay_halted` | UTILITY | later | ☐ | ☐ |
+| 22 | `mf_autopay_cancelled` | UTILITY | later | ☐ | ☐ |
 
 ---
 
-## 1 of 21 — `mf_autopay_invite`
+## 1 of 22 — `mf_autopay_invite`
 
 **Category:** UTILITY
 
@@ -73,7 +74,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## 2 of 21 — `mf_renewal_due`
+## 2 of 22 — `mf_renewal_due`
 
 **Category:** UTILITY
 
@@ -118,7 +119,7 @@ The product sends only the token, because the template already holds everything 
 
 ---
 
-## 3 of 21 — `mf_renewal_due_today`
+## 3 of 22 — `mf_renewal_due_today`
 
 **Category:** UTILITY
 
@@ -162,7 +163,7 @@ The product sends only the token, because the template already holds everything 
 
 ---
 
-## 4 of 21 — `mf_membership_expired`
+## 4 of 22 — `mf_membership_expired`
 
 **Category:** UTILITY
 
@@ -206,7 +207,7 @@ The product sends only the token, because the template already holds everything 
 
 ---
 
-## 5 of 21 — `mf_payment_receipt`
+## 5 of 22 — `mf_payment_receipt`
 
 **Category:** UTILITY
 
@@ -253,7 +254,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## 6 of 21 — `mf_welcome_member`
+## 6 of 22 — `mf_welcome_member`
 
 **Category:** UTILITY
 
@@ -292,7 +293,43 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## 7 of 21 — `mf_verification_approved`
+## 7 of 22 — `mf_signup_received`
+
+**Category:** UTILITY
+
+**Variables**, in this order:
+
+| # | Meaning | Sample to paste |
+|---|---|---|
+| {{1}} | firstName | Ravi |
+
+### English (en)
+
+```
+Hi {{1}}, thank you for signing up with Max Fitness Gym.
+
+Your registration has been received. Our team will check your details and confirm your membership shortly.
+
+This is not a confirmation yet — we will message you again once it is approved.
+```
+
+Footer: `Max Fitness Gym, Nyay Khand 1, Indirapuram`
+
+### Hindi (hi)
+
+```
+नमस्ते {{1}}, Max Fitness Gym में साइन अप करने के लिए धन्यवाद।
+
+आपका रजिस्ट्रेशन हमें मिल गया है। हमारी टीम आपकी जानकारी देखकर आपकी मेंबरशिप जल्दी पक्की कर देगी।
+
+यह कन्फ़र्मेशन नहीं है — मेंबरशिप पक्की होने पर हम आपको फिर मैसेज करेंगे।
+```
+
+Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापुरम`
+
+---
+
+## 8 of 22 — `mf_verification_approved`
 
 **Category:** UTILITY
 
@@ -329,7 +366,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## 8 of 21 — `mf_login_code`
+## 9 of 22 — `mf_login_code`
 
 **Category:** AUTHENTICATION
 
@@ -357,7 +394,7 @@ Footer: `यह कोड 10 मिनट में खत्म हो जा�
 
 ---
 
-## 9 of 21 — `mf_owner_daily_digest`
+## 10 of 22 — `mf_owner_daily_digest`
 
 **Category:** UTILITY
 
@@ -409,7 +446,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## 10 of 21 — `mf_owner_alert`
+## 11 of 22 — `mf_owner_alert`
 
 **Category:** UTILITY
 
@@ -445,7 +482,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## 11 of 21 — `mf_birthday_wish`
+## 12 of 22 — `mf_birthday_wish`
 
 **Category:** MARKETING
 
@@ -473,7 +510,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## 12 of 21 — `mf_announcement`
+## 13 of 22 — `mf_announcement`
 
 **Category:** MARKETING
 
@@ -510,7 +547,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## 13 of 21 — `mf_diet_question`
+## 14 of 22 — `mf_diet_question`
 
 **Category:** UTILITY
 
@@ -547,7 +584,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## 14 of 21 — `mf_diet_plan_ready`
+## 15 of 22 — `mf_diet_plan_ready`
 
 **Category:** UTILITY
 
@@ -586,7 +623,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## 15 of 21 — `mf_diet_follow_up`
+## 16 of 22 — `mf_diet_follow_up`
 
 **Category:** UTILITY
 
@@ -623,7 +660,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## 16 of 21 — `mf_trial_welcome`
+## 17 of 22 — `mf_trial_welcome`
 
 **Category:** UTILITY
 
@@ -658,7 +695,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## 17 of 21 — `mf_trial_check_in`
+## 18 of 22 — `mf_trial_check_in`
 
 **Category:** UTILITY
 
@@ -686,7 +723,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## 18 of 21 — `mf_trial_last_day`
+## 19 of 22 — `mf_trial_last_day`
 
 **Category:** UTILITY
 
@@ -714,7 +751,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## 19 of 21 — `mf_trial_join`
+## 20 of 22 — `mf_trial_join`
 
 **Category:** UTILITY
 
@@ -742,7 +779,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## 20 of 21 — `mf_autopay_halted`
+## 21 of 22 — `mf_autopay_halted`
 
 **Category:** UTILITY
 
@@ -770,7 +807,7 @@ Footer: `Max Fitness Gym, न्याय खंड 1, इंदिरापु�
 
 ---
 
-## 21 of 21 — `mf_autopay_cancelled`
+## 22 of 22 — `mf_autopay_cancelled`
 
 **Category:** UTILITY
 

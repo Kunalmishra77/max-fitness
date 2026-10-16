@@ -19,6 +19,7 @@ import { validateGovId, type GovIdType, type GovIdUpload } from './gov-id';
 import type { StorageDriver, StoredObject } from '../ports/storage';
 import type { ConsentRecord, SelfieImage } from '../signup/registration.service';
 import { assessAge, registrationConsents } from '../signup/registration.rules';
+import type { OutboxEventInput } from '../ports/outbox';
 
 /**
  * An existing member scans the reception QR (PRD QR-02…04; qr-onboarding-flow §3; BR-3.6, BR-13; ADR-058).
@@ -133,6 +134,8 @@ export interface ExistingMemberStore {
   createConsents(records: readonly ConsentRecord[]): Promise<void>;
   createVerificationRequest(record: VerificationRequestRecord): Promise<string>;
   createAlert(alert: { readonly gymId: string; readonly memberId: string; readonly params: Record<string, string> }): Promise<void>;
+  /** Side effects, queued inside this transaction so a rollback takes them with it. */
+  enqueueOutbox(event: OutboxEventInput): Promise<void>;
 }
 
 export interface ExistingMemberUnitOfWork {
@@ -318,7 +321,7 @@ export async function submitExistingMember(
       }
       if (referenceCode === null) throw new DomainError('CONFLICT', 'Could not find a free reference code');
 
-      await store.createVerificationRequest({
+      const verificationId = await store.createVerificationRequest({
         gymId: deps.gymId,
         memberId,
         referenceCode,
@@ -330,6 +333,21 @@ export async function submitExistingMember(
         matchedImportMemberId: imported?.id ?? null,
       });
       await store.createAlert({ gymId: deps.gymId, memberId, params: { referenceCode } });
+
+      /**
+       * Tell the member their form arrived (MEM-001).
+       *
+       * Queued rather than sent: this runs inside the transaction that creates the
+       * member, so if anything after it fails the message goes with the rollback — a
+       * "thank you for signing up" for a member who does not exist is worse than
+       * silence. Keyed on the request, so a resubmission cannot produce two.
+       */
+      await store.enqueueOutbox({
+        gymId: deps.gymId,
+        type: 'whatsapp.signup_received',
+        dedupeKey: `signup-received:${verificationId}`,
+        payload: { memberId, verificationId },
+      });
       return { referenceCode, matchedExisting: imported !== null, keptPhoto: true, memberId };
     });
   } catch (error) {

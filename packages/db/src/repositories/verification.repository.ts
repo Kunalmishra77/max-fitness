@@ -10,6 +10,7 @@ import type { E164Mobile, ISTDate, PlanDurationMonths } from '@mfp/shared';
 import type { Prisma } from '../generated/prisma/client';
 import { withTransaction, type PrismaClient, type TransactionClient } from '../client';
 import { fromDbDate, toDbDate } from '../dates';
+import { enqueueOutboxEvent } from './outbox';
 
 /**
  * QR submissions from existing members, and the CRM's verify queue (qr-onboarding-flow; ADR-058).
@@ -180,6 +181,10 @@ function existingMemberStore(tx: TransactionClient): ExistingMemberStore {
         select: { id: true },
       });
       return created.id;
+    },
+
+    enqueueOutbox(event) {
+      return enqueueOutboxEvent(tx, event);
     },
 
     async createAlert(alert) {

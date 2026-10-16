@@ -123,6 +123,12 @@ export const WHATSAPP_TEMPLATES = {
   loginCode: 'mf_login_code',
   welcomeMember: 'mf_welcome_member',
   verificationApproved: 'mf_verification_approved',
+  /**
+   * MEM-001: the form arrived. Deliberately separate from `verificationApproved`, which
+   * says the membership is confirmed — sending that at submission time would tell somebody
+   * they had joined before anybody checked their ID.
+   */
+  signupReceived: 'mf_signup_received',
   ownerDigest: 'mf_owner_daily_digest',
   ownerAlert: 'mf_owner_alert',
   birthdayWish: 'mf_birthday_wish',
