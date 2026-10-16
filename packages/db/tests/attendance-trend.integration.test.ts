@@ -164,7 +164,7 @@ suite('attendanceByDay against Postgres', () => {
     });
     await checkIn(owing, '2026-09-30');
 
-    const arrivals = await reader.attendanceToday(gymId, TODAY);
+    const arrivals = await reader.attendanceOn(gymId, TODAY);
     const row = arrivals.find((a) => a.memberId === owing);
 
     expect(row?.feeState).toBe('EXPIRED');
@@ -175,7 +175,7 @@ suite('attendanceByDay against Postgres', () => {
     const never = await member('08');
     await checkIn(never, '2026-09-30');
 
-    const row = (await reader.attendanceToday(gymId, TODAY)).find((a) => a.memberId === never);
+    const row = (await reader.attendanceOn(gymId, TODAY)).find((a) => a.memberId === never);
     expect(row?.feeState).toBe('NONE');
     expect(row?.daysLeft).toBeNull();
   });

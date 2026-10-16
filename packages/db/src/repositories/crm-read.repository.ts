@@ -153,6 +153,21 @@ export interface AttendanceTodayItem {
   readonly daysLeft: number | null;
 }
 
+/** One day of the register, as the database groups it (ATT-001). */
+export interface AttendanceDayCount {
+  readonly date: ISTDate;
+  readonly visits: number;
+  readonly members: number;
+}
+
+/** A member's own attendance, for the history on their profile (ATT-006). */
+export interface MemberAttendanceHistory {
+  readonly dates: readonly ISTDate[];
+  readonly visits: number;
+  readonly firstAt: ISTDate | null;
+  readonly lastAt: ISTDate | null;
+}
+
 export interface AbsentMemberItem {
   readonly id: string;
   readonly fullName: string;
@@ -608,13 +623,18 @@ export class PrismaCrmReader {
 
   /** Who came in today, most recent first (crm-ux-blueprint §11). Voided check-ins are gone. */
   /**
-   * Today's arrivals, each with what they owe (ADR-097).
+   * One day's arrivals, each with what they owe (ADR-097).
    *
    * The fee state rides along because a member whose membership has lapsed walking through
    * the door is the easiest collection the gym will get all day — and the list used to show
    * a name and a time, which told reception nothing they could act on.
+   *
+   * Named `attendanceOn` rather than `attendanceToday` since ATT-004: it always took the
+   * date as an argument, and the calendar asks it for days that are not today. The fee
+   * state is still **current**, not as-at that date — reception reading last Tuesday's list
+   * is deciding whom to ring now.
    */
-  async attendanceToday(gymId: string, today: ISTDate, limit = 200): Promise<AttendanceTodayItem[]> {
+  async attendanceOn(gymId: string, today: ISTDate, limit = 200): Promise<AttendanceTodayItem[]> {
     const [rows, fees] = await Promise.all([
       this.#prisma.attendanceEvent.findMany({
         where: { gymId, attendanceDate: toDbDate(today), voidedAt: null },
@@ -639,6 +659,89 @@ export class PrismaCrmReader {
         daysLeft: fee?.daysLeft ?? null,
       };
     });
+  }
+
+  /**
+   * Visits and distinct members per day, over a range (ATT-001, ATT-005).
+   *
+   * Raw SQL because `COUNT(DISTINCT ...)` is not expressible through Prisma's `groupBy`,
+   * and counting distinct members is the whole point: one member coming five times is
+   * five visits and one person, and a calendar that cannot tell those apart is not worth
+   * drawing. Served by the existing `(gymId, attendanceDate)` index, so no migration.
+   *
+   * Voided events are excluded, exactly as the single-day list excludes them — an
+   * attendance reversed by staff must not reappear in a monthly total.
+   *
+   * Days with nobody simply have no row; `fillMissingDays` in the core puts them back.
+   * Doing it here would mean generating a date series in SQL for no gain.
+   */
+  async attendanceDailyCounts(gymId: string, from: ISTDate, to: ISTDate): Promise<AttendanceDayCount[]> {
+    const rows = await this.#prisma.$queryRaw<Array<{ day: Date; visits: bigint; members: bigint }>>`
+      SELECT "attendanceDate" AS day,
+             COUNT(*)::bigint AS visits,
+             COUNT(DISTINCT "memberId")::bigint AS members
+        FROM "AttendanceEvent"
+       WHERE "gymId" = ${gymId}
+         AND "voidedAt" IS NULL
+         AND "attendanceDate" >= ${toDbDate(from)}::date
+         AND "attendanceDate" <= ${toDbDate(to)}::date
+       GROUP BY "attendanceDate"
+       ORDER BY "attendanceDate"
+    `;
+    return rows.map((row) => ({ date: fromDbDate(row.day), visits: Number(row.visits), members: Number(row.members) }));
+  }
+
+  /**
+   * How many different people came at all, over a range (ATT-005).
+   *
+   * Its own query because it cannot be derived from the daily figures: adding up each
+   * day's distinct members counts a regular five times over. This is the number that
+   * answers "how much of the register actually trains".
+   */
+  async attendanceUniqueMembers(gymId: string, from: ISTDate, to: ISTDate): Promise<number> {
+    const rows = await this.#prisma.$queryRaw<Array<{ members: bigint }>>`
+      SELECT COUNT(DISTINCT "memberId")::bigint AS members
+        FROM "AttendanceEvent"
+       WHERE "gymId" = ${gymId}
+         AND "voidedAt" IS NULL
+         AND "attendanceDate" >= ${toDbDate(from)}::date
+         AND "attendanceDate" <= ${toDbDate(to)}::date
+    `;
+    return Number(rows[0]?.members ?? 0);
+  }
+
+  /**
+   * One member's attendance over a range, plus the ends of their whole history (ATT-006).
+   *
+   * The dates are returned as a list rather than a count because the profile draws them
+   * as a calendar; `firstAt` and `lastAt` deliberately ignore the range, since "training
+   * here since March" is a fact about the member and not about the window being viewed.
+   *
+   * Bounded by the range, which the caller has already capped at `MAX_RANGE_DAYS`.
+   */
+  async memberAttendanceHistory(gymId: string, memberId: string, from: ISTDate, to: ISTDate): Promise<MemberAttendanceHistory> {
+    const [inRange, ends] = await Promise.all([
+      this.#prisma.attendanceEvent.findMany({
+        where: { gymId, memberId, voidedAt: null, attendanceDate: { gte: toDbDate(from), lte: toDbDate(to) } },
+        select: { attendanceDate: true },
+        orderBy: { attendanceDate: 'asc' },
+      }),
+      this.#prisma.$queryRaw<Array<{ first: Date | null; last: Date | null }>>`
+        SELECT MIN("attendanceDate") AS first, MAX("attendanceDate") AS last
+          FROM "AttendanceEvent"
+         WHERE "gymId" = ${gymId} AND "memberId" = ${memberId} AND "voidedAt" IS NULL
+      `,
+    ]);
+
+    // One visit per day for the calendar: two check-ins on one day is still one day shaded.
+    const dates = [...new Set(inRange.map((row) => fromDbDate(row.attendanceDate)))];
+    const row = ends[0];
+    return {
+      dates,
+      visits: inRange.length,
+      firstAt: row?.first == null ? null : fromDbDate(row.first),
+      lastAt: row?.last == null ? null : fromDbDate(row.last),
+    };
   }
 
   /**

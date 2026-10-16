@@ -34,6 +34,10 @@ export * from './members/birthdays';
 export * from './members/birthday-wish';
 export * from './announcements/announcement';
 export * from './attendance/cooldown';
+// Reading the register for a day that is not today (ATT-001 … ATT-006).
+export * from './attendance/history';
+// CSV that a spreadsheet opens and cannot be tricked by (ATT-007).
+export * from './reports/csv';
 export * from './payments/receipt-number';
 export * from './tokens/signed-links';
 
