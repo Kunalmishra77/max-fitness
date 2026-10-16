@@ -86,6 +86,23 @@ export const EnvSchema = z
     TEST_DATABASE_URL: optionalPostgresUrl('TEST_DATABASE_URL'),
 
     // ── Security ────────────────────────────────────────────────────────
+    /**
+     * How many trusted proxies sit in front of the app (SEC-002).
+     *
+     * `X-Forwarded-For` is a list each hop appends to, so the entries a client sent are
+     * on the left and the ones our own infrastructure added are on the right. Reading
+     * the left-most entry — which is what every rate limiter here used to do — reads a
+     * value the client chose, and a client that rotates it gets a fresh bucket on every
+     * request.
+     *
+     * So the client is counted from the right instead: with one proxy (Coolify's own,
+     * directly in front of the container) the real address is the last entry. Add one
+     * for each further trusted hop — a CDN in front of that, say.
+     *
+     * `0` means no proxy, which is the case on a developer's machine: the header is then
+     * not trusted at all and everything shares one bucket, as it did before.
+     */
+    TRUSTED_PROXY_HOPS: z.coerce.number().int().min(0).max(8).default(1),
     SESSION_SECRET: z.string().min(32, 'SESSION_SECRET must be at least 32 characters'),
     LINK_TOKEN_SECRET: z.string().min(32, 'LINK_TOKEN_SECRET must be at least 32 characters'),
     KIOSK_TOKEN_PEPPER: z.string().min(32, 'KIOSK_TOKEN_PEPPER must be at least 32 characters'),

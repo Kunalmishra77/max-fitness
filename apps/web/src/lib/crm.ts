@@ -34,6 +34,7 @@ import { Argon2PinHasher } from '@mfp/integrations/auth';
 import { todayIST, type ISTDate } from '@mfp/shared';
 import { getContainer } from './container';
 import { checkoutSettingsOf, loadGym, type GymContext } from './gym';
+import { clientIp, crmLoginLimiters, limiterKey } from './rate-limit';
 import { withOneRetry } from './retry';
 import { hashIp } from './signup-access';
 
@@ -88,11 +89,26 @@ export async function requireCrmContext(): Promise<CrmContext> {
   return { actor, gym, today: todayIST(container.clock), reader: new PrismaCrmReader(container.prisma) };
 }
 
-export type LoginOutcome = { ok: true } | { ok: false; code: 'INVALID_PIN' | 'ACCOUNT_LOCKED' | 'VALIDATION_FAILED' | 'INTERNAL'; attemptsLeft?: number; minutes?: number };
+export type LoginOutcome =
+  | { ok: true }
+  | { ok: false; code: 'INVALID_PIN' | 'ACCOUNT_LOCKED' | 'RATE_LIMITED' | 'VALIDATION_FAILED' | 'INTERNAL'; attemptsLeft?: number; minutes?: number };
 
 export async function signIn(input: { identifier: string; pin: string; trusted: boolean }): Promise<LoginOutcome> {
   const container = getContainer();
   const requestHeaders = await headers();
+  const ip = clientIp(requestHeaders);
+
+  /**
+   * Per-address limit before the PIN is even looked at (SEC-004).
+   *
+   * Checked first so a sweep through a list of staff numbers costs nothing to refuse,
+   * and — the reason it exists — so a lockout cannot be held open on the owner's own
+   * account for the price of one request every fifteen minutes.
+   */
+  const ipCheck = crmLoginLimiters.byIp.hit(limiterKey('crm-login-ip', ip));
+  if (!ipCheck.allowed) {
+    return { ok: false, code: 'RATE_LIMITED', minutes: Math.max(1, Math.ceil(ipCheck.retryAfterSeconds / 60)) };
+  }
 
   try {
     const gym = await loadGym(container);
@@ -100,7 +116,9 @@ export async function signIn(input: { identifier: string; pin: string; trusted: 
       {
         identifier: input.identifier,
         pin: input.pin,
-        ipHash: hashIp(requestHeaders.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown', container.env.LINK_TOKEN_SECRET),
+        // Was the left-most forwarded entry, which is the client's own claim: an
+        // audit row naming an address the attacker chose is worse than none (SEC-002).
+        ipHash: hashIp(ip, container.env.LINK_TOKEN_SECRET),
         userAgent: requestHeaders.get('user-agent')?.slice(0, 300) ?? null,
         trusted: input.trusted,
       },

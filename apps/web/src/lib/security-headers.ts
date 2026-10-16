@@ -66,8 +66,18 @@ export type SecurityArea = 'public' | 'crm' | 'api';
  */
 export function contentSecurityPolicy(area: SecurityArea, options: { production: boolean }): string {
   if (area === 'api') {
-    // A JSON or image response should never be able to act as a document.
-    return ["default-src 'none'", "frame-ancestors 'none'", "base-uri 'none'", 'sandbox'].join('; ');
+    /**
+     * A JSON or image response should never be able to act as a document.
+     *
+     * Deliberately **no `sandbox`**. It was the obvious thing to add and it would have
+     * broken a real screen: `/api/v1/files` serves a member's uploaded ID as a PDF with
+     * `Content-Disposition: inline`, and staff open it at the desk to read the card. A
+     * bare `sandbox` is the most restrictive form there is and takes the browser's PDF
+     * viewer with it. `default-src 'none'` costs nothing here — these responses have no
+     * subresources — and `nosniff`, which `staticSecurityHeaders` adds, is the directive
+     * that actually matters on a route that streams bytes.
+     */
+    return ["default-src 'none'", "frame-ancestors 'none'", "base-uri 'none'"].join('; ');
   }
 
   const isPublic = area === 'public';

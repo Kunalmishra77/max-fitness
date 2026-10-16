@@ -5,6 +5,7 @@ import { PrismaKioskDevices } from '@mfp/db';
 import { apiData, apiError, newRequestId } from '@/lib/api';
 import { getContainer } from '@/lib/container';
 import { loadGym } from '@/lib/gym';
+import { clientIp, KIOSK_PAIR_FAILURE_BUCKET, kioskPairLimiters, limiterKey } from '@/lib/rate-limit';
 
 /**
  * `POST /api/v1/kiosk/pair` — trade a six-digit code for a device token
@@ -27,6 +28,10 @@ export async function POST(request: NextRequest) {
   const requestId = newRequestId();
   const container = getContainer();
 
+  // Before the body is read, so a flood costs almost nothing to turn away (SEC-005).
+  const ipCheck = kioskPairLimiters.byIp.hit(limiterKey('kiosk-pair-ip', clientIp(request.headers)));
+  if (!ipCheck.allowed) return tooMany(ipCheck.retryAfterSeconds, requestId);
+
   let body: unknown;
   try {
     body = await request.json();
@@ -45,8 +50,18 @@ export async function POST(request: NextRequest) {
   });
 
   if (result.outcome !== 'PAIRED') {
-    // Deliberately one answer for "wrong code", "expired" and "revoked".
+    /**
+     * Count the failure against the deployment-wide ceiling (SEC-005).
+     *
+     * Only failures, so setting up several phones in a row is unaffected — and only
+     * *after* the attempt, so the limiter measures guessing rather than traffic. Once
+     * the ceiling is reached the answer is a 429 instead of a 401, which is also the
+     * only thing that distinguishes the two cases from outside: a wrong code, an
+     * expired one and a revoked device still look identical.
+     */
+    const failureCheck = kioskPairLimiters.failures.hit(KIOSK_PAIR_FAILURE_BUCKET);
     console.warn(`[kiosk-pair] refused ${requestId}: ${result.outcome}`);
+    if (!failureCheck.allowed) return tooMany(failureCheck.retryAfterSeconds, requestId);
     return apiError(401, 'UNAUTHENTICATED', 'That code did not work. Ask for a new one.', requestId);
   }
 
@@ -74,4 +89,11 @@ export async function POST(request: NextRequest) {
     requestId,
     201,
   );
+}
+
+function tooMany(retryAfterSeconds: number, requestId: string) {
+  return apiError(429, 'RATE_LIMITED', 'Too many attempts. Wait a few minutes.', requestId, {
+    details: { retryAfterSeconds },
+    headers: { 'Retry-After': String(retryAfterSeconds) },
+  });
 }

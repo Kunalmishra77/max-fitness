@@ -121,6 +121,41 @@ describe('login', () => {
     await expect(login(input, deps(store, () => Promise.resolve(true)))).resolves.toMatchObject({ actor: { role: 'OWNER' } });
   });
 
+  /**
+   * SEC-003. The count only used to be cleared by a *successful* sign-in, so once a
+   * lockout expired the account still carried five failures and the very next wrong PIN
+   * re-locked it. Holding the owner out of their own CRM indefinitely cost one request
+   * every fifteen minutes.
+   */
+  it('gives the five attempts back once a lockout has been served', async () => {
+    const { store, calls } = fakeStore({ lockedUntil: new Date('2026-09-12T04:00:00Z'), failedPinCount: 5 });
+
+    const error = await login(input, deps(store, () => Promise.resolve(false))).catch((e: unknown) => e);
+
+    // Counted as the first failure of a fresh run, not the sixth of the old one.
+    expect(calls.failed).toEqual([{ count: 1, lockedUntil: null }]);
+    expect(error).toMatchObject({ code: 'INVALID_PIN', meta: { attemptsLeft: LOGIN_MAX_ATTEMPTS - 1 } });
+  });
+
+  it('still re-locks after five more wrong PINs, so the limit itself is not weakened', async () => {
+    const { store, calls } = fakeStore({ lockedUntil: new Date('2026-09-12T04:00:00Z'), failedPinCount: LOGIN_MAX_ATTEMPTS - 1 });
+
+    // A served lockout resets the count, so this is failure 1 of 5 and must not lock.
+    const error = await login(input, deps(store, () => Promise.resolve(false))).catch((e: unknown) => e);
+    expect(error).toMatchObject({ code: 'INVALID_PIN' });
+    expect(calls.failed).toEqual([{ count: 1, lockedUntil: null }]);
+  });
+
+  it('does not reset the count while the lockout is still running', async () => {
+    const { store, calls } = fakeStore({ lockedUntil: new Date('2026-09-12T05:00:00Z'), failedPinCount: LOGIN_MAX_ATTEMPTS });
+
+    const error = await login(input, deps(store, () => Promise.resolve(false))).catch((e: unknown) => e);
+
+    expect(error).toMatchObject({ code: 'ACCOUNT_LOCKED' });
+    // Nothing written: an attempt during a lockout must not extend it either.
+    expect(calls.failed).toEqual([]);
+  });
+
   it('gives the same answer for an unknown sign-in as for a wrong PIN', async () => {
     const { store } = fakeStore(null);
     const error = await login(input, deps(store, () => Promise.resolve(true))).catch((e: unknown) => e);

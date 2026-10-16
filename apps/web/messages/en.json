@@ -701,6 +701,7 @@
       "invalid": "Mobile number or PIN is wrong.",
       "attemptsLeft": "{count} tries left",
       "locked": "Too many wrong PINs. Try again in {minutes} minutes.",
+      "tooManyAttempts": "Too many sign-in attempts from this connection. Wait {minutes} minutes and try again.",
       "generic": "Something went wrong. Please try again.",
       "logout": "Log out",
       "welcome": "Welcome back",

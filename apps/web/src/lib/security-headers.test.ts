@@ -99,9 +99,19 @@ describe('contentSecurityPolicy — Max Register', () => {
 describe('contentSecurityPolicy — the API', () => {
   const policy = contentSecurityPolicy('api', { production: true });
 
-  it('allows nothing and sandboxes the response', () => {
+  it('allows nothing', () => {
     expect(policy).toContain("default-src 'none'");
-    expect(policy).toContain('sandbox');
+    expect(policy).toContain("frame-ancestors 'none'");
+  });
+
+  /**
+   * A regression test for a mistake that was made and caught: `sandbox` is the obvious
+   * directive for a route that serves no documents, and it would have broken a screen.
+   * `/api/v1/files` serves a member's ID as an inline PDF and staff read it at the desk;
+   * a bare `sandbox` takes the browser's PDF viewer with it.
+   */
+  it('does not sandbox, because member ID PDFs are opened from this route', () => {
+    expect(policy).not.toContain('sandbox');
   });
 });
 

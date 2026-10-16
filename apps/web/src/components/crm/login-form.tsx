@@ -37,11 +37,15 @@ export function LoginForm({ action }: { action: (values: { identifier: string; p
         setError(
           outcome.code === 'ACCOUNT_LOCKED'
             ? t('locked', { minutes: outcome.minutes ?? 15 })
-            : outcome.code === 'INTERNAL'
-              ? t('generic')
-              : outcome.attemptsLeft === undefined
-                ? t('invalid')
-                : `${t('invalid')} ${t('attemptsLeft', { count: outcome.attemptsLeft })}`,
+            : // Said separately from a lockout, because the fix is different: this one is
+              // about the connection, not the account, and waiting is all there is to do.
+              outcome.code === 'RATE_LIMITED'
+              ? t('tooManyAttempts', { minutes: outcome.minutes ?? 15 })
+              : outcome.code === 'INTERNAL'
+                ? t('generic')
+                : outcome.attemptsLeft === undefined
+                  ? t('invalid')
+                  : `${t('invalid')} ${t('attemptsLeft', { count: outcome.attemptsLeft })}`,
         );
       }
     } catch (error) {

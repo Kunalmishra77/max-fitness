@@ -127,8 +127,23 @@ export async function login(
     });
   }
 
+  /**
+   * A served lockout wipes the slate (SEC-003).
+   *
+   * `clearFailedPins` only runs on a *successful* sign-in, so the count stayed at five
+   * once a lockout expired — and the next wrong PIN re-locked the account immediately.
+   * Anyone who knew the owner's number or `admin@` could keep them out of their own CRM
+   * for as long as they liked at a cost of one request every fifteen minutes.
+   *
+   * Sitting out the fifteen minutes is the penalty; it should buy the five attempts back.
+   * Re-locking now costs five wrong PINs again rather than one, which together with the
+   * per-IP limit on the sign-in action makes holding the lock expensive instead of free.
+   */
+  const servedLockout = staff.lockedUntil !== null && staff.lockedUntil.getTime() <= now.getTime();
+  const priorFailures = servedLockout ? 0 : staff.failedPinCount;
+
   if (!(await deps.hasher.verify(staff.pinHash, input.pin))) {
-    const failedCount = staff.failedPinCount + 1;
+    const failedCount = priorFailures + 1;
     const locked = failedCount >= LOGIN_MAX_ATTEMPTS;
     await deps.store.recordFailedPin(staff.id, failedCount, locked ? new Date(now.getTime() + LOGIN_LOCKOUT_MINUTES * 60_000) : null);
     if (locked) {
