@@ -19,6 +19,15 @@ import { integrationSuite, testDatabaseUrl } from './support';
 
 const run = randomBytes(5).toString('hex');
 const gymId = `gym_it_mlist_${run}`;
+/**
+ * The second gym the scoping test needs, named up here so `afterAll` can delete it.
+ *
+ * It used to be created and deleted inside that test, so an assertion failing in the
+ * middle left a gym and a member behind for good. Six of them accumulated in one
+ * afternoon of a failing run, which is how the twelve stray test gyms found on 2026-10-14
+ * got there. Teardown belongs where it runs whether the test passed or not.
+ */
+const otherGymId = `${gymId}_other`;
 const TODAY: ISTDate = istDate('2026-09-30');
 
 const suite = integrationSuite('members list');
@@ -73,8 +82,8 @@ suite('members list against Postgres', () => {
     if (prisma === undefined) return;
     await prisma.payment.deleteMany({ where: { gymId } });
     await prisma.membership.deleteMany({ where: { gymId } });
-    await prisma.member.deleteMany({ where: { gymId } });
-    await prisma.gym.deleteMany({ where: { id: gymId } });
+    await prisma.member.deleteMany({ where: { gymId: { in: [gymId, otherGymId] } } });
+    await prisma.gym.deleteMany({ where: { id: { in: [gymId, otherGymId] } } });
     await prisma.$disconnect();
   });
 
@@ -112,7 +121,7 @@ suite('members list against Postgres', () => {
   });
 
   it('does not count or list another gym’s members', async () => {
-    const otherGym = `${gymId}_other`;
+    const otherGym = otherGymId;
     await prisma.gym.create({
       data: { id: otherGym, slug: otherGym, name: 'Other', phone: '+919000000013', addressLine: 'T', city: 'T', state: 'T', pincode: '000000', settings: {} },
     });
@@ -122,9 +131,7 @@ suite('members list against Postgres', () => {
 
     expect((await reader.memberCounts(gymId, TODAY)).total).toBe(5);
     expect((await reader.members(gymId, TODAY, { limit: 50 })).map((m) => m.fullName)).not.toContain('Aaaa Stranger');
-
-    await prisma.member.deleteMany({ where: { gymId: otherGym } });
-    await prisma.gym.deleteMany({ where: { id: otherGym } });
+    // Teardown is in afterAll, so a failure above still cleans up.
   });
 
 
