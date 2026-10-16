@@ -794,7 +794,8 @@
       "trialDays": "{count, plural, one {ट्रायल, 1 दिन} other {ट्रायल, # दिन}}",
       "countOf": "{total} में से {shown} मेंबर — बाक़ी देखने के लिए खोज छाँटें",
       "awaitingPayment": "{count, plural, one {# ने फ़ॉर्म भरा पर फ़ीस नहीं दी} other {# लोगों ने फ़ॉर्म भरा पर फ़ीस नहीं दी}}",
-      "chase": "देखिए"
+      "chase": "देखिए",
+      "months": "{count, plural, one {# महीना} other {# महीने}}"
     },
     "profile": {
       "call": "कॉल",
@@ -873,7 +874,11 @@
       "declaredUntil": "{date} तक की फ़ीस बताई — जाँच बाकी है",
       "declaredTitle": "जाँच बाकी है",
       "declaredBody": "इस मेंबर ने रिसेप्शन QR भरा और बताया: {plan}, {date} तक फ़ीस दी हुई। जब तक कोई मंज़ूरी नहीं देता, कुछ नहीं गिना जाएगा — न मेंबरशिप, न फ़ीस की तारीख़, न रिमाइंडर।",
-      "declaredCheck": "{code} जाँचें"
+      "declaredCheck": "{code} जाँचें",
+      "paidTill": "फ़ीस कब तक",
+      "whatsappOptIn": "WhatsApp",
+      "yes": "हाँ",
+      "no": "नहीं"
     },
     "renew": {
       "title": "फीस लें",
@@ -1664,7 +1669,19 @@
       "count": "{count, plural, one {1 मैसेज} other {# मैसेज}}",
       "replied": "जवाब आया",
       "threadOf": "{name} के साथ संदेश",
-      "backToPeople": "सभी लोग"
+      "backToPeople": "सभी लोग",
+      "searchPeople": "नाम या मैसेज खोजिए",
+      "noMatch": "इससे मिलता कोई नहीं है।",
+      "noPreview": "इस मैसेज का टेक्स्ट सेव नहीं हुआ।",
+      "pickPerson": "बाईं तरफ़ से किसी को चुनिए — जिम ने उन्हें क्या भेजा, यहाँ दिखेगा।",
+      "openMember": "मेंबर खोलिए",
+      "waitingReply": "{count, plural, one {# जवाब का इंतज़ार कर रहे हैं} other {# जवाब का इंतज़ार कर रहे हैं}}",
+      "windowOpen": "अभी {hours} घंटे {minutes} मिनट तक आप अपने शब्दों में जवाब दे सकते हैं।",
+      "windowShut": "इन्होंने पिछले 24 घंटे में कुछ नहीं लिखा, इसलिए आपका लिखा मैसेज WhatsApp नहीं पहुँचाएगा। फ़ोन कीजिए, या Announcements से टेम्पलेट भेजिए।",
+      "replyPlaceholder": "जवाब लिखिए…",
+      "send": "भेजिए",
+      "sending": "भेजा जा रहा है…",
+      "sendFailed": "यह नहीं गया। दोबारा कोशिश कीजिए, या फ़ोन कीजिए।"
     },
     "simulator": {
       "title": "मैसेज का हिसाब",

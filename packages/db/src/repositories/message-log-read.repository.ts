@@ -20,6 +20,10 @@ export interface MessageConversation {
   readonly messages: number;
   /** True when the member has written back: that is where a person may be needed. */
   readonly hasInbound: boolean;
+  /** Their photograph, so the list shows a face rather than a row of initials. */
+  readonly photoKey: string | null;
+  /** When they last wrote, which is what decides the reply window (ADR-127). */
+  readonly lastInboundAt: Date | null;
 }
 
 export interface MessageLogRow {
@@ -110,7 +114,14 @@ export class PrismaMessageLogReader {
       orderBy: { createdAt: 'desc' },
       // Enough recent messages to build a page of conversations without a second query.
       take: 600,
-      select: { memberId: true, createdAt: true, direction: true, bodyPreview: true, status: true, member: { select: { fullName: true } } },
+      select: {
+        memberId: true,
+        createdAt: true,
+        direction: true,
+        bodyPreview: true,
+        status: true,
+        member: { select: { fullName: true, photo: { select: { storageKey: true, deletedAt: true } } } },
+      },
     });
 
     const byMember = new Map<string, MessageConversation>();
@@ -128,10 +139,18 @@ export class PrismaMessageLogReader {
           messages: 1,
           // A member who wrote back is where a person is needed; that sorts to the top.
           hasInbound: row.direction === 'INBOUND',
+          photoKey: row.member?.photo == null || row.member.photo.deletedAt !== null ? null : row.member.photo.storageKey,
+          lastInboundAt: row.direction === 'INBOUND' ? row.createdAt : null,
         });
         continue;
       }
-      byMember.set(row.memberId, { ...existing, messages: existing.messages + 1, hasInbound: existing.hasInbound || row.direction === 'INBOUND' });
+      byMember.set(row.memberId, {
+        ...existing,
+        messages: existing.messages + 1,
+        hasInbound: existing.hasInbound || row.direction === 'INBOUND',
+        // Rows arrive newest first, so the first inbound seen is the latest one.
+        lastInboundAt: existing.lastInboundAt ?? (row.direction === 'INBOUND' ? row.createdAt : null),
+      });
     }
 
     return [...byMember.values()]

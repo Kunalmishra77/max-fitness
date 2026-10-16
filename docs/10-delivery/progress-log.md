@@ -1652,3 +1652,18 @@ It did not go cleanly. The script was missing five tables added since it was wri
 - The message log holds ~430 SIMULATED and ~1068 SKIPPED rows; clear them before demo mode goes off, or the new inbox opens full of noise.
 - MF-0001's PAN photograph is 338×338 — too small to read.
 - The security review.
+
+## 2026-10-16 — Messages rebuilt as an inbox
+
+The owner rejected the people-list from ADR-126 and sent a reference: list, thread and context side by side.
+
+- **`packages/core/src/messaging/service-window.ts`** (new, tests first) — Meta's 24-hour rule. One function decides both what the composer offers and what the send route allows, because those disagreeing means a reply box that produces a provider error nobody can read.
+- **`POST /api/v1/crm/messages/reply`** (new) — reception answering in their own words, gated on `member.edit` and on the window. The log row is written whatever the provider returns.
+- **`inbox-list.tsx`**, **`inbox-thread.tsx`** (new) and the rebuilt **messages page** — three panes on a desk, one at 360px. Under each outbound bubble: the rule that sent it and what became of it. The right column carries the plan, fees-paid-till and Call / Take fees / Open member.
+- `conversations()` now returns the member's photo and when they last wrote.
+
+**Verified.** `serviceWindow` written test-first and watched fail. Typecheck across 8 packages, `next build` clean, lint clean on every touched file.
+
+**Known limits.**
+- The gym has had two inbound messages ever, so the reply box will show "shut" for nearly every thread until members start writing in. That is correct, not broken.
+- The thread loads the last 200 messages and does not paginate.

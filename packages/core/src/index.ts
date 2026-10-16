@@ -91,3 +91,4 @@ export * from './crm/verification';
 export * from './otp/otp.service';
 export * from './qr/lookup';
 export * from './qr/claimed-member';
+export * from './messaging/service-window';

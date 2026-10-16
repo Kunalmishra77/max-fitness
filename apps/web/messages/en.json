@@ -794,7 +794,8 @@
       "trialDays": "{count, plural, one {Trial, 1 day} other {Trial, # days}}",
       "countOf": "{shown} of {total} members — refine the search to see the rest",
       "awaitingPayment": "{count, plural, one {# person filled the form but has not paid} other {# people filled the form but have not paid}}",
-      "chase": "See them"
+      "chase": "See them",
+      "months": "{count, plural, one {# month} other {# months}}"
     },
     "profile": {
       "call": "Call",
@@ -873,7 +874,11 @@
       "declaredUntil": "Said to be paid until {date} — waiting to be checked",
       "declaredTitle": "Waiting to be checked",
       "declaredBody": "This member filled in the reception QR and said: {plan}, paid until {date}. Nothing counts yet — no membership, no fee date and no reminders — until somebody approves it.",
-      "declaredCheck": "Check {code}"
+      "declaredCheck": "Check {code}",
+      "paidTill": "Fees paid till",
+      "whatsappOptIn": "WhatsApp",
+      "yes": "Agreed",
+      "no": "Not agreed"
     },
     "renew": {
       "title": "Take fees",
@@ -1664,7 +1669,19 @@
       "count": "{count, plural, one {1 message} other {# messages}}",
       "replied": "replied",
       "threadOf": "Messages with {name}",
-      "backToPeople": "All people"
+      "backToPeople": "All people",
+      "searchPeople": "Search a name or a message",
+      "noMatch": "Nobody here matches that.",
+      "noPreview": "No text was saved for this message.",
+      "pickPerson": "Choose somebody on the left to read what the gym has sent them.",
+      "waitingReply": "{count, plural, one {# is waiting for an answer} other {# are waiting for an answer}}",
+      "openMember": "Open member",
+      "windowOpen": "You can reply in your own words for another {hours}h {minutes}m.",
+      "windowShut": "They have not written in the last 24 hours, so WhatsApp will not carry a message you type. Ring them, or send a template from Announcements.",
+      "replyPlaceholder": "Write a reply…",
+      "send": "Send",
+      "sending": "Sending…",
+      "sendFailed": "That did not send. Try again, or ring them."
     },
     "simulator": {
       "title": "Message plan",

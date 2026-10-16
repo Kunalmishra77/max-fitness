@@ -901,3 +901,37 @@ The people view already existed (ADR-091) but was the second tab. It is now the 
 
 **`wa.me` was worse than untidy.** It leaves the CRM, lands in whichever WhatsApp account the staff phone is signed into, and writes from *that* number — so the member's reply goes to a person instead of to the gym, and the register never hears about it. The button now opens that member's thread. The pre-filled sentence it used to carry goes with it; a template the engine owns is a tracked send, and a sentence typed from a personal phone never was.
 
+
+## ADR-127
+
+**Date:** 2026-10-16
+**Status:** Accepted
+**Context:** The new inbox needed a reply box, and a reply box that produces a provider error is worse than no reply box.
+
+**Decision — free text only inside Meta's 24-hour window, and the rule lives in `packages/core`.**
+
+A business may write what it likes to somebody who wrote to it first, for 24 hours from their message. After that the Graph API refuses free text: the member sees nothing, and reception is left reading an error code.
+
+So `serviceWindow` decides both what the screen offers and what the sender allows. Those two disagreeing is the whole failure mode — a composer that invites a reply the route will refuse — so there is one function and both read it. A message dated in the future counts as **shut**, not as a fresh 24 hours: a clock that disagrees with the provider's must not open a door Meta has closed.
+
+**Replying is `member.edit`**, which reception and the owner have and a trainer does not. A trainer can read a thread; speaking *as the gym* is the same bar as changing the member's record, because to the person on the other end it is the same gym talking.
+
+**The log row is written whatever the provider says.** A message that failed is the thing reception most needs to see, and a send with no log is a send nobody can account for.
+
+**A member who unsubscribed can still be answered.** Asking the gym to stop sending reminders is not asking to be ignored when you write in.
+
+## ADR-128
+
+**Date:** 2026-10-16
+**Status:** Accepted
+**Context:** ADR-126 made the people view the default, and the owner still rejected the screen: *"mujhe chahiye like inbox ki tarah"*, with a reference showing list, thread and context side by side.
+
+**Decision — three panes, and the third one is about fees.**
+
+People down the left, their thread in the middle, who they are down the right. The reference's right-hand column carries chat metadata; ours carries the plan, the date fees are paid to and the three things reception can do — because reception reads a thread **in order to act**, and the act is nearly always taking money or ringing somebody.
+
+**The thread is not a chat, and the design says so.** Almost every message was written by a rule and sent by a machine about money, so under each of the gym's bubbles sits what sent it and what became of it — *"Fee reminder · 11:04 · Read"*. A bare bubble answers neither of reception's two questions. The gym speaks in obsidian and the member in paper grey; the fee colours are reserved for whether a message arrived, so they are never spent on decoration.
+
+**At 360px the three become one.** The list is the page, choosing somebody replaces it with their thread, and the member's details fold into a strip above it. Nothing hides behind a toggle: a reception desk has one hand free.
+
+**The flat log stays** under "All messages", which is what you want when a send went wrong rather than when you want to know what a member was told.
