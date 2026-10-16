@@ -30,7 +30,8 @@
     "delete:test-gyms": "tsx scripts/delete-test-gyms.ts",
     "check:duplicate-faces": "tsx scripts/check-duplicate-faces.ts",
     "audit:members": "tsx scripts/audit-members.ts",
-    "find:orphans": "tsx scripts/find-orphan-objects.ts"
+    "find:orphans": "tsx scripts/find-orphan-objects.ts",
+    "clear:messages": "tsx scripts/clear-message-log.ts"
   },
   "dependencies": {
     "@mfp/core": "workspace:*",
