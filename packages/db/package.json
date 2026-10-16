@@ -16,7 +16,8 @@
     "db:reset": "prisma migrate reset --force",
     "db:studio": "prisma studio",
     "typecheck": "tsc --noEmit",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "db:migrate:test": "tsx scripts/migrate-test-db.ts"
   },
   "dependencies": {
     "@mfp/core": "workspace:*",

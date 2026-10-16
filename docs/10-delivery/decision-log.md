@@ -935,3 +935,19 @@ People down the left, their thread in the middle, who they are down the right. T
 **At 360px the three become one.** The list is the page, choosing somebody replaces it with their thread, and the member's details fold into a strip above it. Nothing hides behind a toggle: a reception desk has one hand free.
 
 **The flat log stays** under "All messages", which is what you want when a send went wrong rather than when you want to know what a member was told.
+
+## ADR-129
+
+**Date:** 2026-10-16
+**Status:** Accepted
+**Context:** On the morning the gym went live, the owner opened the freshly cleaned Messages screen and found forty rows under a member who did not exist. They were written by `pnpm test`: `TEST_DATABASE_URL` and `DATABASE_URL` named the same database. The same cause had already left twelve stray gyms in the register on 2026-10-14 and six more that afternoon.
+
+A test suite that can damage the thing it is testing is not a safety net.
+
+**Decision — the integration tests get their own database, `mfp_test`, on the same Supabase instance.**
+
+**A separate schema was tried first and does not work.** Prisma qualifies every table as `"public"."Member"`, so `search_path` is ignored and the generated client reads the live rows whatever the connection string says — proved by connecting with `options=-c search_path=mfp_test` and still counting the production gym. A database carries its own `public`, which is what the client is already looking for. It is free, both poolers reach it, and `pnpm db:migrate:test` creates and migrates it.
+
+**Standing a database up from nothing is what made this worth doing.** The RLS test failed against the new database: nine tables created by migrations after the init one — the bot, diet, personal training, announcements, the gallery — never had RLS enabled. Production was correct only because somebody had run the ALTERs `check:rls` printed, by hand. The migration history was not, so a restore or a staging environment would have come up with nine unprotected tables. ADR-011 is now true by migration rather than by somebody remembering, and `db:migrate:test` re-checks it every run.
+
+**The E2E journeys still run against the real gym**, because they drive the real browser through the real site; `pnpm wipe:members` remains how those are cleared.

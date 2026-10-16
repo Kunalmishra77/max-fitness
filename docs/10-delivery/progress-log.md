@@ -1667,3 +1667,20 @@ The owner rejected the people-list from ADR-126 and sent a reference: list, thre
 **Known limits.**
 - The gym has had two inbound messages ever, so the reply box will show "shut" for nearly every thread until members start writing in. That is correct, not broken.
 - The thread loads the last 200 messages and does not paginate.
+
+## 2026-10-16 (later) — the gym is live, and the tests stopped writing to it
+
+**Live.** `DEMO_MODE=false`, `ALLOW_DEMO_IN_PRODUCTION` removed, the allowlist cleared, Razorpay on live keys, both apps redeployed. The POST rule's slot is 19:00 IST, so the first three real reminders — Indresh Mishra, Trilok Singh, Ashutosh Singh, each 1–3 days overdue — go this evening. Nobody else is due; Deepa rawat is 16 days overdue and the POST rule stops at 7.
+
+**The forty rows.** The owner found them in the freshly cleaned inbox, under a member who did not exist. They were mine: `pnpm test` ran against the production database. The simulator compounds it — it writes every log row under `env.GYM_SLUG` with `memberId: null`, whatever gym or member the message was for — which is also why those threads read as "Erased member". Demo is off now, so the simulator is dormant; the attribution is still wrong and is **not fixed**.
+
+**ADR-129 — the tests have their own database.** `mfp_test` on the same Supabase instance, created and migrated by `pnpm db:migrate:test`. A schema was tried first and cannot work: Prisma qualifies every table as `"public"."Member"`, so `search_path` is ignored. Verified after the switch: production still 1 gym, 11 members, 2 messages; the test database empty; 100/100 db tests green against it.
+
+**A security gap, found by standing the schema up from nothing.** Nine tables added after the init migration — `Announcement`, `BotConfig`, `BotDocument`, `BotReply`, `DietFollowUp`, `DietPlan`, `DietProfile`, `GalleryPhoto`, `PtEnrolment` — never had RLS enabled in any migration. Production has it only because the ALTERs `check:rls` printed were run by hand. A restore or a staging environment would have come up unprotected. Migration `20261016120000_rls_on_later_tables` fixes it; it is a no-op on production, which already has them.
+
+**Pending.**
+- **Production needs `pnpm db:deploy`** so the new migration is recorded there too.
+- The simulator's gym/member attribution.
+- MF-0001's PAN photograph is 338×338.
+- Face consent for Ashutosh Singh, Deepanshu Rao and Ishita mehta.
+- The security review.

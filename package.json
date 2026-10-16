@@ -29,7 +29,8 @@
     "format:check": "prettier --check .",
     "qr:poster": "tsx infra/scripts/generate-qr-poster.ts",
     "wipe:members": "pnpm --filter @mfp/worker run wipe:members",
-    "wa:templates": "pnpm --filter @mfp/integrations run templates:sheet"
+    "wa:templates": "pnpm --filter @mfp/integrations run templates:sheet",
+    "db:migrate:test": "pnpm --filter @mfp/db run db:migrate:test"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
