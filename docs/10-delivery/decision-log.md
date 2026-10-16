@@ -951,3 +951,19 @@ A test suite that can damage the thing it is testing is not a safety net.
 **Standing a database up from nothing is what made this worth doing.** The RLS test failed against the new database: nine tables created by migrations after the init one — the bot, diet, personal training, announcements, the gallery — never had RLS enabled. Production was correct only because somebody had run the ALTERs `check:rls` printed, by hand. The migration history was not, so a restore or a staging environment would have come up with nine unprotected tables. ADR-011 is now true by migration rather than by somebody remembering, and `db:migrate:test` re-checks it every run.
 
 **The E2E journeys still run against the real gym**, because they drive the real browser through the real site; `pnpm wipe:members` remains how those are cleared.
+
+## ADR-130
+
+**Date:** 2026-10-16
+**Status:** Accepted
+**Context:** The owner, looking at the CRM on a wide screen: *"sare pages me maine notice kiya left and right side me kafi space kyu hai"*.
+
+The shell was `max-w-xl lg:max-w-6xl`. Below `lg` that is **576px** — nothing on a phone, and a 1024px laptop window reduced to a narrow strip. At `lg` it is 1152px inside a 288px sidebar, so a 1920px screen left roughly 250px empty on each side of the register.
+
+**Decision — a wide shell, and a narrow column for forms.**
+
+The shell becomes full width up to `max-w-4xl` below `lg` and **1536px** above it. A register, a message thread and a day's attendance all read better with the room; the members table in particular was being cramped for no reason.
+
+**But one container cannot serve both.** A text field two feet across is harder to fill in than one the width of a page, and its label ends up an arm's length from the box. So pages that are mostly fields — settings, staff, kiosk, the PIN, the assistant, add member, edit member, renew — wrap their content in `CRM_FORM_COLUMN` (768px), and pages that are mostly rows do not. The difference is the page's to know, which is why it is a named constant rather than a rule buried in the shell.
+
+**It stays bounded.** A register read edge to edge on a wide monitor puts a row of names an arm's length from the fees they belong to, which is worse than the empty space it saves.

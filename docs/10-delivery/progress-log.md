@@ -1684,3 +1684,13 @@ The owner rejected the people-list from ADR-126 and sent a reference: list, thre
 - MF-0001's PAN photograph is 338×338.
 - Face consent for Ashutosh Singh, Deepanshu Rao and Ishita mehta.
 - The security review.
+
+## 2026-10-16 — the shell was 576px wide below a desktop
+
+**ADR-130.** The CRM shell was `max-w-xl lg:max-w-6xl`: 576px below `lg`, which strands a laptop window in a strip, and 1152px above it, which left ~250px empty either side of the register on a 1920px screen. Now full width to `max-w-4xl` below `lg` and 1536px above.
+
+Forms do not want that room, so `CRM_FORM_COLUMN` (768px) wraps the eight pages that are mostly fields — settings, staff, kiosk, PIN, assistant, add member, edit member, renew. Lists, threads and attendance keep the full width.
+
+**Also answered:** the Message plan screen. It is a dry run of the reminder engine over the next 30 days, not a queue — it re-reads the rules each time and assumes nobody renews or unsubscribes.
+
+**Raised, not changed:** `POST` fires **every day from +1 to +7** after a membership expires (business-rules BR-5.2, `postExpiryMaxDays = 7`). Three members are in that window, so each will get seven daily "your membership has expired" messages. That is the documented rule, but on a WhatsApp number three days old it is also how a quality rating falls and templates get paused. The owner can lower `postExpiryMaxDays` in Settings.

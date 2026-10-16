@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { can } from '@mfp/core';
 import { editMemberAction } from '@/app/crm/actions';
-import { CrmHeader } from '@/components/crm/crm-chrome';
+import { CRM_FORM_COLUMN, CrmHeader } from '@/components/crm/crm-chrome';
 import { MemberEditForm } from '@/components/crm/member-edit-form';
 import { getContainer } from '@/lib/container';
 import { memberEditDeps, requireCrmContext } from '@/lib/crm';
@@ -39,22 +39,24 @@ export default async function CrmEditMemberPage({ params }: { params: Promise<{ 
   return (
     <>
       <CrmHeader title={member.fullName} subtitle={t('edit.title')} back={`/crm/members/${id}`} />
-      <MemberEditForm
-        memberId={member.id}
-        initial={{
-          fullName: member.fullName,
-          mobile: member.mobile,
-          email: member.email ?? '',
-          dob: member.dob ?? '',
-          gender: member.gender,
-          language: member.language,
-          trainingSlot: member.trainingSlot ?? '',
-          joinedOn: member.joinedOn ?? '',
-          notes: member.notes ?? '',
-          whatsappOptIn: member.whatsappOptIn,
-        }}
-        save={editMemberAction}
-      />
+      <div className={CRM_FORM_COLUMN}>
+        <MemberEditForm
+          memberId={member.id}
+          initial={{
+            fullName: member.fullName,
+            mobile: member.mobile,
+            email: member.email ?? '',
+            dob: member.dob ?? '',
+            gender: member.gender,
+            language: member.language,
+            trainingSlot: member.trainingSlot ?? '',
+            joinedOn: member.joinedOn ?? '',
+            notes: member.notes ?? '',
+            whatsappOptIn: member.whatsappOptIn,
+          }}
+          save={editMemberAction}
+        />
+      </div>
     </>
   );
 }

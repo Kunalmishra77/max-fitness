@@ -2,7 +2,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import { kioskIsOffline, mayAfterPinEntry } from '@mfp/core';
 import { PrismaKioskDevices } from '@mfp/db';
 import { pairKioskAction, revokeKioskAction, setKioskShadowModeAction, unlockSettingsAction } from '@/app/crm/actions';
-import { BottomNav, CrmHeader } from '@/components/crm/crm-chrome';
+import { BottomNav, CRM_FORM_COLUMN, CrmHeader } from '@/components/crm/crm-chrome';
 import { KioskDevices, type KioskDeviceItem, type KioskHealthView } from '@/components/crm/kiosk-devices';
 import { KioskSetupSteps } from '@/components/crm/kiosk-setup-steps';
 import { siteUrl } from '@/lib/seo';
@@ -92,7 +92,7 @@ export default async function KioskSettingsPage() {
   return (
     <>
       <CrmHeader title={t('kiosk.title')} subtitle={t('kiosk.helper')} back="/crm/settings" />
-      <div className="grid gap-4 p-4 pb-24 lg:p-0">
+      <div className={`${CRM_FORM_COLUMN} grid gap-4 p-4 pb-24 lg:p-0`}>
         {/* The address first. A six-digit code with nowhere to type it is half an
             instruction, and whoever is reading this is usually holding the phone. */}
         <KioskSetupSteps url={`${siteUrl()}/checkin`} />

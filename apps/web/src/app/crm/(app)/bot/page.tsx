@@ -2,7 +2,7 @@ import { getTranslations } from 'next-intl/server';
 import { can, mayAfterPinEntry } from '@mfp/core';
 import { formatISTDateTime } from '@mfp/shared';
 import { deleteBotDocumentAction, saveBotConfigAction, saveBotDocumentAction, testBotAction, unlockSettingsAction } from '@/app/crm/actions';
-import { BottomNav, CrmHeader } from '@/components/crm/crm-chrome';
+import { BottomNav, CRM_FORM_COLUMN, CrmHeader } from '@/components/crm/crm-chrome';
 import { BotConsole, type BotDocumentRow, type BotReplyRow } from '@/components/crm/bot-console';
 import { SettingsUnlock } from '@/components/crm/settings-forms';
 import { maskMobile } from '@mfp/shared';
@@ -72,7 +72,7 @@ export default async function CrmBotPage() {
   return (
     <>
       <CrmHeader title={t('bot.title')} subtitle={t('menu.bot.desc')} back="/crm/more" />
-      <div className="p-4 pb-24 lg:p-0">
+      <div className={`${CRM_FORM_COLUMN} p-4 pb-24 lg:p-0`}>
         <BotConsole
           config={config}
           documents={documentRows}

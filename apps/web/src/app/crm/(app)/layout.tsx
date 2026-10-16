@@ -46,7 +46,19 @@ export default async function CrmAppLayout({ children }: { children: ReactNode }
         />
       </Suspense>
       <div className="min-w-0 pb-24 lg:pb-12 lg:pl-72">
-        <main className="mx-auto max-w-xl lg:max-w-6xl lg:px-8 lg:pt-8">{children}</main>
+        {/**
+         * Width (ADR-130).
+         *
+         * This was `max-w-xl` — 576px — below `lg`, which does nothing on a phone and
+         * strands a 1024px laptop window in a narrow column with empty space either side.
+         * The owner saw it on every screen and asked why.
+         *
+         * It is still bounded, because a register read edge to edge on a wide monitor is
+         * a row of names an arm's length from the fees they belong to. 1536px is about
+         * where a members table stops gaining from more room, and the three-pane inbox
+         * sits in it exactly.
+         */}
+        <main className="mx-auto w-full max-w-4xl px-0 lg:max-w-[96rem] lg:px-8 lg:pt-8">{children}</main>
       </div>
     </div>
   );

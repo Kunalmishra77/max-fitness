@@ -2,7 +2,7 @@ import { getTranslations } from 'next-intl/server';
 import { can } from '@mfp/core';
 import { addMemberAction } from '@/app/crm/actions';
 import { AddMemberFlow } from '@/components/crm/add-member-flow';
-import { CrmHeader } from '@/components/crm/crm-chrome';
+import { CRM_FORM_COLUMN, CrmHeader } from '@/components/crm/crm-chrome';
 import { getContainer } from '@/lib/container';
 import { requireCrmContext } from '@/lib/crm';
 
@@ -36,13 +36,15 @@ export default async function CrmAddMemberPage({ searchParams }: { searchParams:
   return (
     <>
       <CrmHeader title={t('add.title')} back="/crm/members" />
-      <AddMemberFlow
-        action={addMemberAction}
-        prefill={{
-          ...(name === undefined ? {} : { fullName: name.slice(0, 60) }),
-          ...(mobile === undefined ? {} : { mobile: mobile.replace(/\D/g, '').slice(-10) }),
-        }}
-      />
+      <div className={CRM_FORM_COLUMN}>
+        <AddMemberFlow
+          action={addMemberAction}
+          prefill={{
+            ...(name === undefined ? {} : { fullName: name.slice(0, 60) }),
+            ...(mobile === undefined ? {} : { mobile: mobile.replace(/\D/g, '').slice(-10) }),
+          }}
+        />
+      </div>
     </>
   );
 }

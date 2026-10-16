@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { can, membershipEndDate, planCards, ptCards, recordDeskPayment, renewalStartDate, type DeskPaymentMethod } from '@mfp/core';
-import { CrmHeader } from '@/components/crm/crm-chrome';
+import { CRM_FORM_COLUMN, CrmHeader } from '@/components/crm/crm-chrome';
 import { RenewFlow } from '@/components/crm/renew-flow';
 import { getContainer } from '@/lib/container';
 import { deskPaymentDeps, requireCrmContext } from '@/lib/crm';
@@ -63,24 +63,26 @@ export default async function CrmRenewPage({ params }: { params: Promise<{ id: s
   return (
     <>
       <CrmHeader title={t('renew.title')} back={`/crm/members/${id}`} />
-      <RenewFlow
-        memberName={member.fullName}
-        plans={cards.map((card) => ({
-          planId: card.planId,
-          durationMonths: card.durationMonths,
-          pricePaise: card.pricePaise + (isFirst ? gym.settings.pricing.admissionFeePaise : 0),
-          endDate: membershipEndDate(startDate, card.durationMonths),
-        }))}
-        ptPlans={pt.map((card) => ({
-          planId: card.planId,
-          durationMonths: card.durationMonths,
-          pricePaise: card.pricePaise,
-          endDate: membershipEndDate(startDate, card.durationMonths),
-        }))}
-        startDate={startDate}
-        locale={actor.language}
-        action={takePayment}
-      />
+      <div className={CRM_FORM_COLUMN}>
+        <RenewFlow
+          memberName={member.fullName}
+          plans={cards.map((card) => ({
+            planId: card.planId,
+            durationMonths: card.durationMonths,
+            pricePaise: card.pricePaise + (isFirst ? gym.settings.pricing.admissionFeePaise : 0),
+            endDate: membershipEndDate(startDate, card.durationMonths),
+          }))}
+          ptPlans={pt.map((card) => ({
+            planId: card.planId,
+            durationMonths: card.durationMonths,
+            pricePaise: card.pricePaise,
+            endDate: membershipEndDate(startDate, card.durationMonths),
+          }))}
+          startDate={startDate}
+          locale={actor.language}
+          action={takePayment}
+        />
+      </div>
     </>
   );
 }

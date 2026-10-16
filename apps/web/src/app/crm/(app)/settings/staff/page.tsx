@@ -3,7 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { can, mayAfterPinEntry } from '@mfp/core';
 import { formatISTDateTime } from '@mfp/shared';
 import { addStaffAction, resetStaffPinAction, saveSettingsAction, setStaffActiveAction, unlockSettingsAction } from '@/app/crm/actions';
-import { BottomNav, CrmHeader } from '@/components/crm/crm-chrome';
+import { BottomNav, CRM_FORM_COLUMN, CrmHeader } from '@/components/crm/crm-chrome';
 import { SettingsUnlock } from '@/components/crm/settings-forms';
 import { AddStaffForm, ReceptionFeesToggle, StaffList } from '@/components/crm/staff-manager';
 import { getContainer } from '@/lib/container';
@@ -50,7 +50,7 @@ export default async function CrmStaffPage() {
   return (
     <>
       <CrmHeader title={t('staff.title')} subtitle={t('menu.staff.desc')} back="/crm/more" />
-      <div className="grid gap-3 p-4 pb-24">
+      <div className={`${CRM_FORM_COLUMN} grid gap-3 p-4 pb-24`}>
         <ReceptionFeesToggle enabled={gym.settings.pricing.receptionMayTakePayments} save={saveSettingsAction} unlock={unlockSettingsAction} />
         <StaffList
           rows={staff.map((row) => ({

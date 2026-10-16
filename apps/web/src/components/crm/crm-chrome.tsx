@@ -166,6 +166,19 @@ export function initials(name: string): string {
  * A white panel: edge to edge on a phone, a card with a border on a computer (ADR-062).
  * Lists and forms share it so no two screens invent their own surface.
  */
+/**
+ * A column a form can be read and filled in (ADR-130).
+ *
+ * The shell is wide, because a register, a message thread and a day's attendance all
+ * gain from the room. A form does not: a text field two feet across is harder to fill
+ * in than one the width of a page, and the label ends up an arm's length from the box.
+ *
+ * So pages that are mostly fields wrap their content in this, and pages that are mostly
+ * rows do not. One container cannot serve both, and the difference is the page's to
+ * know.
+ */
+export const CRM_FORM_COLUMN = 'mx-auto w-full max-w-3xl';
+
 export const CRM_CARD = 'bg-white lg:rounded-panel lg:border lg:border-brand-stone/15 lg:shadow-sm';
 
 /** A filter or tab pill; the chosen one is obsidian, or its own fee tint. */

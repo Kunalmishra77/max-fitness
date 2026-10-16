@@ -1,7 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { can, mayAfterPinEntry } from '@mfp/core';
 import { savePlanPricesAction, saveReminderSettingsAction, saveSettingsAction, setPlanActiveAction, unlockSettingsAction } from '@/app/crm/actions';
-import { BottomNav, CrmHeader } from '@/components/crm/crm-chrome';
+import { BottomNav, CRM_FORM_COLUMN, CrmHeader } from '@/components/crm/crm-chrome';
 import {
   AutomaticMessagesForm,
   HoursForm,
@@ -74,7 +74,7 @@ export default async function CrmSettingsPage() {
   return (
     <>
       <CrmHeader title={t('settings.title')} subtitle={t('menu.settings.desc')} back="/crm/more" />
-      <div className="grid gap-3 p-4 pb-24">
+      <div className={`${CRM_FORM_COLUMN} grid gap-3 p-4 pb-24`}>
         <PricesForm
           plans={plans
             .filter((plan) => plan.kind === 'MEMBERSHIP' && plan.isActive)

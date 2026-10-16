@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { changeOwnPinAction } from '@/app/crm/actions';
-import { BottomNav, CrmHeader } from '@/components/crm/crm-chrome';
+import { BottomNav, CRM_FORM_COLUMN, CrmHeader } from '@/components/crm/crm-chrome';
 import { OwnPinForm } from '@/components/crm/own-pin-form';
 import { requireCrmContext } from '@/lib/crm';
 
@@ -20,7 +20,7 @@ export default async function CrmOwnPinPage() {
   return (
     <>
       <CrmHeader title={t('pin.title')} subtitle={t('menu.pin.desc')} back="/crm/more" />
-      <div className="p-4 pb-24">
+      <div className={`${CRM_FORM_COLUMN} p-4 pb-24`}>
         <OwnPinForm action={changeOwnPinAction} />
       </div>
       <BottomNav active="more" />
