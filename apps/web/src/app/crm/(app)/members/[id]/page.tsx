@@ -348,6 +348,16 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
         </div>
         <p className="mt-3 text-crm-body">{t('profile.attendanceDays', { count: member.attendanceDays.length })}</p>
 
+        {/* ATT-006: the two dates that answer "how long have they been coming?" — which is
+            what reception is really asking when a member says they have been here years.
+            Both come from the days already counted above, so this costs no extra query. */}
+        {member.attendanceFirstDay === null ? null : (
+          <p className="mt-1 text-small text-brand-stone">
+            {t('profile.attendanceSince', { date: formatISTDate(member.attendanceFirstDay, locale, { year: true }) })}
+            {member.attendanceLastDay === null ? '' : ` · ${t('profile.attendanceLast', { date: formatISTDate(member.attendanceLastDay, locale, { year: true }) })}`}
+          </p>
+        )}
+
         {/* Every month, not just this one (owner, 2026-10-07). The whole history was in the
             database and invisible, while "has this member been coming?" is the question this
             screen exists to answer — and the month a member stopped is the one worth seeing. */}

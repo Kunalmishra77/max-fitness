@@ -14,6 +14,7 @@ import { AutopayOffer } from '@/components/join/autopay-offer';
 import { PayStep } from '@/components/join/pay-step';
 import { SELFIE_REASONS } from './selfie-reasons';
 import { checkStep } from './step-check';
+import { useStepHistory } from './use-step-history';
 
 /**
  * "I am new here", at the reception desk (client request, ADR-083).
@@ -122,6 +123,15 @@ export function QrNewForm({
   const locale = useLocale();
 
   const [step, setStep] = useState(0);
+
+  /**
+   * The phone's own Back button walks back a step (MEM-005).
+   *
+   * Without this, a back gesture on a middle step left the form and took every answer
+   * with it — the selfie and the ID photographs included — at a reception desk with a
+   * queue. Nothing is stored; the component simply does not unmount.
+   */
+  useStepHistory(step, (previous) => setStep(previous));
   const [fullName, setFullName] = useState('');
   const [mobile, setMobile] = useState('');
   const [dob, setDob] = useState('');

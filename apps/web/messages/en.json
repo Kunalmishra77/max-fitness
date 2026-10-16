@@ -915,7 +915,9 @@
       "paidTill": "Fees paid till",
       "whatsappOptIn": "WhatsApp",
       "yes": "Agreed",
-      "no": "Not agreed"
+      "no": "Not agreed",
+      "attendanceSince": "Coming here since {date}",
+      "attendanceLast": "last came {date}"
     },
     "renew": {
       "title": "Take fees",

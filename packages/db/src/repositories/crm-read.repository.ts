@@ -139,6 +139,15 @@ export interface MemberProfile extends MemberListItem {
   readonly attendanceByMonth: ReadonlyArray<{ readonly month: ISTDate; readonly days: number }>;
   /** How many days in all, so the heading can say it without adding the months up. */
   readonly attendanceTotalDays: number;
+  /**
+   * The ends of the member's whole history (ATT-006).
+   *
+   * Derived from the set of attended days that `attendanceTotalDays` is already counting,
+   * so this costs no extra query. "Training here since March" is the sentence reception
+   * wants when a member says they have been coming for years.
+   */
+  readonly attendanceFirstDay: ISTDate | null;
+  readonly attendanceLastDay: ISTDate | null;
 }
 
 export interface AttendanceTodayItem {
@@ -618,6 +627,9 @@ export class PrismaCrmReader {
         .sort((a, b) => b[0].localeCompare(a[0]))
         .map(([month, days]) => ({ month: `${month}-01` as ISTDate, days })),
       attendanceTotalDays: everyDay.size,
+      // ISO dates sort lexicographically, so min and max need no parsing.
+      attendanceFirstDay: everyDay.size === 0 ? null : ([...everyDay].sort()[0] as ISTDate),
+      attendanceLastDay: everyDay.size === 0 ? null : ([...everyDay].sort().at(-1) as ISTDate),
     };
   }
 

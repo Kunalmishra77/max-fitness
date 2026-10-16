@@ -915,7 +915,9 @@
       "paidTill": "फ़ीस कब तक",
       "whatsappOptIn": "WhatsApp",
       "yes": "हाँ",
-      "no": "नहीं"
+      "no": "नहीं",
+      "attendanceSince": "{date} से आ रहे हैं",
+      "attendanceLast": "पिछली बार {date}"
     },
     "renew": {
       "title": "फीस लें",

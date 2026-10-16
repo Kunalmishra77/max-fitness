@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { waitForHydration } from './hydration';
 
@@ -576,4 +577,50 @@ test.describe('Max Register', () => {
     // That one payment now reads as voided — and keeps its receipt number (BR-11.2).
     await expect(page.getByText(new RegExp(`${receipt}.*रद्द`))).toBeVisible({ timeout: 30_000 });
   });
+});
+
+/**
+ * U-4: the CRM had no accessibility coverage at all.
+ *
+ * Axe ran on two public pages and on none of Max Register's twenty-four — the tool the
+ * owner uses every day, Hindi-first, driven one-handed at a counter. The config already
+ * runs every spec at 360×780 and at 1440×900, so these assertions cover both widths for
+ * free, which is the half that matters for touch targets and reflow.
+ *
+ * Signed in as the owner, because a role with fewer capabilities renders fewer controls
+ * and would quietly check less. Each violation is named with its failing selectors, so a
+ * red run says what to fix rather than how many.
+ */
+test.describe('Max Register — accessibility', () => {
+  const SCREENS: ReadonlyArray<readonly [string, string]> = [
+    ['Today', '/crm'],
+    ['members', '/crm/members'],
+    ['attendance', '/crm/attendance'],
+    // The feature added in ATT-001: a grid of links, which is exactly the shape that
+    // goes wrong for a screen reader if the cells carry a number and nothing else.
+    ['attendance history', '/crm/attendance?tab=history&preset=THIS_MONTH'],
+    ['waiting for payment', '/crm/members/waiting'],
+    ['leads', '/crm/leads'],
+    ['calls', '/crm/calls'],
+    ['messages', '/crm/messages'],
+    ['reports', '/crm/reports'],
+    ['verify', '/crm/verify'],
+    ['settings', '/crm/settings'],
+    ['add member', '/crm/members/new'],
+    ['more', '/crm/more'],
+  ];
+
+  for (const [name, path] of SCREENS) {
+    test(`has no detectable accessibility violations — ${name}`, async ({ page }) => {
+      await login(page, OWNER);
+      await page.goto(path);
+      await waitForHydration(page);
+
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+        .analyze();
+
+      expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`)).toEqual([]);
+    });
+  }
 });

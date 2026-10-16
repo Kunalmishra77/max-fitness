@@ -9,6 +9,7 @@ import { cn } from '@/lib/cn';
 import { CrmIcon } from '@/components/crm/crm-icons';
 import { SELFIE_REASONS } from './selfie-reasons';
 import { checkStep } from './step-check';
+import { useStepHistory } from './use-step-history';
 
 /**
  * "I am already a member", on one page (client decision, ADR-075).
@@ -188,6 +189,15 @@ export function QrExistingForm({
   // One question on the screen at a time: the gym watched members struggle with the whole
   // form on a phone at reception and asked for this back (ADR-080).
   const [step, setStep] = useState(0);
+
+  /**
+   * The phone's own Back button walks back a step (MEM-005).
+   *
+   * Without this, a back gesture on a middle step left the form and took every answer
+   * with it — the selfie and the ID photographs included — at a reception desk with a
+   * queue. Nothing is stored; the component simply does not unmount.
+   */
+  useStepHistory(step, (previous) => setStep(previous));
   const [problems, setProblems] = useState<Record<string, string>>({});
   const [failure, setFailure] = useState<string | null>(null);
   const [pending, start] = useTransition();
