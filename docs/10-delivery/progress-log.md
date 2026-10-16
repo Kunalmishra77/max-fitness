@@ -1694,3 +1694,134 @@ Forms do not want that room, so `CRM_FORM_COLUMN` (768px) wraps the eight pages 
 **Also answered:** the Message plan screen. It is a dry run of the reminder engine over the next 30 days, not a queue — it re-reads the rules each time and assumes nobody renews or unsubscribes.
 
 **Raised, not changed:** `POST` fires **every day from +1 to +7** after a membership expires (business-rules BR-5.2, `postExpiryMaxDays = 7`). Three members are in that window, so each will get seven daily "your membership has expired" messages. That is the documented rule, but on a WhatsApp number three days old it is also how a quality rating falls and templates get paused. The owner can lower `postExpiryMaxDays` in Settings.
+
+## 2026-10-16 (later still) — the security review, and the UI/UX pass with it
+
+The oldest outstanding commitment, done and written up in
+`docs/07-security-compliance/security-and-ux-review-2026-10-16.md`. A code review of every
+page and route, not a penetration test. No `.env` here and the database is production, so
+nothing was rendered or run against a host; `typecheck`, `lint` and `test` were run.
+
+**Nothing was changed.** Findings only.
+
+**Where the checks actually stand.** `pnpm typecheck` passes, 8/8 packages. `pnpm lint`
+**fails with 34 errors** — two of them in shipped runtime code (`use-screen-awake.ts:45`,
+`message-log-read.repository.ts:138`), not only in scripts as previously recorded.
+`pnpm test` **fails 1 of 2132**. So the CI quality job has been red on `main` and cannot
+report a regression.
+
+The test failure is a **test defect, not a vulnerability**: `local.test.ts:68` expects
+`delete('..\\..\\windows\\...')` to reject, but on Linux a backslash is a legal filename
+character, so that is one segment inside the root and resolving is correct. `#pathFor`
+guards traversal properly; the assertion only holds on Windows.
+
+**The two that matter most.**
+
+- **No security headers anywhere.** `next.config.ts` `headers()` returns font caching and
+  nothing else — no CSP, HSTS, nosniff, Permissions-Policy, frame-ancestors.
+  `deployment-plan.md` line 53 says "CSP is set by Next.js per route"; it is set by nothing.
+  The pre-launch checklist item is unchecked and the gym went live today.
+- **No `error.tsx`, `loading.tsx` or `not-found.tsx` in the whole app.** `notFound()` is
+  called in seven places and every one lands on Next's unstyled English default, as does
+  any server-component throw — on a Hindi-first CRM at a reception desk. `currentActor`
+  already retries because a Supabase hiccup is expected; every other read has no net.
+
+**Also found:** IP rate limits are bypassable by spoofing the left-most `X-Forwarded-For`
+entry (defeats the limiters on leads, OTP send, registrations, checkout, selfie check and
+the `/qr/check` enumeration guard); kiosk pairing has no limiter and no attempt counter on
+a 6-digit code; CRM sign-in has no IP limit, so five wrong PINs every 15 minutes locks the
+owner out of their own CRM; `/api/v1/qr/check` confirms whether a number is a member,
+which is the thing its own doc comment says it must not do; CodeQL and gitleaks are absent
+from CI; `SESSION_SECRET` is required by the env schema and read by nothing.
+
+**UI/UX, beyond U-1:** both QR forms keep step in plain `useState` with no history entry
+and nothing in storage, so an Android back gesture on step 5 of 8 discards the selfie and
+the ID photographs — the website sign-up does this properly via `join-state.ts`; the
+members list caps at 100 with no paging; axe runs on two public pages and no CRM page.
+
+**Verified sound**, and recorded as checked rather than skipped: session handling,
+`assertCan` in all 18 actor-taking core services and `requireCrmContext()` in all 30 server
+actions, both webhook HMAC paths with replay protection, signed-link purpose binding,
+the upload re-encode pipeline, server-side pricing, RLS now 36/36 across the migration
+history, logging (not one call site leaks PII), the service worker, consent-gated
+analytics, the legal-markdown parser, non-root containers, i18n parity at 1829/1829,
+empty states on every list, 56px targets with the `crm-pointer` relaxation, and the
+global `:focus-visible` rule.
+
+**Pending.** Everything in §3 of the review, in that order. Unchanged from before:
+`pnpm db:deploy` on production for the RLS migration; rotating the Meta App Secret and the
+Razorpay secret; the simulator's gym/member attribution; MF-0001's 338×338 PAN photograph;
+face consent for Ashutosh Singh, Deepanshu Rao and Ishita mehta.
+
+## 2026-10-16 (later still) — acting on the review
+
+The audit from earlier today, worked through in risk order. Full ticket register in
+`docs/10-delivery/remediation-register-2026-10-16.md`; the audit itself is unchanged.
+
+Branch `hardening/security-ux-remediation`, nine commits off `82e44bf`. **Not pushed:**
+this container's clone has no git remote and the GitHub token is invalid, so the branch
+sits locally until the owner connects GitHub at `https://claude.ai/connect-github`.
+**Nothing deployed:** no Coolify credentials here, and no Compose or Coolify definition in
+the repository to read the topology from.
+
+**The gates are green again.** Baseline re-measured here, not quoted: lint failed with 34
+errors and the suite with one, so the CI job that runs both had been red and could not
+report a regression. Now lint 0, typecheck 8/8, 2202 tests passing, `next build` clean,
+and gitleaks clean across the tree and all 195 commits.
+
+Seventeen of the lint errors were the config describing files wrongly — the Playwright
+smoke scripts hold browser code inside `page.evaluate()` and eslint knew only the Node
+globals. Two were in shipped code. The test failure was a **test defect, not a
+vulnerability**: it expected a Windows-style traversal key to be refused, which on POSIX is
+one legal filename inside the root. Writing it properly found the real thing behind it —
+`exists()` swallowed the traversal refusal and `signedUrl()` would sign a key the same
+driver refused to read. Both fixed.
+
+**Security.** Headers now exist at all: three policies for the public site, Max Register
+and `/api`, verified against the built `routes-manifest.json` so each path gets exactly one
+CSP. `script-src` keeps `'unsafe-inline'` and the module says so out loud — a nonce needs
+dynamic rendering, and the public pages are deliberately static and under an LCP budget. A
+nonce-based policy for the CRM, which is already force-dynamic, is the obvious next step and
+was not done here because this session cannot run the app.
+
+Every per-IP rate limit was bypassable: `clientIp()` read the left-most `X-Forwarded-For`
+entry, which is whatever the client sent. Counted from the right now. A lockout could be
+held open on the owner's own account for one request every fifteen minutes, because the
+failed-PIN count was only cleared by a *successful* sign-in. Sign-in had no per-address
+limit; kiosk pairing had neither limit nor attempt counter on a six-digit code.
+
+**Features.** The attendance register is readable at last — month calendar, eight range
+presets, custom dates, the four figures, the day's list, and a CSV export that carries no
+phone numbers and neutralises spreadsheet formulas. 59 tests on the date arithmetic alone,
+asserting month and year boundaries rather than the happy path.
+
+A QR sign-up now gets an acknowledgement that does **not** claim approval — wired to the
+existing-member form only, because that is the flow with a review step; a new registration
+goes to `PENDING_PAYMENT` with nobody to approve it, and saying otherwise would be a false
+statement. `mf_signup_received` still needs submitting to Meta.
+
+**Two live bugs found while working:**
+
+- **A refused selfie or ID card showed the translation key.** Both QR forms rendered every
+  per-step refusal as ``t(`stepCheck.${reason}`)``; three of those keys existed and the
+  endpoint returns seventeen. So since ADR-121 a member read
+  `qrExisting.stepCheck.NAME_MISMATCH` off the screen. The wording was all there in the
+  tables the submission path used — only the per-step path never reached them.
+- **The import template could not be imported back.** `/crm/import/template` wrote the four
+  characters `FEFF` instead of `﻿`, so the first header read `FEFFfull_name` and the
+  parser, which strips a BOM by code point, did not strip it. Round-tripped in a test now.
+
+The phone's Back button also walks back a step in both QR forms instead of leaving and
+discarding the selfie and ID photographs. Persistence was deliberately **not** added: that
+form runs on the gym's phone at the counter and holds somebody's Aadhaar card, so a
+part-filled form reappearing for the next person is worse than retyping a name.
+
+**Pending — not started, and deliberately so where noted.** Report period filters, the
+dashboard additions, the audit-log screen, members-list paging. The Phase 7 redesign is
+untouched on purpose: applied to some of 24 screens and not others it leaves the product
+less coherent than before, and nothing here could render a page to judge it. The CRM axe
+suite is written across 13 screens and **has not been run** — it needs a database, and it
+may well find real violations.
+
+Unchanged from the audit: production needs `pnpm db:deploy` for the RLS migration; the Meta
+App Secret and Razorpay secret still need rotating; `postExpiryMaxDays` is still 7.
