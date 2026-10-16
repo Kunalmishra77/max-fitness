@@ -71,7 +71,7 @@ describe('message catalogues', () => {
   it('leaves no message empty except the ones that are blank on purpose', () => {
     for (const [name, locale] of [['en', en], ['hi', hi]] as const) {
       const blank = paths(locale).filter((path) => {
-        const value = at(locale as Tree, path);
+        const value = at(locale, path);
         return typeof value === 'string' && value.trim() === '';
       });
       expect(blank, `${name} has blank messages`).toEqual([...DELIBERATELY_BLANK[name]]);

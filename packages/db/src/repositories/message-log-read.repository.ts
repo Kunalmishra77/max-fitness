@@ -135,7 +135,7 @@ export class PrismaMessageLogReader {
           lastAt: row.createdAt,
           lastPreview: row.bodyPreview,
           lastDirection: row.direction === 'INBOUND' ? 'INBOUND' : 'OUTBOUND',
-          lastStatus: row.status as MessageStatus,
+          lastStatus: row.status,
           messages: 1,
           // A member who wrote back is where a person is needed; that sorts to the top.
           hasInbound: row.direction === 'INBOUND',

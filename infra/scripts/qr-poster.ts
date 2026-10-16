@@ -19,7 +19,6 @@ const QUIET_MODULES = 4;
 // The logo's colours (ADR-061): black, logo red, a light paper ground and a neutral grey.
 const NAVY = '#0A0A0B';
 const RED = '#ED1021';
-const CHALK = '#F4F4F5';
 const GREY = '#66676B';
 
 export interface QrMatrix {

@@ -59,7 +59,7 @@ async function main(): Promise<void> {
     // leave the owner with no backup and a wipe about to run.
     const json = JSON.stringify(
       { takenAt: new Date().toISOString(), memberCount: members.length, leadCount: leads.length, members, leads },
-      (_key, value) => (typeof value === 'bigint' ? value.toString() : value),
+      (_key: string, value: unknown) => (typeof value === 'bigint' ? value.toString() : value),
       2,
     );
     writeFileSync(file, json, 'utf8');

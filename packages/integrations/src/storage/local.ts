@@ -72,8 +72,12 @@ export class LocalStorageDriver implements StorageDriver {
   }
 
   async exists(key: string): Promise<boolean> {
+    // The path is resolved *outside* the try, so a key that escapes the root is still
+    // refused here. Catching it would turn a refusal into a quiet `false` and leave this
+    // one method with a weaker invariant than the rest (SEC-009).
+    const path = this.#pathFor(key);
     try {
-      await stat(this.#pathFor(key));
+      await stat(path);
       return true;
     } catch {
       return false;
@@ -85,7 +89,18 @@ export class LocalStorageDriver implements StorageDriver {
    * the caller passes the TTL and the route enforces the ceiling.
    */
   signedUrl(key: string, ttlSeconds: number): Promise<string> {
-    return Promise.resolve(this.#urls.sign(key, ttlSeconds));
+    try {
+      // Every caller passes a key read back from `MediaFile`, so this has never been
+      // reachable with a crafted one — but signing a key this driver would refuse to read
+      // is incoherent, and "no method accepts a key outside the root" is a rule that is
+      // only worth anything if it has no exceptions (SEC-009).
+      this.#pathFor(key);
+      return Promise.resolve(this.#urls.sign(key, ttlSeconds));
+    } catch (error) {
+      // Rejecting rather than throwing: a promise-returning method that throws
+      // synchronously slips straight past a caller's `.catch()`.
+      return Promise.reject(error instanceof Error ? error : new Error('Invalid storage key'));
+    }
   }
 
   /** Verify a signed URL's parameters. Used by the file route before reading anything. */

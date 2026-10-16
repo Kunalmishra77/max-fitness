@@ -166,9 +166,28 @@ export default tseslint.config(
       'packages/integrations/scripts/**/*.ts',
       'apps/worker/**/*.ts',
       'apps/web/scripts/**/*.mjs',
+      // A one-off QR inspector that lives at the app root rather than under scripts/.
+      'apps/web/look-qr.mjs',
       'infra/scripts/**/*.ts',
     ],
     rules: { 'no-console': 'off' },
+  },
+
+  /**
+   * ── Playwright smoke scripts hold browser code as well as Node code ──────
+   *
+   * Everything inside a `page.evaluate()` callback is serialised and run in the
+   * browser, where `document`, `window`, `location` and `getComputedStyle` are exactly
+   * as defined as `process` is in the surrounding script. ESLint saw only the Node
+   * globals and reported 17 `no-undef` errors across these three files, which is why
+   * `pnpm lint` had been failing on `main`.
+   *
+   * This describes the files rather than silencing a rule: both scopes are real, so
+   * both sets of globals are declared.
+   */
+  {
+    files: ['apps/web/scripts/smoke-*.mjs', 'apps/web/look-qr.mjs'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
   },
 
   // ── Plain JavaScript config files: not part of any TS project ────────────

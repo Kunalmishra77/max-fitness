@@ -35,14 +35,15 @@ export function useScreenAwake(enabled: boolean): void {
     const navigatorWithLock = navigator as Navigator & {
       wakeLock?: { request(type: 'screen'): Promise<WakeLockSentinelLike> };
     };
-    if (navigatorWithLock.wakeLock === undefined) return;
+    const wakeLock = navigatorWithLock.wakeLock;
+    if (wakeLock === undefined) return;
 
     let cancelled = false;
 
     const take = async () => {
       if (cancelled || document.visibilityState !== 'visible' || lockRef.current !== null) return;
       try {
-        const sentinel = await navigatorWithLock.wakeLock!.request('screen');
+        const sentinel = await wakeLock.request('screen');
         if (cancelled) {
           void sentinel.release();
           return;
