@@ -15,6 +15,7 @@ import { PayStep } from '@/components/join/pay-step';
 import { SELFIE_REASONS } from './selfie-reasons';
 import { checkStep } from './step-check';
 import { useStepHistory } from './use-step-history';
+import { stepFailure } from './step-failure';
 
 /**
  * "I am new here", at the reception desk (client request, ADR-083).
@@ -673,11 +674,27 @@ export function QrNewForm({
         setSoftWarning(te(`stepCheck.${verdict.reason}` as never));
         return;
       }
-      setFailure(
-        verdict.member === undefined
-          ? te(`stepCheck.${verdict.reason}` as never)
-          : te('stepCheck.ALREADY_A_MEMBER_NAMED', { name: verdict.member.fullName }),
-      );
+      if (verdict.member !== undefined) {
+        setFailure(te('stepCheck.ALREADY_A_MEMBER_NAMED', { name: verdict.member.fullName }));
+        return;
+      }
+
+      /**
+       * MEM-003 / MEM-004: say what is wrong, where it is wrong.
+       *
+       * This used to be `te(`stepCheck.${reason}`)` for every refusal, and only three of
+       * those keys were ever written while the endpoint returns seventeen — so a refused
+       * selfie or ID card put the key itself on the screen. The wording existed all
+       * along in the tables the submission path uses; `stepFailure` routes both paths
+       * through them, and says which field the message belongs beside.
+       */
+      const failure = stepFailure(verdict.reason);
+      if (failure.field === null) {
+        setFailure(te(failure.key as never));
+        return;
+      }
+      // Beside the answer, on the step still holding it, so it can actually be retaken.
+      setProblems({ [failure.field]: te(failure.key as never) });
     });
   };
 
