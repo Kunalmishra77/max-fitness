@@ -19,6 +19,42 @@
     "demo": "Demo",
     "placeholder": "Placeholder"
   },
+  "errors": {
+    "notFound": {
+      "title": "This page does not exist",
+      "body": "The link may be old, or mistyped. Nothing is wrong with your membership.",
+      "home": "Go to the home page",
+      "contact": "Contact the gym"
+    },
+    "serverError": {
+      "title": "Something went wrong at our end",
+      "body": "This is our fault, not yours. Nothing you entered has been lost — try again in a moment.",
+      "retry": "Try again",
+      "home": "Go to the home page",
+      "reference": "If you tell us about this, quote: {digest}"
+    },
+    "crmNotFound": {
+      "title": "This screen does not exist",
+      "body": "The member or page may have been removed. Go back to Today and try again from there.",
+      "home": "Go to Today",
+      "members": "Open the register"
+    },
+    "crmError": {
+      "title": "This screen could not open",
+      "body": "Nothing has been saved or changed. Try again — if it keeps happening, the internet or the database may be down.",
+      "retry": "Try again",
+      "home": "Go to Today",
+      "reference": "Reference: {digest}"
+    },
+    "checkinError": {
+      "title": "The screen could not load",
+      "body": "Please tell the person at reception. Attendance can be marked by hand.",
+      "retry": "Try again"
+    },
+    "loading": {
+      "label": "Loading"
+    }
+  },
   "foundation": {
     "title": "Foundation check",
     "subtitle": "Phase 1 wiring proof — web, core rules and Supabase are talking to each other.",
