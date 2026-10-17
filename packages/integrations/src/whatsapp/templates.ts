@@ -238,6 +238,41 @@ const VERIFICATION_APPROVED: TemplateDefinition = {
   footer: FOOTER,
 };
 
+/**
+ * The acknowledgement a QR sign-up gets the moment it is submitted (MEM-001).
+ *
+ * Distinct from `mf_verification_approved`, and the distinction is the whole point. That
+ * one says the membership is confirmed and quotes the date fees are paid to; this one says
+ * only that the form arrived. Sending the approval wording at submission time would tell
+ * somebody they were a member before any human had looked at their ID — and the owner
+ * would then be arguing with a member holding a WhatsApp message that says they joined.
+ *
+ * So no dates and no member code, because neither exists yet. One variable, and a middle
+ * line that exists purely to say the review has not happened.
+ */
+const SIGNUP_RECEIVED: TemplateDefinition = {
+  name: 'mf_signup_received',
+  category: 'UTILITY',
+  variables: ['firstName'],
+  body: {
+    en: [
+      'Hi {{1}}, thank you for signing up with Max Fitness Gym.',
+      '',
+      'Your registration has been received. Our team will check your details and confirm your membership shortly.',
+      '',
+      'This is not a confirmation yet — we will message you again once it is approved.',
+    ].join('\n'),
+    hi: [
+      'नमस्ते {{1}}, Max Fitness Gym में साइन अप करने के लिए धन्यवाद।',
+      '',
+      'आपका रजिस्ट्रेशन हमें मिल गया है। हमारी टीम आपकी जानकारी देखकर आपकी मेंबरशिप जल्दी पक्की कर देगी।',
+      '',
+      'यह कन्फ़र्मेशन नहीं है — मेंबरशिप पक्की होने पर हम आपको फिर मैसेज करेंगे।',
+    ].join('\n'),
+  },
+  footer: FOOTER,
+};
+
 /** T9 — the owner's morning digest, skipped on days with nothing to say. */
 const OWNER_DIGEST: TemplateDefinition = {
   name: 'mf_owner_daily_digest',
@@ -603,6 +638,7 @@ export const TEMPLATES: Readonly<Record<WhatsAppTemplateName, TemplateDefinition
   mf_login_code: LOGIN_CODE,
   mf_welcome_member: WELCOME_MEMBER,
   mf_verification_approved: VERIFICATION_APPROVED,
+  mf_signup_received: SIGNUP_RECEIVED,
   mf_owner_daily_digest: OWNER_DIGEST,
   mf_owner_alert: OWNER_ALERT,
   mf_birthday_wish: BIRTHDAY_WISH,

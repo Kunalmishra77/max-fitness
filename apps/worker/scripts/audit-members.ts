@@ -130,7 +130,6 @@ async function main(): Promise<void> {
       // ── The ID ──────────────────────────────────────────────────────────────
       const latest = member.verifications[0];
       const front = member.media.find((f) => (f.label ?? '').toLowerCase().includes('front'));
-      const back = member.media.find((f) => (f.label ?? '').toLowerCase().includes('back'));
       const wantsId = member.source === 'QR_EXISTING' || member.source === 'QR_NEW' || latest !== undefined;
 
       if (wantsId && member.media.length === 0) miss('government ID photograph');

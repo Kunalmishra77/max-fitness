@@ -84,6 +84,7 @@ const PRIORITY: Readonly<Record<string, string>> = {
   mf_membership_expired: 'the reminders the gym runs on',
   mf_payment_receipt: 'every payment sends one',
   mf_welcome_member: 'the first message a new member gets',
+  mf_signup_received: 'the moment a QR form is submitted — not a confirmation',
   mf_verification_approved: 'the QR arrivals',
   mf_login_code: 'staff sign-in',
 };

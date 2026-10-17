@@ -6,15 +6,15 @@ import { claimedMemberId } from './claimed-member';
  * match. Everything else the face matches is a second record for one person (ADR-124).
  */
 describe('claimedMemberId', () => {
-  const indresh = { id: 'm-indresh', fullName: 'Indresh Mishra' };
+  const ramesh = { id: 'm-ramesh', fullName: 'Ramesh Verma' };
   const madhu = { id: 'm-madhu', fullName: 'Madhu Padhi' };
 
   it('is the member on that number with that name', () => {
-    expect(claimedMemberId({ fullName: 'Indresh Mishra' }, [indresh, madhu])).toBe('m-indresh');
+    expect(claimedMemberId({ fullName: 'Ramesh Verma' }, [ramesh, madhu])).toBe('m-ramesh');
   });
 
   it('ignores case and runs of spaces, as the register match does', () => {
-    expect(claimedMemberId({ fullName: '  indresh   MISHRA ' }, [indresh])).toBe('m-indresh');
+    expect(claimedMemberId({ fullName: '  ramesh   VERMA ' }, [ramesh])).toBe('m-ramesh');
   });
 
   /**
@@ -23,22 +23,22 @@ describe('claimedMemberId', () => {
    * register to match them against.
    */
   it('is nobody when the number is new, even under a name the gym knows', () => {
-    expect(claimedMemberId({ fullName: 'Indresh Mishra' }, [])).toBeUndefined();
+    expect(claimedMemberId({ fullName: 'Ramesh Verma' }, [])).toBeUndefined();
   });
 
   /** The first hole: a new name on a number the gym already holds. */
   it('is nobody when the number is known under a different name', () => {
-    expect(claimedMemberId({ fullName: 'Kunal Mishra' }, [indresh])).toBeUndefined();
+    expect(claimedMemberId({ fullName: 'Suresh Verma' }, [ramesh])).toBeUndefined();
   });
 
   it('is nobody on the new-member journey, which claims no record at all', () => {
-    expect(claimedMemberId(undefined, [indresh])).toBeUndefined();
+    expect(claimedMemberId(undefined, [ramesh])).toBeUndefined();
   });
 
   /** Two members may share a name (the owner said so); the older record speaks first. */
   it('takes the oldest of two records sharing the name', () => {
-    const older = { id: 'm-old', fullName: 'Indresh Mishra' };
-    const newer = { id: 'm-new', fullName: 'Indresh Mishra' };
-    expect(claimedMemberId({ fullName: 'Indresh Mishra' }, [older, newer])).toBe('m-old');
+    const older = { id: 'm-old', fullName: 'Ramesh Verma' };
+    const newer = { id: 'm-new', fullName: 'Ramesh Verma' };
+    expect(claimedMemberId({ fullName: 'Ramesh Verma' }, [older, newer])).toBe('m-old');
   });
 });

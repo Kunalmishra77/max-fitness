@@ -40,7 +40,7 @@ export default async function CrmRootLayout({ children }: { children: ReactNode 
   return (
     <html lang={locale}>
       <body className="crm-pointer bg-semantic-surface-crm-alt text-brand-ink">
-        <NextIntlClientProvider locale={locale} messages={{ crm: messages['crm'] as Record<string, unknown>, selfieCheck: messages['selfieCheck'] as Record<string, unknown> }} timeZone="Asia/Kolkata">
+        <NextIntlClientProvider locale={locale} messages={{ crm: messages['crm'] as Record<string, unknown>, selfieCheck: messages['selfieCheck'] as Record<string, unknown>, errors: messages['errors'] as Record<string, unknown> }} timeZone="Asia/Kolkata">
           {children}
           <ServiceWorkerRegistrar />
         </NextIntlClientProvider>

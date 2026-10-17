@@ -17,9 +17,21 @@ describe('crmNavItems', () => {
   it('gives the owner every place, grouped for the day, the members and the business', () => {
     const items = crmNavItems(actor('OWNER'), now);
     expect(items.map((item) => item.key)).toEqual([
-      'home', 'members', 'fees', 'attendance', 'calls', 'leads', 'messages', 'diet', 'announce', 'bot', 'gallery', 'reports', 'import', 'staff', 'kiosk', 'settings', 'pin',
+      'home', 'members', 'fees', 'attendance', 'calls', 'leads', 'messages', 'diet', 'announce', 'bot', 'gallery', 'reports', 'import', 'staff', 'kiosk', 'settings', 'audit', 'pin',
     ]);
     expect(new Set(items.map((item) => item.group))).toEqual(new Set(['today', 'people', 'business', 'account']));
+  });
+
+  /**
+   * CRM-AUDIT. The trail records what the owner did as well as what staff did, so it is
+   * owner-only — and the menu must not offer reception a screen that would only refuse
+   * them, which is the whole reason this list is built from capabilities.
+   */
+  it('shows the audit trail to the owner and to nobody else', () => {
+    expect(keys('OWNER')).toContain('audit');
+    expect(keys('SUPER_ADMIN')).toContain('audit');
+    expect(keys('RECEPTION')).not.toContain('audit');
+    expect(keys('TRAINER')).not.toContain('audit');
   });
 
   it('has no entry of its own for QR arrivals, who are members like anybody else', () => {

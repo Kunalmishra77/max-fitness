@@ -86,6 +86,23 @@ export const EnvSchema = z
     TEST_DATABASE_URL: optionalPostgresUrl('TEST_DATABASE_URL'),
 
     // ── Security ────────────────────────────────────────────────────────
+    /**
+     * How many trusted proxies sit in front of the app (SEC-002).
+     *
+     * `X-Forwarded-For` is a list each hop appends to, so the entries a client sent are
+     * on the left and the ones our own infrastructure added are on the right. Reading
+     * the left-most entry — which is what every rate limiter here used to do — reads a
+     * value the client chose, and a client that rotates it gets a fresh bucket on every
+     * request.
+     *
+     * So the client is counted from the right instead: with one proxy (Coolify's own,
+     * directly in front of the container) the real address is the last entry. Add one
+     * for each further trusted hop — a CDN in front of that, say.
+     *
+     * `0` means no proxy, which is the case on a developer's machine: the header is then
+     * not trusted at all and everything shares one bucket, as it did before.
+     */
+    TRUSTED_PROXY_HOPS: z.coerce.number().int().min(0).max(8).default(1),
     SESSION_SECRET: z.string().min(32, 'SESSION_SECRET must be at least 32 characters'),
     LINK_TOKEN_SECRET: z.string().min(32, 'LINK_TOKEN_SECRET must be at least 32 characters'),
     KIOSK_TOKEN_PEPPER: z.string().min(32, 'KIOSK_TOKEN_PEPPER must be at least 32 characters'),
@@ -164,6 +181,22 @@ export const EnvSchema = z
     NEXT_PUBLIC_PLAUSIBLE_DOMAIN: z.string().default(''),
     NEXT_PUBLIC_GA4_ID: z.string().default(''),
     NEXT_PUBLIC_META_PIXEL_ID: z.string().default(''),
+
+    /**
+     * How many database connections one web container may hold open (PERF-004).
+     *
+     * This was hard-coded to 5 on the reasoning that Supavisor is the real pool, so a
+     * large client-side pool buys nothing. That is true of a request that makes one
+     * query, and wrong about this application: the CRM home screen fans out about twenty
+     * reads in a single `Promise.all`, so with five connections they ran in four serial
+     * waves and the screen paid four network round trips to Mumbai instead of one.
+     *
+     * Raising it does not raise the load on the database — the same queries run either
+     * way — it stops them queuing behind each other inside the container. Transaction
+     * pooling multiplexes these onto far fewer backend connections, which is the whole
+     * point of pooling on :6543 (ADR-010).
+     */
+    WEB_DB_POOL_MAX: z.coerce.number().int().min(1).max(50).default(16),
 
     // ── Worker ──────────────────────────────────────────────────────────
     WORKER_ID: z.string().min(1).default('worker-main'),

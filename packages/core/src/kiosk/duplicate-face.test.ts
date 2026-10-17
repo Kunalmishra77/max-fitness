@@ -5,7 +5,7 @@ import { findDuplicateFace } from './duplicate-face';
 /**
  * Catching the same person signing up twice (owner, 2026-10-15).
  *
- * The owner registered as "Kunal Mishra" on one number and "Indresh Mishra" on another,
+ * The owner registered under one name on one number and a different name on another,
  * with their own face both times, and the gym took both. Nothing matched: the names
  * differ, the numbers differ, and the only thing that did not change was the face.
  *

@@ -12,6 +12,10 @@ export type OutboxEventType =
   | 'whatsapp.reminder'
   | 'whatsapp.unsubscribe_confirm'
   | 'whatsapp.restart_confirm'
+  // MEM-001. Two separate events on purpose: one when the form arrives, one when a human
+  // approves it. Collapsing them would mean telling somebody they had joined before
+  // anybody had looked at their ID.
+  | 'whatsapp.signup_received'
   | 'whatsapp.verification_approved'
   | 'whatsapp.birthday'
   | 'whatsapp.announcement'

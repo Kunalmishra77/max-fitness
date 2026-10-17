@@ -53,8 +53,8 @@ describe('gymJsonLd', () => {
   });
 
   it('gives the picture an absolute address, in each language, with no doubled slash', () => {
-    const en = String((gymJsonLd(context({ googleRating: 4.8, googleReviews: 9 }, 'en')) as Record<string, unknown>)['image']);
-    const hi = String((gymJsonLd(context({ googleRating: 4.8, googleReviews: 9 }, 'hi')) as Record<string, unknown>)['image']);
+    const en = String(gymJsonLd(context({ googleRating: 4.8, googleReviews: 9 }, 'en'))['image']);
+    const hi = String(gymJsonLd(context({ googleRating: 4.8, googleReviews: 9 }, 'hi'))['image']);
 
     expect(en).toMatch(/^https?:\/\/[^/]+\/opengraph-image$/);
     expect(hi).toMatch(/^https?:\/\/[^/]+\/hi\/opengraph-image$/);

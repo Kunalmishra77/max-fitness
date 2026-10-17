@@ -181,4 +181,67 @@ suite('members list against Postgres', () => {
     expect(afterPaying.map((m) => m.fullName)).toContain('Ishita Unpaid');
     expect(await reader.memberCounts(gymId, TODAY)).toMatchObject({ total: 6, awaitingPayment: 0 });
   });
+
+  /**
+   * U-3. The list was capped with no way past the cap, so these cover the paging that
+   * replaced it — and the case that makes a naive cursor wrong.
+   *
+   * The sort is alphabetical, so a page boundary is a name, and **names are not unique
+   * here**: this register has carried three members sharing one name and two sharing
+   * another. A cursor on the name alone either skips the rest of a duplicate run
+   * or serves it twice, and at a page boundary that silently loses a real member.
+   */
+  it('pages through every member exactly once, including duplicate names', async () => {
+    // Three members sharing one name, straddling a page boundary of two.
+    const duplicates = ['Zz Duplicate Name', 'Zz Duplicate Name', 'Zz Duplicate Name'];
+    const ids: string[] = [];
+    for (const [index, name] of duplicates.entries()) ids.push(await member(`dup${index}`, name, '2026-10-31'));
+
+    const seen: string[] = [];
+    let cursor: string | undefined;
+    // Two at a time, so the duplicate run cannot sit wholly inside one page.
+    for (let guard = 0; guard < 20; guard++) {
+      const page = await reader.membersPage(gymId, TODAY, { limit: 2, ...(cursor === undefined ? {} : { cursor }) });
+      seen.push(...page.rows.map((row) => row.id));
+      if (page.nextCursor === null) break;
+      cursor = page.nextCursor;
+    }
+
+    // Every member once: no duplicates served twice, and none skipped at a boundary.
+    expect(new Set(seen).size).toBe(seen.length);
+    for (const id of ids) expect(seen, `member ${id} was skipped`).toContain(id);
+
+    const everyone = await reader.members(gymId, TODAY, { limit: 100 });
+    expect(seen.sort()).toEqual(everyone.map((row) => row.id).sort());
+  });
+
+  it('stops offering a next page on the last one', async () => {
+    const all = await reader.members(gymId, TODAY, { limit: 100 });
+    const whole = await reader.membersPage(gymId, TODAY, { limit: 100 });
+
+    expect(whole.rows).toHaveLength(all.length);
+    // Exactly one page: there is nothing older to offer.
+    expect(whole.nextCursor).toBeNull();
+  });
+
+  it('keeps the fee filter while paging', async () => {
+    const first = await reader.membersPage(gymId, TODAY, { feeState: 'EXPIRED', limit: 1 });
+    expect(first.rows.every((row) => row.feeState === 'EXPIRED')).toBe(true);
+
+    if (first.nextCursor !== null) {
+      const second = await reader.membersPage(gymId, TODAY, { feeState: 'EXPIRED', limit: 1, cursor: first.nextCursor });
+      // A cursor must not widen the filter: the second page is still only expired members.
+      expect(second.rows.every((row) => row.feeState === 'EXPIRED')).toBe(true);
+      expect(second.rows.map((row) => row.id)).not.toEqual(first.rows.map((row) => row.id));
+    }
+  });
+
+  /** A member erased between two pages must not strand the reader on an empty screen. */
+  it('falls back to the first page for a cursor that no longer exists', async () => {
+    const page = await reader.membersPage(gymId, TODAY, { limit: 3, cursor: 'mem_does_not_exist' });
+    const first = await reader.membersPage(gymId, TODAY, { limit: 3 });
+
+    expect(page.rows.map((row) => row.id)).toEqual(first.rows.map((row) => row.id));
+  });
 });
+

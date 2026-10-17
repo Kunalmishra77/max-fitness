@@ -43,7 +43,7 @@ export default async function CheckInLayout({ children }: { children: ReactNode 
   return (
     <html lang={locale}>
       <body className="bg-brand-paper text-brand-ink">
-        <NextIntlClientProvider locale={locale} messages={{ checkin: messages['checkin'] as Record<string, unknown> }} timeZone="Asia/Kolkata">
+        <NextIntlClientProvider locale={locale} messages={{ checkin: messages['checkin'] as Record<string, unknown>, errors: messages['errors'] as Record<string, unknown> }} timeZone="Asia/Kolkata">
           {children}
         </NextIntlClientProvider>
       </body>

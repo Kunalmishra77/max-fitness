@@ -39,6 +39,16 @@ export const CRM_CAPABILITIES = [
    * capability is that one day the owner may want it narrowed without narrowing editing.
    */
   'diet.manage',
+  /**
+   * Reading the audit trail (CRM-AUDIT).
+   *
+   * Its own capability rather than riding on `settings.manage`, because this is the screen
+   * that shows what the *owner* did as well as what staff did — and a permission named
+   * "manage settings" should not be what decides who can read the record of their own
+   * actions. Elevated, because it is the whole history of every sensitive action in one
+   * place: a phone left unlocked on the desk must not open it.
+   */
+  'audit.view',
 ] as const;
 export type CrmCapability = (typeof CRM_CAPABILITIES)[number];
 
@@ -73,10 +83,11 @@ const ROLES: Record<CrmCapability, readonly CrmRole[]> = {
   'member.erase': ['OWNER', 'SUPER_ADMIN'],
   'member.import': ['OWNER', 'SUPER_ADMIN'],
   'diet.manage': ['OWNER', 'RECEPTION', 'TRAINER', 'SUPER_ADMIN'],
+  'audit.view': ['OWNER', 'SUPER_ADMIN'],
 };
 
 /** Actions that need a PIN entered in the last few minutes, whatever the role. */
-const NEEDS_ELEVATION: ReadonlySet<CrmCapability> = new Set(['payment.void', 'settings.manage', 'member.export', 'member.erase', 'member.import']);
+const NEEDS_ELEVATION: ReadonlySet<CrmCapability> = new Set(['payment.void', 'settings.manage', 'member.export', 'member.erase', 'member.import', 'audit.view']);
 
 /** Reception may take money only while the gym's setting allows it. */
 const RECEPTION_PAYMENT_CAPABILITIES: ReadonlySet<CrmCapability> = new Set(['payment.record', 'payment.discount']);

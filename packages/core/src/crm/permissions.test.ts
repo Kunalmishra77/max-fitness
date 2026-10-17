@@ -35,6 +35,9 @@ const MATRIX: Record<CrmCapability, Record<CrmActor['role'], boolean>> = {
   'member.import': { OWNER: true, RECEPTION: false, TRAINER: false, SUPER_ADMIN: true },
   // A diet plan is the floor's job, not the till's, so a trainer may start one (ADR-089).
   'diet.manage': { OWNER: true, RECEPTION: true, TRAINER: true, SUPER_ADMIN: true },
+  // The record of every sensitive action, including the owner's own: owner, and a PIN
+  // entered a moment ago (CRM-AUDIT).
+  'audit.view': { OWNER: true, RECEPTION: false, TRAINER: false, SUPER_ADMIN: true },
 };
 
 describe('CRM permissions', () => {

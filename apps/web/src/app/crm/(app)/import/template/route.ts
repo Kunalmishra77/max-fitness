@@ -7,6 +7,12 @@ import { currentActor } from '@/lib/crm';
  * The columns come from the parser itself, so the template can never drift from what
  * the import accepts. The example rows are made up. A byte-order mark goes first so a
  * spreadsheet opens Hindi names correctly; the parser ignores it.
+ *
+ * That mark was written as `FEFF` rather than `\uFEFF` — the four literal characters, not
+ * the character. The first header therefore read `FEFFfull_name`, which the parser does
+ * not recognise (it strips a real BOM by code point, `charCodeAt(0) === 0xfeff`), so
+ * **the template this route handed the owner could not be imported back**. Round-tripped
+ * in a test now, which is the check that was missing.
  */
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +25,7 @@ const EXAMPLES = [
 export async function GET() {
   if ((await currentActor()) === null) return new Response(null, { status: 401 });
 
-  const body = `FEFF${[IMPORT_COLUMNS.join(','), ...EXAMPLES].join('\r\n')}\r\n`;
+  const body = `\uFEFF${[IMPORT_COLUMNS.join(','), ...EXAMPLES].join('\r\n')}\r\n`;
   return new Response(body, {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',

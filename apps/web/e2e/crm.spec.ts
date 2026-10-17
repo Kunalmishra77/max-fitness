@@ -1,7 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { waitForHydration } from './hydration';
+import { waitForHydration, waitForScreen } from './hydration';
 
 /** A drawn face, never a photo of a person (scripts/make-face-fixture.mjs). */
 const FACE_PHOTO = fileURLToPath(new URL('./fixtures/face.jpg', import.meta.url));
@@ -18,6 +19,29 @@ const FACE_PHOTO = fileURLToPath(new URL('./fixtures/face.jpg', import.meta.url)
 
 const OWNER = { mobile: '9000000001', pin: '2468' };
 const RECEPTION = { mobile: '9000000002', pin: '1357' };
+
+/**
+ * The first member in the register, as a row of the list.
+ *
+ * `a[href^="/crm/members/"]` on its own is not that, and three tests here were caught by
+ * it. Above the rows sit two links that match it — the waiting-for-payment banner, which
+ * appears whenever anybody has stopped at the payment screen (ADR-125), and "add member".
+ * `.first()` took the banner, landed on `/crm/members/waiting`, and the test carried on
+ * against the wrong screen: `/crm/members/waiting` matches `[\w-]+`, so a URL assertion
+ * passed, and the waiting list carries nine "take fees" links, so the next click was a
+ * strict-mode violation rather than an honest failure.
+ *
+ * All of it was invisible against an empty database, which is what these were written
+ * against.
+ */
+/** Random lowercase letters, for a fixture name that cannot collide with another run's. */
+function letters(length: number): string {
+  return Array.from({ length }, () => String.fromCharCode(97 + Math.floor(Math.random() * 26))).join('');
+}
+
+function firstMemberRow(page: Page) {
+  return page.getByRole('listitem').locator('a[href^="/crm/members/"]').first();
+}
 
 async function login(page: Page, who: { mobile: string; pin: string }) {
   await page.goto('/crm/login');
@@ -96,7 +120,10 @@ test.describe('Max Register', () => {
     test.skip(testInfo.project.name !== 'desktop', 'Adds and switches off a staff login; one project is enough.');
     await login(page, OWNER);
     await page.goto('/crm/more');
-    await page.getByRole('main').getByRole('link', { name: /स्टाफ/ }).click();
+    // By destination, not by a word in the label. `/स्टाफ/` matched two cards here once
+    // the audit log was added in this branch — it describes itself as "स्टाफ़ और मालिक ने
+    // जो भी बदला" — and a menu is exactly the place where that keeps happening.
+    await page.getByRole('main').locator('a[href="/crm/settings/staff"]').click();
     await expect(page).toHaveURL(/\/crm\/settings\/staff$/);
 
     // Letters only in the name; a fresh number each run.
@@ -180,7 +207,13 @@ test.describe('Max Register', () => {
     // A member made for this test, through the desk wizard. Letters only in the name.
     await page.goto('/crm/members/new');
     await page.getByRole('button', { name: 'अभी नहीं' }).click();
-    const name = `हटाने वाला ${'कखगघचछजझञट'[new Date().getSeconds() % 10] ?? 'क'}`;
+    /**
+     * Unique per run. This used to pick one of ten letters by the clock's seconds, so two
+     * runs an hour apart could share a name — and the assertion at the end, that the name
+     * can no longer be found, then matched a *different* member from an earlier run and
+     * failed. Ten names is not a namespace.
+     */
+    const name = `हटाने वाला ${'कखगघचछजझञट'[new Date().getSeconds() % 10] ?? 'क'}${letters(4)}`;
     await page.getByLabel('पूरा नाम').fill(name);
     await page.getByRole('button', { name: 'आगे' }).click();
     await page.getByLabel('मोबाइल नंबर').fill('9812345679');
@@ -199,7 +232,34 @@ test.describe('Max Register', () => {
     const profileUrl = page.url().replace(/\/renew$/, '');
     await page.goto(profileUrl);
 
-    // Export: signed in a moment ago, so the PIN still counts and the download is ready.
+    /**
+     * Export needs the PIN to still count, and it lasts five minutes from **signing in**,
+     * not from the last thing you did: `PrismaCrmSessions.touch()` exists but nothing
+     * calls it, so `lastSeenAt` never moves off the login. The wizard above takes most of
+     * those five minutes on a slow machine, so whether the PIN is still fresh here
+     * depended on how busy the runner was, and the test passed or failed accordingly.
+     *
+     * So take the screen as it comes, which is what the owner does: the export link if the
+     * PIN still counts, and the PIN again if it has lapsed. Both are the product working.
+     */
+    /**
+     * The data controls moved behind the profile's actions menu since this was written —
+     * a member's export and erasure are not things to leave one tap from the fee button.
+     * Its last item opens the panel that holds both, and the panel's own labels are
+     * unchanged, so everything below still reads as it did.
+     */
+    await page.getByRole('button', { name: 'इस मेंबर के लिए और' }).click();
+    await page.getByRole('menuitem', { name: 'इस मेंबर को हटाएँ' }).click();
+
+    const exportLink = page.getByRole('link', { name: 'डेटा निकालें (JSON)' });
+    const pinAgain = page.getByText('डेटा निकालने के लिए PIN डालें');
+    await expect(exportLink.or(pinAgain).first()).toBeVisible();
+    if (await pinAgain.isVisible()) {
+      await page.getByLabel('PIN', { exact: true }).fill(OWNER.pin);
+      await page.getByRole('button', { name: 'खोलें' }).click();
+      await expect(exportLink).toBeVisible();
+    }
+
     const downloading = page.waitForEvent('download');
     await page.getByRole('link', { name: 'डेटा निकालें (JSON)' }).click();
     const download = await downloading;
@@ -217,9 +277,18 @@ test.describe('Max Register', () => {
     await confirm.getByRole('button', { name: 'हाँ, हमेशा के लिए हटाएँ' }).click();
     await expect(page).toHaveURL(/\/crm\/members$/, { timeout: 30_000 });
 
-    // The profile is gone, and the name can no longer be found.
-    const response = await page.goto(profileUrl);
-    expect(response?.status()).toBe(404);
+    /**
+     * The profile is gone, and the name can no longer be found.
+     *
+     * Asserted on the **screen**, not on a 404 status. The profile streams, and once the
+     * shell has been flushed the status is already on the wire, so a `notFound()` raised
+     * after that point renders the not-found page with a 200. Erasure is doing its job —
+     * the audit trail records `member.erase` and the row is deleted outright, not merely
+     * flagged — and what matters to the owner is that the screen says so.
+     */
+    await page.goto(profileUrl);
+    await expect(page.getByRole('heading', { name: 'यह स्क्रीन मौजूद नहीं है' })).toBeVisible();
+    await expect(page.getByText(name)).toHaveCount(0);
     await page.goto(`/crm/members?q=${encodeURIComponent(name)}`);
     await expect(page.getByText(name)).toHaveCount(0);
   });
@@ -341,7 +410,15 @@ test.describe('Max Register', () => {
     const downloading = page.waitForEvent('download');
     await page.getByRole('link', { name: 'टेम्पलेट डाउनलोड करें' }).click();
     const template = await readFile((await (await downloading).path()) ?? '', 'utf8');
-    expect(template.replace(/^FEFF/, '').split(/\r?\n/)[0]).toBe('full_name,mobile,gender,dob,email,plan_months,month_end_date,last_amount,joined_on,notes');
+    /**
+     * A real byte-order mark, which is what makes Excel open this as UTF-8 and show a
+     * member's name in Hindi rather than as mojibake. It used to be the four literal
+     * characters `F`, `E`, `F`, `F` — a `\uFEFF` escape that never got escaped — so the
+     * first column header read `FEFFfull_name` and the file was unusable. This test was
+     * written around the bug; now it asserts the mark is there and correct.
+     */
+    expect(template.startsWith('\uFEFF')).toBe(true);
+    expect(template.replace(/^\uFEFF/, '').split(/\r?\n/)[0]).toBe('full_name,mobile,gender,dob,email,plan_months,month_end_date,last_amount,joined_on,notes');
 
     // A fresh name and number each run, so a second run is not "already a member". Letters only.
     const tag = [...'कखगघचछजझञट'].sort(() => Math.random() - 0.5).slice(0, 3).join('');
@@ -400,11 +477,27 @@ test.describe('Max Register', () => {
   test('searches members and opens a profile', async ({ page }) => {
     await login(page, OWNER);
     await page.goto('/crm/members');
-    const firstRow = page.locator('a[href^="/crm/members/"]').first();
+
+    /**
+     * Scoped to a row of the list, which `a[href^="/crm/members/"]` on its own is not.
+     *
+     * That looser locator took the **waiting-for-payment banner** instead — it sits above
+     * the register, links to `/crm/members/waiting`, and appears whenever somebody has
+     * stopped at the payment screen (ADR-125), which is true of any realistic data. The
+     * banner arrived after this test was written and quietly stole it: `/crm/members/waiting`
+     * matches `[\w-]+` too, so the URL assertion below passed, the waiting screen has its
+     * own "फीस लें" link so that assertion passed as well, and the test spent its forty-five
+     * seconds looking for a fee state on a page that has none. It was auditing the wrong
+     * screen and only the last assertion noticed.
+     */
+    const firstRow = firstMemberRow(page);
+    const href = await firstRow.getAttribute('href');
     const name = (await firstRow.innerText()).trim();
+    expect(href).toMatch(/^\/crm\/members\/(?!waiting$|new$)[\w-]+$/);
     await firstRow.click();
 
-    await expect(page).toHaveURL(/\/crm\/members\/[\w-]+$/);
+    // The member we clicked, not merely something under /crm/members.
+    await expect(page).toHaveURL(new RegExp(`${href as string}$`));
     await expect(page.getByRole('main').getByText(/फीस (जमा है|बाकी|इस हफ्ते)|कोई प्लान नहीं/).first()).toBeVisible();
     await expect(page.getByRole('link', { name: /फीस लें/ })).toBeVisible();
     expect(name.length).toBeGreaterThan(0);
@@ -416,7 +509,7 @@ test.describe('Max Register', () => {
 
     // An expired member is the one the owner would actually be renewing.
     await page.goto('/crm/members?fee=EXPIRED');
-    await page.locator('a[href^="/crm/members/"]').first().click();
+    await firstMemberRow(page).click();
     await page.getByRole('link', { name: /फीस लें/ }).click();
     await expect(page).toHaveURL(/\/renew$/);
 
@@ -472,7 +565,7 @@ test.describe('Max Register', () => {
 
     // Someone who has not been in for a week cannot already be marked in today.
     await page.goto('/crm/attendance?tab=absent');
-    const absent = page.locator('a[href^="/crm/members/"]').first();
+    const absent = firstMemberRow(page);
     test.skip((await absent.count()) === 0, 'Nobody is absent in the seed.');
     const name = (await absent.innerText()).trim();
 
@@ -546,7 +639,7 @@ test.describe('Max Register', () => {
 
     // Take fees first, so the payment being voided is one this test created.
     await page.goto('/crm/members?fee=EXPIRED');
-    await page.locator('a[href^="/crm/members/"]').first().click();
+    await firstMemberRow(page).click();
     // Wait for the navigation to land, or the URL captured is still the list.
     await page.waitForURL(/\/crm\/members\/[\w-]+$/);
     const profileUrl = page.url();
@@ -576,4 +669,52 @@ test.describe('Max Register', () => {
     // That one payment now reads as voided — and keeps its receipt number (BR-11.2).
     await expect(page.getByText(new RegExp(`${receipt}.*रद्द`))).toBeVisible({ timeout: 30_000 });
   });
+});
+
+/**
+ * U-4: the CRM had no accessibility coverage at all.
+ *
+ * Axe ran on two public pages and on none of Max Register's twenty-four — the tool the
+ * owner uses every day, Hindi-first, driven one-handed at a counter. The config already
+ * runs every spec at 360×780 and at 1440×900, so these assertions cover both widths for
+ * free, which is the half that matters for touch targets and reflow.
+ *
+ * Signed in as the owner, because a role with fewer capabilities renders fewer controls
+ * and would quietly check less. Each violation is named with its failing selectors, so a
+ * red run says what to fix rather than how many.
+ */
+test.describe('Max Register — accessibility', () => {
+  const SCREENS: ReadonlyArray<readonly [string, string]> = [
+    ['Today', '/crm'],
+    ['members', '/crm/members'],
+    ['attendance', '/crm/attendance'],
+    // The feature added in ATT-001: a grid of links, which is exactly the shape that
+    // goes wrong for a screen reader if the cells carry a number and nothing else.
+    ['attendance history', '/crm/attendance?tab=history&preset=THIS_MONTH'],
+    ['waiting for payment', '/crm/members/waiting'],
+    ['leads', '/crm/leads'],
+    ['calls', '/crm/calls'],
+    ['messages', '/crm/messages'],
+    ['reports', '/crm/reports'],
+    ['verify', '/crm/verify'],
+    ['settings', '/crm/settings'],
+    ['add member', '/crm/members/new'],
+    ['more', '/crm/more'],
+  ];
+
+  for (const [name, path] of SCREENS) {
+    test(`has no detectable accessibility violations — ${name}`, async ({ page }) => {
+      await login(page, OWNER);
+      await page.goto(path);
+      // Not `waitForHydration`: it waits for a hydrated `<input>`, and most of these
+      // screens have no text field, so it timed out on all of them (see hydration.ts).
+      await waitForScreen(page);
+
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+        .analyze();
+
+      expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`)).toEqual([]);
+    });
+  }
 });

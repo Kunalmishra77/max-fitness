@@ -60,6 +60,7 @@ class FakeStore implements ExistingMemberStore {
   readonly consents: Array<{ memberId: string; type: string; channel: string }> = [];
   readonly requests: VerificationRequestRecord[] = [];
   readonly alerts: Array<{ memberId: string; params: Record<string, string> }> = [];
+  readonly outbox: Array<{ type: string; dedupeKey: string; payload: Record<string, unknown> }> = [];
 
   /** Register entries by id, each with its number: what a proven number may claim. */
   byId = new Map<string, E164Mobile>();
@@ -107,6 +108,10 @@ class FakeStore implements ExistingMemberStore {
   }
   createAlert(alert: { memberId: string; params: Record<string, string> }) {
     this.alerts.push({ memberId: alert.memberId, params: alert.params });
+    return Promise.resolve();
+  }
+  enqueueOutbox(event: { type: string; dedupeKey: string; payload: Record<string, unknown> }) {
+    this.outbox.push({ type: event.type, dedupeKey: event.dedupeKey, payload: event.payload });
     return Promise.resolve();
   }
 }
@@ -192,6 +197,13 @@ describe('submitExistingMember', () => {
     ]);
     // The alert names the reference, never the person.
     expect(store.alerts).toEqual([{ memberId: 'mem_new', params: { referenceCode: 'Q-4821' } }]);
+    /**
+     * MEM-001. Queued inside the same transaction as the member, keyed on the
+     * verification request so a resubmission cannot produce a second acknowledgement.
+     */
+    expect(store.outbox).toEqual([
+      { type: 'whatsapp.signup_received', dedupeKey: 'signup-received:ver_1', payload: { memberId: 'mem_new', verificationId: 'ver_1' } },
+    ]);
   });
 
   it('with a number proven by OTP, joins the register entry the member picked, however the name is spelled', async () => {

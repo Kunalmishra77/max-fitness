@@ -1604,7 +1604,7 @@ The part that mattered: a mandate's **first debit is the day after the member's 
 
 **Correction to what I told the owner:** I said eleven templates had no wording. They all did — in `templates.ts`, both languages, with their positional order. I had read the markdown doc, which is the stale copy: it carries ten and names four the product no longer sends (`mf_signup_payment_pending`, three `mf_owner_alert_*` superseded by the generic one). Submitting from it would have missed templates and created dead ones. The doc now says so at the top and points at the generated sheet.
 
-**Meta setup so far:** webhook verified and tested live (`GET` echoes the challenge). Business verification approved. Number +91 98114 26350, WABA `1378611114040117`, phone number id `1394917043704455`, Graph `v26.0`. **Do not touch +91 78945 61230** — it is live on a handset.
+**Meta setup so far:** webhook verified and tested live (`GET` echoes the challenge). Business verification approved. Number, WABA id and phone number id are in the deployment secret store, not here; Graph `v26.0`. **One of the two numbers on the account is live on a handset and must not be touched** — which is which is written down with the credentials.
 
 **Tests:** 1919 passing. Every non-`|db|` suite green; the `|db|` failures are the shared-Postgres `pool_size: 15` limit (ADR-110) and pass with `--no-file-parallelism`.
 
@@ -1619,7 +1619,7 @@ The part that mattered: a mandate's **first debit is the day after the member's 
 
 ## 2026-10-15 — one face, one member (ADR-124)
 
-**What changed.** The owner proved the duplicate check wrong a second time: their own face, their own existing name *Indresh Mishra*, a number the gym had never seen — straight through, leaving MF-0001 and MF-0014 both pointing at him.
+**What changed.** The owner proved the duplicate check wrong a second time: their own face, a name the register already held, a number the gym had never seen — straight through, leaving MF-0001 and MF-0014 both pointing at him.
 
 - `packages/core/src/qr/claimed-member.ts` (new, with tests) — `claimedMemberId` decides which record a submission is allowed to match: the one on the given **number** carrying the given **name**. Either field alone is something anybody can type, and keying on either alone is exactly how the check was broken twice.
 - `apps/web/src/lib/duplicate-member.ts` — the name-only exemption is gone; the claimed record is looked up by both fields and passed to `findDuplicateFace` as `exceptMemberId`.
@@ -1630,7 +1630,7 @@ The part that mattered: a mandate's **first debit is the day after the member's 
 **Verified.** `claimedMemberId` tests written and watched fail first. Full suite 2125 passed, typecheck clean across all 8 packages.
 
 **Pending.**
-- **MF-0014 is a duplicate record** created by the owner's test and needs erasing, along with the three duplicate *Ayan Saifi* records.
+- **MF-0014 is a duplicate record** created by the owner's test and needs erasing, along with the three duplicate records that share one name.
 - `pnpm lint` has **33 pre-existing errors** — all in scripts and test files (`look-qr.mjs`, `smoke-*.mjs`, `enrol-faces.ts`, `qr-poster.ts`, `message-log-read.repository.ts`, `messages.test.ts`, `seo.test.ts`, `use-screen-awake.ts`, `backup-members.ts`). Confirmed present without this change. Not touched here; needs its own pass.
 - The security review is still the oldest outstanding commitment.
 
@@ -1640,7 +1640,7 @@ The part that mattered: a mandate's **first debit is the day after the member's 
 
 It did not go cleanly. The script was missing five tables added since it was written and died on `PtEnrolment_memberId_fkey` with the members already stripped. Fixed, along with two things the failure exposed: the backup was not saving storage keys, and `find:orphans` now exists. It found **454** orphaned objects in the bucket, not the 13 from that failure — months of test wipes had been deleting rows and leaving files. All removed. The reverse report found 11 rows pointing at files that are gone, every one of them belonging to an erased member, so **no live member's photograph is missing**.
 
-- `enrol:faces` enrolled Trilok Singh. Three members are refused for **NO_CONSENT**, not a bad photograph, and the script used to tell staff to chase them for a new selfie — fixed to say what the desk should actually do.
+- `enrol:faces` enrolled one member. Three members are refused for **NO_CONSENT**, not a bad photograph, and the script used to tell staff to chase them for a new selfie — fixed to say what the desk should actually do.
 - The report's first version also claimed 11 photographs were missing. They were not: erasing a member deletes the object and keeps the row with `deletedAt` set, on purpose, as the record that a file once existed. The report was counting those and crying wolf; it now skips them.
 
 **ADR-125 — waiting for payment.** A QR sign-up landed in the Members list with no payment minutes after the wipe. The list no longer shows people who have never paid; they sit on `/crm/members/waiting` with call, message and take-fees on each row, and return to the register by themselves when the money lands. One `awaitingPaymentWhere` fragment serves the list, the counts and the new screen.
@@ -1670,7 +1670,7 @@ The owner rejected the people-list from ADR-126 and sent a reference: list, thre
 
 ## 2026-10-16 (later) — the gym is live, and the tests stopped writing to it
 
-**Live.** `DEMO_MODE=false`, `ALLOW_DEMO_IN_PRODUCTION` removed, the allowlist cleared, Razorpay on live keys, both apps redeployed. The POST rule's slot is 19:00 IST, so the first three real reminders — Indresh Mishra, Trilok Singh, Ashutosh Singh, each 1–3 days overdue — go this evening. Nobody else is due; Deepa rawat is 16 days overdue and the POST rule stops at 7.
+**Live.** `DEMO_MODE=false`, `ALLOW_DEMO_IN_PRODUCTION` removed, the allowlist cleared, Razorpay on live keys, both apps redeployed. The POST rule's slot is 19:00 IST, so the first three real reminders — three members, each 1–3 days overdue — go this evening. Nobody else is due; a fourth is 16 days overdue and the POST rule stops at 7.
 
 **The forty rows.** The owner found them in the freshly cleaned inbox, under a member who did not exist. They were mine: `pnpm test` ran against the production database. The simulator compounds it — it writes every log row under `env.GYM_SLUG` with `memberId: null`, whatever gym or member the message was for — which is also why those threads read as "Erased member". Demo is off now, so the simulator is dormant; the attribution is still wrong and is **not fixed**.
 
@@ -1682,7 +1682,7 @@ The owner rejected the people-list from ADR-126 and sent a reference: list, thre
 - **Production needs `pnpm db:deploy`** so the new migration is recorded there too.
 - The simulator's gym/member attribution.
 - MF-0001's PAN photograph is 338×338.
-- Face consent for Ashutosh Singh, Deepanshu Rao and Ishita mehta.
+- Face consent for three members (named in the CRM, not here).
 - The security review.
 
 ## 2026-10-16 — the shell was 576px wide below a desktop
@@ -1694,3 +1694,442 @@ Forms do not want that room, so `CRM_FORM_COLUMN` (768px) wraps the eight pages 
 **Also answered:** the Message plan screen. It is a dry run of the reminder engine over the next 30 days, not a queue — it re-reads the rules each time and assumes nobody renews or unsubscribes.
 
 **Raised, not changed:** `POST` fires **every day from +1 to +7** after a membership expires (business-rules BR-5.2, `postExpiryMaxDays = 7`). Three members are in that window, so each will get seven daily "your membership has expired" messages. That is the documented rule, but on a WhatsApp number three days old it is also how a quality rating falls and templates get paused. The owner can lower `postExpiryMaxDays` in Settings.
+
+## 2026-10-16 (later still) — the security review, and the UI/UX pass with it
+
+The oldest outstanding commitment, done and written up in
+`docs/07-security-compliance/security-and-ux-review-2026-10-16.md`. A code review of every
+page and route, not a penetration test. No `.env` here and the database is production, so
+nothing was rendered or run against a host; `typecheck`, `lint` and `test` were run.
+
+**Nothing was changed.** Findings only.
+
+**Where the checks actually stand.** `pnpm typecheck` passes, 8/8 packages. `pnpm lint`
+**fails with 34 errors** — two of them in shipped runtime code (`use-screen-awake.ts:45`,
+`message-log-read.repository.ts:138`), not only in scripts as previously recorded.
+`pnpm test` **fails 1 of 2132**. So the CI quality job has been red on `main` and cannot
+report a regression.
+
+The test failure is a **test defect, not a vulnerability**: `local.test.ts:68` expects
+`delete('..\\..\\windows\\...')` to reject, but on Linux a backslash is a legal filename
+character, so that is one segment inside the root and resolving is correct. `#pathFor`
+guards traversal properly; the assertion only holds on Windows.
+
+**The two that matter most.**
+
+- **No security headers anywhere.** `next.config.ts` `headers()` returns font caching and
+  nothing else — no CSP, HSTS, nosniff, Permissions-Policy, frame-ancestors.
+  `deployment-plan.md` line 53 says "CSP is set by Next.js per route"; it is set by nothing.
+  The pre-launch checklist item is unchecked and the gym went live today.
+- **No `error.tsx`, `loading.tsx` or `not-found.tsx` in the whole app.** `notFound()` is
+  called in seven places and every one lands on Next's unstyled English default, as does
+  any server-component throw — on a Hindi-first CRM at a reception desk. `currentActor`
+  already retries because a Supabase hiccup is expected; every other read has no net.
+
+**Also found:** IP rate limits are bypassable by spoofing the left-most `X-Forwarded-For`
+entry (defeats the limiters on leads, OTP send, registrations, checkout, selfie check and
+the `/qr/check` enumeration guard); kiosk pairing has no limiter and no attempt counter on
+a 6-digit code; CRM sign-in has no IP limit, so five wrong PINs every 15 minutes locks the
+owner out of their own CRM; `/api/v1/qr/check` confirms whether a number is a member,
+which is the thing its own doc comment says it must not do; CodeQL and gitleaks are absent
+from CI; `SESSION_SECRET` is required by the env schema and read by nothing.
+
+**UI/UX, beyond U-1:** both QR forms keep step in plain `useState` with no history entry
+and nothing in storage, so an Android back gesture on step 5 of 8 discards the selfie and
+the ID photographs — the website sign-up does this properly via `join-state.ts`; the
+members list caps at 100 with no paging; axe runs on two public pages and no CRM page.
+
+**Verified sound**, and recorded as checked rather than skipped: session handling,
+`assertCan` in all 18 actor-taking core services and `requireCrmContext()` in all 30 server
+actions, both webhook HMAC paths with replay protection, signed-link purpose binding,
+the upload re-encode pipeline, server-side pricing, RLS now 36/36 across the migration
+history, logging (not one call site leaks PII), the service worker, consent-gated
+analytics, the legal-markdown parser, non-root containers, i18n parity at 1829/1829,
+empty states on every list, 56px targets with the `crm-pointer` relaxation, and the
+global `:focus-visible` rule.
+
+**Pending.** Everything in §3 of the review, in that order. Unchanged from before:
+`pnpm db:deploy` on production for the RLS migration; rotating the Meta App Secret and the
+Razorpay secret; the simulator's gym/member attribution; MF-0001's 338×338 PAN photograph;
+face consent for three members (named in the CRM, not here).
+
+## 2026-10-16 (later still) — acting on the review
+
+The audit from earlier today, worked through in risk order. Full ticket register in
+`docs/10-delivery/remediation-register-2026-10-16.md`; the audit itself is unchanged.
+
+Branch `hardening/security-ux-remediation`, nine commits off `82e44bf`. **Not pushed:**
+this container's clone has no git remote and the GitHub token is invalid, so the branch
+sits locally until the owner connects GitHub at `https://claude.ai/connect-github`.
+**Nothing deployed:** no Coolify credentials here, and no Compose or Coolify definition in
+the repository to read the topology from.
+
+**The gates are green again.** Baseline re-measured here, not quoted: lint failed with 34
+errors and the suite with one, so the CI job that runs both had been red and could not
+report a regression. Now lint 0, typecheck 8/8, 2202 tests passing, `next build` clean,
+and gitleaks clean across the tree and all 195 commits.
+
+Seventeen of the lint errors were the config describing files wrongly — the Playwright
+smoke scripts hold browser code inside `page.evaluate()` and eslint knew only the Node
+globals. Two were in shipped code. The test failure was a **test defect, not a
+vulnerability**: it expected a Windows-style traversal key to be refused, which on POSIX is
+one legal filename inside the root. Writing it properly found the real thing behind it —
+`exists()` swallowed the traversal refusal and `signedUrl()` would sign a key the same
+driver refused to read. Both fixed.
+
+**Security.** Headers now exist at all: three policies for the public site, Max Register
+and `/api`, verified against the built `routes-manifest.json` so each path gets exactly one
+CSP. `script-src` keeps `'unsafe-inline'` and the module says so out loud — a nonce needs
+dynamic rendering, and the public pages are deliberately static and under an LCP budget. A
+nonce-based policy for the CRM, which is already force-dynamic, is the obvious next step and
+was not done here because this session cannot run the app.
+
+Every per-IP rate limit was bypassable: `clientIp()` read the left-most `X-Forwarded-For`
+entry, which is whatever the client sent. Counted from the right now. A lockout could be
+held open on the owner's own account for one request every fifteen minutes, because the
+failed-PIN count was only cleared by a *successful* sign-in. Sign-in had no per-address
+limit; kiosk pairing had neither limit nor attempt counter on a six-digit code.
+
+**Features.** The attendance register is readable at last — month calendar, eight range
+presets, custom dates, the four figures, the day's list, and a CSV export that carries no
+phone numbers and neutralises spreadsheet formulas. 59 tests on the date arithmetic alone,
+asserting month and year boundaries rather than the happy path.
+
+A QR sign-up now gets an acknowledgement that does **not** claim approval — wired to the
+existing-member form only, because that is the flow with a review step; a new registration
+goes to `PENDING_PAYMENT` with nobody to approve it, and saying otherwise would be a false
+statement. `mf_signup_received` still needs submitting to Meta.
+
+**Two live bugs found while working:**
+
+- **A refused selfie or ID card showed the translation key.** Both QR forms rendered every
+  per-step refusal as ``t(`stepCheck.${reason}`)``; three of those keys existed and the
+  endpoint returns seventeen. So since ADR-121 a member read
+  `qrExisting.stepCheck.NAME_MISMATCH` off the screen. The wording was all there in the
+  tables the submission path used — only the per-step path never reached them.
+- **The import template could not be imported back.** `/crm/import/template` wrote the four
+  characters `FEFF` instead of `﻿`, so the first header read `FEFFfull_name` and the
+  parser, which strips a BOM by code point, did not strip it. Round-tripped in a test now.
+
+The phone's Back button also walks back a step in both QR forms instead of leaving and
+discarding the selfie and ID photographs. Persistence was deliberately **not** added: that
+form runs on the gym's phone at the counter and holds somebody's Aadhaar card, so a
+part-filled form reappearing for the next person is worse than retyping a name.
+
+**Pending — not started, and deliberately so where noted.** Report period filters, the
+dashboard additions, the audit-log screen, members-list paging. The Phase 7 redesign is
+untouched on purpose: applied to some of 24 screens and not others it leaves the product
+less coherent than before, and nothing here could render a page to judge it. The CRM axe
+suite is written across 13 screens and **has not been run** — it needs a database, and it
+may well find real violations.
+
+Unchanged from the audit: production needs `pnpm db:deploy` for the RLS migration; the Meta
+App Secret and Razorpay secret still need rotating; `postExpiryMaxDays` is still 7.
+
+## 2026-10-17 — reports over a week, a year, or dates you pick
+
+REP-001/002/003, continuing on `hardening/security-ux-remediation` (now eleven commits,
+still unpushed — the remote and the GitHub token are the blockers from yesterday).
+
+The screen had a month picker and nothing else. It now takes week, month, year or a chosen
+range, **without changing a single card's arithmetic**: the pipeline already took a window
+plus the window before it, so the other periods are the same shape. `MONTH` delegates to
+the existing `monthBoundsFor` and a test asserts equality with it — the owner reads that
+view every day and it must not move. The arrows and `?month=` still work exactly as before,
+and are hidden off the month view, where they would have been a quiet lie.
+
+The comparison rule is the only real judgement, and it is the month rule extended: an
+unfinished period compares against the same distance into the previous one, measured in
+**elapsed days** rather than calendar date — day 60 of 2028 is 29 February and has no
+counterpart in 2027. A finished period gets the whole previous one, because clipping it
+would invent a fall that did not happen. 30 tests, mostly on boundaries.
+
+`/crm/reports/export` is behind `money.view` checked in the route rather than on the button,
+resolves its window with the same calls in the same order as the page, and reads the same
+`inputs` — so there is no second implementation of "what the gym earned". Long format, rupee
+decimals for a human reader, and three values written **empty rather than zero** where they
+are genuinely unknown (a renewal rate with nothing due yet; kiosk share with no check-ins,
+where 0% would claim the camera had failed).
+
+Gates: typecheck 8/8, lint clean, 2232 passed, `next build` clean.
+
+**Still open:** the dashboard additions, the audit-log screen, members-list paging, the
+Phase 7 redesign, and the CRM axe suite which is written and has never been run. All four
+blockers from yesterday are unchanged.
+
+## 2026-10-17 (later) — the audit trail has a screen
+
+CRM-AUDIT. `AuditLog` has been written to since the first migration — every voided payment,
+erased member, PIN reset, price change and settings edit — and nothing in the CRM has ever
+read it. The gym was paying the cost of recording its own accountability trail with none of
+the benefit. Same pattern as the attendance phone before ADR-107: the data existed and
+nothing linked to it.
+
+`/crm/more/audit`, and now in the menu. Owner-only behind a **new `audit.view` capability**
+rather than `settings.manage`, because this screen shows what the owner did as well as what
+staff did and a permission named "manage settings" should not decide who reads that. PIN
+elevated: it is the whole history of every sensitive action in one place, and a phone left
+unlocked on the desk must not open it. The nav test asserts reception and trainers never
+see the entry, so nobody is offered a screen that would only refuse them.
+
+**Read-only by construction** — no action on the page and no write side in the repository.
+A screen that could amend the record of somebody amending the record would defeat the point.
+
+**The before/after blobs are never printed.** They are whole row snapshots, so they carry
+mobile numbers, PIN hashes and storage keys, and "we will remember to redact the next column
+someone adds" is not a control. `auditChanges` reduces them to the fields that moved with a
+**name-based** denylist applied before any value is read — `pin`, `hash`, `token`, `secret`,
+`vector`, `template` and friends as substrings, so `newPinHash` and a field invented next
+year are both caught. Comparison happens *before* masking, or two different mobile numbers
+would mask to the same string and the change would vanish. 34 tests, most of them proving
+it does not leak the data it audits.
+
+Cursor paging on `(createdAt, id)` rather than offset: an append-only table under `OFFSET`
+is the one screen in here guaranteed to get slower every day, and the id breaks the tie for
+rows written in the same transaction.
+
+**One bug found and fixed while writing it:** the maskers ran before the shape check, so a
+key named `mobile` holding an object rendered as the literal `[object Object]`. Harmless to
+read today and exactly how a leak arrives the day a column changes type. Pinned by a test.
+
+Gates: typecheck 8/8, lint clean, 2271 passed, `next build` clean with `/crm/more/audit`.
+
+**Still open:** the dashboard additions, members-list paging, the Phase 7 redesign, and the
+CRM axe suite which is written and has never been run. All four blockers unchanged — the
+push is still the one that matters most.
+
+## 2026-10-17 (later still) — a way to the rest of the register, and two visible queues
+
+U-3 and DASH-001. Fourteenth commit on `hardening/security-ux-remediation`; the push is
+still blocked on the same missing remote.
+
+**U-3.** The members list said "showing 100 of 240" and stopped, so the other 140 were
+reachable only by guessing a name into the search box — on the screen whose whole job is to
+show who the gym has. Cursor paging now, keyed on **the member id rather than the name**,
+for two reasons: the sort is alphabetical and names are not unique here (this register has
+carried three members under one name and two under another, so a name cursor skips or repeats a
+duplicate run at a page boundary), and an id keeps members' names out of URLs, which end up
+in history and logs. The tie still breaks on id in the SQL, because alphabetical alone is
+not a total order. A cursor pointing at a member erased since falls back to page one rather
+than stranding the reader on an empty screen.
+
+Four integration tests, one of which pages two-at-a-time through a deliberate three-way
+duplicate and asserts every member appears exactly once. **They do not run here** — they
+need Postgres — but the CI integration job has one, so they will run on the first push.
+
+**DASH-001.** The dashboard already had most of what was asked for: today's attendance, the
+week's trend, fees due with the amount, expired, trials, calls, birthdays, alerts. One thing
+was missing and it was the same shape as the audit log: **`verificationsPending` was being
+queried on every single dashboard load and rendered nowhere.** A QR sign-up waiting for
+approval was invisible on the first screen the owner opens, while the member sat waiting to
+be let in.
+
+So a "Waiting on you" strip above the tiles, carrying that and the ADR-125
+waiting-for-payment queue — the two things on this screen with a person at the other end. It
+appears only when there is something to do, so a gym that is up to date sees nothing rather
+than two reassuring zeros, and approvals show only to an actor who could actually approve
+one: a count reception cannot act on is a number that nags without a remedy.
+
+Gates: typecheck 8/8, lint clean, 2271 passed, `next build` clean.
+
+**Still open:** the Phase 7 redesign, and the CRM axe suite which is written and has never
+been run. Both blockers unchanged.
+
+---
+
+## 2026-10-17 — the CRM is slow (PERF-001 … PERF-008)
+
+The owner reported that Max Register and the site feel slow and that the client wants a
+fast response. No profiler here — there are no database credentials in this session, so
+nothing live could be timed. What follows was found by reading the hot path, and each item
+says plainly whether it was measured or reasoned.
+
+**The waterfall was the headline (PERF-001).** `requireCrmContext()` loaded the gym itself
+and loaded it again inside `currentActor()`, and it is called **twice** on every screen —
+once in the `(app)` route group's layout, once in the page. That is six serial round trips
+to Mumbai before a screen's own first query had even been sent. Memoised per request with
+React's `cache`, and the gym and session rows now read together because
+`receptionMayTakePayments` was never part of the session query at all — `actorFor` only
+copies it onto the actor it returns. **Six queries, two waves, down to two queries in one.**
+
+`requireCrmContext()` deliberately still asks for the actor before the gym. Reversing the
+two would turn a visitor with no cookie into an error page instead of the login screen, and
+it costs nothing now, because the gym is already memoised by then. The gym read also picked
+up the single retry the session lookup already had, so a dropped pooled connection no longer
+reads as "this gym is not configured" — which is a hard failure on a checkout.
+
+**The pool was the one I did not expect (PERF-004).** `poolMax` was hard-coded to 5, with a
+comment reasoning that Supavisor is the real pool so a large client-side pool buys nothing.
+That is true of a request that makes one query and wrong about this application: the home
+screen fans out about twenty reads in a single `Promise.all`, so five connections meant
+**four serial waves** — four round trips where one would do. It is `WEB_DB_POOL_MAX` now,
+default 16. It adds no load on the database; the same queries run either way. It stops them
+queuing behind each other inside the container, which is what transaction pooling exists to
+allow.
+
+**Two unbounded reads on the heaviest screen in the app (PERF-002).** The dashboard fetched
+*every confirmed membership the gym had ever sold* — ordered by end date, reduced in
+JavaScript to "the first one seen per member" — to price the due-this-week tile, and threw
+away everybody who was not due. `member_fee_at` already knows which membership is a
+member's latest; that is what `latestMembershipId` is for. It also read *every trial ever
+run*, each with a correlated sub-select, to produce three numbers, and fetched one row per
+check-in to take the length of a list. Those are now one join, three `FILTER` clauses and a
+`COUNT(DISTINCT)`.
+
+This one needed proof rather than confidence, because the dashboard is where the owner reads
+the month's takings and nothing covered it. So the tests went in **first** — fee states,
+arrivals, calls, birthdays, approvals, alerts, both months' money and all three trial
+numbers, plus a renewed member whose January plan cost more than their September one so the
+expected-fee sum cannot quietly use the dearest, and a full copy of every row under a second
+gym so a query that forgets its `gymId` fails in CI rather than on the owner's screen. They
+were committed against the old implementation and **passed in CI on `be202e2`** before a
+line of it was rewritten. A failure afterwards means the rewrite, which is the only way this
+kind of change is worth making.
+
+**And the same fee-state read three times per load (PERF-003).** Once for the tiles, once to
+annotate five call tasks, and once more through a separate `memberCounts()` call that existed
+to read a single number off the end of it. That number comes back with the tiles now.
+`#feeStates` gained an optional member filter, used on the member profile, which ran a pass
+over the whole gym to read one row. It is deliberately **not** used where fee states are
+fetched in parallel with the rows they annotate: narrowing those trades a cheap wider query
+for an extra network round trip, and at this gym's size that is the worse end of the bargain.
+Worth writing down, because the obvious change there would have made the screen slower.
+
+**Ruled out (PERF-005).** Client JavaScript, measured from the build: 2.7 MB of chunks
+uncompressed across *all* routes, largest 428 KB, and the large ones are React and
+`react-dom`. The MediaPipe face detector is not in the shared chunks. Not a cause.
+
+**Left alone, on purpose.** The reports page has the same unbounded pattern (PERF-006), but
+it is opened occasionally where the dashboard is opened on every login and again every
+minute, and it feeds the money figures — it needs its own pinning tests first, which is not
+work to rush on a deployment day. The 60-second self-refresh (PERF-008) is much cheaper
+after all of the above and is the first dial to turn if an idle tab still feels slow.
+
+**The one thing code cannot fix (PERF-007).** Every CRM screen is `force-dynamic` and reads
+Supabase in `ap-south-1`. If the Coolify host is not in that region, each remaining round
+trip costs 150–250 ms instead of 5–20 ms, and no query work recovers it. That is a question
+for the owner, and it may matter more than everything above put together.
+
+No migration. No schema change. One new optional env var (`WEB_DB_POOL_MAX`, documented in
+`.env.example`).
+
+Gates: typecheck 8/8, lint clean, 2271 unit tests passed, `next build` clean. The dashboard
+integration tests need Postgres and run in CI.
+
+**Still open, unchanged:** the Phase 7 redesign and the CRM axe suite, which is written and
+has never been run. Both need a browser and the owner's decisions.
+
+---
+
+## 2026-10-17, later — the things that only break when you run them
+
+Two discoveries changed this session. PostgreSQL 16 turned out to be installed in this
+container, and the production `standalone` build runs here. Everything that had been
+BLOCKED for want of a database or a browser was runnable after all — and the first ten
+minutes of running it found something worse than anything in the review.
+
+### The English website was dead (WEB-001)
+
+Every English URL answered **307 pointing at itself**. `/`, `/contact`, `/qr`, `/qr/new`,
+`/legal/*` — curl gives up after fifty hops; a browser says ERR_TOO_MANY_REDIRECTS. Hindi
+was fine. The CRM was fine. Only the half of the site a stranger from Google Maps lands on.
+
+A probe inside the proxy gave it up in four lines:
+
+    in=/    -> rewrite to /en        (correct)
+    in=/en  -> proxy runs AGAIN, redirects to /
+
+The standalone production server feeds a `proxy` rewrite **back through** `proxy`. So `/`
+has no locale prefix and next-intl rewrites it to `/en`; the re-entered `/en` is redirected
+back to `/`, because under `as-needed` an explicit default-locale prefix is not canonical;
+and that redirect becomes the response to `/`.
+
+**Why nobody saw it.** `next dev` does not re-enter the proxy, so development was clean. And
+Vercel does not use the standalone output at all — `next.config.ts` turns it off when
+`VERCEL=1` — so a preview deployment looked healthy too. It broke only in the image that
+actually serves the site. Hindi escaped because `/hi` is already prefixed and needs no
+rewrite, which is exactly what makes it look like a content problem rather than a routing
+one.
+
+Bumping next-intl 4.14.3 → 4.14.9 does not fix it; that was checked before the guard was
+written, and the bump stayed because CLAUDE.md §2.14 asks for the latest patch anyway. The
+fix is to let a request through once next-intl has resolved its locale, which it marks on
+the request it rewrites to. The `/en` → `/` redirect still happens for a visitor who really
+types it, since that request arrives without the mark.
+
+### The accessibility suite could never have passed (QA-006, A11Y-001)
+
+Running it found two faults in the suite before any in the product, both of which would have
+failed CI on merge:
+
+**A rate limit I added yesterday.** The per-address login limiter allows twenty attempts a
+quarter hour and the suite signs in afresh in every test. It was counting *successes* —
+it has to run before the PIN can be judged, so a correct sign-in was charged to the
+brute-force budget too. That is not a test problem: the gym's staff and the kiosk share one
+broadband connection, so a busy morning could lock the owner out of their own till. A
+success is refunded now and the limit counts failures, which is what the kiosk pairing
+limiter already did. ADR-131.
+
+**A wait that could not succeed.** `waitForHydration` waits for a hydrated `<input>`, and
+seven of the thirteen screens have no text field. Each burned thirty seconds and failed
+before axe ran; the suite took eight minutes to report nothing. It finishes in forty-six
+seconds now.
+
+Then the real findings. Nine of thirteen screens failed, all from four places, and the
+measurements are the story:
+
+    fee chip      colour on its own tint     AA wants 4.5
+    paid          3.86
+    due soon      3.31      <- how reception sees who owes money
+    none          2.84      <- worst in the set
+    expired       4.78      <- the only one that passed
+
+Each colour is darkened by the smallest hue-preserving amount that clears it, solved
+numerically rather than by eye. `opacity-70` on every fee-tab count and `opacity-80` on the
+dashboard tile captions had to go with them — dimming costs about a point and a half, more
+than the darker colour buys back, and the members screen alone reported 185 failing nodes
+from it. The attendance calendar's out-of-month and future dates were `text-brand-stone/40`,
+1.65:1, a date nobody reads on a phone at a counter; there is no faint-but-legible grey on
+white, so a future day is ordinary secondary text and a next-month day shows nothing, being
+padding. And the reports charts were naming bare `<span>`s, which ARIA forbids — the
+gender-split segments announced as nothing at all until they were given `role="img"`.
+
+**38 of 38 axe assertions pass now**: thirteen CRM screens and five public pages, at 360px
+and at 1440px. The suite has never been green before.
+
+### The headers are verified live, not inferred
+
+SEC-001 said "verified locally; live delivery unverified". Checked against a running
+production build: exactly one CSP per area and the right one, on `/`, `/crm/login`,
+`/checkin` and `/api/v1/health/live`; `nosniff`, referrer policy, framing refusal,
+permissions policy and HSTS everywhere; `no-store` on the CRM; no `x-powered-by`. Fonts and
+built chunks come back `public, max-age=31536000, immutable`, so a second visit re-downloads
+nothing — one more slowness theory ruled out with evidence rather than opinion.
+
+### The dashboard saving is measured now
+
+Against the seeded register — 220 members, 3,299 memberships, 5,308 check-ins — twenty runs
+each: **median 17.1 ms → 9.6 ms**, mean 16.8 → 9.7. And every number is identical between
+the two implementations, down to the expected-fee total that the rewrite was most likely to
+get wrong. That is at *zero* network latency, which is the point: the saving grows with the
+round trip, and the round trip here is the problem.
+
+### Which brings us to the thing code cannot fix (PERF-007)
+
+The owner confirmed it: **the Coolify VPS is in Lithuania. Supabase is in Mumbai.** The
+database is about 6,500 km from the application, and the gym's own staff are in Ghaziabad —
+so every tap travels India → Lithuania → Mumbai → Lithuania → India. Two of those legs are
+intercontinental and neither is doing any work.
+
+Cutting six serial round trips to two (PERF-001) and unblocking the pool (PERF-004) matter
+much more at this distance than they would next door, which is why they were worth doing.
+But the remaining round trips still cost more than everything else on this page put
+together, and no amount of query work recovers them. Moving the application to an Indian
+region is the single largest speed-up available, and it is the owner's to make.
+
+Gates: typecheck 8/8, lint clean, 2,294 unit tests, 119 integration tests, 38 axe
+assertions, `next build` clean.
+
+**Still open:** PERF-006 (the reports page's unbounded read, left alone deliberately), and
+Phase 7 as a *design* exercise — the accessibility floor is now met and measured, but
+nobody has been asked what they want the screens to look like.

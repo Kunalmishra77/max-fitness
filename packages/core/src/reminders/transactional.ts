@@ -88,6 +88,24 @@ export function buildTrialWelcomeMessage(input: {
   };
 }
 
+/**
+ * "We have your form" (MEM-001).
+ *
+ * Keyed on the verification request rather than the member, so a member who submits the
+ * form twice — a second phone, a lost tab — gets one acknowledgement per request and the
+ * outbox's unique dedupe key does the rest. `VERIFICATION` purpose, because that is the
+ * conversation it belongs to; it needs no new purpose and so no migration.
+ */
+export function buildSignupReceivedMessage(input: { verificationId: string; firstName: string; language: Language }): TransactionalMessage {
+  return {
+    templateName: 'mf_signup_received',
+    language: input.language,
+    idempotencyKey: `signup-received:${input.verificationId}`,
+    purpose: 'VERIFICATION',
+    variables: { firstName: input.firstName },
+  };
+}
+
 export function buildVerificationApprovedMessage(input: { verificationId: string; firstName: string; language: Language; endDate: ISTDate }): TransactionalMessage {
   return {
     templateName: 'mf_verification_approved',

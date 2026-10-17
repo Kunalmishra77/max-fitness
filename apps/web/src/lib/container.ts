@@ -91,10 +91,14 @@ function build(): Container {
   const env = parseEnv();
   const clock = systemClock;
 
-  // Transaction pooler (:6543) with a small pool — the pooler is the real pool (ADR-010).
+  /**
+   * Transaction pooler (:6543), which multiplexes these onto far fewer backend
+   * connections (ADR-010). The pool is sized for the widest screen's fan-out rather than
+   * for one query per request — see `WEB_DB_POOL_MAX` (PERF-004).
+   */
   const prisma = getPrismaClient({
     connectionString: env.DATABASE_URL,
-    poolMax: 5,
+    poolMax: env.WEB_DB_POOL_MAX,
     logQueries: env.LOG_LEVEL === 'debug' || env.LOG_LEVEL === 'trace',
   });
 

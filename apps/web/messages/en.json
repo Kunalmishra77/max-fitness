@@ -19,6 +19,42 @@
     "demo": "Demo",
     "placeholder": "Placeholder"
   },
+  "errors": {
+    "notFound": {
+      "title": "This page does not exist",
+      "body": "The link may be old, or mistyped. Nothing is wrong with your membership.",
+      "home": "Go to the home page",
+      "contact": "Contact the gym"
+    },
+    "serverError": {
+      "title": "Something went wrong at our end",
+      "body": "This is our fault, not yours. Nothing you entered has been lost — try again in a moment.",
+      "retry": "Try again",
+      "home": "Go to the home page",
+      "reference": "If you tell us about this, quote: {digest}"
+    },
+    "crmNotFound": {
+      "title": "This screen does not exist",
+      "body": "The member or page may have been removed. Go back to Today and try again from there.",
+      "home": "Go to Today",
+      "members": "Open the register"
+    },
+    "crmError": {
+      "title": "This screen could not open",
+      "body": "Nothing has been saved or changed. Try again — if it keeps happening, the internet or the database may be down.",
+      "retry": "Try again",
+      "home": "Go to Today",
+      "reference": "Reference: {digest}"
+    },
+    "checkinError": {
+      "title": "The screen could not load",
+      "body": "Please tell the person at reception. Attendance can be marked by hand.",
+      "retry": "Try again"
+    },
+    "loading": {
+      "label": "Loading"
+    }
+  },
   "foundation": {
     "title": "Foundation check",
     "subtitle": "Phase 1 wiring proof — web, core rules and Supabase are talking to each other.",
@@ -665,6 +701,7 @@
       "invalid": "Mobile number or PIN is wrong.",
       "attemptsLeft": "{count} tries left",
       "locked": "Too many wrong PINs. Try again in {minutes} minutes.",
+      "tooManyAttempts": "Too many sign-in attempts from this connection. Wait {minutes} minutes and try again.",
       "generic": "Something went wrong. Please try again.",
       "logout": "Log out",
       "welcome": "Welcome back",
@@ -739,7 +776,10 @@
         "step2Help": "Members fill their own details in. New or existing, same code.",
         "step3": "Set up the attendance phone",
         "step3Help": "A phone on the desk that marks people in by their face."
-      }
+      },
+      "waitingTitle": "Waiting on you",
+      "waitingApprovals": "{count, plural, one {# QR sign-up to approve} other {# QR sign-ups to approve}}",
+      "waitingPayment": "{count, plural, one {# person waiting to pay} other {# people waiting to pay}}"
     },
     "feeState": {
       "PAID": "Fees paid",
@@ -795,7 +835,8 @@
       "countOf": "{shown} of {total} members — refine the search to see the rest",
       "awaitingPayment": "{count, plural, one {# person filled the form but has not paid} other {# people filled the form but have not paid}}",
       "chase": "See them",
-      "months": "{count, plural, one {# month} other {# months}}"
+      "months": "{count, plural, one {# month} other {# months}}",
+      "showMore": "Show more members"
     },
     "profile": {
       "call": "Call",
@@ -878,7 +919,9 @@
       "paidTill": "Fees paid till",
       "whatsappOptIn": "WhatsApp",
       "yes": "Agreed",
-      "no": "Not agreed"
+      "no": "Not agreed",
+      "attendanceSince": "Coming here since {date}",
+      "attendanceLast": "last came {date}"
     },
     "renew": {
       "title": "Take fees",
@@ -1080,7 +1123,41 @@
       "undone": "Attendance undone",
       "failed": "Could not mark it. Please try again.",
       "notAllowed": "You are not allowed to mark attendance.",
-      "callListed": "Fees have run out — added to the top of today’s calls"
+      "callListed": "Fees have run out — added to the top of today’s calls",
+      "tabHistory": "History",
+      "historyTitle": "Attendance history",
+      "presets": {
+        "TODAY": "Today",
+        "YESTERDAY": "Yesterday",
+        "THIS_WEEK": "This week",
+        "LAST_WEEK": "Last week",
+        "THIS_MONTH": "This month",
+        "LAST_MONTH": "Last month",
+        "THIS_YEAR": "This year",
+        "LAST_YEAR": "Last year",
+        "CUSTOM": "Custom dates"
+      },
+      "rangeFrom": "From",
+      "rangeTo": "To",
+      "rangeApply": "Show",
+      "rangeReset": "Back to this month",
+      "rangeLabel": "{from} to {to}",
+      "rangeTooLong": "That range is too long. Pick up to {days} days.",
+      "rangeFuture": "That range has not happened yet.",
+      "statVisits": "Visits",
+      "statUnique": "Different members",
+      "statAverage": "Average a day",
+      "statBusiest": "Busiest day",
+      "statNone": "—",
+      "dayTitle": "{date}",
+      "dayEmpty": "Nobody came in on this day.",
+      "visits": "{count, plural, =0 {no visits} one {# visit} other {# visits}}",
+      "prevMonth": "Previous month",
+      "nextMonth": "Next month",
+      "goToday": "Go to today",
+      "weekdays": "Mon,Tue,Wed,Thu,Fri,Sat,Sun",
+      "exportCsv": "Download CSV",
+      "exportHint": "The dates shown, one row per visit."
     },
     "leads": {
       "title": "Enquiries",
@@ -1189,7 +1266,23 @@
       "monthNext": "Later month",
       "monthThis": "This month",
       "viewing": "Showing {month}",
-      "genderNone": "No active members yet"
+      "genderNone": "No active members yet",
+      "periods": {
+        "WEEK": "This week",
+        "MONTH": "This month",
+        "YEAR": "This year",
+        "CUSTOM": "Custom dates"
+      },
+      "periodWeek": "This week",
+      "periodYear": "This year",
+      "periodRange": "{from} to {to}",
+      "periodFrom": "From",
+      "periodTo": "To",
+      "periodApply": "Show",
+      "periodTooLong": "That range is too long. Pick up to {days} days. Showing this month instead.",
+      "periodFuture": "That range has not happened yet. Showing this month instead.",
+      "comparedTo": "compared with the same days before",
+      "exportCsv": "Download CSV"
     },
     "settings": {
       "title": "Settings",
@@ -1576,6 +1669,10 @@
         "label": "Settings",
         "desc": "Prices, hours, messages and more"
       },
+      "audit": {
+        "label": "Audit trail",
+        "desc": "Every change staff and the owner made"
+      },
       "pin": {
         "label": "Change my PIN",
         "desc": "Set a new PIN for your login"
@@ -1936,6 +2033,51 @@
       "noPlan": "No plan chosen",
       "chose": "Chose {months, plural, one {# month} other {# months}}",
       "since": "waiting {days, plural, =0 {since today} one {# day} other {# days}}"
+    },
+    "audit": {
+      "title": "Audit trail",
+      "subtitle": "Every change staff and the owner made",
+      "ownerOnly": "Only the owner can read the audit trail.",
+      "empty": "Nothing recorded for these dates.",
+      "from": "From",
+      "to": "To",
+      "action": "Action",
+      "allActions": "All actions",
+      "apply": "Show",
+      "reset": "Clear filters",
+      "older": "Show older",
+      "by": "by {name}",
+      "bySystem": "by the system",
+      "byWebhook": "by a payment or WhatsApp callback",
+      "byKiosk": "by the attendance phone",
+      "byMember": "by the member",
+      "byUnknown": "by someone no longer on the staff list",
+      "changed": "{count, plural, one {# field changed} other {# fields changed}}",
+      "noChanges": "No before-and-after was recorded for this action.",
+      "redactedNote": "Numbers, names and anything secret are masked here on purpose.",
+      "actions": {
+        "payment.void": "Payment voided",
+        "member.edit": "Member details changed",
+        "member.erase": "Member erased",
+        "member.export": "Member data exported",
+        "member.import": "Register imported",
+        "member.reminders": "Member reminders changed",
+        "member.unsubscribed": "Member unsubscribed",
+        "verification.approve": "QR sign-up approved",
+        "verification.reject": "QR sign-up rejected",
+        "settings.update": "Settings changed",
+        "reminders.update": "Reminder rules changed",
+        "plans.price": "Plan price changed",
+        "plans.active": "Plan switched on or off",
+        "staff.add": "Staff added",
+        "staff.pin": "Staff PIN reset",
+        "staff.activate": "Staff switched on",
+        "staff.deactivate": "Staff switched off",
+        "bot.config": "Assistant settings changed",
+        "bot.document": "Assistant knowledge changed",
+        "create": "Created",
+        "merge": "Records merged"
+      }
     }
   },
   "photos": {

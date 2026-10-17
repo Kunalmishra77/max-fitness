@@ -4,6 +4,7 @@ import {
   buildAnnouncement,
   buildBirthdayWish,
   buildReceiptMessage,
+  buildSignupReceivedMessage,
   buildVerificationApprovedMessage,
   buildMandateCancelledMessage,
   buildMandateHaltedMessage,
@@ -255,6 +256,32 @@ export function messageOutboxHandlers(deps: MessageJobDeps): OutboxHandlers {
       const member = await data().member(memberId);
       if (member?.memberCode == null) return;
       await sendTemplate(deps, buildWelcomeMessage({ memberId, firstName: member.firstName, language: member.language, memberCode: member.memberCode }), member.mobile, memberId, null);
+    },
+
+    /**
+     * MEM-001: the form arrived.
+     *
+     * No `endDate` guard, unlike the approval below — that is exactly the difference
+     * between the two messages. At this point there is no confirmed cover and no member
+     * code, and waiting for one would mean the acknowledgement never goes.
+     *
+     * No unsubscribe button either. The member has just asked to join; offering to stop
+     * messaging them in the same breath reads as a mistake, and the approval message that
+     * follows carries the button in the normal way.
+     */
+    'whatsapp.signup_received': async (event) => {
+      const memberId = memberIdOf(event);
+      if (memberId === null) return;
+      const member = await data().member(memberId);
+      if (member === null) return;
+      const verificationId = event.dedupeKey.split(':')[1] ?? memberId;
+      await sendTemplate(
+        deps,
+        buildSignupReceivedMessage({ verificationId, firstName: member.firstName, language: member.language }),
+        member.mobile,
+        memberId,
+        null,
+      );
     },
 
     'whatsapp.verification_approved': async (event) => {

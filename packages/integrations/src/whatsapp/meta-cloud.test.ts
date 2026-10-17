@@ -28,7 +28,7 @@ const fail = (status: number, code: number, message = 'nope') => ({
 
 function provider(fetchImpl: unknown, templateLanguages: ReadonlyArray<'en' | 'hi'> = ['en', 'hi']) {
   return new MetaCloudWhatsAppProvider({
-    phoneNumberId: '1394917043704455',
+    phoneNumberId: '100000000000001',
     accessToken: 'tok',
     graphApiVersion: 'v26.0',
     appSecret: 'secret',
@@ -58,7 +58,7 @@ describe('MetaCloudWhatsAppProvider', () => {
     await sendRenewal(provider(fetchImpl));
 
     const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, { headers: Record<string, string> }];
-    expect(url).toBe('https://graph.facebook.com/v26.0/1394917043704455/messages');
+    expect(url).toBe('https://graph.facebook.com/v26.0/100000000000001/messages');
     expect(init.headers['Authorization']).toBe('Bearer tok');
   });
 
@@ -182,7 +182,7 @@ describe('MetaCloudWhatsAppProvider', () => {
       to: TO,
       templateName: 'mf_verification_approved',
       language: 'en',
-      variables: { firstName: 'Kunal', endDate: '15 Oct 2026' },
+      variables: { firstName: 'Ramesh', endDate: '15 Oct 2026' },
       idempotencyKey: 'ver:1',
       buttons: [{ payload: 'UNSUB.tok', label: 'unsubscribe' }],
     });

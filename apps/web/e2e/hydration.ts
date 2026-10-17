@@ -17,3 +17,29 @@ export async function waitForHydration(page: Page, selector = 'input'): Promise<
     { timeout: 30_000 },
   );
 }
+
+/**
+ * Waits until a screen is settled enough to be audited, whatever is on it.
+ *
+ * `waitForHydration` looks for a hydrated `<input>`, which is right for a test that is
+ * about to type and wrong for one that is about to read. Seven of Max Register's screens
+ * — Today, calls, leads, verify, the waiting list, more — have no text field at all, so
+ * the accessibility block timed out on every one of them after thirty seconds and the
+ * suite could never have gone green.
+ *
+ * So: wait for the network to go quiet, then for React to have attached to *something*
+ * inside `main`. That is the real precondition for an audit — the markup a client
+ * component adds is there — and it holds on a screen made entirely of links.
+ */
+export async function waitForScreen(page: Page): Promise<void> {
+  await page.waitForLoadState('networkidle').catch(() => undefined);
+  await page.waitForFunction(
+    () => {
+      const root = document.querySelector('main') ?? document.body;
+      const nodes = [root, ...Array.from(root.querySelectorAll('*')).slice(0, 400)];
+      return nodes.some((el) => Object.keys(el).some((key) => key.startsWith('__react')));
+    },
+    undefined,
+    { timeout: 30_000 },
+  );
+}

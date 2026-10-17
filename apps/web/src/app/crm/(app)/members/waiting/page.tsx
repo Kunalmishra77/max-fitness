@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
+import { can } from '@mfp/core';
 import { BottomNav, CrmHeader, CRM_CARD } from '@/components/crm/crm-chrome';
 import { CrmIcon } from '@/components/crm/crm-icons';
 import { cn } from '@/lib/cn';
@@ -29,9 +30,30 @@ export const dynamic = 'force-dynamic';
 const DAY_MS = 86_400_000;
 
 export default async function CrmWaitingForPaymentPage() {
-  const { gym, today, reader } = await requireCrmContext();
+  const { actor, gym, today, reader } = await requireCrmContext();
   const t = await getTranslations('crm');
   const { storage, clock } = getContainer();
+
+  /**
+   * SEC-011. This was the one screen listing members without asking first.
+   *
+   * It made no practical difference — every role holds `member.view` today — but it is a
+   * list of names and unmasked mobile numbers, and security-plan.md §3.1 says deny by
+   * default. Relying on the fact that no current role is excluded means the day somebody
+   * narrows `member.view`, every sibling screen starts refusing and this one keeps
+   * showing. The refusal matches the pattern the other screens use.
+   */
+  if (!can(actor, 'member.view', clock.now())) {
+    return (
+      <>
+        <CrmHeader title={t('waiting.title')} back="/crm/members" />
+        <p role="alert" className="m-4 rounded-panel bg-tint-fee-none-bg p-4 text-crm-body font-semibold text-brand-obsidian">
+          {t('verify.errors.notAllowed')}
+        </p>
+        <BottomNav active="members" />
+      </>
+    );
+  }
 
   const members = await reader.members(gym.id, today, { awaitingPayment: true, limit: 200 });
   const now = clock.now().getTime();

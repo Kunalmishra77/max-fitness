@@ -1,6 +1,6 @@
 import { mkdtemp, readFile, rm, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { LocalStorageDriver } from './local';
 
@@ -63,11 +63,45 @@ describe('LocalStorageDriver', () => {
     expect(await driver.exists('selfies/nope')).toBe(false);
   });
 
-  it('refuses a key that tries to escape the storage root', async () => {
-    await expect(driver.get('../../../etc/passwd')).rejects.toThrow(/outside the storage root/);
-    await expect(driver.delete('..\\..\\windows\\system32\\config')).rejects.toThrow(
-      /outside the storage root/,
-    );
+  /**
+   * The guard is `#pathFor`, which resolves the joined path and refuses anything that is
+   * not under the root.
+   *
+   * This test used to assert that a Windows-style key — `..\..\windows\system32` —
+   * was *refused*, and it failed on every Linux and macOS machine, CI included. The
+   * assertion was wrong, not the driver: on POSIX a backslash is an ordinary filename
+   * character, so that string is a single path segment sitting inside the root and there
+   * is nothing to refuse. It only ever passed on Windows.
+   *
+   * What matters is the property, which holds on both: a key may not reach outside the
+   * root, and a key that merely *looks* like traversal on another platform is treated as
+   * the harmless filename it actually is. Both halves are asserted, per platform, so this
+   * cannot quietly start passing for the wrong reason again.
+   */
+  it('refuses a key that escapes the storage root, on every method', async () => {
+    for (const escape of ['../../../etc/passwd', 'selfies/../../escape', '../']) {
+      await expect(driver.get(escape), escape).rejects.toThrow(/outside the storage root/);
+      await expect(driver.delete(escape), escape).rejects.toThrow(/outside the storage root/);
+      await expect(driver.exists(escape), escape).rejects.toThrow(/outside the storage root/);
+      await expect(driver.signedUrl(escape, 60), escape).rejects.toThrow(/outside the storage root/);
+    }
+  });
+
+  it('treats a backslash key as a filename, because on POSIX that is what it is', async () => {
+    const key = '..\\..\\windows\\system32\\config';
+
+    if (sep === '\\') {
+      // On Windows the same string really is traversal, and must be refused.
+      await expect(driver.delete(key)).rejects.toThrow(/outside the storage root/);
+      return;
+    }
+
+    // On POSIX it is one legal filename directly inside the root: no escape happens, so
+    // deleting a file that is not there is the correct no-op, and reading it is a plain
+    // missing-file error rather than a refusal.
+    await expect(driver.delete(key)).resolves.toBeUndefined();
+    expect(await driver.exists(key)).toBe(false);
+    await expect(driver.get(key)).rejects.toThrow(/ENOENT/);
   });
 
   it('refuses a prefix containing traversal or nothing usable', async () => {

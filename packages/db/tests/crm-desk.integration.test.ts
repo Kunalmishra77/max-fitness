@@ -370,7 +370,7 @@ suite('CRM fee desk against Postgres', () => {
     expect(fromDbDate(event.attendanceDate)).toBe(today);
     // The cooldown and the "not coming" list are both read from this column.
     expect((await prisma.member.findUniqueOrThrow({ where: { id: memberId } })).lastAttendanceAt).toEqual(clock.now());
-    expect((await reader.attendanceToday(gymId, today)).map((row) => row.id)).toContain(marked.eventId);
+    expect((await reader.attendanceOn(gymId, today)).map((row) => row.id)).toContain(marked.eventId);
 
     // Walking past again inside the cooldown is the same visit (BR-9.1).
     const again = await markAttendance({ memberId, clientEventId: unique('tap') }, { actor, clock, uow: attendanceUow, cooldownMinutes: 180 });
@@ -381,7 +381,7 @@ suite('CRM fee desk against Postgres', () => {
 
     expect((await prisma.attendanceEvent.findUniqueOrThrow({ where: { id: marked.eventId! } })).voidedAt).not.toBeNull();
     expect((await prisma.member.findUniqueOrThrow({ where: { id: memberId } })).lastAttendanceAt).toBeNull();
-    expect((await reader.attendanceToday(gymId, today)).map((row) => row.id)).not.toContain(marked.eventId);
+    expect((await reader.attendanceOn(gymId, today)).map((row) => row.id)).not.toContain(marked.eventId);
   });
 
   it('treats the same tap arriving twice as one visit', async () => {

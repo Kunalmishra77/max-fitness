@@ -1,7 +1,22 @@
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
-import { busyHours, can, kioskShare, largestRemainderShares, membershipFlow, monthBoundsFor, moneyByMethod, readReportMonth } from '@mfp/core';
-import { addDays } from '@mfp/shared';
+import {
+  busyHours,
+  can,
+  isReportPeriod,
+  kioskShare,
+  largestRemainderShares,
+  MAX_RANGE_DAYS,
+  membershipFlow,
+  monthBoundsFor,
+  moneyByMethod,
+  periodEndToDate,
+  readReportMonth,
+  readReportPeriod,
+  type ReportPeriod,
+} from '@mfp/core';
+import { addDays, formatISTDate } from '@mfp/shared';
+import { pillClass } from '@/components/crm/crm-chrome';
 import { BottomNav, CrmHeader, rupees } from '@/components/crm/crm-chrome';
 import { CrmIcon } from '@/components/crm/crm-icons';
 import { BusyHoursChart, Meter, ShareBars, SplitBar } from '@/components/crm/report-charts';
@@ -17,6 +32,13 @@ import { reportsReader, requireCrmContext } from '@/lib/crm';
  *
  * "Reminder impact" is named but not measured: it needs the WhatsApp engine (Phase 6),
  * and a card that shows zero would say reminders do not work.
+ *
+ * **The period is chosen, not assumed (REP-001, REP-002).** It was a calendar month and
+ * nothing else, so "how did this week go" and "what did the year come to" had no answer.
+ * Every card's arithmetic is untouched: the pipeline already took a window plus the window
+ * before it, so a week, a year or a chosen range is the same shape and the figures mean
+ * exactly what they meant before. The month view in particular is byte-identical, which a
+ * test pins down — the owner reads it every day and it must not move.
  */
 
 export const dynamic = 'force-dynamic';
@@ -36,9 +58,13 @@ function Card({ title, subtitle, children }: { title: string; subtitle?: string;
   );
 }
 
-export default async function CrmReportsPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
+export default async function CrmReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string; period?: string; from?: string; to?: string }>;
+}) {
   const { actor, gym, today } = await requireCrmContext();
-  const { month: askedMonth } = await searchParams;
+  const { month: askedMonth, period: askedPeriod, from: askedFrom, to: askedTo } = await searchParams;
   const t = await getTranslations('crm');
 
   if (!can(actor, 'money.view', getContainer().clock.now())) {
@@ -53,11 +79,22 @@ export default async function CrmReportsPage({ searchParams }: { searchParams: P
     );
   }
 
-  // The month the owner asked for, or this one (ADR-098). "What did last month come to?"
-  // used to need a different screen; now it needs an arrow.
+  /**
+   * Which window the cards read (REP-001).
+   *
+   * The month arrows and the `?month=` they produce are kept exactly as they were, so an
+   * existing bookmark still lands where it did — a named month wins, and the period chips
+   * are what you use to leave the month view at all.
+   */
+  const askedForMonth = askedMonth !== undefined || !isReportPeriod(askedPeriod);
   const viewing = readReportMonth(askedMonth, today);
-  const month = monthBoundsFor(viewing, today);
+  const chosen = askedForMonth
+    ? { period: 'MONTH' as ReportPeriod, bounds: monthBoundsFor(viewing, today), problem: null }
+    : readReportPeriod({ period: askedPeriod, from: askedFrom, to: askedTo }, today);
+  const period = chosen.period;
+  const month = chosen.bounds;
   const isThisMonth = viewing === today.slice(0, 7);
+  const onMonth = period === 'MONTH';
 
   // The floor's own rhythm — who comes, and when — is about the gym as it is now, so those
   // two figures stay anchored on today whichever month's money is being read.
@@ -73,7 +110,33 @@ export default async function CrmReportsPage({ searchParams }: { searchParams: P
   );
   // Card subtitles said "This month" unconditionally; with a month picker above them that
   // would be wrong on every month but one.
-  const periodLabel = isThisMonth ? t('reports.thisMonth') : monthName;
+  const locale = actor.language === 'hi' ? 'hi-IN' : 'en-IN';
+  const rangeLabel = t('reports.periodRange', {
+    from: formatISTDate(month.start, locale, { year: true }),
+    to: formatISTDate(periodEndToDate(month, today), locale, { year: true }),
+  });
+  /**
+   * What the cards call the window they are describing.
+   *
+   * The month view keeps the words it had. The others say their own name where there is
+   * one and fall back to the dates for a chosen range, because "Custom dates" above a
+   * figure tells the owner nothing about which days it covers.
+   */
+  const periodLabel = onMonth
+    ? isThisMonth
+      ? t('reports.thisMonth')
+      : monthName
+    : period === 'WEEK'
+      ? t('reports.periodWeek')
+      : period === 'YEAR'
+        ? t('reports.periodYear')
+        : rangeLabel;
+  /** Keeps the chosen period on the export link and anywhere else that needs it. */
+  const periodQuery = onMonth
+    ? `month=${viewing}`
+    : period === 'CUSTOM'
+      ? `period=CUSTOM&from=${month.start}&to=${month.end}`
+      : `period=${period}`;
   const shift = (by: number) => {
     const [year, mon] = [Number(viewing.slice(0, 4)), Number(viewing.slice(5, 7))];
     const moved = new Date(Date.UTC(year, mon - 1 + by, 1));
@@ -110,9 +173,58 @@ export default async function CrmReportsPage({ searchParams }: { searchParams: P
     <>
       <CrmHeader title={t('reports.title')} subtitle={t('menu.reports.desc')} back="/crm/more" />
 
+      {/* REP-001: the window, chosen. Links rather than state, so a period can be
+          bookmarked and sent, and the whole screen still renders without JavaScript. */}
+      <section aria-label={t('reports.viewing', { month: periodLabel })} className="px-4 pt-3 lg:px-0">
+        <div className="flex flex-wrap gap-2">
+          {(['WEEK', 'MONTH', 'YEAR'] as const).map((key) => (
+            <Link key={key} href={key === 'MONTH' ? '/crm/reports' : `/crm/reports?period=${key}`} className={pillClass(period === key)}>
+              {t(`reports.periods.${key}` as never)}
+            </Link>
+          ))}
+          <span className={pillClass(period === 'CUSTOM')}>{t('reports.periods.CUSTOM')}</span>
+        </div>
+
+        {/* A plain GET form: the browser builds the query string and the result is a URL. */}
+        <form method="get" action="/crm/reports" className="mt-3 flex flex-wrap items-end gap-3">
+          <input type="hidden" name="period" value="CUSTOM" />
+          <label className="flex flex-col gap-1 text-small font-semibold text-brand-stone">
+            {t('reports.periodFrom')}
+            <input type="date" name="from" defaultValue={month.start} max={today} className="min-h-14 rounded-input border-2 border-brand-stone/40 bg-white px-3 text-crm-body text-brand-ink" />
+          </label>
+          <label className="flex flex-col gap-1 text-small font-semibold text-brand-stone">
+            {t('reports.periodTo')}
+            <input type="date" name="to" defaultValue={periodEndToDate(month, today)} max={today} className="min-h-14 rounded-input border-2 border-brand-stone/40 bg-white px-3 text-crm-body text-brand-ink" />
+          </label>
+          <button type="submit" className="min-h-14 rounded-button bg-brand-obsidian px-6 text-crm-body font-bold text-white">
+            {t('reports.periodApply')}
+          </button>
+        </form>
+
+        {chosen.problem === null ? null : (
+          <p role="alert" className="mt-3 rounded-panel bg-tint-fee-none-bg p-3 text-crm-body font-semibold text-brand-obsidian">
+            {chosen.problem === 'TOO_LONG' ? t('reports.periodTooLong', { days: MAX_RANGE_DAYS }) : t('reports.periodFuture')}
+          </p>
+        )}
+
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <p className="text-small text-brand-stone">{rangeLabel}</p>
+          {/* REP-003: the figures on screen, as rows, behind the same money.view check. */}
+          <a href={`/crm/reports/export?${periodQuery}`} className="flex min-h-11 items-center gap-2 rounded-button border-2 border-brand-obsidian px-4 text-small font-bold text-brand-obsidian">
+            <CrmIcon name="reports" className="size-4" />
+            {t('reports.exportCsv')}
+          </a>
+        </div>
+      </section>
+
       {/* Which month is being read, and the two arrows that change it (ADR-098). The
           forward arrow is absent in the current month rather than disabled: there is
-          nothing ahead to go to, and a dead button invites the tap anyway. */}
+          nothing ahead to go to, and a dead button invites the tap anyway.
+
+          Only on the month view: the arrows step by calendar month, and `monthName` is
+          read off the window's first day — on a week or a chosen range that is not a month
+          and the label would be a quiet lie. */}
+      {!onMonth ? null : (
       <nav aria-label={t('reports.viewing', { month: monthName })} className="flex items-center justify-between gap-3 px-4 pt-3 lg:px-0">
         <Link
           href={`/crm/reports?month=${shift(-1)}`}
@@ -134,6 +246,7 @@ export default async function CrmReportsPage({ searchParams }: { searchParams: P
           </Link>
         )}
       </nav>
+      )}
 
       <div className="grid gap-3 p-4 pb-24 lg:grid-cols-2 lg:gap-4 lg:p-0">
         <Card title={t('reports.money')}>

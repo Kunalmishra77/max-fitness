@@ -52,7 +52,7 @@ const SCREENS = [
 ];
 
 /** A member id to walk the per-member screens with, found at run time. */
-let someMemberId = null;
+let someMemberId;
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: WIDTH, height: 900 } });

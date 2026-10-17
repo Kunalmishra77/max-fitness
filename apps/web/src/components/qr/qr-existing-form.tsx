@@ -9,6 +9,8 @@ import { cn } from '@/lib/cn';
 import { CrmIcon } from '@/components/crm/crm-icons';
 import { SELFIE_REASONS } from './selfie-reasons';
 import { checkStep } from './step-check';
+import { useStepHistory } from './use-step-history';
+import { stepFailure } from './step-failure';
 
 /**
  * "I am already a member", on one page (client decision, ADR-075).
@@ -188,6 +190,15 @@ export function QrExistingForm({
   // One question on the screen at a time: the gym watched members struggle with the whole
   // form on a phone at reception and asked for this back (ADR-080).
   const [step, setStep] = useState(0);
+
+  /**
+   * The phone's own Back button walks back a step (MEM-005).
+   *
+   * Without this, a back gesture on a middle step left the form and took every answer
+   * with it — the selfie and the ID photographs included — at a reception desk with a
+   * queue. Nothing is stored; the component simply does not unmount.
+   */
+  useStepHistory(step, (previous) => setStep(previous));
   const [problems, setProblems] = useState<Record<string, string>>({});
   const [failure, setFailure] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -676,11 +687,27 @@ export function QrExistingForm({
         setSoftWarning(t(`stepCheck.${verdict.reason}` as never));
         return;
       }
-      setFailure(
-        verdict.member === undefined
-          ? t(`stepCheck.${verdict.reason}` as never)
-          : t('stepCheck.ALREADY_A_MEMBER_NAMED', { name: verdict.member.fullName }),
-      );
+      if (verdict.member !== undefined) {
+        setFailure(t('stepCheck.ALREADY_A_MEMBER_NAMED', { name: verdict.member.fullName }));
+        return;
+      }
+
+      /**
+       * MEM-003 / MEM-004: say what is wrong, where it is wrong.
+       *
+       * This used to be `t(`stepCheck.${reason}`)` for every refusal, and only three of
+       * those keys were ever written while the endpoint returns seventeen — so a refused
+       * selfie or ID card put the key itself on the screen. The wording existed all
+       * along in the tables the submission path uses; `stepFailure` routes both paths
+       * through them, and says which field the message belongs beside.
+       */
+      const failure = stepFailure(verdict.reason);
+      if (failure.field === null) {
+        setFailure(t(failure.key as never));
+        return;
+      }
+      // Beside the answer, on the step still holding it, so it can actually be retaken.
+      setProblems({ [failure.field]: t(failure.key as never) });
     });
   };
 

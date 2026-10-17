@@ -69,17 +69,34 @@ test.describe('sign-up modal', () => {
     await dialog.getByRole('button', { name: 'Continue to payment' }).click();
 
     await expect(dialog.getByText('Step 3 of 3: Payment')).toBeVisible();
-    await dialog.getByRole('button', { name: /^Pay ₹/ }).click();
-    await page.getByRole('dialog', { name: 'Demo payment' }).getByRole('button', { name: 'Simulate success' }).click();
+
+    /**
+     * Reserve and pay at the desk, because that is what the website does here (ADR-093).
+     *
+     * This used to press an online "Pay ₹…" button and then a simulated-payment dialog.
+     * `onlinePaymentsLive()` requires `DEMO_MODE === 'false'` **and** a real gateway
+     * secret, and it is deliberately that strict: in demo mode the payment window
+     * completes the order without any money moving, so the day the site answers to the
+     * gym's own domain a stranger pressing Pay would become an ACTIVE member for free.
+     *
+     * So in demo mode there is no online button at all — and the end-to-end job sets
+     * `DEMO_MODE: 'true'` with no Razorpay secret, which means this test was asking CI for
+     * a button CI's own configuration forbids. It could never have passed there.
+     *
+     * The reception path is the one a visitor actually gets, and the one every QR arrival
+     * already takes.
+     */
+    await expect(dialog.getByRole('button', { name: /^Pay ₹/ })).toHaveCount(0);
+    await dialog.getByRole('button', { name: 'Pay at reception' }).click();
 
     // The confirmation stays in the sheet, over the landing page.
     await expect(page).toHaveURL(/\/join\/done$/);
-    await expect(dialog.getByRole('heading', { name: "You're a member, Manish." })).toBeVisible();
-    await expect(dialog.getByRole('link', { name: 'Download receipt' })).toBeVisible();
+    await expect(dialog.getByRole('heading', { name: 'Your plan is reserved, Manish.' })).toBeVisible();
+    await expect(dialog.getByText(/Pay ₹[\d,]+ at reception by/)).toBeVisible();
 
-    // Opened directly, the same confirmation is a full page.
+    // Opened directly, the same confirmation is a full page rather than a sheet.
     await page.reload();
-    await expect(page.getByRole('heading', { name: "You're a member, Manish." })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Your plan is reserved, Manish.' })).toBeVisible();
     await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 

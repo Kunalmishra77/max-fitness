@@ -89,10 +89,44 @@ export class PrismaReportsReader {
       paidBetween(month.start, month.end),
       // Last month only up to the same day: a month so far is compared like with like.
       paidBetween(month.previousStart, month.previousToDate),
-      this.#prisma.membership.findMany({
-        where: { gymId, status: 'CONFIRMED', startDate: { not: null }, confirmedAt: { not: null } },
-        select: { memberId: true, startDate: true, endDate: true, confirmedAt: true },
-      }),
+      /**
+       * The memberships behind new / renewed / renewal rate (PERF-006).
+       *
+       * This read **every confirmed membership the gym had ever sold**, every time the
+       * owner opened Reports — one row per renewal, for ever, to compute four counters.
+       *
+       * `membershipFlow` needs history and not just this month: whether a membership is
+       * a renewal depends on the one before it, and whether one was renewed depends on
+       * the one after. What it does *not* need is members with nothing in the month. It
+       * only ever increments a counter for a row whose `confirmedAt` or whose `endDate`
+       * falls inside the month, so a member with neither contributes exactly zero — and
+       * dropping them cannot change an answer.
+       *
+       * So: every membership of the members who have *something* in this month. One
+       * query, because splitting it into "find the members, then fetch their rows" would
+       * trade a wide result for a second round trip to Mumbai, and the round trip is the
+       * expensive half (ADR-010).
+       *
+       * The inner condition mirrors the outer `WHERE` exactly, including the two `IS NOT
+       * NULL` tests, so a row that would have been discarded by the mapping below cannot
+       * drag its member's whole history in with it.
+       */
+      this.#prisma.$queryRaw<Array<{ memberId: string; startDate: Date; endDate: Date; confirmedAt: Date }>>`
+        SELECT m."memberId", m."startDate", m."endDate", m."confirmedAt"
+          FROM "Membership" m
+         WHERE m."gymId" = ${gymId} AND m."status" = 'CONFIRMED'
+           AND m."startDate" IS NOT NULL AND m."confirmedAt" IS NOT NULL
+           AND m."memberId" IN (
+             SELECT w."memberId"
+               FROM "Membership" w
+              WHERE w."gymId" = ${gymId} AND w."status" = 'CONFIRMED'
+                AND w."startDate" IS NOT NULL AND w."confirmedAt" IS NOT NULL
+                AND (
+                  (w."confirmedAt" >= ${istStart(month.start)} AND w."confirmedAt" < ${istStart(addDays(month.end, 1))})
+                  OR (w."endDate" >= ${toDbDate(month.start)} AND w."endDate" <= ${toDbDate(month.end)})
+                )
+           )
+      `,
       this.#prisma.attendanceEvent.findMany({
         where: { gymId, voidedAt: null, attendanceDate: { gte: toDbDate(window.attendanceFrom), lte: toDbDate(window.attendanceTo) } },
         select: { capturedAt: true, method: true },

@@ -34,6 +34,10 @@ export * from './members/birthdays';
 export * from './members/birthday-wish';
 export * from './announcements/announcement';
 export * from './attendance/cooldown';
+// Reading the register for a day that is not today (ATT-001 … ATT-006).
+export * from './attendance/history';
+// CSV that a spreadsheet opens and cannot be tricked by (ATT-007).
+export * from './reports/csv';
 export * from './payments/receipt-number';
 export * from './tokens/signed-links';
 
@@ -71,11 +75,15 @@ export * from './calls/signup-not-paid';
 export * from './crm/permissions';
 export * from './crm/login';
 export * from './crm/attendance-trend';
+// Showing an audit row without leaking what it audits (CRM-AUDIT).
+export * from './crm/audit-summary';
 export * from './crm/add-member';
 export * from './crm/desk-payment';
 export * from './crm/elevate';
 export * from './crm/lead-pipeline';
 export * from './reports/reports';
+// Reading the reports over a week, a year or a chosen range (REP-001, REP-002).
+export * from './reports/period';
 export * from './crm/mark-attendance';
 export * from './crm/settings';
 export * from './crm/staff';

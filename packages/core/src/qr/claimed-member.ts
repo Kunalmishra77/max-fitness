@@ -10,7 +10,7 @@
  * name on their own number: same face, same mobile, a second member.
  *
  * **Keyed on the name alone**, the owner walked through again by filling the form as
- * *Indresh Mishra* — a name the gym already held — on a number the gym had never seen.
+ * under a name the gym already held — on a number the gym had never seen.
  * Same face, and the register ended up with MF-0001 and MF-0014, both of them him.
  *
  * It is both or neither. A member finishing their paper entry gives the number the gym

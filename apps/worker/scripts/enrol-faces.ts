@@ -69,7 +69,7 @@ async function main(): Promise<void> {
     S3_BUCKET: need('S3_BUCKET'),
     LINK_TOKEN_SECRET: need('LINK_TOKEN_SECRET'),
     STORAGE_LOCAL_PATH: '',
-  } as Parameters<typeof createStorageDriver>[0]);
+  });
   // Files are served through the app so the signature can be checked, never straight from
   // the bucket, so a relative path needs the site in front of it.
   const appUrl = process.env['APP_URL'] ?? 'https://maxfitnessgym.co.in';

@@ -1,7 +1,9 @@
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { cache } from 'react';
 import {
   PrismaAttendanceUnitOfWork,
+  PrismaAuditReader,
   PrismaCallOutcomeUnitOfWork,
   PrismaCrmAuthStore,
   PrismaCrmReader,
@@ -34,6 +36,7 @@ import { Argon2PinHasher } from '@mfp/integrations/auth';
 import { todayIST, type ISTDate } from '@mfp/shared';
 import { getContainer } from './container';
 import { checkoutSettingsOf, loadGym, type GymContext } from './gym';
+import { clientIp, crmLoginLimiters, limiterKey } from './rate-limit';
 import { withOneRetry } from './retry';
 import { hashIp } from './signup-access';
 
@@ -58,24 +61,44 @@ async function sessionToken(): Promise<string | null> {
   return (await cookies()).get(CRM_SESSION_COOKIE)?.value ?? null;
 }
 
-export async function currentActor(): Promise<CrmSessionActor | null> {
-  const token = await sessionToken();
-  if (token === null) return null;
-
+/**
+ * Resolve one session token to an actor, at most once per request (PERF-001).
+ *
+ * Memoised with React's `cache`, which is per-request: a CRM screen asks who is signed
+ * in from its layout and again from its page, and both now share one lookup. Keyed on
+ * the token, so two different cookies in one request — which cannot happen — would not
+ * share an answer anyway.
+ *
+ * The gym and the session row are read **together** rather than one after the other.
+ * `receptionMayTakePayments` is not part of the session query — `actorFor` only copies
+ * it onto the actor it returns — so there was never a reason for the second query to
+ * wait for the first.
+ */
+const actorForToken = cache(async (token: string): Promise<CrmSessionActor | null> => {
   const container = getContainer();
   try {
     // A failed lookup is tried once more before it counts as "no session": otherwise a
     // passing database hiccup signs staff out in the middle of their work.
     return await withOneRetry(async () => {
-      const gym = await loadGym(container);
+      const [gym, actor] = await Promise.all([
+        loadGym(container),
+        new PrismaCrmSessions(container.prisma).actorFor(token, container.clock.now()),
+      ]);
+      if (actor === null) return null;
       // Whether reception may take fees is its own setting; this used to read the discount
       // switch, so turning discounts off also stopped reception taking fees (ADR-048).
-      return new PrismaCrmSessions(container.prisma).actorFor(token, container.clock.now(), gym.settings.pricing.receptionMayTakePayments);
+      return { ...actor, receptionMayTakePayments: gym.settings.pricing.receptionMayTakePayments };
     });
   } catch (error) {
     console.error(`[crm] session lookup failed: ${error instanceof Error ? error.name : 'Error'}`);
     return null;
   }
+});
+
+export async function currentActor(): Promise<CrmSessionActor | null> {
+  const token = await sessionToken();
+  if (token === null) return null;
+  return actorForToken(token);
 }
 
 /** Every CRM screen starts here; without a session it goes to the login page. */
@@ -84,15 +107,36 @@ export async function requireCrmContext(): Promise<CrmContext> {
   if (actor === null) redirect('/crm/login');
 
   const container = getContainer();
+  /**
+   * Free: `actorForToken` has already read the gym alongside the session row, and the
+   * read is memoised for this request, so this resolves without touching the database.
+   * Deliberately still sequential — asking for the gym before we know there is a session
+   * would turn a visitor with no cookie into an error page rather than a login screen.
+   */
   const gym = await loadGym(container);
   return { actor, gym, today: todayIST(container.clock), reader: new PrismaCrmReader(container.prisma) };
 }
 
-export type LoginOutcome = { ok: true } | { ok: false; code: 'INVALID_PIN' | 'ACCOUNT_LOCKED' | 'VALIDATION_FAILED' | 'INTERNAL'; attemptsLeft?: number; minutes?: number };
+export type LoginOutcome =
+  | { ok: true }
+  | { ok: false; code: 'INVALID_PIN' | 'ACCOUNT_LOCKED' | 'RATE_LIMITED' | 'VALIDATION_FAILED' | 'INTERNAL'; attemptsLeft?: number; minutes?: number };
 
 export async function signIn(input: { identifier: string; pin: string; trusted: boolean }): Promise<LoginOutcome> {
   const container = getContainer();
   const requestHeaders = await headers();
+  const ip = clientIp(requestHeaders);
+
+  /**
+   * Per-address limit before the PIN is even looked at (SEC-004).
+   *
+   * Checked first so a sweep through a list of staff numbers costs nothing to refuse,
+   * and — the reason it exists — so a lockout cannot be held open on the owner's own
+   * account for the price of one request every fifteen minutes.
+   */
+  const ipCheck = crmLoginLimiters.byIp.hit(limiterKey('crm-login-ip', ip));
+  if (!ipCheck.allowed) {
+    return { ok: false, code: 'RATE_LIMITED', minutes: Math.max(1, Math.ceil(ipCheck.retryAfterSeconds / 60)) };
+  }
 
   try {
     const gym = await loadGym(container);
@@ -100,7 +144,9 @@ export async function signIn(input: { identifier: string; pin: string; trusted: 
       {
         identifier: input.identifier,
         pin: input.pin,
-        ipHash: hashIp(requestHeaders.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown', container.env.LINK_TOKEN_SECRET),
+        // Was the left-most forwarded entry, which is the client's own claim: an
+        // audit row naming an address the attacker chose is worse than none (SEC-002).
+        ipHash: hashIp(ip, container.env.LINK_TOKEN_SECRET),
         userAgent: requestHeaders.get('user-agent')?.slice(0, 300) ?? null,
         trusted: input.trusted,
       },
@@ -111,6 +157,13 @@ export async function signIn(input: { identifier: string; pin: string; trusted: 
         gymId: gym.id,
       },
     );
+
+    /**
+     * The address check above ran before the PIN could be judged, so it counted this
+     * sign-in as though it might have been an attack. It was not: give it back, and let
+     * the limit measure failures (SEC-004).
+     */
+    crmLoginLimiters.byIp.refund(limiterKey('crm-login-ip', ip));
 
     (await cookies()).set(CRM_SESSION_COOKIE, token, {
       httpOnly: true,
@@ -261,6 +314,17 @@ export function staffReader() {
 export function settingsDeps() {
   const container = getContainer();
   return { clock: container.clock, uow: new PrismaSettingsUnitOfWork(container.prisma) };
+}
+
+/**
+ * The audit trail (CRM-AUDIT).
+ *
+ * Read-only by construction: there is no write side to hand out, because the table is
+ * append-only and a repository that could amend it would be a way to edit the record of
+ * somebody editing the record.
+ */
+export function auditReader() {
+  return new PrismaAuditReader(getContainer().prisma);
 }
 
 /** The rows behind the owner's reports (crm-module-spec §6). */
