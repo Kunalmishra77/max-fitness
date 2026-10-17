@@ -1,5 +1,6 @@
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { cache } from 'react';
 import {
   PrismaAttendanceUnitOfWork,
   PrismaAuditReader,
@@ -60,24 +61,44 @@ async function sessionToken(): Promise<string | null> {
   return (await cookies()).get(CRM_SESSION_COOKIE)?.value ?? null;
 }
 
-export async function currentActor(): Promise<CrmSessionActor | null> {
-  const token = await sessionToken();
-  if (token === null) return null;
-
+/**
+ * Resolve one session token to an actor, at most once per request (PERF-001).
+ *
+ * Memoised with React's `cache`, which is per-request: a CRM screen asks who is signed
+ * in from its layout and again from its page, and both now share one lookup. Keyed on
+ * the token, so two different cookies in one request — which cannot happen — would not
+ * share an answer anyway.
+ *
+ * The gym and the session row are read **together** rather than one after the other.
+ * `receptionMayTakePayments` is not part of the session query — `actorFor` only copies
+ * it onto the actor it returns — so there was never a reason for the second query to
+ * wait for the first.
+ */
+const actorForToken = cache(async (token: string): Promise<CrmSessionActor | null> => {
   const container = getContainer();
   try {
     // A failed lookup is tried once more before it counts as "no session": otherwise a
     // passing database hiccup signs staff out in the middle of their work.
     return await withOneRetry(async () => {
-      const gym = await loadGym(container);
+      const [gym, actor] = await Promise.all([
+        loadGym(container),
+        new PrismaCrmSessions(container.prisma).actorFor(token, container.clock.now()),
+      ]);
+      if (actor === null) return null;
       // Whether reception may take fees is its own setting; this used to read the discount
       // switch, so turning discounts off also stopped reception taking fees (ADR-048).
-      return new PrismaCrmSessions(container.prisma).actorFor(token, container.clock.now(), gym.settings.pricing.receptionMayTakePayments);
+      return { ...actor, receptionMayTakePayments: gym.settings.pricing.receptionMayTakePayments };
     });
   } catch (error) {
     console.error(`[crm] session lookup failed: ${error instanceof Error ? error.name : 'Error'}`);
     return null;
   }
+});
+
+export async function currentActor(): Promise<CrmSessionActor | null> {
+  const token = await sessionToken();
+  if (token === null) return null;
+  return actorForToken(token);
 }
 
 /** Every CRM screen starts here; without a session it goes to the login page. */
@@ -86,6 +107,12 @@ export async function requireCrmContext(): Promise<CrmContext> {
   if (actor === null) redirect('/crm/login');
 
   const container = getContainer();
+  /**
+   * Free: `actorForToken` has already read the gym alongside the session row, and the
+   * read is memoised for this request, so this resolves without touching the database.
+   * Deliberately still sequential — asking for the gym before we know there is a session
+   * would turn a visitor with no cookie into an error page rather than a login screen.
+   */
   const gym = await loadGym(container);
   return { actor, gym, today: todayIST(container.clock), reader: new PrismaCrmReader(container.prisma) };
 }
