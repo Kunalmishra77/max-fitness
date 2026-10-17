@@ -11,9 +11,26 @@ storeDir: E:/.pnpm-store
 
 # Versions are pinned once here and referenced as `catalog:` in every package.json,
 # so a bump happens in exactly one place. See CLAUDE.md §2.14 and TRD §3.
+# ── Forced transitive versions ────────────────────────────────────────────
+#
+# `proxy-addr` below 2.0.8 trusts an IPv4-mapped IPv6 address as though it were in a
+# trusted subnet (GHSA-jqcg-44mw-7w3h), which is the same class of bug as SEC-002 in this
+# repository. It arrives only through `@lhci/cli > express`, so it is a devDependency and
+# never reaches production — but `pnpm audit --audit-level critical` is a release gate
+# (security-plan.md §3.1) and a gate that is permanently red gates nothing.
+#
+# 2.0.8 is a patch release of the major express 4 already depends on, so this is the
+# narrowest possible fix. Remove it once `@lhci/cli` ships a version that pulls it in.
+overrides:
+  proxy-addr@<2.0.8: '>=2.0.8'
+
 catalog:
   # ── Runtime & framework ───────────────────────────────────────────────
-  next: 16.3.4
+  # 16.3.4 and 16.3.5 carry GHSA-vcvr-r3jv-pc5j, a remote code execution in `next/og`
+  # ImageResponse, patched in 16.3.6. `[locale]/opengraph-image.tsx` uses ImageResponse on
+  # a public unauthenticated route, so the vulnerable path was live. 16.3.8 is the latest
+  # patch of this major (CLAUDE.md §2.14).
+  next: 16.3.8
   react: 19.3.0
   react-dom: 19.3.0
   '@types/react': 19.3.0
