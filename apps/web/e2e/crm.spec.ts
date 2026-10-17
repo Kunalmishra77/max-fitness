@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { waitForHydration } from './hydration';
+import { waitForHydration, waitForScreen } from './hydration';
 
 /** A drawn face, never a photo of a person (scripts/make-face-fixture.mjs). */
 const FACE_PHOTO = fileURLToPath(new URL('./fixtures/face.jpg', import.meta.url));
@@ -614,7 +614,9 @@ test.describe('Max Register — accessibility', () => {
     test(`has no detectable accessibility violations — ${name}`, async ({ page }) => {
       await login(page, OWNER);
       await page.goto(path);
-      await waitForHydration(page);
+      // Not `waitForHydration`: it waits for a hydrated `<input>`, and most of these
+      // screens have no text field, so it timed out on all of them (see hydration.ts).
+      await waitForScreen(page);
 
       const results = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])

@@ -158,6 +158,13 @@ export async function signIn(input: { identifier: string; pin: string; trusted: 
       },
     );
 
+    /**
+     * The address check above ran before the PIN could be judged, so it counted this
+     * sign-in as though it might have been an attack. It was not: give it back, and let
+     * the limit measure failures (SEC-004).
+     */
+    crmLoginLimiters.byIp.refund(limiterKey('crm-login-ip', ip));
+
     (await cookies()).set(CRM_SESSION_COOKIE, token, {
       httpOnly: true,
       sameSite: 'lax',

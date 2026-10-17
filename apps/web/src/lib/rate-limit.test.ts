@@ -155,3 +155,64 @@ describe('clientIp — shapes an entry arrives in', () => {
     expect(clientIp(new Headers(), 1)).toBe('unknown');
   });
 });
+
+describe('refund — a success must not spend the brute-force budget (SEC-004)', () => {
+  /**
+   * The bug this prevents was found by running the CRM end-to-end suite against a real
+   * database: it signs in for each test, spent the twenty-per-quarter-hour allowance, and
+   * every later test was refused at the login screen. The gym has the same shape — all
+   * its staff and the kiosk behind one broadband connection — so this was never only a
+   * test problem.
+   */
+  it('lets an unlimited number of successful sign-ins through', () => {
+    const limiter = new SlidingWindowLimiter({ limit: 3, windowMs: 60_000 });
+
+    for (let i = 0; i < 50; i += 1) {
+      expect(limiter.hit('ip').allowed, `attempt ${i}`).toBe(true);
+      limiter.refund('ip');
+    }
+  });
+
+  it('still refuses once the failures alone reach the limit', () => {
+    const limiter = new SlidingWindowLimiter({ limit: 3, windowMs: 60_000 });
+
+    // Two good sign-ins, refunded, then three failures that are not.
+    limiter.hit('ip');
+    limiter.refund('ip');
+    limiter.hit('ip');
+    limiter.refund('ip');
+    expect(limiter.hit('ip').allowed).toBe(true);
+    expect(limiter.hit('ip').allowed).toBe(true);
+    expect(limiter.hit('ip').allowed).toBe(true);
+
+    expect(limiter.hit('ip').allowed).toBe(false);
+  });
+
+  it('gives back only the newest hit, so one refund cannot cancel another request\u2019s', () => {
+    const limiter = new SlidingWindowLimiter({ limit: 2, windowMs: 60_000 });
+
+    limiter.hit('ip');
+    limiter.hit('ip');
+    limiter.refund('ip');
+
+    // One hit remains, so exactly one more is allowed and the next is refused.
+    expect(limiter.hit('ip').allowed).toBe(true);
+    expect(limiter.hit('ip').allowed).toBe(false);
+  });
+
+  it('forgets a key entirely when its last hit is given back, rather than leaking it', () => {
+    const limiter = new SlidingWindowLimiter({ limit: 5, windowMs: 60_000 });
+
+    limiter.hit('ip');
+    expect(limiter.size).toBe(1);
+    limiter.refund('ip');
+    expect(limiter.size).toBe(0);
+  });
+
+  it('does nothing for a key that was never counted', () => {
+    const limiter = new SlidingWindowLimiter({ limit: 1, windowMs: 60_000 });
+
+    expect(() => limiter.refund('never-seen')).not.toThrow();
+    expect(limiter.hit('never-seen').allowed).toBe(true);
+  });
+});
