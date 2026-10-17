@@ -80,6 +80,8 @@ export * from './crm/desk-payment';
 export * from './crm/elevate';
 export * from './crm/lead-pipeline';
 export * from './reports/reports';
+// Reading the reports over a week, a year or a chosen range (REP-001, REP-002).
+export * from './reports/period';
 export * from './crm/mark-attendance';
 export * from './crm/settings';
 export * from './crm/staff';

@@ -1262,7 +1262,23 @@
       "monthNext": "Later month",
       "monthThis": "This month",
       "viewing": "Showing {month}",
-      "genderNone": "No active members yet"
+      "genderNone": "No active members yet",
+      "periods": {
+        "WEEK": "This week",
+        "MONTH": "This month",
+        "YEAR": "This year",
+        "CUSTOM": "Custom dates"
+      },
+      "periodWeek": "This week",
+      "periodYear": "This year",
+      "periodRange": "{from} to {to}",
+      "periodFrom": "From",
+      "periodTo": "To",
+      "periodApply": "Show",
+      "periodTooLong": "That range is too long. Pick up to {days} days. Showing this month instead.",
+      "periodFuture": "That range has not happened yet. Showing this month instead.",
+      "comparedTo": "compared with the same days before",
+      "exportCsv": "Download CSV"
     },
     "settings": {
       "title": "Settings",

@@ -1262,7 +1262,23 @@
       "monthNext": "अगला महीना",
       "monthThis": "इस महीने",
       "viewing": "{month} का हिसाब",
-      "genderNone": "अभी कोई चालू मेंबर नहीं"
+      "genderNone": "अभी कोई चालू मेंबर नहीं",
+      "periods": {
+        "WEEK": "इस हफ़्ते",
+        "MONTH": "इस महीने",
+        "YEAR": "इस साल",
+        "CUSTOM": "अपनी तारीख़ें"
+      },
+      "periodWeek": "इस हफ़्ते",
+      "periodYear": "इस साल",
+      "periodRange": "{from} से {to}",
+      "periodFrom": "से",
+      "periodTo": "तक",
+      "periodApply": "दिखाएँ",
+      "periodTooLong": "यह रेंज बहुत लंबी है। {days} दिन तक चुनें। अभी इस महीने का दिखा रहे हैं।",
+      "periodFuture": "यह रेंज अभी आई ही नहीं है। अभी इस महीने का दिखा रहे हैं।",
+      "comparedTo": "पिछली बार के उतने ही दिनों से तुलना",
+      "exportCsv": "CSV डाउनलोड करें"
     },
     "settings": {
       "title": "सेटिंग",
