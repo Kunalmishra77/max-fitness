@@ -27,6 +27,7 @@ export type CrmNavKey =
   | 'staff'
   | 'kiosk'
   | 'settings'
+  | 'audit'
   | 'pin';
 
 export interface CrmNavItem {
@@ -68,6 +69,9 @@ export function crmNavItems(actor: CrmActor, now: Date): CrmNavItem[] {
     // so the owner could only reach it by typing the URL (ADR-107).
     afterPin('settings.manage') && { key: 'kiosk', href: '/crm/settings/kiosk', icon: 'attendance', group: 'business' },
     afterPin('settings.manage') && { key: 'settings', href: '/crm/settings', icon: 'settings', group: 'business' },
+    // The record of every sensitive action was written from the first migration and had
+    // nothing linking to it, exactly as the attendance phone did (CRM-AUDIT).
+    afterPin('audit.view') && { key: 'audit', href: '/crm/more/audit', icon: 'reports', group: 'account' },
     { key: 'pin', href: '/crm/more/pin', icon: 'pin', group: 'account' },
   ];
   return items.filter((item): item is CrmNavItem => item !== false);

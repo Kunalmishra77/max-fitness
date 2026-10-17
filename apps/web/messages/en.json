@@ -1665,6 +1665,10 @@
         "label": "Settings",
         "desc": "Prices, hours, messages and more"
       },
+      "audit": {
+        "label": "Audit trail",
+        "desc": "Every change staff and the owner made"
+      },
       "pin": {
         "label": "Change my PIN",
         "desc": "Set a new PIN for your login"
@@ -2025,6 +2029,51 @@
       "noPlan": "No plan chosen",
       "chose": "Chose {months, plural, one {# month} other {# months}}",
       "since": "waiting {days, plural, =0 {since today} one {# day} other {# days}}"
+    },
+    "audit": {
+      "title": "Audit trail",
+      "subtitle": "Every change staff and the owner made",
+      "ownerOnly": "Only the owner can read the audit trail.",
+      "empty": "Nothing recorded for these dates.",
+      "from": "From",
+      "to": "To",
+      "action": "Action",
+      "allActions": "All actions",
+      "apply": "Show",
+      "reset": "Clear filters",
+      "older": "Show older",
+      "by": "by {name}",
+      "bySystem": "by the system",
+      "byWebhook": "by a payment or WhatsApp callback",
+      "byKiosk": "by the attendance phone",
+      "byMember": "by the member",
+      "byUnknown": "by someone no longer on the staff list",
+      "changed": "{count, plural, one {# field changed} other {# fields changed}}",
+      "noChanges": "No before-and-after was recorded for this action.",
+      "redactedNote": "Numbers, names and anything secret are masked here on purpose.",
+      "actions": {
+        "payment.void": "Payment voided",
+        "member.edit": "Member details changed",
+        "member.erase": "Member erased",
+        "member.export": "Member data exported",
+        "member.import": "Register imported",
+        "member.reminders": "Member reminders changed",
+        "member.unsubscribed": "Member unsubscribed",
+        "verification.approve": "QR sign-up approved",
+        "verification.reject": "QR sign-up rejected",
+        "settings.update": "Settings changed",
+        "reminders.update": "Reminder rules changed",
+        "plans.price": "Plan price changed",
+        "plans.active": "Plan switched on or off",
+        "staff.add": "Staff added",
+        "staff.pin": "Staff PIN reset",
+        "staff.activate": "Staff switched on",
+        "staff.deactivate": "Staff switched off",
+        "bot.config": "Assistant settings changed",
+        "bot.document": "Assistant knowledge changed",
+        "create": "Created",
+        "merge": "Records merged"
+      }
     }
   },
   "photos": {

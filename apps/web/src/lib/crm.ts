@@ -2,6 +2,7 @@ import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import {
   PrismaAttendanceUnitOfWork,
+  PrismaAuditReader,
   PrismaCallOutcomeUnitOfWork,
   PrismaCrmAuthStore,
   PrismaCrmReader,
@@ -279,6 +280,17 @@ export function staffReader() {
 export function settingsDeps() {
   const container = getContainer();
   return { clock: container.clock, uow: new PrismaSettingsUnitOfWork(container.prisma) };
+}
+
+/**
+ * The audit trail (CRM-AUDIT).
+ *
+ * Read-only by construction: there is no write side to hand out, because the table is
+ * append-only and a repository that could amend it would be a way to edit the record of
+ * somebody editing the record.
+ */
+export function auditReader() {
+  return new PrismaAuditReader(getContainer().prisma);
 }
 
 /** The rows behind the owner's reports (crm-module-spec §6). */

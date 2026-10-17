@@ -75,6 +75,8 @@ export * from './calls/signup-not-paid';
 export * from './crm/permissions';
 export * from './crm/login';
 export * from './crm/attendance-trend';
+// Showing an audit row without leaking what it audits (CRM-AUDIT).
+export * from './crm/audit-summary';
 export * from './crm/add-member';
 export * from './crm/desk-payment';
 export * from './crm/elevate';

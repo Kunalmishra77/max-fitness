@@ -1665,6 +1665,10 @@
         "label": "सेटिंग",
         "desc": "दाम, समय, मैसेज और बाकी सब"
       },
+      "audit": {
+        "label": "बदलावों का रिकॉर्ड",
+        "desc": "स्टाफ़ और मालिक ने जो भी बदला"
+      },
       "pin": {
         "label": "मेरा PIN बदलें",
         "desc": "अपने लॉगिन का नया PIN रखें"
@@ -2025,6 +2029,51 @@
       "noPlan": "कोई प्लान नहीं चुना",
       "chose": "{months, plural, one {# महीना} other {# महीने}} चुना",
       "since": "{days, plural, =0 {आज से} one {# दिन से} other {# दिन से}} इंतज़ार"
+    },
+    "audit": {
+      "title": "बदलावों का रिकॉर्ड",
+      "subtitle": "स्टाफ़ और मालिक ने जो भी बदला",
+      "ownerOnly": "यह रिकॉर्ड सिर्फ़ मालिक देख सकते हैं।",
+      "empty": "इन तारीख़ों में कुछ दर्ज नहीं है।",
+      "from": "से",
+      "to": "तक",
+      "action": "काम",
+      "allActions": "सारे काम",
+      "apply": "दिखाएँ",
+      "reset": "फ़िल्टर हटाएँ",
+      "older": "और पुराने दिखाएँ",
+      "by": "{name} ने",
+      "bySystem": "सिस्टम ने",
+      "byWebhook": "पेमेंट या WhatsApp कॉलबैक ने",
+      "byKiosk": "हाज़िरी फ़ोन ने",
+      "byMember": "मेंबर ने",
+      "byUnknown": "किसी ने, जो अब स्टाफ़ में नहीं है",
+      "changed": "{count, plural, one {# चीज़ बदली} other {# चीज़ें बदलीं}}",
+      "noChanges": "इस काम का पहले-बाद रिकॉर्ड नहीं हुआ।",
+      "redactedNote": "नंबर, नाम और कोई भी गुप्त चीज़ यहाँ जान-बूझकर छिपाई गई है।",
+      "actions": {
+        "payment.void": "पेमेंट रद्द की",
+        "member.edit": "मेंबर की जानकारी बदली",
+        "member.erase": "मेंबर मिटाया",
+        "member.export": "मेंबर का डेटा डाउनलोड किया",
+        "member.import": "रजिस्टर इम्पोर्ट किया",
+        "member.reminders": "मेंबर के रिमाइंडर बदले",
+        "member.unsubscribed": "मेंबर ने रिमाइंडर बंद किए",
+        "verification.approve": "QR साइन-अप मंज़ूर किया",
+        "verification.reject": "QR साइन-अप नामंज़ूर किया",
+        "settings.update": "सेटिंग बदली",
+        "reminders.update": "रिमाइंडर नियम बदले",
+        "plans.price": "प्लान का दाम बदला",
+        "plans.active": "प्लान चालू/बंद किया",
+        "staff.add": "स्टाफ़ जोड़ा",
+        "staff.pin": "स्टाफ़ का PIN बदला",
+        "staff.activate": "स्टाफ़ चालू किया",
+        "staff.deactivate": "स्टाफ़ बंद किया",
+        "bot.config": "असिस्टेंट की सेटिंग बदली",
+        "bot.document": "असिस्टेंट की जानकारी बदली",
+        "create": "बनाया",
+        "merge": "रिकॉर्ड जोड़े"
+      }
     }
   },
   "photos": {

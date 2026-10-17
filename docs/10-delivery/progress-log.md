@@ -1856,3 +1856,44 @@ Gates: typecheck 8/8, lint clean, 2232 passed, `next build` clean.
 **Still open:** the dashboard additions, the audit-log screen, members-list paging, the
 Phase 7 redesign, and the CRM axe suite which is written and has never been run. All four
 blockers from yesterday are unchanged.
+
+## 2026-10-17 (later) — the audit trail has a screen
+
+CRM-AUDIT. `AuditLog` has been written to since the first migration — every voided payment,
+erased member, PIN reset, price change and settings edit — and nothing in the CRM has ever
+read it. The gym was paying the cost of recording its own accountability trail with none of
+the benefit. Same pattern as the attendance phone before ADR-107: the data existed and
+nothing linked to it.
+
+`/crm/more/audit`, and now in the menu. Owner-only behind a **new `audit.view` capability**
+rather than `settings.manage`, because this screen shows what the owner did as well as what
+staff did and a permission named "manage settings" should not decide who reads that. PIN
+elevated: it is the whole history of every sensitive action in one place, and a phone left
+unlocked on the desk must not open it. The nav test asserts reception and trainers never
+see the entry, so nobody is offered a screen that would only refuse them.
+
+**Read-only by construction** — no action on the page and no write side in the repository.
+A screen that could amend the record of somebody amending the record would defeat the point.
+
+**The before/after blobs are never printed.** They are whole row snapshots, so they carry
+mobile numbers, PIN hashes and storage keys, and "we will remember to redact the next column
+someone adds" is not a control. `auditChanges` reduces them to the fields that moved with a
+**name-based** denylist applied before any value is read — `pin`, `hash`, `token`, `secret`,
+`vector`, `template` and friends as substrings, so `newPinHash` and a field invented next
+year are both caught. Comparison happens *before* masking, or two different mobile numbers
+would mask to the same string and the change would vanish. 34 tests, most of them proving
+it does not leak the data it audits.
+
+Cursor paging on `(createdAt, id)` rather than offset: an append-only table under `OFFSET`
+is the one screen in here guaranteed to get slower every day, and the id breaks the tie for
+rows written in the same transaction.
+
+**One bug found and fixed while writing it:** the maskers ran before the shape check, so a
+key named `mobile` holding an object rendered as the literal `[object Object]`. Harmless to
+read today and exactly how a leak arrives the day a column changes type. Pinned by a test.
+
+Gates: typecheck 8/8, lint clean, 2271 passed, `next build` clean with `/crm/more/audit`.
+
+**Still open:** the dashboard additions, members-list paging, the Phase 7 redesign, and the
+CRM axe suite which is written and has never been run. All four blockers unchanged — the
+push is still the one that matters most.

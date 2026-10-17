@@ -3,7 +3,7 @@
 Companion to `docs/07-security-compliance/security-and-ux-review-2026-10-16.md`, which is
 the audit. This is what was done about it.
 
-Branch: `hardening/security-ux-remediation`, eleven commits, branched from `main` at
+Branch: `hardening/security-ux-remediation`, thirteen commits, branched from `main` at
 `82e44bf`. **Not pushed** — see REL-001.
 
 ## Gates
@@ -12,7 +12,7 @@ Branch: `hardening/security-ux-remediation`, eleven commits, branched from `main
 |---|---|---|
 | `pnpm typecheck` | pass, 8/8 packages | pass, 8/8 |
 | `pnpm lint` | **fail, 34 errors** | **pass, 0 errors** |
-| `pnpm test` | **fail, 1 of 2132** | **pass, 2232 passed / 86 skipped** |
+| `pnpm test` | **fail, 1 of 2132** | **pass, 2271 passed / 86 skipped** |
 | `next build` | pass | pass |
 | `gitleaks` (tree + 195 commits) | not run — no gate existed | **pass, no leaks** |
 | `pnpm test:e2e` (incl. axe) | not runnable here | **not run — needs a database** |
@@ -104,7 +104,7 @@ February in a leap year, 1 January.
 | U-3 | Members list caps at 100 with no paging | **NOT STARTED** | Still shows "100 of N" with no next page. |
 | U-4 | Accessibility coverage on the CRM | **FIXED, NOT VERIFIED** | Axe added across 13 CRM screens at both 360px and 1440px. **The suite has not been run** — it needs a seeded database. It may find violations on its first run; that is what it is for. |
 | U-5 | `postExpiryMaxDays = 7` | **NOT STARTED — owner's decision** | Seven consecutive daily "your membership has expired" messages. Lower it in Settings before the next run. |
-| CRM-AUDIT | Audit-trail screen | **NOT STARTED** | `AuditLog` is written and still has no interface. |
+| CRM-AUDIT | Audit-trail screen | **VERIFIED** | `/crm/more/audit`, owner-only behind a new `audit.view` capability with PIN elevation, and linked from the menu — it had been written to since the first migration with nothing linking to it. Read-only by construction: no action on the page, no write side in the repository. Cursor paging on `(createdAt, id)`, because an append-only table under offset paging is the one screen guaranteed to get slower every day. Before/after snapshots are never printed raw — `auditChanges` reduces them to the fields that moved, with a **name-based** denylist, 34 tests. |
 | CRM-REDESIGN | Phase 7 visual redesign | **NOT STARTED** | Deliberately not begun. A redesign applied to some of 24 screens and not others leaves the product less coherent than before, and this session could not render a single page to judge the result. It needs a browser and the owner in the loop. |
 | IMPORT-BOM | Import template could not be imported back | **VERIFIED** | Found while writing the CSV helpers. `/crm/import/template` wrote the four characters `FEFF` instead of `﻿`, so the first header read `FEFFfull_name` and the parser — which strips a BOM by code point — did not strip it. **The template the CRM handed the owner was unusable.** Now round-tripped in a test. |
 
@@ -117,7 +117,7 @@ February in a leap year, 1 January.
 | QA-003 | Critical end-to-end journeys | **BLOCKED** | Specs exist and typecheck; running them needs a database and a server. |
 | QA-004 | Accessibility and localisation | **FIXED** (i18n) / **BLOCKED** (axe run) | i18n parity holds at every step: 1829 → 1884 keys, equal in both languages, enforced by `messages.test.ts`. |
 | QA-005 | Production build and Docker validation | **FIXED** (build) / **NOT STARTED** (Docker) | `next build` clean. Docker images not built — no registry access and nothing to deploy them to. |
-| REL-001 | GitHub commit and push | **FIXED** (committed) / **BLOCKED** (push) | Eleven commits on `hardening/security-ux-remediation`. No remote. |
+| REL-001 | GitHub commit and push | **FIXED** (committed) / **BLOCKED** (push) | Thirteen commits on `hardening/security-ux-remediation`. No remote. |
 | REL-002 | Docker service dependency map | **FIXED** (derived) / **BLOCKED** (verification) | Below. Derived from the Dockerfiles; **not verified against the running project**. |
 | REL-003 | Coolify deployment per service | **BLOCKED** | No access. |
 | REL-004 | Production smoke checks | **BLOCKED** | No access. |
