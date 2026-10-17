@@ -1825,3 +1825,34 @@ may well find real violations.
 
 Unchanged from the audit: production needs `pnpm db:deploy` for the RLS migration; the Meta
 App Secret and Razorpay secret still need rotating; `postExpiryMaxDays` is still 7.
+
+## 2026-10-17 — reports over a week, a year, or dates you pick
+
+REP-001/002/003, continuing on `hardening/security-ux-remediation` (now eleven commits,
+still unpushed — the remote and the GitHub token are the blockers from yesterday).
+
+The screen had a month picker and nothing else. It now takes week, month, year or a chosen
+range, **without changing a single card's arithmetic**: the pipeline already took a window
+plus the window before it, so the other periods are the same shape. `MONTH` delegates to
+the existing `monthBoundsFor` and a test asserts equality with it — the owner reads that
+view every day and it must not move. The arrows and `?month=` still work exactly as before,
+and are hidden off the month view, where they would have been a quiet lie.
+
+The comparison rule is the only real judgement, and it is the month rule extended: an
+unfinished period compares against the same distance into the previous one, measured in
+**elapsed days** rather than calendar date — day 60 of 2028 is 29 February and has no
+counterpart in 2027. A finished period gets the whole previous one, because clipping it
+would invent a fall that did not happen. 30 tests, mostly on boundaries.
+
+`/crm/reports/export` is behind `money.view` checked in the route rather than on the button,
+resolves its window with the same calls in the same order as the page, and reads the same
+`inputs` — so there is no second implementation of "what the gym earned". Long format, rupee
+decimals for a human reader, and three values written **empty rather than zero** where they
+are genuinely unknown (a renewal rate with nothing due yet; kiosk share with no check-ins,
+where 0% would claim the camera had failed).
+
+Gates: typecheck 8/8, lint clean, 2232 passed, `next build` clean.
+
+**Still open:** the dashboard additions, the audit-log screen, members-list paging, the
+Phase 7 redesign, and the CRM axe suite which is written and has never been run. All four
+blockers from yesterday are unchanged.

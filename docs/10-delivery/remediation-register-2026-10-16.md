@@ -3,7 +3,7 @@
 Companion to `docs/07-security-compliance/security-and-ux-review-2026-10-16.md`, which is
 the audit. This is what was done about it.
 
-Branch: `hardening/security-ux-remediation`, nine commits, branched from `main` at
+Branch: `hardening/security-ux-remediation`, eleven commits, branched from `main` at
 `82e44bf`. **Not pushed** — see REL-001.
 
 ## Gates
@@ -12,7 +12,7 @@ Branch: `hardening/security-ux-remediation`, nine commits, branched from `main` 
 |---|---|---|
 | `pnpm typecheck` | pass, 8/8 packages | pass, 8/8 |
 | `pnpm lint` | **fail, 34 errors** | **pass, 0 errors** |
-| `pnpm test` | **fail, 1 of 2132** | **pass, 2202 passed / 86 skipped** |
+| `pnpm test` | **fail, 1 of 2132** | **pass, 2232 passed / 86 skipped** |
 | `next build` | pass | pass |
 | `gitleaks` (tree + 195 commits) | not run — no gate existed | **pass, no leaks** |
 | `pnpm test:e2e` (incl. axe) | not runnable here | **not run — needs a database** |
@@ -87,10 +87,10 @@ than retyping a name. So navigation — the common case, and the one that was de
 | ATT-005 | Attendance analytics | **FIXED** | Visits, distinct members, average per **elapsed** day, busiest day. The unique figure is its own query — summing each day's distinct members counts a regular five times over. |
 | ATT-006 | Member-wise attendance history | **FIXED** (mostly pre-existing) | The profile already had a month strip and a full per-month history. Added the missing piece: first and last attendance dates, derived from days already counted, so zero extra queries. |
 | ATT-007 | Secure CSV export | **FIXED** | Authorised in the route, not on the button. Carries who/when/how/code only — no numbers, email, photographs or documents. Every field through `csvField`, which neutralises a leading `=`, `+`, `-`, `@` or tab, with the apostrophe **inside** the quotes. 18 tests. |
-| REP-001 | Report period filters | **NOT STARTED** | The 14 report cards still take a month only. The core pieces now exist and are reusable: `rangeForPreset`, `customRange`, `fillMissingDays`, `csvFile`. |
-| REP-002 | Report comparisons and aggregation | **NOT STARTED** | — |
-| REP-003 | Authorised report export | **NOT STARTED** | `csvFile` and the permission pattern from ATT-007 are the template. |
-| DASH-001 | Dashboard attendance and operational summaries | **NOT STARTED** | — |
+| REP-001 | Report period filters | **VERIFIED** | Week, month, year and custom dates. `MONTH` delegates to the existing `monthBoundsFor` and a test asserts equality with it, so the month view the owner reads daily is byte-identical. Month arrows and `?month=` untouched; hidden off the month view, where they would have been a quiet lie. |
+| REP-002 | Comparisons and aggregation | **VERIFIED** | Like-for-like extended from the month rule to every period, measured in **elapsed days** so 29 February has no counterpart to fail on. A finished period gets the whole previous one. 30 tests, mostly boundaries. **No card's arithmetic changed** — the pipeline already took a window plus the window before it. |
+| REP-003 | Authorised report export | **VERIFIED** | Behind `money.view` checked in the route, not on the button. Same two resolution calls and same `inputs` as the page, so a download cannot describe a different period. Long format (`section,label,value`); rupee decimals for a human reader; renewal rate and kiosk share written **empty rather than zero** where they are genuinely unknown. |
+| DASH-001 | Dashboard attendance and operational summaries | **NOT STARTED** | The period helpers are now reusable for it. |
 
 59 tests cover the date arithmetic alone, asserting the boundaries rather than the happy
 path: "last month" from the 1st and from 31 March, "last week" from a Monday and a Sunday,
@@ -117,7 +117,7 @@ February in a leap year, 1 January.
 | QA-003 | Critical end-to-end journeys | **BLOCKED** | Specs exist and typecheck; running them needs a database and a server. |
 | QA-004 | Accessibility and localisation | **FIXED** (i18n) / **BLOCKED** (axe run) | i18n parity holds at every step: 1829 → 1884 keys, equal in both languages, enforced by `messages.test.ts`. |
 | QA-005 | Production build and Docker validation | **FIXED** (build) / **NOT STARTED** (Docker) | `next build` clean. Docker images not built — no registry access and nothing to deploy them to. |
-| REL-001 | GitHub commit and push | **FIXED** (committed) / **BLOCKED** (push) | Nine commits on `hardening/security-ux-remediation`. No remote. |
+| REL-001 | GitHub commit and push | **FIXED** (committed) / **BLOCKED** (push) | Eleven commits on `hardening/security-ux-remediation`. No remote. |
 | REL-002 | Docker service dependency map | **FIXED** (derived) / **BLOCKED** (verification) | Below. Derived from the Dockerfiles; **not verified against the running project**. |
 | REL-003 | Coolify deployment per service | **BLOCKED** | No access. |
 | REL-004 | Production smoke checks | **BLOCKED** | No access. |
