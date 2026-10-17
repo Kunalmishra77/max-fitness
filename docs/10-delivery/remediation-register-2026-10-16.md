@@ -217,3 +217,21 @@ than reverting the branch.
 6. Run the e2e and axe suites somewhere with a test database, and expect the CRM axe pass to
    find real violations.
 7. Lower `postExpiryMaxDays`.
+
+## Appendix — the end-to-end suite, run for the first time (2026-10-17)
+
+33 of 37 pass at 360px against a seeded database. The four that do not, and what each is:
+
+| Spec | Why it fails | Mine? |
+|---|---|---|
+| `crm.spec.ts` — "searches members and opens a profile" | **Fixed.** `a[href^="/crm/members/"]` took the *waiting-for-payment banner*, which sits above the register and links to `/crm/members/waiting`. That path matches `[\w-]+`, so the URL assertion passed; the waiting screen has its own "फीस लें" link, so that passed too; and the test spent 45 seconds looking for a fee state on a screen that has none. It was auditing the wrong page and only the last assertion noticed. The banner (ADR-125) arrived after the test was written. Now scoped to a list row and asserted against the href it clicked — 47s → 1.4s, passing at both widths. | No — pre-existing |
+| `signup.spec.ts` × 3 | `test.use({ launchOptions: { args: [fake camera] } })` replaces the whole `launchOptions` object, including the `executablePath` this container needs, so Playwright looks for a `chrome-headless-shell` build that is not installed here. An artefact of **this** machine; CI installs the matching browsers. | No — environment |
+| `qr.spec.ts` — existing member by QR | **A stale test, and worth someone's attention.** It is written for the one-page form of ADR-075 — it fills name, mobile, date of birth and nine more fields in one go, and asserts no "Question _n_ of _m_" text. The form is a **nine-step wizard**: ADR-080 reverted the one-page design after the gym watched members struggle with it on a phone. The test's guard never caught the change, because the stepper reads "1 / 9" and not "Question 1 of 9". It has been failing since ADR-080 and is nothing to do with this branch. | No — pre-existing |
+
+**The `qr.spec.ts` rewrite is deliberately not attempted here.** It needs the nine steps' real
+field order confirmed against the product, and a journey test guessed at is worse than one
+known to be stale. It is the clearest remaining piece of work in the test suite.
+
+**`web-e2e` is not a merge gate** — it is `if: github.event_name == 'push' && github.ref ==
+'refs/heads/main'` — so none of this blocks the merge, and the three environment failures
+will not reproduce in CI. The QR one will.

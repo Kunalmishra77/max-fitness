@@ -401,11 +401,27 @@ test.describe('Max Register', () => {
   test('searches members and opens a profile', async ({ page }) => {
     await login(page, OWNER);
     await page.goto('/crm/members');
-    const firstRow = page.locator('a[href^="/crm/members/"]').first();
+
+    /**
+     * Scoped to a row of the list, which `a[href^="/crm/members/"]` on its own is not.
+     *
+     * That looser locator took the **waiting-for-payment banner** instead — it sits above
+     * the register, links to `/crm/members/waiting`, and appears whenever somebody has
+     * stopped at the payment screen (ADR-125), which is true of any realistic data. The
+     * banner arrived after this test was written and quietly stole it: `/crm/members/waiting`
+     * matches `[\w-]+` too, so the URL assertion below passed, the waiting screen has its
+     * own "फीस लें" link so that assertion passed as well, and the test spent its forty-five
+     * seconds looking for a fee state on a page that has none. It was auditing the wrong
+     * screen and only the last assertion noticed.
+     */
+    const firstRow = page.getByRole('listitem').locator('a[href^="/crm/members/"]').first();
+    const href = await firstRow.getAttribute('href');
     const name = (await firstRow.innerText()).trim();
+    expect(href).toMatch(/^\/crm\/members\/(?!waiting$|new$)[\w-]+$/);
     await firstRow.click();
 
-    await expect(page).toHaveURL(/\/crm\/members\/[\w-]+$/);
+    // The member we clicked, not merely something under /crm/members.
+    await expect(page).toHaveURL(new RegExp(`${href as string}$`));
     await expect(page.getByRole('main').getByText(/फीस (जमा है|बाकी|इस हफ्ते)|कोई प्लान नहीं/).first()).toBeVisible();
     await expect(page.getByRole('link', { name: /फीस लें/ })).toBeVisible();
     expect(name.length).toBeGreaterThan(0);
