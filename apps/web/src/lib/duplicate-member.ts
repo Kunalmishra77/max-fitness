@@ -7,8 +7,8 @@ import type { SelfieFaceVerdict } from '@/lib/selfie-face-gate';
 /**
  * Is this face already a member, as somebody else? (ADR-118, ADR-124)
  *
- * The owner signed up twice with their own face — once as "Kunal Mishra", once as
- * "Indresh Mishra" — and the gym took both. The names differed, the numbers differed,
+ * The owner signed up twice with their own face — under one name, then under a
+ * different one — and the gym took both. The names differed, the numbers differed,
  * and nothing else was checked.
  *
  * **The face says who this is; the record says who they claim to be.** When those two
@@ -16,7 +16,7 @@ import type { SelfieFaceVerdict } from '@/lib/selfie-face-gate';
  *
  * Which record they claim is the part that has been wrong twice. Keyed on the *number*,
  * the owner walked through by registering a new name on their existing number. Keyed on
- * the *name*, they walked through again as "Indresh Mishra" on a number the gym had
+ * the *name*, they walked through again under a name the register held on a number the gym had
  * never seen, and the register ended up holding MF-0001 and MF-0014, both of them him.
  * `claimedMemberId` is where that judgement now lives, and where it is tested.
  *

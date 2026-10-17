@@ -1604,7 +1604,7 @@ The part that mattered: a mandate's **first debit is the day after the member's 
 
 **Correction to what I told the owner:** I said eleven templates had no wording. They all did — in `templates.ts`, both languages, with their positional order. I had read the markdown doc, which is the stale copy: it carries ten and names four the product no longer sends (`mf_signup_payment_pending`, three `mf_owner_alert_*` superseded by the generic one). Submitting from it would have missed templates and created dead ones. The doc now says so at the top and points at the generated sheet.
 
-**Meta setup so far:** webhook verified and tested live (`GET` echoes the challenge). Business verification approved. Number +91 98114 26350, WABA `1378611114040117`, phone number id `1394917043704455`, Graph `v26.0`. **Do not touch +91 78945 61230** — it is live on a handset.
+**Meta setup so far:** webhook verified and tested live (`GET` echoes the challenge). Business verification approved. Number, WABA id and phone number id are in the deployment secret store, not here; Graph `v26.0`. **One of the two numbers on the account is live on a handset and must not be touched** — which is which is written down with the credentials.
 
 **Tests:** 1919 passing. Every non-`|db|` suite green; the `|db|` failures are the shared-Postgres `pool_size: 15` limit (ADR-110) and pass with `--no-file-parallelism`.
 
@@ -1619,7 +1619,7 @@ The part that mattered: a mandate's **first debit is the day after the member's 
 
 ## 2026-10-15 — one face, one member (ADR-124)
 
-**What changed.** The owner proved the duplicate check wrong a second time: their own face, their own existing name *Indresh Mishra*, a number the gym had never seen — straight through, leaving MF-0001 and MF-0014 both pointing at him.
+**What changed.** The owner proved the duplicate check wrong a second time: their own face, a name the register already held, a number the gym had never seen — straight through, leaving MF-0001 and MF-0014 both pointing at him.
 
 - `packages/core/src/qr/claimed-member.ts` (new, with tests) — `claimedMemberId` decides which record a submission is allowed to match: the one on the given **number** carrying the given **name**. Either field alone is something anybody can type, and keying on either alone is exactly how the check was broken twice.
 - `apps/web/src/lib/duplicate-member.ts` — the name-only exemption is gone; the claimed record is looked up by both fields and passed to `findDuplicateFace` as `exceptMemberId`.
@@ -1630,7 +1630,7 @@ The part that mattered: a mandate's **first debit is the day after the member's 
 **Verified.** `claimedMemberId` tests written and watched fail first. Full suite 2125 passed, typecheck clean across all 8 packages.
 
 **Pending.**
-- **MF-0014 is a duplicate record** created by the owner's test and needs erasing, along with the three duplicate *Ayan Saifi* records.
+- **MF-0014 is a duplicate record** created by the owner's test and needs erasing, along with the three duplicate records that share one name.
 - `pnpm lint` has **33 pre-existing errors** — all in scripts and test files (`look-qr.mjs`, `smoke-*.mjs`, `enrol-faces.ts`, `qr-poster.ts`, `message-log-read.repository.ts`, `messages.test.ts`, `seo.test.ts`, `use-screen-awake.ts`, `backup-members.ts`). Confirmed present without this change. Not touched here; needs its own pass.
 - The security review is still the oldest outstanding commitment.
 
@@ -1640,7 +1640,7 @@ The part that mattered: a mandate's **first debit is the day after the member's 
 
 It did not go cleanly. The script was missing five tables added since it was written and died on `PtEnrolment_memberId_fkey` with the members already stripped. Fixed, along with two things the failure exposed: the backup was not saving storage keys, and `find:orphans` now exists. It found **454** orphaned objects in the bucket, not the 13 from that failure — months of test wipes had been deleting rows and leaving files. All removed. The reverse report found 11 rows pointing at files that are gone, every one of them belonging to an erased member, so **no live member's photograph is missing**.
 
-- `enrol:faces` enrolled Trilok Singh. Three members are refused for **NO_CONSENT**, not a bad photograph, and the script used to tell staff to chase them for a new selfie — fixed to say what the desk should actually do.
+- `enrol:faces` enrolled one member. Three members are refused for **NO_CONSENT**, not a bad photograph, and the script used to tell staff to chase them for a new selfie — fixed to say what the desk should actually do.
 - The report's first version also claimed 11 photographs were missing. They were not: erasing a member deletes the object and keeps the row with `deletedAt` set, on purpose, as the record that a file once existed. The report was counting those and crying wolf; it now skips them.
 
 **ADR-125 — waiting for payment.** A QR sign-up landed in the Members list with no payment minutes after the wipe. The list no longer shows people who have never paid; they sit on `/crm/members/waiting` with call, message and take-fees on each row, and return to the register by themselves when the money lands. One `awaitingPaymentWhere` fragment serves the list, the counts and the new screen.
@@ -1670,7 +1670,7 @@ The owner rejected the people-list from ADR-126 and sent a reference: list, thre
 
 ## 2026-10-16 (later) — the gym is live, and the tests stopped writing to it
 
-**Live.** `DEMO_MODE=false`, `ALLOW_DEMO_IN_PRODUCTION` removed, the allowlist cleared, Razorpay on live keys, both apps redeployed. The POST rule's slot is 19:00 IST, so the first three real reminders — Indresh Mishra, Trilok Singh, Ashutosh Singh, each 1–3 days overdue — go this evening. Nobody else is due; Deepa rawat is 16 days overdue and the POST rule stops at 7.
+**Live.** `DEMO_MODE=false`, `ALLOW_DEMO_IN_PRODUCTION` removed, the allowlist cleared, Razorpay on live keys, both apps redeployed. The POST rule's slot is 19:00 IST, so the first three real reminders — three members, each 1–3 days overdue — go this evening. Nobody else is due; a fourth is 16 days overdue and the POST rule stops at 7.
 
 **The forty rows.** The owner found them in the freshly cleaned inbox, under a member who did not exist. They were mine: `pnpm test` ran against the production database. The simulator compounds it — it writes every log row under `env.GYM_SLUG` with `memberId: null`, whatever gym or member the message was for — which is also why those threads read as "Erased member". Demo is off now, so the simulator is dormant; the attribution is still wrong and is **not fixed**.
 
@@ -1682,7 +1682,7 @@ The owner rejected the people-list from ADR-126 and sent a reference: list, thre
 - **Production needs `pnpm db:deploy`** so the new migration is recorded there too.
 - The simulator's gym/member attribution.
 - MF-0001's PAN photograph is 338×338.
-- Face consent for Ashutosh Singh, Deepanshu Rao and Ishita mehta.
+- Face consent for three members (named in the CRM, not here).
 - The security review.
 
 ## 2026-10-16 — the shell was 576px wide below a desktop
@@ -1751,7 +1751,7 @@ global `:focus-visible` rule.
 **Pending.** Everything in §3 of the review, in that order. Unchanged from before:
 `pnpm db:deploy` on production for the RLS migration; rotating the Meta App Secret and the
 Razorpay secret; the simulator's gym/member attribution; MF-0001's 338×338 PAN photograph;
-face consent for Ashutosh Singh, Deepanshu Rao and Ishita mehta.
+face consent for three members (named in the CRM, not here).
 
 ## 2026-10-16 (later still) — acting on the review
 
@@ -1907,7 +1907,7 @@ still blocked on the same missing remote.
 reachable only by guessing a name into the search box — on the screen whose whole job is to
 show who the gym has. Cursor paging now, keyed on **the member id rather than the name**,
 for two reasons: the sort is alphabetical and names are not unique here (this register has
-carried three *Ayan Saifi* and two *Indresh Mishra*, so a name cursor skips or repeats a
+carried three members under one name and two under another, so a name cursor skips or repeats a
 duplicate run at a page boundary), and an id keeps members' names out of URLs, which end up
 in history and logs. The tie still breaks on id in the SQL, because alphabetical alone is
 not a total order. A cursor pointing at a member erased since falls back to page one rather

@@ -95,7 +95,7 @@ do, so the desk can ask them for a new photograph:
 Harsh Bisht             would     284px
 harshitbahuguna         refused   43px   TOO_FAR — photo taken from too far away
 himani rawat            refused   310px  ANOTHER_FACE — somebody else is in the photo
-Mohd Ayan               refused   300px  NO_CONSENT — did not agree to face attendance
+A. Member                refused   300px  NO_CONSENT — did not agree to face attendance
 ```
 
 ## 3. Pair the phone

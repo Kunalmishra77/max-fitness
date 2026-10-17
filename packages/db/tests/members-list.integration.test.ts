@@ -187,8 +187,8 @@ suite('members list against Postgres', () => {
    * replaced it — and the case that makes a naive cursor wrong.
    *
    * The sort is alphabetical, so a page boundary is a name, and **names are not unique
-   * here**: this register has carried three members called *Ayan Saifi* and two called
-   * *Indresh Mishra*. A cursor on the name alone either skips the rest of a duplicate run
+   * here**: this register has carried three members sharing one name and two sharing
+   * another. A cursor on the name alone either skips the rest of a duplicate run
    * or serves it twice, and at a page boundary that silently loses a real member.
    */
   it('pages through every member exactly once, including duplicate names', async () => {

@@ -228,7 +228,7 @@ interface FeeRow {
 /**
  * Somebody who filled a form and never paid (ADR-125).
  *
- * The owner found *Ishita mehta* sitting in the Members list: name, number, selfie, a
+ * The owner found a member sitting in the Members list: name, number, selfie, a
  * plan she had chosen and no payment at all. They had just finished deleting sixteen
  * records exactly like it, and asked the obvious question — how is she a member?
  *
@@ -397,7 +397,7 @@ export class PrismaCrmReader {
    *
    * Cursor rather than offset. The sort is alphabetical, so a page boundary is a name —
    * and names are **not unique** here: the register has carried three members called
-   * *Ayan Saifi* and two called *Indresh Mishra*. A cursor on the name alone would skip or
+   * one name and two sharing another. A cursor on the name alone would skip or
    * repeat a run of duplicates, so the tie breaks on id.
    *
    * The cursor is the **member id**, not the name, and the sort key is looked up from it.

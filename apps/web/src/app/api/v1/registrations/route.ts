@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     /**
      * The same face joining twice under a different name (ADR-118). The owner did exactly
-     * this, as "Kunal Mishra" on one number and "Indresh Mishra" on another, and nothing
+     * this, under one name on one number and a different name on another, and nothing
      * caught it. The screen never says whose face it matched — only that the desk can
      * sort it out — because that would tell a stranger who else trains here.
      */

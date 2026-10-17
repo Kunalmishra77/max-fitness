@@ -23,7 +23,7 @@ import { checkGovIdText } from './gov-id-text';
 const AADHAAR = `
   भारत सरकार
   Government of India
-  Kunal Mishra
+  Ramesh Verma
   DOB: 14/02/1992
   3412 7856 9012
   आधार - आम आदमी का अधिकार
@@ -33,11 +33,11 @@ const PAN = `
   INCOME TAX DEPARTMENT        GOVT. OF INDIA
   Permanent Account Number Card
   ABCDE1234F
-  KUNAL MISHRA
+  RAMESH VERMA
   Date of Birth 14/02/1992
 `;
 
-const claim = { fullName: 'Kunal Mishra', dob: '1992-02-14' };
+const claim = { fullName: 'Ramesh Verma', dob: '1992-02-14' };
 
 describe('checkGovIdText', () => {
   it('accepts an Aadhaar that carries its markers, the name and the date', () => {
@@ -72,7 +72,7 @@ describe('checkGovIdText', () => {
     });
 
     it('refuses a date of birth that is not the one on the form', () => {
-      expect(checkGovIdText('AADHAAR', AADHAAR, { fullName: 'Kunal Mishra', dob: '1988-07-03' })).toEqual({
+      expect(checkGovIdText('AADHAAR', AADHAAR, { fullName: 'Ramesh Verma', dob: '1988-07-03' })).toEqual({
         ok: false,
         reason: 'DOB_MISMATCH',
       });
@@ -81,7 +81,7 @@ describe('checkGovIdText', () => {
 
   describe('what it forgives, because OCR is not a scanner', () => {
     it('does not mind case, extra spaces or a middle name it did not expect', () => {
-      const text = AADHAAR.replace('Kunal Mishra', 'KUNAL   KUMAR  MISHRA');
+      const text = AADHAAR.replace('Ramesh Verma', 'RAMESH   KUMAR  VERMA');
 
       expect(checkGovIdText('AADHAAR', text, claim)).toEqual({ ok: true });
     });

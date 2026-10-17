@@ -3,7 +3,7 @@ import { cosineSimilarity, type FaceTemplateRow } from './matcher';
 /**
  * Has this face already joined? (ADR-118)
  *
- * The owner registered as "Kunal Mishra" on one number and "Indresh Mishra" on another,
+ * The owner registered under one name on one number and a different name on another,
  * with their own face both times, and the gym took both. Nothing caught it: the names
  * differed, the numbers differed, and the only thing that did not change was the face.
  *

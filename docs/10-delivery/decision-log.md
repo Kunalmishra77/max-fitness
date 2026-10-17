@@ -731,13 +731,13 @@ So the mandates are found and cancelled **at the gateway before anything here ch
 
 In DEMO_MODE there is no gateway and nothing real to stop, so nothing can refuse.
 
-**Found at the same time, not yet fixed:** four member records share one mobile number (three "Ayan Saifi", one "Mohd Ayan"). The QR form catches a repeat scan only while the first submission is still `PENDING`; once staff approve or reject it, the same person submitting again becomes a second member. A different spelling of the name defeats the register match as well.
+**Found at the same time, not yet fixed:** four member records share one mobile number (three under one name, one under a close variant of it). The QR form catches a repeat scan only while the first submission is still `PENDING`; once staff approve or reject it, the same person submitting again becomes a second member. A different spelling of the name defeats the register match as well.
 
 ## ADR-117
 
 **Date:** 2026-10-15
 **Status:** Accepted
-**Context:** One mobile number carried four member records in production — three "Ayan Saifi" and one "Mohd Ayan".
+**Context:** One mobile number carried four member records in production — three under one name and one under a close variant of it.
 
 **Decision — the reception QR recognises anyone already on that number under that name, not only the paper register.**
 
@@ -751,7 +751,7 @@ Two guards were meant to stop a second record and neither covered this. The repe
 
 **Date:** 2026-10-15
 **Status:** Accepted
-**Context:** The owner registered twice with their own face: once as "Kunal Mishra" on one number, once as "Indresh Mishra" on another. Both were accepted. Nothing matched, because nothing that was checked had stayed the same — only the face had.
+**Context:** The owner registered twice with their own face: once under one name on one number, once under a different name on another. Both were accepted. Nothing matched, because nothing that was checked had stayed the same — only the face had.
 
 **Decision — the face is what makes a member unique, and it is the only thing a sign-up is refused over.**
 
@@ -859,7 +859,7 @@ They were right and my framing had been too broad.
 
 **Date:** 2026-10-15
 **Status:** Accepted
-**Context:** The owner filled the existing-member form as **Indresh Mishra** — a name the register already held — on a number the register had never seen, with their own face. Every step passed and the gym ended up with MF-0001 and MF-0014, both of them him. Their instruction had been plain: *"ek hi face se do log to nhi ho skte hai so unhe target karo"*, and alongside it *"ek name ke do member ho skte hai so name se mat karo"*.
+**Context:** The owner filled the existing-member form under **a name the register already held** — on a number the register had never seen, with their own face. Every step passed and the gym ended up with MF-0001 and MF-0014, both of them him. Their instruction had been plain: *"ek hi face se do log to nhi ho skte hai so unhe target karo"*, and alongside it *"ek name ke do member ho skte hai so name se mat karo"*.
 
 ADR-118 keyed the face exemption on the **number**, and the owner walked through it by registering a new name on their own number. The fix keyed it on the **name**, and they walked through that one too. Both were a single field, and a single field is something anybody can type.
 
@@ -875,7 +875,7 @@ The existing-member form exists so a paper-register entry can be finished, so th
 
 **Date:** 2026-10-15
 **Status:** Accepted
-**Context:** Minutes after deleting sixteen records of exactly this shape, the owner found *Ishita mehta* in the Members list — name, number, date of birth, selfie, a one-month plan chosen, and no payment at all — and asked the only sensible question: *"ye member me kaise aa gyi?"*
+**Context:** Minutes after deleting sixteen records of exactly this shape, the owner found a member in the Members list — name, number, date of birth, selfie, a one-month plan chosen, and no payment at all — and asked the only sensible question: *"ye member me kaise aa gyi?"*
 
 She had not become a member. The Members list showed everybody in the register regardless of status, and the filter chips already knew it: `Fees due 2 + this week 2 + paid 5 = 9` out of "All 10". The screen was counting somebody it could not place.
 
