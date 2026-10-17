@@ -296,12 +296,31 @@ Three ways out, none of which should be chosen by an agent on a deployment day:
 The owner's call. Option 3 is the one I would argue for, and it is the only one that
 exercises the code a paying member will meet.
 
-**Still stale, and the last one:** `qr.spec.ts`'s new-member journey expects a hand-off to
-`/join/plan` and `/join/pay`. The form is now a **ten-step** wizard that collects the plan,
-personal training, the pay method and the slot inline and finishes on its own confirmation
-with its own `PayStep`. It needs the same treatment the existing-member journey got —
-mechanical, but it needs the ten steps' field order read off the product rather than
-guessed, and it is not a thing to rush.
+**The new-member QR journey is done too.** It expected a hand-off to `/join/plan` and
+`/join/pay`; the form is now a ten-step wizard that collects the plan, personal training,
+the pay method and the slot inline and finishes on its own confirmation. The ten steps were
+read out of the component rather than guessed at, and two details were learned the hard way:
+
+- Those choices are radios the eye never sees — the input is screen-reader only and the
+  styled card beside it is what a finger lands on. `getByLabel` cannot reach them and the
+  label's own `<span>` intercepts the click, so they are checked by role with `force`.
+- The step counter must be matched for the step being **moved to**, not with a generic
+  `/^\d+ \/ \d+$/`. A generic match is on screen at every step, so racing it against the
+  soft warning resolved the instant the click returned, before the server had answered.
+  That is what made the first attempt flaky, and the same latent trap is why the total is
+  no longer pinned: the number of steps depends on what has been answered.
+
+**Final state: 84 pass, 23 skip.** What does not:
+
+| | |
+|---|---|
+| `signup.spec.ts` × 3 (× 2 widths) | The container's browser path, *and* QA-007 above. Both have to be settled before these can run anywhere. |
+| one axe screen, once, in a 114-test single-worker run | Passes 26/26 on its own against the same server. Load on this machine, not a defect. |
+
+Two failures during this work were **the local rate limiters doing their job**, not defects:
+the sign-up endpoint answered 429 after dozens of registration journeys from one address,
+and the login limiter had been exhausted earlier. Both are in-memory per process and empty
+again after a restart, which is how CI always starts.
 
 **`web-e2e` is not a merge gate** — it is `if: github.event_name == 'push' && github.ref ==
 'refs/heads/main'` — so none of this blocks the merge, and the three environment failures

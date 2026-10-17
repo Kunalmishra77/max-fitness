@@ -168,29 +168,84 @@ test('someone new joins from the QR and pays at the desk, with no checkout offer
   await expect(page.getByText('For men')).toBeVisible();
   await expect(page.getByText(/pay at reception/i).first()).toBeVisible();
 
+  /**
+   * Ten steps, not one page, and it finishes here rather than handing off to `/join`.
+   *
+   * This was written when `/qr/new` collected a few details and then sent the visitor into
+   * the website's own plan and payment pages. It now asks the whole thing itself — plan,
+   * personal training, how they will pay, when they train, the ID — and ends on its own
+   * confirmation. The test sat waiting three minutes for a date-of-birth field that was a
+   * step away.
+   *
+   * Waiting on the **counter** rather than on the next field is what makes it
+   * deterministic: each step is checked against the server before it will advance.
+   */
+  const next = async (to: number) => {
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
+    /**
+     * The counter for the step we are **going to**, matched on its leading number only:
+     * how many steps there are in total depends on what has been answered, and pinning
+     * that would fail this test for the wrong reason.
+     *
+     * It has to be the target step's counter and not any counter. A generic
+     * `/^\d+ \/ \d+$/` is on screen at every step, so racing it against the soft warning
+     * resolved the instant the click returned, before the server had answered — and the
+     * assertion that followed then waited out its timeout on a step that never moved.
+     */
+    const landed = page.getByText(new RegExp(`^${to} / `));
+    const carryOn = page.getByRole('button', { name: /It is my date of birth/ });
+    await expect(landed.or(carryOn).first()).toBeVisible();
+    if (await carryOn.isVisible()) await carryOn.click();
+    await expect(landed).toBeVisible();
+  };
+
   await page.getByLabel('Full name').fill('Qr Newcomer');
   await page.getByLabel('Mobile number').fill(mobile);
-  const dob = page.getByRole('group', { name: 'Date of birth' });
-  await dob.getByLabel('Day').selectOption('15');
-  await dob.getByLabel('Month').selectOption('6');
-  await dob.getByLabel('Year').selectOption('1995');
+  await next(2);
+
+  await page.getByLabel('Date of birth').fill('1995-06-15');
   await page.getByText('Male', { exact: true }).click();
-  await page.getByRole('button', { name: /Take selfie/ }).click();
-  const sheet = page.getByRole('dialog', { name: 'Take a selfie' });
+  await next(3);
+
+  await page.getByRole('button', { name: /Take your photo/ }).click();
+  const sheet = page.getByRole('dialog');
   await sheet.locator('input[type=file]').setInputFiles(FACE_PHOTO);
-  await sheet.getByRole('button', { name: 'Use this photo' }).click();
-  await page.getByRole('checkbox', { name: /I agree to the/ }).check();
-  await page.getByRole('button', { name: 'Continue to plans' }).click();
+  await sheet.getByRole('button', { name: /Use this photo/ }).click();
+  await next(4);
 
-  await expect(page).toHaveURL(/\/join\/plan$/);
-  await page.getByRole('radio').first().check();
-  await page.getByRole('button', { name: 'Continue to payment' }).click();
+  /**
+   * These choices are radios the eye never sees: the input is screen-reader only and the
+   * styled card beside it is what a finger lands on. So they are checked by role —
+   * `getByLabel` cannot reach them and the label's own `<span>` intercepts the click —
+   * with `force`, which is the honest way to tick an input that is deliberately hidden.
+   * Their names carry the price, so "3 Months" alone matches nothing.
+   */
+  await page.getByRole('radio', { name: /^3 Months/ }).check({ force: true });
+  await next(5);
 
-  // The gym has no live gateway, so the QR path offers the desk and nothing else (ADR-076).
-  await expect(page).toHaveURL(/\/join\/pay$/);
+  await page.getByRole('radio', { name: 'No', exact: true }).check({ force: true });
+  await next(6);
+
+  // Cash at the desk. The online option here is a standing instruction to collect the fee
+  // each month, not a card form, and the desk is what this journey is about.
+  await page.getByRole('radio', { name: /Cash at the counter/ }).check({ force: true });
+  await next(7);
+
+  await page.getByRole('radio', { name: /Morning/ }).check({ force: true });
+  await next(8);
+
+  await page.getByLabel('Upload a Govt ID').selectOption('AADHAAR');
+  await page.getByLabel('Front of the card').setInputFiles(FACE_PHOTO);
+  await page.getByLabel('Back of the card').setInputFiles(FACE_PHOTO);
+  await next(9);
+
+  await next(10);
+
+  // No gateway is offered anywhere in this journey: the plan is held and paid at the desk
+  // (ADR-076, ADR-093).
   await expect(page.getByRole('button', { name: /^Pay ₹/ })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Pay at reception' }).click();
+  await page.getByRole('checkbox', { name: /I agree to the/ }).check();
+  await page.getByRole('button', { name: /Send to reception|Join/ }).click();
 
-  await expect(page).toHaveURL(/\/join\/done$/);
-  await expect(page.getByRole('heading', { name: 'Your plan is reserved, Qr.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Done, Qr/ })).toBeVisible({ timeout: 30_000 });
 });
