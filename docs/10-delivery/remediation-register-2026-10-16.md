@@ -254,6 +254,55 @@ Final state at 360px: **34 passed, 3 failed**, the three being the `signup.spec.
 mismatch above, which is this container and not the code. The suite went from 4.9 minutes of
 mostly-timeouts to 1.0 minute.
 
+### The payment simulator cannot be reached (QA-007) — needs a decision, not a patch
+
+Four end-to-end tests press an online **"Pay ₹…"** button and then a **"Demo payment"**
+dialog. That sequence cannot happen in any configuration, and the two halves of why sit a
+few files apart:
+
+| | |
+|---|---|
+| `container.ts:113` | `const simulator = env.DEMO_MODE ? new SimulatedPaymentProvider() : null;` |
+| `online-payments.ts:16` | `return process.env['DEMO_MODE'] === 'false' && RAZORPAY_KEY_SECRET !== '';` |
+
+The simulator exists **only** when demo mode is on. Online payment is offered **only** when
+demo mode is off. So the simulated online payment is unreachable, and the four tests that
+drive it — `join-modal.spec.ts`'s main journey and `signup.spec.ts` journeys 3, 4 and 5 —
+have never been able to pass. The `web-e2e` job sets `DEMO_MODE: 'true'` and no gateway
+secret, so this is not a quirk of one machine.
+
+**ADR-093 is right and should not be loosened to make tests pass.** Its reasoning is on the
+record: in demo mode the payment window completes an order without money moving, so the day
+the site answers to the gym's own domain, a stranger pressing Pay becomes an ACTIVE member
+for free. Disabling the offer rather than the simulator is the safe direction.
+
+What it costs is worth saying plainly: **the real online payment path has no automated
+end-to-end coverage at all.** It cannot be exercised in demo mode, and nobody should put
+live Razorpay keys in CI. That is a gap on the one flow that takes money from strangers.
+
+Three ways out, none of which should be chosen by an agent on a deployment day:
+
+1. **Rewrite the four tests for the reception path**, which is what the website actually
+   does under this configuration. Done for `join-modal.spec.ts` already — it now asserts
+   that no online button is offered and follows "Pay at reception" to the reserved
+   confirmation. Honest, cheap, and leaves the gateway untested.
+2. **A third flag** — something like `SIMULATE_ONLINE_PAYMENTS`, false everywhere but the
+   end-to-end job — so the simulator becomes reachable without demo mode weakening the
+   live site. This restores the coverage and adds a switch that must never be true in
+   production, which is exactly the kind of switch ADR-093 was written to avoid.
+3. **Razorpay's own test keys** in the end-to-end job, which is what they are for. Real
+   gateway, no real money, and the only option that tests the code that will run.
+
+The owner's call. Option 3 is the one I would argue for, and it is the only one that
+exercises the code a paying member will meet.
+
+**Still stale, and the last one:** `qr.spec.ts`'s new-member journey expects a hand-off to
+`/join/plan` and `/join/pay`. The form is now a **ten-step** wizard that collects the plan,
+personal training, the pay method and the slot inline and finishes on its own confirmation
+with its own `PayStep`. It needs the same treatment the existing-member journey got —
+mechanical, but it needs the ten steps' field order read off the product rather than
+guessed, and it is not a thing to rush.
+
 **`web-e2e` is not a merge gate** — it is `if: github.event_name == 'push' && github.ref ==
 'refs/heads/main'` — so none of this blocks the merge, and the three environment failures
 will not reproduce in CI. The QR one will.
