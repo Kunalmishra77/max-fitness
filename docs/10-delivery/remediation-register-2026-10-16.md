@@ -38,6 +38,8 @@ Status vocabulary: NOT STARTED · IN PROGRESS · BLOCKED · FIXED (implemented) 
 
 Nothing in this register is DEPLOYED, because no deployment happened.
 
+Section E was added on 2026-10-17 after the owner reported the CRM as slow.
+
 ### A. Security
 
 | ID | Title | Status | Evidence |
@@ -123,6 +125,23 @@ February in a leap year, 1 January.
 | REL-004 | Production smoke checks | **BLOCKED** | No access. |
 | REL-005 | Rollback readiness | **FIXED** (documented) | Below. |
 
+### E. Performance (raised by the owner on 2026-10-17)
+
+The client reported Max Register and the site as slow. These were found by reading the hot
+path rather than by profiling, because this session has no database credentials and cannot
+time a live request — so each entry says what was measured and what was only reasoned.
+
+| ID | Title | Status | Evidence |
+|---|---|---|---|
+| PERF-001 | CRM request waterfall: six serial round trips before a screen's first query | **VERIFIED** (by construction) | `requireCrmContext()` loaded the gym itself *and* again inside `currentActor()`, and is called twice per screen — once in the `(app)` layout, once in the page. Both are now memoised with React `cache` (per-request, so a settings change still applies to the next request), and the gym and session rows are read together because `receptionMayTakePayments` was never part of the session query. **Six queries become two, in one wave.** Counted from the call graph; the saving in milliseconds depends on the round-trip time to Mumbai, which only the owner can measure. |
+| PERF-002 | The dashboard's two unbounded reads | **VERIFIED** | It fetched *every confirmed membership the gym had ever sold* to price the due-this-week tile, and *every trial ever run* with a correlated sub-select to count three numbers, reducing both in JavaScript. Now one join on `latestMembershipId` and three `FILTER` clauses. Arrivals were a row per check-in to take a list length; now `COUNT(DISTINCT)`. Proven equivalent by `packages/db/tests/dashboard.integration.test.ts`, which was committed first and **passed against the previous implementation** in CI (`be202e2`) before the rewrite landed. |
+| PERF-003 | Every member's fee state fetched three times per dashboard load | **FIXED** | Once for the tiles, once to annotate five call tasks, once more through a separate `memberCounts()` call that existed to read one number. That number now comes back with the tiles. `#feeStates` gained an optional member filter, used where the caller already knows the member — the member profile scanned the whole gym to read one row. Deliberately **not** used where fee states are fetched in parallel with the rows they annotate: narrowing those trades a cheap wider query for an extra round trip, which at this gym's size is the worse bargain. |
+| PERF-004 | Connection-pool starvation serialising every fan-out screen | **FIXED** | `poolMax` was hard-coded to 5. The home screen issues ~20 reads in one `Promise.all`, so they ran in **four serial waves** — four round trips to Mumbai where one would do. Now `WEB_DB_POOL_MAX`, default 16. This adds no load; the same queries run either way. Transaction pooling on :6543 is what makes it safe (ADR-010). |
+| PERF-005 | Client JavaScript | **VERIFIED — not a cause** | Measured from the build output: 2.7 MB of chunks uncompressed across *all* routes, largest 428 KB, and the large ones are React/`react-dom` framework code. No heavy library leaks into the CRM — the MediaPipe face detector is not in the shared chunks. Ruled out rather than fixed. |
+| PERF-006 | Reports page reads every confirmed membership ever | **NOT STARTED** | Same pattern as PERF-002, in `reports-read.repository.ts`. Left alone on purpose: reports is opened occasionally, the dashboard on every login and again every minute, and this read feeds the money figures. It needs its own pinning tests before it is touched, which is not work to rush the day of a deployment. |
+| PERF-007 | Where the application is hosted | **BLOCKED — owner** | The one thing that could outweigh all of the above. Every CRM screen is `force-dynamic` and reads Supabase in Mumbai (`ap-south-1`). If the Coolify host is not in the same region, each remaining round trip costs 150–250 ms instead of 5–20 ms, and no amount of query work recovers it. **Needs the owner to say which region the Coolify server is in.** |
+| PERF-008 | The home screen refreshes itself every 60 s | **NOT STARTED** | `AutoRefresh seconds={60}` re-runs the heaviest read in the application on every open tab. It is already gated on tab visibility, and after PERF-002/003/004 the refresh is far cheaper, so this is left as it is pending a real measurement — but it is the first dial to turn if the owner's own tab feels slow while idle.
+
 ## Service mapping (REL-002) — derived, not verified
 
 Three Dockerfiles exist: `Dockerfile.web`, `Dockerfile.worker`, `Dockerfile.face`. There is
@@ -149,11 +168,14 @@ existed as a `MessagePurpose`, and both attendance indexes already existed. The 
 outstanding migration is the pre-existing one from the review: production still needs
 `pnpm db:deploy` for `20261016120000_rls_on_later_tables`.
 
-**New environment variables**, both optional with safe defaults — names only:
+**New environment variables**, all optional with safe defaults — names only:
 
 - `TRUSTED_PROXY_HOPS` — default `1`. **Set this deliberately.** Too low reads an address
   the client chose and SEC-002 is undone. 1 for Coolify's proxy alone; 2 with a CDN in front.
 - `CSP_REPORT_ONLY` — unset means the CSP is **enforced**. Set to `true` to watch it first.
+- `WEB_DB_POOL_MAX` — default `16` (PERF-004). Connections **per web container** on the
+  transaction pooler. Leave it alone unless the container count changes; if several web
+  containers are run, keep `containers × WEB_DB_POOL_MAX` inside the pooler's client limit.
 
 **Rollback (REL-005).** Every change is additive and schema-free, so rolling back is
 redeploying the previous image, with two caveats worth knowing in advance: a rolled-back web

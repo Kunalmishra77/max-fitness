@@ -1934,3 +1934,87 @@ Gates: typecheck 8/8, lint clean, 2271 passed, `next build` clean.
 
 **Still open:** the Phase 7 redesign, and the CRM axe suite which is written and has never
 been run. Both blockers unchanged.
+
+---
+
+## 2026-10-17 — the CRM is slow (PERF-001 … PERF-008)
+
+The owner reported that Max Register and the site feel slow and that the client wants a
+fast response. No profiler here — there are no database credentials in this session, so
+nothing live could be timed. What follows was found by reading the hot path, and each item
+says plainly whether it was measured or reasoned.
+
+**The waterfall was the headline (PERF-001).** `requireCrmContext()` loaded the gym itself
+and loaded it again inside `currentActor()`, and it is called **twice** on every screen —
+once in the `(app)` route group's layout, once in the page. That is six serial round trips
+to Mumbai before a screen's own first query had even been sent. Memoised per request with
+React's `cache`, and the gym and session rows now read together because
+`receptionMayTakePayments` was never part of the session query at all — `actorFor` only
+copies it onto the actor it returns. **Six queries, two waves, down to two queries in one.**
+
+`requireCrmContext()` deliberately still asks for the actor before the gym. Reversing the
+two would turn a visitor with no cookie into an error page instead of the login screen, and
+it costs nothing now, because the gym is already memoised by then. The gym read also picked
+up the single retry the session lookup already had, so a dropped pooled connection no longer
+reads as "this gym is not configured" — which is a hard failure on a checkout.
+
+**The pool was the one I did not expect (PERF-004).** `poolMax` was hard-coded to 5, with a
+comment reasoning that Supavisor is the real pool so a large client-side pool buys nothing.
+That is true of a request that makes one query and wrong about this application: the home
+screen fans out about twenty reads in a single `Promise.all`, so five connections meant
+**four serial waves** — four round trips where one would do. It is `WEB_DB_POOL_MAX` now,
+default 16. It adds no load on the database; the same queries run either way. It stops them
+queuing behind each other inside the container, which is what transaction pooling exists to
+allow.
+
+**Two unbounded reads on the heaviest screen in the app (PERF-002).** The dashboard fetched
+*every confirmed membership the gym had ever sold* — ordered by end date, reduced in
+JavaScript to "the first one seen per member" — to price the due-this-week tile, and threw
+away everybody who was not due. `member_fee_at` already knows which membership is a
+member's latest; that is what `latestMembershipId` is for. It also read *every trial ever
+run*, each with a correlated sub-select, to produce three numbers, and fetched one row per
+check-in to take the length of a list. Those are now one join, three `FILTER` clauses and a
+`COUNT(DISTINCT)`.
+
+This one needed proof rather than confidence, because the dashboard is where the owner reads
+the month's takings and nothing covered it. So the tests went in **first** — fee states,
+arrivals, calls, birthdays, approvals, alerts, both months' money and all three trial
+numbers, plus a renewed member whose January plan cost more than their September one so the
+expected-fee sum cannot quietly use the dearest, and a full copy of every row under a second
+gym so a query that forgets its `gymId` fails in CI rather than on the owner's screen. They
+were committed against the old implementation and **passed in CI on `be202e2`** before a
+line of it was rewritten. A failure afterwards means the rewrite, which is the only way this
+kind of change is worth making.
+
+**And the same fee-state read three times per load (PERF-003).** Once for the tiles, once to
+annotate five call tasks, and once more through a separate `memberCounts()` call that existed
+to read a single number off the end of it. That number comes back with the tiles now.
+`#feeStates` gained an optional member filter, used on the member profile, which ran a pass
+over the whole gym to read one row. It is deliberately **not** used where fee states are
+fetched in parallel with the rows they annotate: narrowing those trades a cheap wider query
+for an extra network round trip, and at this gym's size that is the worse end of the bargain.
+Worth writing down, because the obvious change there would have made the screen slower.
+
+**Ruled out (PERF-005).** Client JavaScript, measured from the build: 2.7 MB of chunks
+uncompressed across *all* routes, largest 428 KB, and the large ones are React and
+`react-dom`. The MediaPipe face detector is not in the shared chunks. Not a cause.
+
+**Left alone, on purpose.** The reports page has the same unbounded pattern (PERF-006), but
+it is opened occasionally where the dashboard is opened on every login and again every
+minute, and it feeds the money figures — it needs its own pinning tests first, which is not
+work to rush on a deployment day. The 60-second self-refresh (PERF-008) is much cheaper
+after all of the above and is the first dial to turn if an idle tab still feels slow.
+
+**The one thing code cannot fix (PERF-007).** Every CRM screen is `force-dynamic` and reads
+Supabase in `ap-south-1`. If the Coolify host is not in that region, each remaining round
+trip costs 150–250 ms instead of 5–20 ms, and no query work recovers it. That is a question
+for the owner, and it may matter more than everything above put together.
+
+No migration. No schema change. One new optional env var (`WEB_DB_POOL_MAX`, documented in
+`.env.example`).
+
+Gates: typecheck 8/8, lint clean, 2271 unit tests passed, `next build` clean. The dashboard
+integration tests need Postgres and run in CI.
+
+**Still open, unchanged:** the Phase 7 redesign and the CRM axe suite, which is written and
+has never been run. Both need a browser and the owner's decisions.
