@@ -47,7 +47,7 @@ suite('crm dashboard counts against Postgres', () => {
 
   async function member(
     key: string,
-    options: { gym?: string; status?: 'ACTIVE' | 'LEFT'; dob?: ISTDate; deleted?: boolean } = {},
+    options: { gym?: string; status?: 'ACTIVE' | 'LEFT' | 'PENDING_PAYMENT'; dob?: ISTDate; deleted?: boolean } = {},
   ): Promise<string> {
     const gym = options.gym ?? gymId;
     const id = `mem_it_dash_${run}_${key}`;
@@ -119,6 +119,17 @@ suite('crm dashboard counts against Postgres', () => {
     await member('left', { status: 'LEFT' });
     // Erased (BR privacy): must count nowhere, including the birthday query.
     await member('deleted', { dob: TODAY, deleted: true });
+
+    /**
+     * Two people who filled the form and reached the payment screen (ADR-125). One
+     * stopped there and is waiting; the other paid, and is therefore not waiting for
+     * anything, whatever their status row still says.
+     */
+    await member('awaiting', { status: 'PENDING_PAYMENT' });
+    const paidButPending = await member('awaiting_but_paid', { status: 'PENDING_PAYMENT' });
+    await prisma.payment.create({
+      data: { gymId, memberId: paidButPending, amountPaise: 100_000, method: 'RAZORPAY', status: 'PAID', paidAt: new Date('2026-09-29T10:00:00Z') },
+    });
 
     const birthday = await member('birthday', { dob: istDate('1995-09-30') });
     await membership(birthday, { from: istDate('2026-01-01'), to: istDate('2026-12-31'), pricePaise: 300_000 });
@@ -271,13 +282,17 @@ suite('crm dashboard counts against Postgres', () => {
     expect(counts.birthdaysToday).toBe(1);
   });
 
-  it('counts what is waiting for somebody: approvals and unread alerts', () => {
+  it('counts what is waiting for somebody: approvals, unread alerts and unpaid sign-ups', () => {
     expect(counts.verificationsPending).toBe(2);
     expect(counts.unreadAlerts).toBe(1);
+    // One person stopped at the payment screen. The one who went on to pay is not
+    // waiting for anything and must not be on the list (ADR-125).
+    expect(counts.awaitingPayment).toBe(1);
   });
 
   it('totals only money actually taken, by the month it was taken in', () => {
-    expect(counts.collectedThisMonthPaise).toBe(500_000);
+    // 300000 (15 Sep) + 200000 (5 Sep) + 100000 (the unpaid-sign-up fixture, 29 Sep).
+    expect(counts.collectedThisMonthPaise).toBe(600_000);
     expect(counts.collectedLastMonthPaise).toBe(120_000);
   });
 
@@ -293,6 +308,7 @@ suite('crm dashboard counts against Postgres', () => {
   it('answers for one gym only', async () => {
     const other = await reader.dashboard(otherGymId, TODAY, MONTH_START, LAST_MONTH_START);
     expect(other.activeMembers).toBe(1);
+    expect(other.awaitingPayment).toBe(0);
     expect(other.dueThisWeek).toBe(1);
     expect(other.dueThisWeekPaise).toBe(777_777);
     expect(other.callsToday).toBe(1);

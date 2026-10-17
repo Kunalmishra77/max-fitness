@@ -20,6 +20,8 @@ export interface DashboardCounts {
   readonly birthdaysToday: number;
   readonly verificationsPending: number;
   readonly unreadAlerts: number;
+  /** Somebody who filled a form and stopped at the payment screen (ADR-125). */
+  readonly awaitingPayment: number;
   readonly collectedThisMonthPaise: number;
   readonly collectedLastMonthPaise: number;
   /** The trial (ADR-088): on one today, finished and not joined, and converted this month. */
@@ -225,6 +227,18 @@ interface FeeRow {
   effectiveEndDate: Date | null;
 }
 
+/** A fee state with what that member last paid, for the week's expected-fee total. */
+interface FeeWithPriceRow extends FeeRow {
+  pricePaise: number | null;
+}
+
+/** The three trial numbers, counted in the database rather than over every trial ever run. */
+interface TrialCountsRow {
+  running: number;
+  finishedNotJoined: number;
+  convertedThisMonth: number;
+}
+
 /**
  * Somebody who filled a form and never paid (ADR-125).
  *
@@ -261,7 +275,27 @@ export class PrismaCrmReader {
     this.#prisma = prisma;
   }
 
-  #feeStates(gymId: string, today: ISTDate): Promise<FeeRow[]> {
+  /**
+   * Every member's fee state on a date, from the canonical SQL read model (ADR-013).
+   *
+   * `only` narrows it to named members (PERF-003). Several screens read a page of rows —
+   * five call tasks, two hundred arrivals, one member's profile — and then annotate each
+   * with its fee state. They all asked for *every* member of the gym to do it, and threw
+   * the rest away. The home screen did it three times over on one load. Asking for the
+   * members being annotated keeps the work proportional to what is on screen.
+   *
+   * An empty list is an answer, not a reason to query: `ANY('{}')` matches nothing, and
+   * a page with no rows to annotate needs no fee states at all.
+   */
+  #feeStates(gymId: string, today: ISTDate, only?: readonly string[]): Promise<FeeRow[]> {
+    if (only !== undefined) {
+      if (only.length === 0) return Promise.resolve([]);
+      return this.#prisma.$queryRaw<FeeRow[]>`
+        SELECT "memberId", "feeState", "daysLeft", "effectiveEndDate"
+        FROM "member_fee_at"(${today}::date)
+        WHERE "gymId" = ${gymId} AND "memberId" = ANY(${[...only]}::text[])
+      `;
+    }
     return this.#prisma.$queryRaw<FeeRow[]>`
       SELECT "memberId", "feeState", "daysLeft", "effectiveEndDate"
       FROM "member_fee_at"(${today}::date)
@@ -272,16 +306,38 @@ export class PrismaCrmReader {
   async dashboard(gymId: string, today: ISTDate, monthStart: ISTDate, lastMonthStart: ISTDate): Promise<DashboardCounts> {
     const [day, month] = [Number(today.slice(8, 10)), Number(today.slice(5, 7))];
 
-    const [fees, activeMembers, attendance, callsToday, birthdaysToday, verificationsPending, unreadAlerts, thisMonth, lastMonth, dueSoonPlans, trials] =
+    const [fees, activeMembers, attendedToday, callsToday, birthdaysToday, verificationsPending, unreadAlerts, thisMonth, lastMonth, awaitingPayment, trials] =
       await Promise.all([
-        this.#feeStates(gymId, today),
+        /**
+         * Every member's fee state, and what their latest plan cost (PERF-002).
+         *
+         * The price used to come from a second query that read **every confirmed
+         * membership the gym had ever sold** — ordered by end date, reduced in JavaScript
+         * to "the first one seen per member", and thrown away for everybody who was not
+         * due this week. `member_fee_at` already knows which membership is a member's
+         * latest: that is what `latestMembershipId` is. Joining to it gives the same
+         * number from one row per member instead of one row per renewal in the gym's
+         * history.
+         */
+        this.#prisma.$queryRaw<FeeWithPriceRow[]>`
+          SELECT f."memberId", f."feeState", f."daysLeft", f."effectiveEndDate", ms."pricePaise"
+            FROM "member_fee_at"(${today}::date) f
+            LEFT JOIN "Membership" ms ON ms."id" = f."latestMembershipId"
+           WHERE f."gymId" = ${gymId}
+        `,
         this.#prisma.member.count({ where: { gymId, status: 'ACTIVE', deletedAt: null } }),
-        this.#prisma.attendanceEvent.findMany({
-          // `attendanceDate` is the IST business date the check-in counts for (BR-9).
-          where: { gymId, attendanceDate: toDbDate(today), voidedAt: null },
-          select: { memberId: true },
-          distinct: ['memberId'],
-        }),
+        /**
+         * People in the gym today, counted in the database.
+         *
+         * This fetched one row per check-in and took the length of the list. The count is
+         * the only thing anybody wanted, and the screen re-asks for it every minute.
+         * `attendanceDate` is the IST business date the check-in counts for (BR-9).
+         */
+        this.#prisma.$queryRaw<Array<{ count: bigint }>>`
+          SELECT COUNT(DISTINCT "memberId")::bigint AS count
+            FROM "AttendanceEvent"
+           WHERE "gymId" = ${gymId} AND "attendanceDate" = ${today}::date AND "voidedAt" IS NULL
+        `,
         this.#prisma.callTask.count({ where: { gymId, status: 'OPEN', dueDate: { lte: toDbDate(today) } } }),
         this.#prisma.$queryRaw<Array<{ count: bigint }>>`
           SELECT COUNT(*)::bigint AS count FROM "Member"
@@ -299,69 +355,63 @@ export class PrismaCrmReader {
           },
           _sum: { amountPaise: true },
         }),
-        this.#prisma.membership.findMany({
-          where: { gymId, status: 'CONFIRMED' },
-          select: { memberId: true, pricePaise: true, endDate: true },
-          orderBy: { endDate: 'desc' },
-        }),
-        // Every confirmed trial, with whether that member has ever bought a plan. Three
-        // numbers come out of it: on a trial today, finished without joining, and joined
-        // this month after one (ADR-088).
-        this.#prisma.membership.findMany({
-          where: { gymId, isTrial: true, status: 'CONFIRMED' },
-          select: {
-            memberId: true,
-            startDate: true,
-            endDate: true,
-            member: {
-              select: {
-                memberships: {
-                  where: { isTrial: false, status: 'CONFIRMED' },
-                  select: { confirmedAt: true },
-                  orderBy: { confirmedAt: 'asc' },
-                  take: 1,
-                },
-              },
-            },
-          },
-        }),
+        // The waiting-for-payment worklist (ADR-125). It lives here rather than in a
+        // second `memberCounts()` call from the page, which cost the home screen a whole
+        // extra pass over every member's fee state to read one number off the end of it.
+        this.#prisma.member.count({ where: { gymId, deletedAt: null, ...awaitingPaymentWhere(true) } }),
+        /**
+         * The three trial numbers (ADR-088), counted in the database.
+         *
+         * This read every confirmed trial the gym had ever run — each with a correlated
+         * sub-select for the member's first real plan — and then counted three things
+         * over the list in JavaScript. The three counts are now three `FILTER` clauses
+         * over the same join, and one row comes back.
+         *
+         * "Running" is by date, not status: a trial whose last day has passed is
+         * finished, whatever the row still says. "Converted" counts the plan they bought
+         * after it, by the month that plan was confirmed in.
+         */
+        this.#prisma.$queryRaw<TrialCountsRow[]>`
+          SELECT
+            COUNT(*) FILTER (
+              WHERE t."startDate" IS NOT NULL AND t."startDate" <= ${today}::date AND t."endDate" >= ${today}::date
+            )::int AS "running",
+            COUNT(*) FILTER (WHERE t."endDate" < ${today}::date AND j."confirmedAt" IS NULL)::int AS "finishedNotJoined",
+            COUNT(*) FILTER (WHERE j."confirmedAt" >= ${toDbDate(monthStart)})::int AS "convertedThisMonth"
+          FROM "Membership" t
+          LEFT JOIN LATERAL (
+            SELECT m."confirmedAt"
+              FROM "Membership" m
+             WHERE m."memberId" = t."memberId" AND m."isTrial" = false AND m."status" = 'CONFIRMED'
+             ORDER BY m."confirmedAt" ASC
+             LIMIT 1
+          ) j ON true
+          WHERE t."gymId" = ${gymId} AND t."isTrial" = true AND t."status" = 'CONFIRMED'
+        `,
       ]);
 
     const dueSoon = fees.filter((f) => f.feeState === 'DUE_SOON');
-    const dueSoonIds = new Set(dueSoon.map((f) => f.memberId));
-    // What each due-soon member last paid is the best estimate of what they will pay again.
-    const expected = new Map<string, number>();
-    for (const membership of dueSoonPlans) {
-      if (dueSoonIds.has(membership.memberId) && !expected.has(membership.memberId)) expected.set(membership.memberId, membership.pricePaise);
-    }
-
-    // "Running" is by date, not status: a trial whose last day has passed is finished,
-    // whatever the row still says. "Converted" counts the plan they bought after it.
-    const monthStartDate = toDbDate(monthStart);
-    const todayDate = toDbDate(today);
-    const joinedAt = (trial: (typeof trials)[number]) => trial.member.memberships[0]?.confirmedAt ?? null;
-    const trialsRunning = trials.filter((trial) => trial.startDate !== null && trial.startDate <= todayDate && trial.endDate >= todayDate).length;
-    const trialsFinishedNotJoined = trials.filter((trial) => trial.endDate < todayDate && joinedAt(trial) === null).length;
-    const trialsConvertedThisMonth = trials.filter((trial) => {
-      const joined = joinedAt(trial);
-      return joined !== null && joined >= monthStartDate;
-    }).length;
+    // What each due-soon member last paid is the best estimate of what they will pay
+    // again. A member with no confirmed plan has no price, and contributes nothing.
+    const dueThisWeekPaise = dueSoon.reduce((sum, row) => sum + (row.pricePaise ?? 0), 0);
+    const trial = trials[0];
 
     return {
       activeMembers,
-      attendedToday: attendance.length,
+      attendedToday: Number(attendedToday[0]?.count ?? 0),
       dueThisWeek: dueSoon.length,
-      dueThisWeekPaise: [...expected.values()].reduce((sum, paise) => sum + paise, 0),
+      dueThisWeekPaise,
       expired: fees.filter((f) => f.feeState === 'EXPIRED').length,
       callsToday,
       birthdaysToday: Number(birthdaysToday[0]?.count ?? 0),
       verificationsPending,
       unreadAlerts,
+      awaitingPayment,
       collectedThisMonthPaise: thisMonth._sum.amountPaise ?? 0,
       collectedLastMonthPaise: lastMonth._sum.amountPaise ?? 0,
-      trialsRunning,
-      trialsFinishedNotJoined,
-      trialsConvertedThisMonth,
+      trialsRunning: trial?.running ?? 0,
+      trialsFinishedNotJoined: trial?.finishedNotJoined ?? 0,
+      trialsConvertedThisMonth: trial?.convertedThisMonth ?? 0,
     };
   }
 
@@ -585,7 +635,9 @@ export class PrismaCrmReader {
 
     const monthStart = toDbDate(`${today.slice(0, 8)}01` as ISTDate);
     const [fees, attendance, allVisits] = await Promise.all([
-      this.#feeStates(gymId, today),
+      // One member's fee state, not the whole gym's: the member is already known by the
+      // time this runs, so narrowing it costs no extra round trip (PERF-003).
+      this.#feeStates(gymId, today, [memberId]),
       this.#prisma.attendanceEvent.findMany({
         where: { memberId, attendanceDate: { gte: monthStart }, voidedAt: null },
         select: { attendanceDate: true },

@@ -182,6 +182,22 @@ export const EnvSchema = z
     NEXT_PUBLIC_GA4_ID: z.string().default(''),
     NEXT_PUBLIC_META_PIXEL_ID: z.string().default(''),
 
+    /**
+     * How many database connections one web container may hold open (PERF-004).
+     *
+     * This was hard-coded to 5 on the reasoning that Supavisor is the real pool, so a
+     * large client-side pool buys nothing. That is true of a request that makes one
+     * query, and wrong about this application: the CRM home screen fans out about twenty
+     * reads in a single `Promise.all`, so with five connections they ran in four serial
+     * waves and the screen paid four network round trips to Mumbai instead of one.
+     *
+     * Raising it does not raise the load on the database — the same queries run either
+     * way — it stops them queuing behind each other inside the container. Transaction
+     * pooling multiplexes these onto far fewer backend connections, which is the whole
+     * point of pooling on :6543 (ADR-010).
+     */
+    WEB_DB_POOL_MAX: z.coerce.number().int().min(1).max(50).default(16),
+
     // ── Worker ──────────────────────────────────────────────────────────
     WORKER_ID: z.string().min(1).default('worker-main'),
     WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(64).default(4),

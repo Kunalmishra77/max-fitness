@@ -42,15 +42,16 @@ export default async function CrmHomePage() {
   const { clock } = getContainer();
   const now = clock.now();
 
-  const [counts, calls, birthdays, latest, arrivals, memberCounts] = await Promise.all([
+  const [counts, calls, birthdays, latest, arrivals] = await Promise.all([
+    // The waiting-for-payment count (ADR-125) comes back with the rest of the tiles. It
+    // used to be a sixth call here, which cost this screen a second full pass over every
+    // member's fee state to read one number off the end of it (PERF-002).
     reader.dashboard(gym.id, today, monthStart(today), previousMonthStart(today)),
     reader.callTasks(gym.id, today, 5),
     new PrismaBirthdays(getContainer().prisma).today(gym.id, today),
     new PrismaAnnouncements(getContainer().prisma).latest(gym.id),
     // The last week of arrivals: "23 today" means nothing without the week around it (ADR-095).
     reader.attendanceByDay(gym.id, today, 7),
-    // For the waiting-for-payment count (ADR-125), which lives with the member counts.
-    reader.memberCounts(gym.id, today),
   ]);
   const trend = attendanceTrend({ counts: arrivals, today, days: 7 });
   // Short weekday names in the reading language; 4 January 1970 was a Sunday.
@@ -77,11 +78,11 @@ export default async function CrmHomePage() {
           href: '/crm/verify',
         }
       : false,
-    memberCounts.awaitingPayment > 0
+    counts.awaitingPayment > 0
       ? {
           key: 'waitingPayment',
-          count: memberCounts.awaitingPayment,
-          label: t('home.waitingPayment', { count: memberCounts.awaitingPayment }),
+          count: counts.awaitingPayment,
+          label: t('home.waitingPayment', { count: counts.awaitingPayment }),
           href: '/crm/members/waiting',
         }
       : false,
