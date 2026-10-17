@@ -344,19 +344,16 @@ jobs:
   # ── Static analysis ───────────────────────────────────────────────────────
   # security-plan.md §4 requires CodeQL on every PR.
   #
-  # `continue-on-error` is deliberate and temporary. CodeQL is free for public
-  # repositories but needs GitHub Advanced Security on a private one, and which of those
-  # applies here could not be verified from the environment this was written in. A job
-  # that fails for want of a licence would put CI back in the state this branch just
-  # fixed, where a red gate reports nothing.
-  #
-  # **Remove `continue-on-error` once a run has been seen to succeed.** Until then this
-  # job reports and does not block, which is worth saying plainly: it is not yet a gate.
+  # This started as `continue-on-error`, because CodeQL is free for public repositories but
+  # needs Advanced Security on a private one and that could not be checked from the
+  # container it was written in. The first run on this branch succeeded, so the flag is
+  # gone and this is a real gate. If the repository is ever made private without Advanced
+  # Security, this job will start failing — that is the correct signal, not a reason to
+  # put the flag back.
   codeql:
     name: CodeQL (JavaScript/TypeScript)
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    continue-on-error: true
 
     permissions:
       actions: read
