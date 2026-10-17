@@ -228,9 +228,31 @@ than reverting the branch.
 | `signup.spec.ts` × 3 | `test.use({ launchOptions: { args: [fake camera] } })` replaces the whole `launchOptions` object, including the `executablePath` this container needs, so Playwright looks for a `chrome-headless-shell` build that is not installed here. An artefact of **this** machine; CI installs the matching browsers. | No — environment |
 | `qr.spec.ts` — existing member by QR | **A stale test, and worth someone's attention.** It is written for the one-page form of ADR-075 — it fills name, mobile, date of birth and nine more fields in one go, and asserts no "Question _n_ of _m_" text. The form is a **nine-step wizard**: ADR-080 reverted the one-page design after the gym watched members struggle with it on a phone. The test's guard never caught the change, because the stepper reads "1 / 9" and not "Question 1 of 9". It has been failing since ADR-080 and is nothing to do with this branch. | No — pre-existing |
 
-**The `qr.spec.ts` rewrite is deliberately not attempted here.** It needs the nine steps' real
-field order confirmed against the product, and a journey test guessed at is worse than one
-known to be stale. It is the clearest remaining piece of work in the test suite.
+**`qr.spec.ts` was then rewritten**, once the nine steps' real field order was read out of
+`STEP_KEYS` rather than guessed: name and number, date of birth and gender, the selfie, the
+plan and the paid-until date, how they pay, when they train, the ID photographs, the optional
+step, consent. Four things had drifted, not one:
+
+- Two whole steps had been added since — how the member pays (ADR-105) and when they train.
+- Three labels had changed: `3 months` → `3 Months`, `Which ID are you showing?` →
+  `Upload a Govt ID`, `Photo of the front` → `Front of the card`.
+- The approve button on the verification queue had lost its tick: `✓ सही है` → `सही है`.
+- The last assertion opened the register and looked for the new member by name. The list is
+  alphabetical and cut to a page, so somebody called "Qr …" is not on it once the gym has two
+  hundred members — it passed against an empty database and could not against a real one. It
+  searches now.
+
+Advancing a step waits for the **counter**, not for the next field, because a step is checked
+against the server before it will advance. And the date-of-birth check can return a *soft*
+warning — a date somebody else already has is common enough that the member is asked to
+confirm rather than refused — so the helper races the counter against that confirm button
+instead of testing for it immediately, which is what made the first rewrite flaky.
+
+**3.9 seconds, passing. It had been failing for three minutes.**
+
+Final state at 360px: **34 passed, 3 failed**, the three being the `signup.spec.ts` browser
+mismatch above, which is this container and not the code. The suite went from 4.9 minutes of
+mostly-timeouts to 1.0 minute.
 
 **`web-e2e` is not a merge gate** — it is `if: github.event_name == 'push' && github.ref ==
 'refs/heads/main'` — so none of this blocks the merge, and the three environment failures

@@ -3,12 +3,20 @@ import { expect, test } from '@playwright/test';
 import { waitForHydration } from './hydration';
 
 /**
- * Journey 7 (testing-strategy §3; qr-onboarding-flow §3; ADR-058, ADR-074, ADR-075):
- * an existing member scans the reception QR, fills one page — including both sides of
- * an Aadhaar — shows the code, and reception looks at the card and approves.
+ * Journey 7 (testing-strategy §3; qr-onboarding-flow §3; ADR-058, ADR-074, ADR-080):
+ * an existing member scans the reception QR, answers nine short steps — including both
+ * sides of an Aadhaar — shows the code, and reception looks at the card and approves.
  *
  * Each run uses a fresh name and number, so it never collides with a member already
  * there. The selfie and the ID photographs go through the phone-camera file inputs.
+ *
+ * **This was written for the one-page form of ADR-075 and had stopped testing anything.**
+ * ADR-080 put the questions back on separate steps — the gym watched members struggle
+ * with the whole form on a phone at reception — and the guard here, which asserted the
+ * absence of "Question n of m", never noticed, because the stepper reads "1 / 9". The
+ * test filled the first two fields and then waited three minutes for a date-of-birth
+ * field that was a step away. Two fields had also been added since (how the member pays,
+ * and when they train) and three labels had changed under it.
  */
 
 const FACE_PHOTO = fileURLToPath(new URL('./fixtures/face.jpg', import.meta.url));
@@ -31,30 +39,75 @@ test('an existing member sends one page of details by QR and reception approves 
   await page.goto('/qr');
   await page.getByRole('link', { name: /I am already a member/ }).click();
   await waitForHydration(page);
-  // One page, not nine questions (ADR-075).
-  await expect(page.getByText(/Question \d of \d/)).toHaveCount(0);
 
+  /**
+   * One question at a time, nine of them, with a counter (ADR-080).
+   *
+   * `to` is the step we expect to land on, and waiting for the counter rather than for a
+   * field is what makes this deterministic: a step is checked against the server before
+   * it will advance, so the next field does not exist until that returns.
+   *
+   * A step can also come back with a *soft* warning — a date of birth somebody else in
+   * the register already has is common enough that the member is asked to confirm rather
+   * than refused. It has its own button, and because the mobile number is random on every
+   * run it appears on some runs and not others, which is what made this test flaky until
+   * it was handled here.
+   */
+  const next = async (to: number) => {
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
+    const counter = page.getByText(`${to} / 9`);
+    const carryOn = page.getByRole('button', { name: /It is my date of birth/ });
+    // Whichever of the two arrives — asking first and testing after is the race that made
+    // this flaky, because the warning only exists once the server has answered.
+    await expect(counter.or(carryOn).first()).toBeVisible();
+    if (await carryOn.isVisible()) await carryOn.click();
+    await expect(counter).toBeVisible();
+  };
+  await expect(page.getByText('1 / 9')).toBeVisible();
+
+  // 1/9 — who they are.
   await page.getByLabel('Full name').fill(name);
   await page.getByLabel('Mobile number').fill(mobile);
+  await next(2);
+
+  // 2/9 — the radio itself is screen-reader only; the label is what a finger lands on.
   await page.getByLabel('Date of birth').fill('1990-02-14');
-  // The radio itself is screen-reader only; the label is what a finger lands on.
   await page.getByText('Male', { exact: true }).click();
-  await page.getByLabel('Joining date').fill('2019-04-15');
+  await next(3);
 
-  await page.getByRole('button', { name: 'Take your photo' }).click();
-  const sheet = page.getByRole('dialog', { name: 'Take a selfie' });
+  // 3/9 — the selfie, through the phone's camera roll rather than a live camera.
+  await page.getByRole('button', { name: /Take your photo/ }).click();
+  const sheet = page.getByRole('dialog');
   await sheet.locator('input[type=file]').setInputFiles(FACE_PHOTO);
-  await sheet.getByRole('button', { name: 'Use this photo' }).click();
+  await sheet.getByRole('button', { name: /Use this photo/ }).click();
+  await next(4);
 
-  await page.getByText('3 months', { exact: true }).click();
+  // 4/9 — the plan and what they have paid until.
+  await page.getByText('3 Months', { exact: true }).click();
   await page.getByLabel('Fees paid until').fill(inThreeWeeks());
+  await next(5);
 
-  // The ID is photographs only — there is no field anywhere for the number (ADR-074).
-  await page.getByLabel('Which ID are you showing?').selectOption('AADHAAR');
+  // 5/9 — how they pay. Cash keeps the desk's existing habit; nothing is charged here.
+  await page.getByText('Cash at the counter', { exact: true }).click();
+  await next(6);
+
+  // 6/9 — when they train.
+  await page.getByText('Morning', { exact: true }).click();
+  await next(7);
+
+  // 7/9 — the ID is photographs only; there is no field anywhere for the number (ADR-074).
+  await page.getByLabel('Upload a Govt ID').selectOption('AADHAAR');
   await expect(page.getByLabel(/Aadhaar number|ID number/)).toHaveCount(0);
-  await page.getByLabel('Photo of the front').setInputFiles(FACE_PHOTO);
-  await page.getByLabel('Photo of the back').setInputFiles(FACE_PHOTO);
+  await page.getByLabel('Front of the card').setInputFiles(FACE_PHOTO);
+  await page.getByLabel('Back of the card').setInputFiles(FACE_PHOTO);
+  await next(8);
 
+  // 8/9 — the optional step, where the joining date lives.
+  await page.getByLabel('Joining date').fill('2019-04-15');
+  await next(9);
+
+  // 9/9 — consent, then send.
+  await expect(page.getByText('9 / 9')).toBeVisible();
   await page.getByRole('checkbox', { name: /I agree to the Terms/ }).check();
   await page.getByRole('button', { name: 'Send to reception' }).click();
 
@@ -81,14 +134,22 @@ test('an existing member sends one page of details by QR and reception approves 
   await expect(card.getByRole('img', { name: 'आधार — पीछे' })).toBeVisible();
   await expect(card.getByText('जॉइन किया')).toBeVisible();
 
-  await card.getByRole('button', { name: '✓ सही है' }).click();
+  // The tick was dropped from this label; "✗ गलत है" beside it still carries its cross.
+  await card.getByRole('button', { name: 'सही है', exact: true }).click();
   await expect(card.getByRole('status')).toHaveText('मंज़ूर — मेंबरशिप चालू।');
 
   await page.reload();
   await expect(page.getByRole('article', { name })).toHaveCount(0);
 
-  // And the photographs are still reachable afterwards, on the member's own page.
-  await page.goto('/crm/members');
+  /**
+   * And the photographs are still reachable afterwards, on the member's own page.
+   *
+   * Reached by searching, not by opening the register and looking: the list is
+   * alphabetical and cut to a page, so a new member whose name starts with Q is simply
+   * not on it once the gym has a couple of hundred people — which is how this assertion
+   * failed against realistic data while passing against an empty database.
+   */
+  await page.goto(`/crm/members?q=${encodeURIComponent(name)}`);
   await page.getByRole('link', { name: new RegExp(name) }).first().click();
   await expect(page.getByRole('heading', { name: 'फ़ाइल पर ID' })).toBeVisible();
   await expect(page.getByRole('img', { name: 'आधार — आगे' })).toBeVisible();
