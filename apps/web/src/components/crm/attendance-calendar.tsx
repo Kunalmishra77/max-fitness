@@ -97,9 +97,14 @@ export function AttendanceCalendar({
           // Four bands rather than a continuous ramp: a shade a person can name.
           const share = cell.visits / busiest;
           const tone = !cell.inMonth
-            ? 'text-brand-stone/40'
+            ? ''
             : cell.isFuture
-              ? 'text-brand-stone/40'
+              // Was `text-brand-stone/40`, which is 1.65:1 — a date nobody with ordinary
+              // eyesight reads in daylight on a phone at the counter. There is no "faint
+              // but legible" grey on white: anything that clears 4.5:1 is about as dark
+              // as `brand-stone` already is, so a future day is simply secondary text,
+              // and it is told apart from a past one by having no shading behind it.
+              ? 'text-brand-stone'
               : cell.visits === 0
                 ? 'bg-brand-stone/8 text-brand-stone'
                 : share > 0.75
@@ -115,7 +120,10 @@ export function AttendanceCalendar({
                 aria-hidden
                 className={cn('grid min-h-14 place-items-center rounded-lg text-crm-body', tone)}
               >
-                {Number(cell.date.slice(8, 10))}
+                {/* A day belonging to the month either side is padding, and printing its
+                    number in grey only invites somebody to tap it. The cell keeps its
+                    space so the grid stays square. */}
+                {cell.inMonth ? Number(cell.date.slice(8, 10)) : null}
               </span>
             );
           }
@@ -136,7 +144,10 @@ export function AttendanceCalendar({
             >
               <span className="flex flex-col items-center leading-none">
                 <span>{Number(cell.date.slice(8, 10))}</span>
-                {cell.visits > 0 ? <span className="mt-0.5 text-[0.6875rem] font-normal opacity-80">{cell.visits}</span> : null}
+                {/* No `opacity-80` here: it cost this count about a point of contrast on
+                    the paler shades, which is the last thing on the calendar that failed
+                    (A11Y-001). Being smaller and lighter already marks it as secondary. */}
+                {cell.visits > 0 ? <span className="mt-0.5 text-[0.6875rem] font-normal">{cell.visits}</span> : null}
               </span>
             </Link>
           );

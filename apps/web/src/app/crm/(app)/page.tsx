@@ -271,7 +271,7 @@ export default async function CrmHomePage() {
                 </span>
                 <span>
                   <span className="block font-display text-[2.25rem] leading-none font-bold tabular lg:text-[2.75rem]">{tile.value}</span>
-                  <span className="mt-1 block text-small opacity-80">{tile.note ?? t(`home.help.${tile.key}`)}</span>
+                  <span className="mt-1 block text-small">{tile.note ?? t(`home.help.${tile.key}`)}</span>
                 </span>
               </Link>
             </li>

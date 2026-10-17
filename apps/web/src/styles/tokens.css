@@ -26,10 +26,10 @@
   --color-brand-mist:                #A3A5A9; /* Secondary text on obsidian (8:1) */
   --color-brand-ink:                 #121212; /* Body text on light */
   --color-brand-white:               #FFFFFF;
-  --color-semantic-fee-paid:         #1F8A4C; /* Green: fees paid */
-  --color-semantic-fee-due-soon:     #B7791F; /* Amber: due within 7 days */
-  --color-semantic-fee-expired:      #C62828; /* Red: overdue/urgent */
-  --color-semantic-fee-none:         #8A8F99; /* Grey: left / no plan */
+  --color-semantic-fee-paid:         #1C7B44; /* Green: fees paid. 4.67:1 on its own tint (A11Y-001) */
+  --color-semantic-fee-due-soon:     #966319; /* Amber: due within 7 days. 4.66:1 on its own tint (A11Y-001) */
+  --color-semantic-fee-expired:      #C62828; /* Red: overdue/urgent. 4.78:1 on its own tint — already passed */
+  --color-semantic-fee-none:         #686B73; /* Grey: left / no plan. 4.67:1 on its own tint (A11Y-001) */
   --color-semantic-info:             #2F5DAA;
   --color-semantic-birthday:         #C2185B;
   --color-semantic-surface-crm:      #FFFFFF;

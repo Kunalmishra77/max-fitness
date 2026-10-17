@@ -185,10 +185,10 @@ export default async function CrmAttendancePage({
 
       <div className="flex gap-2 px-4 py-3">
         <Link href="/crm/attendance" className={tabClass(!absent)}>
-          {t('attendance.tabToday')} <span className="tabular opacity-70">{events.length}</span>
+          {t('attendance.tabToday')} <span className="tabular">{events.length}</span>
         </Link>
         <Link href="/crm/attendance?tab=absent" className={tabClass(absent)}>
-          {t('attendance.tabAbsent')} <span className="tabular opacity-70">{absentMembers.length}</span>
+          {t('attendance.tabAbsent')} <span className="tabular">{absentMembers.length}</span>
         </Link>
         <Link href={`/crm/attendance?tab=history&preset=THIS_MONTH&date=${today}`} className={tabClass(history)}>
           {t('attendance.tabHistory')}

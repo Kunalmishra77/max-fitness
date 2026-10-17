@@ -65,20 +65,20 @@
     },
     "semantic": {
       "feePaid": {
-        "$value": "#1F8A4C",
-        "$description": "Green: fees paid"
+        "$value": "#1C7B44",
+        "$description": "Green: fees paid. Darkened from #1F8A4C so chip text clears WCAG AA on its own tint — 4.67:1 (A11Y-001)"
       },
       "feeDueSoon": {
-        "$value": "#B7791F",
-        "$description": "Amber: due within 7 days"
+        "$value": "#966319",
+        "$description": "Amber: due within 7 days. Darkened from #B7791F — was 3.31:1 on its tint, now 4.66:1 (A11Y-001)"
       },
       "feeExpired": {
         "$value": "#C62828",
-        "$description": "Red: overdue/urgent"
+        "$description": "Red: overdue/urgent. Unchanged: already 4.78:1 on its tint"
       },
       "feeNone": {
-        "$value": "#8A8F99",
-        "$description": "Grey: left / no plan"
+        "$value": "#686B73",
+        "$description": "Grey: left / no plan. Darkened from #8A8F99 — was 2.84:1 on its tint, the worst in the set, now 4.67:1 (A11Y-001)"
       },
       "info": {
         "$value": "#2F5DAA"

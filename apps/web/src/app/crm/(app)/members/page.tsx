@@ -82,11 +82,11 @@ export default async function CrmMembersPage({ searchParams }: { searchParams: P
         <MemberSearch placeholder={t('members.search')} initial={q ?? ''} />
         <div className="mt-3 flex flex-wrap gap-2">
           <Link href="/crm/members" className={chip(feeState === undefined)}>
-            {t('members.filterAll')} <span className="tabular opacity-70">{counts.total}</span>
+            {t('members.filterAll')} <span className="tabular">{counts.total}</span>
           </Link>
           {FEE_FILTERS.map((state) => (
             <Link key={state} href={`/crm/members?fee=${state}`} className={chip(feeState === state, FEE_TONE[state].chip)}>
-              {t(`feeState.${state}`)} <span className="tabular opacity-70">{counts[state]}</span>
+              {t(`feeState.${state}`)} <span className="tabular">{counts[state]}</span>
             </Link>
           ))}
         </div>

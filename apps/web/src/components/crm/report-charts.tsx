@@ -282,6 +282,16 @@ export function SplitBar({ rows }: { rows: readonly SplitRow[] }) {
         {rows.map((row, index) => (
           <span
             key={row.key}
+            /**
+             * `role="img"` is what makes this segment's label legal (A11Y-001).
+             *
+             * A bare `<span>` is a generic element, and ARIA forbids naming one: there is
+             * nothing for the name to belong to, so `aria-label` was being discarded and
+             * the segment announced as nothing at all. The other two charts here spread
+             * the same props onto a `listitem`, which does take a name — this was the one
+             * that had no role of its own. A bar segment is an image of a value.
+             */
+            role="img"
             className={`block h-full outline-none focus-visible:ring-2 focus-visible:ring-brand-link ${index === 0 ? 'rounded-l-[4px]' : ''} ${index === rows.length - 1 ? 'rounded-r-[4px]' : ''}`}
             style={{ width: `${row.share}%`, background: SLOTS[index] ?? SLOTS[2] }}
             {...bind(() => container, row.valueText, row.label)}
