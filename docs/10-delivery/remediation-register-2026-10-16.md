@@ -38,7 +38,8 @@ Status vocabulary: NOT STARTED · IN PROGRESS · BLOCKED · FIXED (implemented) 
 
 Nothing in this register is DEPLOYED, because no deployment happened.
 
-Section E was added on 2026-10-17 after the owner reported the CRM as slow.
+Section E was added on 2026-10-17 after the owner reported the CRM as slow. Section F
+the same day, once a local database and the production build made the blocked items runnable.
 
 ### A. Security
 
@@ -141,6 +142,26 @@ time a live request — so each entry says what was measured and what was only r
 | PERF-006 | Reports page reads every confirmed membership ever | **NOT STARTED** | Same pattern as PERF-002, in `reports-read.repository.ts`. Left alone on purpose: reports is opened occasionally, the dashboard on every login and again every minute, and this read feeds the money figures. It needs its own pinning tests before it is touched, which is not work to rush the day of a deployment. |
 | PERF-007 | Where the application is hosted | **BLOCKED — owner** | The one thing that could outweigh all of the above. Every CRM screen is `force-dynamic` and reads Supabase in Mumbai (`ap-south-1`). If the Coolify host is not in the same region, each remaining round trip costs 150–250 ms instead of 5–20 ms, and no amount of query work recovers it. **Needs the owner to say which region the Coolify server is in.** |
 | PERF-008 | The home screen refreshes itself every 60 s | **NOT STARTED** | `AutoRefresh seconds={60}` re-runs the heaviest read in the application on every open tab. It is already gated on tab visibility, and after PERF-002/003/004 the refresh is far cheaper, so this is left as it is pending a real measurement — but it is the first dial to turn if the owner's own tab feels slow while idle.
+
+### F. Found and fixed by actually running it (2026-10-17)
+
+A local PostgreSQL 16 cluster and the production standalone build turned out to be available
+in this session after all. That unblocked everything the earlier rounds had marked BLOCKED
+for want of a database or a browser — and the first ten minutes of running the thing found a
+defect worse than anything in the review.
+
+| ID | Title | Status | Evidence |
+|---|---|---|---|
+| WEB-001 | **The entire English website answered "307 → itself"** | **VERIFIED (fixed)** | Every English URL — `/`, `/contact`, `/qr`, `/qr/new`, `/legal/*` — redirected to itself, so a browser shows `ERR_TOO_MANY_REDIRECTS`. Hindi and the CRM were fine. Traced with a probe inside the proxy: the standalone server feeds a `proxy` rewrite back through `proxy`, so `/` rewrote to `/en`, the re-entered `/en` was redirected back to `/` (an explicit default-locale prefix is not canonical under `as-needed`), and that redirect became the answer to `/`. **Invisible in `next dev`, and invisible on Vercel, which does not use the standalone output** — it broke only in the image that serves the site. Fixed by letting a request through once next-intl has resolved its locale; 18 tests pin both the guard and the `/en` → `/` redirect it must not eat. Verified against a rebuilt image-identical runtime on every public route. |
+| A11Y-001 | CRM contrast and chart labelling | **VERIFIED (fixed)** | The suite had never run. Nine of thirteen screens failed. Fee chips measured 3.86 / 3.31 / 2.84:1 on their own tints against AA's 4.5 — the amber one is how reception sees who owes money. Colours darkened by the smallest hue-preserving amount that clears it; `opacity-70`/`-80` removed from text on those tints (185 failing nodes on the members screen alone); the calendar's 1.65:1 inactive dates fixed; `role="img"` added to chart segments whose `aria-label` was being discarded. **38/38 axe assertions now pass** — 13 CRM screens and 5 public pages, at 360px and 1440px. |
+| SEC-001 | HTTP security headers — **live delivery** | **VERIFIED** | Previously "verified locally, live delivery unverified". Now checked against a running production build: exactly **one** CSP per area, the right one for `/`, `/crm/login`, `/checkin` and `/api/v1/health/live`; `nosniff`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy` and HSTS on all of them; `Cache-Control: no-store` on the CRM; no `x-powered-by`. The negative-lookahead source works in a real server, so no path gets two policies. |
+| SEC-004 | Login limiter locked out the gym, not the attacker | **VERIFIED (fixed)** | The per-address limit counted *successful* logins, because the check must run before the PIN is judged. The gym's staff and kiosk share one connection, so twenty sign-ins a quarter hour was the whole building's allowance. A success is now refunded; the limit counts failures. ADR-131. Six tests. |
+| QA-002 | Integration tests | **VERIFIED** | **119 integration tests pass** against a real database locally, and in CI against Postgres 17. Previously BLOCKED. |
+| QA-004 | Accessibility | **VERIFIED** | Above. Previously BLOCKED for want of a browser. |
+| QA-006 | The accessibility suite could never have passed | **VERIFIED (fixed)** | Two faults in the suite itself, both of which would have failed CI on merge. The login limiter above, and `waitForHydration` — it waits for a hydrated `<input>`, and seven of these screens have no text field, so each burned a thirty-second timeout before axe ran. The suite took 8 minutes to report nothing; it now finishes in 46 seconds. |
+| PERF-002 | Dashboard reads — **measured** | **VERIFIED** | No longer "reasoned". Against the seeded register (220 members, 3,299 memberships, 5,308 check-ins), 20 runs each: **median 17.1 ms → 9.6 ms**, mean 16.8 → 9.7. And every number it returns is byte-identical between the two implementations — active members, arrivals, fees due, the expected-fee total, both months' takings. That is at **zero** network latency; the saving grows with the round trip. |
+| OPS-001 | `DEMO_MODE` defaults to **true**, and production refuses it | **FOUND — owner must set it** | `DEMO_MODE: bool(true)` in the env schema, and a guard refuses `DEMO_MODE=true` when `NODE_ENV=production` unless `ALLOW_DEMO_IN_PRODUCTION=true`. The image sets `NODE_ENV=production`. So a deployment that does not set `DEMO_MODE=false` explicitly **fails env validation and 500s every page**. The guard is right; this is a note for the deploy checklist. If the live site is up today, it is already set. |
+| PERF-007 | Hosting: Coolify in Lithuania, Supabase in Mumbai | **OPEN — the biggest remaining item** | Confirmed by the owner. The database is ~6,500 km from the application, and the gym's own staff are in Ghaziabad, so a tap travels India → Lithuania → Mumbai → Lithuania → India. No query work recovers that. See the progress log for what it costs and the options. |
 
 ## Service mapping (REL-002) — derived, not verified
 

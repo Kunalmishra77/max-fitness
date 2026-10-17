@@ -2018,3 +2018,118 @@ integration tests need Postgres and run in CI.
 
 **Still open, unchanged:** the Phase 7 redesign and the CRM axe suite, which is written and
 has never been run. Both need a browser and the owner's decisions.
+
+---
+
+## 2026-10-17, later — the things that only break when you run them
+
+Two discoveries changed this session. PostgreSQL 16 turned out to be installed in this
+container, and the production `standalone` build runs here. Everything that had been
+BLOCKED for want of a database or a browser was runnable after all — and the first ten
+minutes of running it found something worse than anything in the review.
+
+### The English website was dead (WEB-001)
+
+Every English URL answered **307 pointing at itself**. `/`, `/contact`, `/qr`, `/qr/new`,
+`/legal/*` — curl gives up after fifty hops; a browser says ERR_TOO_MANY_REDIRECTS. Hindi
+was fine. The CRM was fine. Only the half of the site a stranger from Google Maps lands on.
+
+A probe inside the proxy gave it up in four lines:
+
+    in=/    -> rewrite to /en        (correct)
+    in=/en  -> proxy runs AGAIN, redirects to /
+
+The standalone production server feeds a `proxy` rewrite **back through** `proxy`. So `/`
+has no locale prefix and next-intl rewrites it to `/en`; the re-entered `/en` is redirected
+back to `/`, because under `as-needed` an explicit default-locale prefix is not canonical;
+and that redirect becomes the response to `/`.
+
+**Why nobody saw it.** `next dev` does not re-enter the proxy, so development was clean. And
+Vercel does not use the standalone output at all — `next.config.ts` turns it off when
+`VERCEL=1` — so a preview deployment looked healthy too. It broke only in the image that
+actually serves the site. Hindi escaped because `/hi` is already prefixed and needs no
+rewrite, which is exactly what makes it look like a content problem rather than a routing
+one.
+
+Bumping next-intl 4.14.3 → 4.14.9 does not fix it; that was checked before the guard was
+written, and the bump stayed because CLAUDE.md §2.14 asks for the latest patch anyway. The
+fix is to let a request through once next-intl has resolved its locale, which it marks on
+the request it rewrites to. The `/en` → `/` redirect still happens for a visitor who really
+types it, since that request arrives without the mark.
+
+### The accessibility suite could never have passed (QA-006, A11Y-001)
+
+Running it found two faults in the suite before any in the product, both of which would have
+failed CI on merge:
+
+**A rate limit I added yesterday.** The per-address login limiter allows twenty attempts a
+quarter hour and the suite signs in afresh in every test. It was counting *successes* —
+it has to run before the PIN can be judged, so a correct sign-in was charged to the
+brute-force budget too. That is not a test problem: the gym's staff and the kiosk share one
+broadband connection, so a busy morning could lock the owner out of their own till. A
+success is refunded now and the limit counts failures, which is what the kiosk pairing
+limiter already did. ADR-131.
+
+**A wait that could not succeed.** `waitForHydration` waits for a hydrated `<input>`, and
+seven of the thirteen screens have no text field. Each burned thirty seconds and failed
+before axe ran; the suite took eight minutes to report nothing. It finishes in forty-six
+seconds now.
+
+Then the real findings. Nine of thirteen screens failed, all from four places, and the
+measurements are the story:
+
+    fee chip      colour on its own tint     AA wants 4.5
+    paid          3.86
+    due soon      3.31      <- how reception sees who owes money
+    none          2.84      <- worst in the set
+    expired       4.78      <- the only one that passed
+
+Each colour is darkened by the smallest hue-preserving amount that clears it, solved
+numerically rather than by eye. `opacity-70` on every fee-tab count and `opacity-80` on the
+dashboard tile captions had to go with them — dimming costs about a point and a half, more
+than the darker colour buys back, and the members screen alone reported 185 failing nodes
+from it. The attendance calendar's out-of-month and future dates were `text-brand-stone/40`,
+1.65:1, a date nobody reads on a phone at a counter; there is no faint-but-legible grey on
+white, so a future day is ordinary secondary text and a next-month day shows nothing, being
+padding. And the reports charts were naming bare `<span>`s, which ARIA forbids — the
+gender-split segments announced as nothing at all until they were given `role="img"`.
+
+**38 of 38 axe assertions pass now**: thirteen CRM screens and five public pages, at 360px
+and at 1440px. The suite has never been green before.
+
+### The headers are verified live, not inferred
+
+SEC-001 said "verified locally; live delivery unverified". Checked against a running
+production build: exactly one CSP per area and the right one, on `/`, `/crm/login`,
+`/checkin` and `/api/v1/health/live`; `nosniff`, referrer policy, framing refusal,
+permissions policy and HSTS everywhere; `no-store` on the CRM; no `x-powered-by`. Fonts and
+built chunks come back `public, max-age=31536000, immutable`, so a second visit re-downloads
+nothing — one more slowness theory ruled out with evidence rather than opinion.
+
+### The dashboard saving is measured now
+
+Against the seeded register — 220 members, 3,299 memberships, 5,308 check-ins — twenty runs
+each: **median 17.1 ms → 9.6 ms**, mean 16.8 → 9.7. And every number is identical between
+the two implementations, down to the expected-fee total that the rewrite was most likely to
+get wrong. That is at *zero* network latency, which is the point: the saving grows with the
+round trip, and the round trip here is the problem.
+
+### Which brings us to the thing code cannot fix (PERF-007)
+
+The owner confirmed it: **the Coolify VPS is in Lithuania. Supabase is in Mumbai.** The
+database is about 6,500 km from the application, and the gym's own staff are in Ghaziabad —
+so every tap travels India → Lithuania → Mumbai → Lithuania → India. Two of those legs are
+intercontinental and neither is doing any work.
+
+Cutting six serial round trips to two (PERF-001) and unblocking the pool (PERF-004) matter
+much more at this distance than they would next door, which is why they were worth doing.
+But the remaining round trips still cost more than everything else on this page put
+together, and no amount of query work recovers them. Moving the application to an Indian
+region is the single largest speed-up available, and it is the owner's to make.
+
+Gates: typecheck 8/8, lint clean, 2,294 unit tests, 119 integration tests, 38 axe
+assertions, `next build` clean.
+
+**Still open:** PERF-006 (the reports page's unbounded read, left alone deliberately), and
+Phase 7 as a *design* exercise — the accessibility floor is now met and measured, but
+nobody has been asked what they want the screens to look like.

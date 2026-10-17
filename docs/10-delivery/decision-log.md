@@ -967,3 +967,39 @@ The shell becomes full width up to `max-w-4xl` below `lg` and **1536px** above i
 **But one container cannot serve both.** A text field two feet across is harder to fill in than one the width of a page, and its label ends up an arm's length from the box. So pages that are mostly fields — settings, staff, kiosk, the PIN, the assistant, add member, edit member, renew — wrap their content in `CRM_FORM_COLUMN` (768px), and pages that are mostly rows do not. The difference is the page's to know, which is why it is a named constant rather than a rule buried in the shell.
 
 **It stays bounded.** A register read edge to edge on a wide monitor puts a row of names an arm's length from the fees they belong to, which is worse than the empty space it saves.
+
+## ADR-131
+
+**Date:** 2026-10-17
+**Status:** Accepted
+**Context:** The CRM accessibility suite was run for the first time and could not get past the
+login screen. The per-address login limiter (SEC-004, added 2026-10-16) allows twenty
+attempts a quarter hour; the suite signs in afresh in every test, twenty-six times across
+two viewports, and met *"इस कनेक्शन से बहुत बार कोशिश हो गई"* instead of the register.
+
+The limiter has to be consulted **before** the PIN can be judged — that is the point of it,
+so that a sweep through a list of staff numbers costs nothing to refuse. The consequence
+nobody had thought through is that a *correct* sign-in was charged to the brute-force budget
+as well.
+
+**This was never only a test problem.** The gym's staff and the attendance kiosk share one
+broadband connection, so twenty sign-ins a quarter hour is the whole building's allowance. A
+busy morning, or reception signing in on two phones while the kiosk reconnects, could lock
+the owner out of their own register — a self-inflicted denial of service on the till.
+
+**Decision — a successful login is refunded, so the limit counts failures.**
+
+`SlidingWindowLimiter.refund(key)` gives back the hit just counted, and `signIn` calls it
+once a session has actually been issued. The pre-check stays exactly where it was, so a
+wrong number still costs an attacker an attempt before any work is done.
+
+**The kiosk pairing limiter already reached this conclusion from the other side**, by only
+counting a pairing once it is known to have failed (SEC-005). This makes the two consistent.
+
+**What is given up.** Somebody holding a valid PIN can now sign in as often as they like,
+and each sign-in costs an Argon2id verification. That is an authenticated actor burning
+their own CPU budget, which the per-account lockout and the audit trail already cover; the
+alternative was a control that locks out the gym more often than an attacker.
+
+`refund` deliberately removes the **newest** hit rather than an arbitrary one, so two
+requests racing on one key cannot have one refund cancel the other's.
