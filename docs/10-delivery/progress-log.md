@@ -1897,3 +1897,40 @@ Gates: typecheck 8/8, lint clean, 2271 passed, `next build` clean with `/crm/mor
 **Still open:** the dashboard additions, members-list paging, the Phase 7 redesign, and the
 CRM axe suite which is written and has never been run. All four blockers unchanged — the
 push is still the one that matters most.
+
+## 2026-10-17 (later still) — a way to the rest of the register, and two visible queues
+
+U-3 and DASH-001. Fourteenth commit on `hardening/security-ux-remediation`; the push is
+still blocked on the same missing remote.
+
+**U-3.** The members list said "showing 100 of 240" and stopped, so the other 140 were
+reachable only by guessing a name into the search box — on the screen whose whole job is to
+show who the gym has. Cursor paging now, keyed on **the member id rather than the name**,
+for two reasons: the sort is alphabetical and names are not unique here (this register has
+carried three *Ayan Saifi* and two *Indresh Mishra*, so a name cursor skips or repeats a
+duplicate run at a page boundary), and an id keeps members' names out of URLs, which end up
+in history and logs. The tie still breaks on id in the SQL, because alphabetical alone is
+not a total order. A cursor pointing at a member erased since falls back to page one rather
+than stranding the reader on an empty screen.
+
+Four integration tests, one of which pages two-at-a-time through a deliberate three-way
+duplicate and asserts every member appears exactly once. **They do not run here** — they
+need Postgres — but the CI integration job has one, so they will run on the first push.
+
+**DASH-001.** The dashboard already had most of what was asked for: today's attendance, the
+week's trend, fees due with the amount, expired, trials, calls, birthdays, alerts. One thing
+was missing and it was the same shape as the audit log: **`verificationsPending` was being
+queried on every single dashboard load and rendered nowhere.** A QR sign-up waiting for
+approval was invisible on the first screen the owner opens, while the member sat waiting to
+be let in.
+
+So a "Waiting on you" strip above the tiles, carrying that and the ADR-125
+waiting-for-payment queue — the two things on this screen with a person at the other end. It
+appears only when there is something to do, so a gym that is up to date sees nothing rather
+than two reassuring zeros, and approvals show only to an actor who could actually approve
+one: a count reception cannot act on is a number that nags without a remedy.
+
+Gates: typecheck 8/8, lint clean, 2271 passed, `next build` clean.
+
+**Still open:** the Phase 7 redesign, and the CRM axe suite which is written and has never
+been run. Both blockers unchanged.

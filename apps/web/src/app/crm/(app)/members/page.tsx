@@ -21,10 +21,10 @@ export const dynamic = 'force-dynamic';
 
 const FEE_FILTERS: readonly FeeState[] = ['EXPIRED', 'DUE_SOON', 'PAID'];
 
-export default async function CrmMembersPage({ searchParams }: { searchParams: Promise<{ q?: string; fee?: string; status?: string }> }) {
+export default async function CrmMembersPage({ searchParams }: { searchParams: Promise<{ q?: string; fee?: string; status?: string; after?: string }> }) {
   const { actor, gym, today, reader } = await requireCrmContext();
   const t = await getTranslations('crm');
-  const { q, fee, status } = await searchParams;
+  const { q, fee, status, after } = await searchParams;
 
   const waiting = can(actor, 'verification.approve', getContainer().clock.now()) ? await verificationDeps().queue.count(gym.id) : 0;
 
@@ -32,8 +32,8 @@ export default async function CrmMembersPage({ searchParams }: { searchParams: P
   // The chips count the whole gym; a search narrows the list but not what is out there.
   const searching = (q ?? '').trim() !== '';
   const LIMIT = 100;
-  const [members, counts] = await Promise.all([
-    reader.members(gym.id, today, {
+  const [page, counts] = await Promise.all([
+    reader.membersPage(gym.id, today, {
       ...(q === undefined ? {} : { search: q }),
       ...(feeState === undefined ? {} : { feeState }),
       ...(status === 'ACTIVE' ? { status: 'ACTIVE' as MemberStatus } : {}),
@@ -43,14 +43,25 @@ export default async function CrmMembersPage({ searchParams }: { searchParams: P
        * ringing about their sign-up must be findable from this box.
        */
       ...(searching ? {} : { awaitingPayment: false }),
+      ...(after === undefined || after === '' ? {} : { cursor: after }),
       limit: LIMIT,
     }),
     // Numbers for the filter chips (ADR-097). They answer "is there anything to do?"
     // before reception has to tap anything to find out.
     reader.memberCounts(gym.id, today),
   ]);
+  const members = page.rows;
   const totalForFilter = feeState === undefined ? counts.total : counts[feeState];
-  const truncated = !searching && members.length >= LIMIT && totalForFilter > members.length;
+
+  /** Carries the filters onto the paging link, so "show more" stays inside the filter. */
+  const moreHref = (cursor: string) => {
+    const params = new URLSearchParams();
+    if (q !== undefined && q !== '') params.set('q', q);
+    if (feeState !== undefined) params.set('fee', feeState);
+    if (status === 'ACTIVE') params.set('status', 'ACTIVE');
+    params.set('after', cursor);
+    return `/crm/members?${params.toString()}`;
+  };
 
   // Signing is a local HMAC, not a request to Supabase, so a hundred thumbnails cost
   // nothing; each link lapses in five minutes like every other private file (CLAUDE.md §2.8).
@@ -107,12 +118,33 @@ export default async function CrmMembersPage({ searchParams }: { searchParams: P
 
       {/* Say when the list is cut short rather than letting the number read as the whole gym. */}
       <p className="px-4 py-2 text-small text-brand-stone">
-        {truncated ? t('members.countOf', { shown: members.length, total: totalForFilter }) : t('members.count', { count: members.length })}
+        {page.nextCursor === null ? t('members.count', { count: members.length }) : t('members.countOf', { shown: members.length, total: totalForFilter })}
       </p>
       {members.length === 0 ? (
         <p className="px-4 py-8 text-center text-crm-body text-brand-stone">{t('members.empty')}</p>
       ) : (
         <MemberList today={today} entries={entries} />
+      )}
+
+      {/**
+       * U-3: a way to the rest of the register.
+       *
+       * The list said "showing 100 of 240" and stopped, so the other 140 were reachable
+       * only by guessing a name into the search box — on the screen whose whole job is to
+       * show you who the gym has.
+       *
+       * A link, not a button: the page stays server-rendered, the back button walks back
+       * through the pages, and reception can send somebody a URL that still works.
+       */}
+      {page.nextCursor === null ? null : (
+        <div className="px-4 py-5">
+          <Link
+            href={moreHref(page.nextCursor)}
+            className="flex min-h-14 items-center justify-center rounded-button border-2 border-brand-obsidian px-6 text-crm-body font-bold text-brand-obsidian"
+          >
+            {t('members.showMore')}
+          </Link>
+        </div>
       )}
 
       <Link

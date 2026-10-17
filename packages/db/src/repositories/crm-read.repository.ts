@@ -163,6 +163,16 @@ export interface AttendanceTodayItem {
 }
 
 /** One day of the register, as the database groups it (ATT-001). */
+export interface MemberListOptions {
+  readonly search?: string;
+  readonly feeState?: FeeState;
+  readonly status?: MemberStatus;
+  readonly limit?: number;
+  readonly awaitingPayment?: boolean;
+  /** The id of the last member on the previous page (U-3). */
+  readonly cursor?: string;
+}
+
 export interface AttendanceDayCount {
   readonly date: ISTDate;
   readonly visits: number;
@@ -355,7 +365,6 @@ export class PrismaCrmReader {
     };
   }
 
-  /** Members with their fee state, newest first, filtered by a search box and fee state. */
   /**
    * How many members are in each fee state (ADR-097).
    *
@@ -379,13 +388,51 @@ export class PrismaCrmReader {
     return counts;
   }
 
-  async members(
+  /**
+   * One page of members, with the cursor for the next (U-3).
+   *
+   * The list was capped at 100 with a "showing 100 of N" line and no way to reach the
+   * rest: past a hundred members the only route to the others was the search box, on the
+   * one screen whose job is to show you the register.
+   *
+   * Cursor rather than offset. The sort is alphabetical, so a page boundary is a name —
+   * and names are **not unique** here: the register has carried three members called
+   * *Ayan Saifi* and two called *Indresh Mishra*. A cursor on the name alone would skip or
+   * repeat a run of duplicates, so the tie breaks on id.
+   *
+   * The cursor is the **member id**, not the name, and the sort key is looked up from it.
+   * That is one indexed point-read, and it keeps members' names out of URLs — which end
+   * up in browser history and server logs, and are the thing this screen is careful with
+   * everywhere else.
+   */
+  async membersPage(
     gymId: string,
     today: ISTDate,
-    options: { search?: string; feeState?: FeeState; status?: MemberStatus; limit?: number; awaitingPayment?: boolean } = {},
-  ): Promise<MemberListItem[]> {
+    options: MemberListOptions = {},
+  ): Promise<{ rows: MemberListItem[]; nextCursor: string | null }> {
+    const limit = options.limit ?? 50;
+    // One more than asked for, to know whether another page exists without counting.
+    const rows = await this.members(gymId, today, { ...options, limit: limit + 1 });
+    const page = rows.slice(0, limit);
+    const last = page.at(-1);
+    return { rows: page, nextCursor: rows.length > limit && last !== undefined ? last.id : null };
+  }
+
+  async members(gymId: string, today: ISTDate, options: MemberListOptions = {}): Promise<MemberListItem[]> {
     const search = (options.search ?? '').trim();
     const digits = search.replace(/\D/g, '');
+
+    /**
+     * Where the previous page stopped.
+     *
+     * Resolved from the id so the caller never has to carry a name. A cursor pointing at a
+     * member who has since been erased falls back to the first page, which is the right
+     * failure: the alternative is an empty screen with no way back.
+     */
+    const after =
+      options.cursor === undefined
+        ? null
+        : await this.#prisma.member.findFirst({ where: { id: options.cursor, gymId }, select: { id: true, fullName: true } });
 
     // The fee states come first so the filter can go **into** the query (ADR-097). It used
     // to run in JavaScript after `take`, which meant asking for expired members returned
@@ -400,6 +447,9 @@ export class PrismaCrmReader {
         deletedAt: null,
         ...(matching === null ? {} : { id: { in: matching } }),
         ...(options.status === undefined ? {} : { status: options.status }),
+        // Strictly after the cursor in the list's own order, breaking the tie on id so a
+        // run of members sharing a name is neither skipped nor shown twice.
+        ...(after === null ? {} : { OR: [{ fullName: { gt: after.fullName } }, { fullName: after.fullName, id: { gt: after.id } }] }),
         ...awaitingPaymentWhere(options.awaitingPayment),
         ...(search === ''
           ? {}
@@ -425,7 +475,9 @@ export class PrismaCrmReader {
         // Newest plan only: the list shows what they are on now, not their history.
         memberships: { select: { durationMonths: true, isTrial: true, trialDays: true }, orderBy: { endDate: 'desc' }, take: 1 },
       },
-      orderBy: { fullName: 'asc' },
+      // `id` as well as the name: alphabetical alone is not a total order when two
+      // members share a name, and a cursor needs one.
+      orderBy: [{ fullName: 'asc' }, { id: 'asc' }],
       take: options.limit ?? 50,
     });
 

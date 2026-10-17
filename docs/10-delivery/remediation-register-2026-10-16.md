@@ -3,7 +3,7 @@
 Companion to `docs/07-security-compliance/security-and-ux-review-2026-10-16.md`, which is
 the audit. This is what was done about it.
 
-Branch: `hardening/security-ux-remediation`, thirteen commits, branched from `main` at
+Branch: `hardening/security-ux-remediation`, fourteen commits, branched from `main` at
 `82e44bf`. **Not pushed** — see REL-001.
 
 ## Gates
@@ -12,7 +12,7 @@ Branch: `hardening/security-ux-remediation`, thirteen commits, branched from `ma
 |---|---|---|
 | `pnpm typecheck` | pass, 8/8 packages | pass, 8/8 |
 | `pnpm lint` | **fail, 34 errors** | **pass, 0 errors** |
-| `pnpm test` | **fail, 1 of 2132** | **pass, 2271 passed / 86 skipped** |
+| `pnpm test` | **fail, 1 of 2132** | **pass, 2271 passed / 90 skipped** |
 | `next build` | pass | pass |
 | `gitleaks` (tree + 195 commits) | not run — no gate existed | **pass, no leaks** |
 | `pnpm test:e2e` (incl. axe) | not runnable here | **not run — needs a database** |
@@ -90,7 +90,7 @@ than retyping a name. So navigation — the common case, and the one that was de
 | REP-001 | Report period filters | **VERIFIED** | Week, month, year and custom dates. `MONTH` delegates to the existing `monthBoundsFor` and a test asserts equality with it, so the month view the owner reads daily is byte-identical. Month arrows and `?month=` untouched; hidden off the month view, where they would have been a quiet lie. |
 | REP-002 | Comparisons and aggregation | **VERIFIED** | Like-for-like extended from the month rule to every period, measured in **elapsed days** so 29 February has no counterpart to fail on. A finished period gets the whole previous one. 30 tests, mostly boundaries. **No card's arithmetic changed** — the pipeline already took a window plus the window before it. |
 | REP-003 | Authorised report export | **VERIFIED** | Behind `money.view` checked in the route, not on the button. Same two resolution calls and same `inputs` as the page, so a download cannot describe a different period. Long format (`section,label,value`); rupee decimals for a human reader; renewal rate and kiosk share written **empty rather than zero** where they are genuinely unknown. |
-| DASH-001 | Dashboard attendance and operational summaries | **NOT STARTED** | The period helpers are now reusable for it. |
+| DASH-001 | Dashboard operational summaries | **FIXED** | `verificationsPending` was being queried on **every** dashboard load and rendered nowhere, so a QR sign-up waiting for approval was invisible on the first screen the owner opens while the member sat waiting. Now a "Waiting on you" strip above the tiles with that and the ADR-125 waiting-for-payment queue, shown only when there is something to do, and approvals only to an actor who could actually approve one. The rest of the wishlist (today's attendance, attendance trend, fees due, trials, alerts) was already there and is untouched. |
 
 59 tests cover the date arithmetic alone, asserting the boundaries rather than the happy
 path: "last month" from the 1st and from 31 March, "last week" from a Monday and a Sunday,
@@ -101,7 +101,7 @@ February in a leap year, 1 January.
 | ID | Title | Status | Evidence |
 |---|---|---|---|
 | U-1 | Error, loading and not-found screens | **FIXED** | 8 new files. There was not one `error.tsx`, `not-found.tsx` or `loading.tsx` in the application. `global-error.tsx` and the root `not-found.tsx` carry their own `<html>`/`<body>`, because `app/layout.tsx` renders only `children`. No error screen reads the database. |
-| U-3 | Members list caps at 100 with no paging | **NOT STARTED** | Still shows "100 of N" with no next page. |
+| U-3 | Members list caps at 100 with no paging | **FIXED** | Cursor paging keyed on **the member id**, not the name — names are not unique here (three *Ayan Saifi*, two *Indresh Mishra*), so a name cursor would skip or repeat a duplicate run at a page boundary, and an id keeps members' names out of URLs. Four integration tests, including one that pages two-at-a-time through a three-way duplicate and asserts every member appears exactly once. **Those run in CI, not here** — they need Postgres. |
 | U-4 | Accessibility coverage on the CRM | **FIXED, NOT VERIFIED** | Axe added across 13 CRM screens at both 360px and 1440px. **The suite has not been run** — it needs a seeded database. It may find violations on its first run; that is what it is for. |
 | U-5 | `postExpiryMaxDays = 7` | **NOT STARTED — owner's decision** | Seven consecutive daily "your membership has expired" messages. Lower it in Settings before the next run. |
 | CRM-AUDIT | Audit-trail screen | **VERIFIED** | `/crm/more/audit`, owner-only behind a new `audit.view` capability with PIN elevation, and linked from the menu — it had been written to since the first migration with nothing linking to it. Read-only by construction: no action on the page, no write side in the repository. Cursor paging on `(createdAt, id)`, because an append-only table under offset paging is the one screen guaranteed to get slower every day. Before/after snapshots are never printed raw — `auditChanges` reduces them to the fields that moved, with a **name-based** denylist, 34 tests. |
@@ -117,7 +117,7 @@ February in a leap year, 1 January.
 | QA-003 | Critical end-to-end journeys | **BLOCKED** | Specs exist and typecheck; running them needs a database and a server. |
 | QA-004 | Accessibility and localisation | **FIXED** (i18n) / **BLOCKED** (axe run) | i18n parity holds at every step: 1829 → 1884 keys, equal in both languages, enforced by `messages.test.ts`. |
 | QA-005 | Production build and Docker validation | **FIXED** (build) / **NOT STARTED** (Docker) | `next build` clean. Docker images not built — no registry access and nothing to deploy them to. |
-| REL-001 | GitHub commit and push | **FIXED** (committed) / **BLOCKED** (push) | Thirteen commits on `hardening/security-ux-remediation`. No remote. |
+| REL-001 | GitHub commit and push | **FIXED** (committed) / **BLOCKED** (push) | Fourteen commits on `hardening/security-ux-remediation`. No remote. |
 | REL-002 | Docker service dependency map | **FIXED** (derived) / **BLOCKED** (verification) | Below. Derived from the Dockerfiles; **not verified against the running project**. |
 | REL-003 | Coolify deployment per service | **BLOCKED** | No access. |
 | REL-004 | Production smoke checks | **BLOCKED** | No access. |

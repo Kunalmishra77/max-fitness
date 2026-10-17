@@ -42,13 +42,15 @@ export default async function CrmHomePage() {
   const { clock } = getContainer();
   const now = clock.now();
 
-  const [counts, calls, birthdays, latest, arrivals] = await Promise.all([
+  const [counts, calls, birthdays, latest, arrivals, memberCounts] = await Promise.all([
     reader.dashboard(gym.id, today, monthStart(today), previousMonthStart(today)),
     reader.callTasks(gym.id, today, 5),
     new PrismaBirthdays(getContainer().prisma).today(gym.id, today),
     new PrismaAnnouncements(getContainer().prisma).latest(gym.id),
     // The last week of arrivals: "23 today" means nothing without the week around it (ADR-095).
     reader.attendanceByDay(gym.id, today, 7),
+    // For the waiting-for-payment count (ADR-125), which lives with the member counts.
+    reader.memberCounts(gym.id, today),
   ]);
   const trend = attendanceTrend({ counts: arrivals, today, days: 7 });
   // Short weekday names in the reading language; 4 January 1970 was a Sunday.
@@ -59,6 +61,31 @@ export default async function CrmHomePage() {
   // tile would read zero, which looks like a fault rather than a starting point.
   const registerEmpty =
     counts.activeMembers === 0 && counts.expired === 0 && counts.dueThisWeek === 0 && counts.attendedToday === 0;
+
+  /**
+   * Queues with a person waiting at the other end (DASH-001).
+   *
+   * Approvals only where the actor could actually approve one: offering reception a count
+   * they cannot act on is a number that nags without a remedy.
+   */
+  const waitingOn = [
+    can(actor, 'verification.approve', now) && counts.verificationsPending > 0
+      ? {
+          key: 'waitingApprovals',
+          count: counts.verificationsPending,
+          label: t('home.waitingApprovals', { count: counts.verificationsPending }),
+          href: '/crm/verify',
+        }
+      : false,
+    memberCounts.awaitingPayment > 0
+      ? {
+          key: 'waitingPayment',
+          count: memberCounts.awaitingPayment,
+          label: t('home.waitingPayment', { count: memberCounts.awaitingPayment }),
+          href: '/crm/members/waiting',
+        }
+      : false,
+  ].filter((item): item is { key: string; count: number; label: string; href: string } => item !== false);
 
   const tiles: ReadonlyArray<{ key: 'totalMembers' | 'attendedToday' | 'dueThisWeek' | 'expired'; value: number; href: string; icon: CrmIconName; tone: string; note?: string }> = [
     { key: 'totalMembers', value: counts.activeMembers, href: '/crm/members?status=ACTIVE', icon: 'members', tone: 'bg-brand-obsidian text-brand-white' },
@@ -191,6 +218,41 @@ export default async function CrmHomePage() {
             ))}
           </ul>
         </section>
+
+        {/**
+         * DASH-001: the two queues where somebody is stuck and nobody could see it.
+         *
+         * `verificationsPending` was already being queried on **every** dashboard load and
+         * rendered nowhere — so a QR sign-up waiting for approval was invisible on the
+         * first screen the owner opens, while the member sat waiting to be let in. Its
+         * companion is the waiting-for-payment worklist from ADR-125: somebody who filled
+         * the form, stopped at the payment screen, and is the likeliest new member the gym
+         * has that week.
+         *
+         * Shown only when there is something to do, so a gym that is up to date sees
+         * nothing rather than two reassuring zeros. Above the tiles, because these two
+         * are the only things on this screen with a person waiting at the other end.
+         */}
+        {waitingOn.length === 0 ? null : (
+          <section aria-labelledby="waiting-heading" className="rounded-panel border-l-4 border-semantic-fee-due-soon bg-white p-4 shadow-sm lg:p-5">
+            <h2 id="waiting-heading" className="text-crm-body font-bold text-brand-obsidian">
+              {t('home.waitingTitle')}
+            </h2>
+            <ul className="mt-3 grid gap-2">
+              {waitingOn.map((item) => (
+                <li key={item.key}>
+                  <Link
+                    href={item.href}
+                    className="flex min-h-14 items-center justify-between gap-3 rounded-panel bg-tint-fee-due-bg px-4 py-3 text-crm-body font-semibold text-brand-obsidian hover:bg-tint-fee-due-bg/70"
+                  >
+                    <span>{item.label}</span>
+                    <span className="tabular shrink-0 rounded-full bg-brand-obsidian px-3 py-1 text-small font-bold text-brand-white">{item.count}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
           {tiles.map((tile) => (

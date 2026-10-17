@@ -776,7 +776,10 @@
         "step2Help": "मेंबर अपनी जानकारी खुद भरेंगे। नया हो या पुराना, कोड एक ही।",
         "step3": "हाज़िरी वाला फ़ोन तैयार कीजिए",
         "step3Help": "डेस्क पर रखा फ़ोन, जो चेहरे से हाज़िरी लगाता है।"
-      }
+      },
+      "waitingTitle": "आपका इंतज़ार",
+      "waitingApprovals": "{count, plural, one {# QR साइन-अप मंज़ूर करना है} other {# QR साइन-अप मंज़ूर करने हैं}}",
+      "waitingPayment": "{count, plural, one {# व्यक्ति पैसे देने का इंतज़ार में} other {# लोग पैसे देने का इंतज़ार में}}"
     },
     "feeState": {
       "PAID": "फीस जमा है",
@@ -832,7 +835,8 @@
       "countOf": "{total} में से {shown} मेंबर — बाक़ी देखने के लिए खोज छाँटें",
       "awaitingPayment": "{count, plural, one {# ने फ़ॉर्म भरा पर फ़ीस नहीं दी} other {# लोगों ने फ़ॉर्म भरा पर फ़ीस नहीं दी}}",
       "chase": "देखिए",
-      "months": "{count, plural, one {# महीना} other {# महीने}}"
+      "months": "{count, plural, one {# महीना} other {# महीने}}",
+      "showMore": "और मेंबर दिखाएँ"
     },
     "profile": {
       "call": "कॉल",

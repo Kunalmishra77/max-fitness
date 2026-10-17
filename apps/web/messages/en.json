@@ -776,7 +776,10 @@
         "step2Help": "Members fill their own details in. New or existing, same code.",
         "step3": "Set up the attendance phone",
         "step3Help": "A phone on the desk that marks people in by their face."
-      }
+      },
+      "waitingTitle": "Waiting on you",
+      "waitingApprovals": "{count, plural, one {# QR sign-up to approve} other {# QR sign-ups to approve}}",
+      "waitingPayment": "{count, plural, one {# person waiting to pay} other {# people waiting to pay}}"
     },
     "feeState": {
       "PAID": "Fees paid",
@@ -832,7 +835,8 @@
       "countOf": "{shown} of {total} members — refine the search to see the rest",
       "awaitingPayment": "{count, plural, one {# person filled the form but has not paid} other {# people filled the form but have not paid}}",
       "chase": "See them",
-      "months": "{count, plural, one {# month} other {# months}}"
+      "months": "{count, plural, one {# month} other {# months}}",
+      "showMore": "Show more members"
     },
     "profile": {
       "call": "Call",
