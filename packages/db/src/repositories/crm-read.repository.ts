@@ -1,6 +1,9 @@
-import type { FeeState, Gender, ISTDate, MemberStatus } from '@mfp/shared';
+import { addDays, type FeeState, type Gender, type ISTDate, type MemberStatus } from '@mfp/shared';
 import type { PrismaClient } from '../client';
 import { fromDbDate, toDbDate } from '../dates';
+
+/** Midnight IST, as the instant the timestamp columns are compared against. */
+const startOfDayIST = (date: ISTDate) => new Date(`${date}T00:00:00+05:30`);
 
 /**
  * What the CRM screens read (crm-ux-blueprint §3–§5).
@@ -218,6 +221,20 @@ export interface CallTaskItem {
   readonly priority: number;
   readonly dueDate: ISTDate;
   readonly member: { readonly id: string; readonly fullName: string; readonly mobile: string; readonly feeState: FeeState } | null;
+}
+
+/** A call that has been made and closed (REP-004). */
+export interface CallHistoryItem {
+  readonly id: string;
+  readonly reason: string;
+  readonly outcome: string | null;
+  readonly attempts: number;
+  readonly note: string | null;
+  /** When it was closed. `null` only for a task closed before this column was written. */
+  readonly doneAt: Date | null;
+  /** Who closed it, so the owner can see whose calls these were. */
+  readonly doneBy: string | null;
+  readonly member: { readonly id: string; readonly fullName: string } | null;
 }
 
 interface FeeRow {
@@ -553,6 +570,89 @@ export class PrismaCrmReader {
           lastAttendanceAt: row.lastAttendanceAt,
         };
       });
+  }
+
+  /**
+   * Calls that have been made, over a window (REP-004).
+   *
+   * The screen was called "today's calls" and meant it: a task left the list the moment
+   * it was closed and was never seen again. So *"who did we ring last week, and what did
+   * they say"* had no answer, and neither did *"how many of these actually go anywhere"*
+   * — which is the only way to tell whether the call list is worth anybody's morning.
+   *
+   * Keyed on `doneAt`, not `dueDate`: the owner is asking what the desk **did**, and a
+   * task raised on Monday and rung on Thursday belongs to Thursday.
+   *
+   * `doneAt` is nullable, so a task closed before that column existed would sit outside
+   * every window. Those are excluded rather than bundled into the current one, because a
+   * call with no date is not evidence about any particular week.
+   */
+  async callHistory(
+    gymId: string,
+    range: { readonly start: ISTDate; readonly end: ISTDate },
+    options: { readonly outcome?: string; readonly limit?: number } = {},
+  ): Promise<CallHistoryItem[]> {
+    const rows = await this.#prisma.callTask.findMany({
+      where: {
+        gymId,
+        status: { not: 'OPEN' },
+        doneAt: { gte: startOfDayIST(range.start), lt: startOfDayIST(addDays(range.end, 1)) },
+        ...(options.outcome === undefined ? {} : { outcome: options.outcome as never }),
+      },
+      select: {
+        id: true,
+        reason: true,
+        outcome: true,
+        attempts: true,
+        note: true,
+        doneAt: true,
+        doneById: true,
+        member: { select: { id: true, fullName: true } },
+      },
+      orderBy: { doneAt: 'desc' },
+      take: options.limit ?? 200,
+    });
+
+    /**
+     * The staff name, looked up separately. `CallTask.doneById` has no relation in the
+     * schema, so Prisma cannot join it — and adding one is a migration for a label.
+     */
+    const staffIds = [...new Set(rows.map((row) => row.doneById).filter((id): id is string => id !== null))];
+    const staff = staffIds.length === 0 ? [] : await this.#prisma.staffUser.findMany({ where: { id: { in: staffIds } }, select: { id: true, name: true } });
+    const nameOf = new Map(staff.map((person) => [person.id, person.name]));
+
+    return rows.map((row) => ({
+      id: row.id,
+      reason: row.reason,
+      outcome: row.outcome,
+      attempts: row.attempts,
+      note: row.note,
+      doneAt: row.doneAt,
+      doneBy: row.doneById === null ? null : (nameOf.get(row.doneById) ?? null),
+      member: row.member === null ? null : { id: row.member.id, fullName: row.member.fullName },
+    }));
+  }
+
+  /**
+   * How those calls ended, counted (REP-004).
+   *
+   * The number the owner is actually after. "Forty calls" says nothing; "forty calls,
+   * twenty-six no answer" says the list is being worked and the number is wrong, and
+   * "forty calls, eighteen will renew" says it is paying for itself.
+   */
+  async callOutcomeCounts(gymId: string, range: { readonly start: ISTDate; readonly end: ISTDate }): Promise<Record<string, number>> {
+    const rows = await this.#prisma.callTask.groupBy({
+      by: ['outcome'],
+      where: {
+        gymId,
+        status: { not: 'OPEN' },
+        doneAt: { gte: startOfDayIST(range.start), lt: startOfDayIST(addDays(range.end, 1)) },
+      },
+      _count: { _all: true },
+    });
+    const counts: Record<string, number> = {};
+    for (const row of rows) counts[row.outcome ?? 'UNRECORDED'] = row._count._all;
+    return counts;
   }
 
   async member(gymId: string, memberId: string, today: ISTDate): Promise<MemberProfile | null> {
@@ -924,6 +1024,41 @@ export class PrismaCrmReader {
       take: options.limit ?? 100,
     });
     return rows;
+  }
+
+  /**
+   * What became of the enquiries, over a window (REP-005).
+   *
+   * The screen listed leads and counted nothing. So *"how many enquiries did we get this
+   * month"* had no answer, and **"how many of them joined"** — the only number that says
+   * whether the gym's marketing is worth its money — had none either. An enquiry is the
+   * cheapest member the gym will ever get and nobody could see the rate.
+   *
+   * Counted on `createdAt`: the question is about the enquiries that *arrived* in the
+   * window, and whether they converted, not about conversions that happened in it. A lead
+   * that came in last month and joined today belongs to last month's intake, which is the
+   * cohort whose rate it changes.
+   *
+   * Source is counted separately rather than cross-tabulated. "Where do they come from"
+   * and "how many join" are two questions the owner asks on different days, and a table
+   * of nine sources by six statuses on a phone is neither.
+   */
+  async leadFunnel(
+    gymId: string,
+    range: { readonly start: ISTDate; readonly end: ISTDate },
+  ): Promise<{ readonly byStatus: Record<string, number>; readonly bySource: Record<string, number>; readonly total: number }> {
+    const where = { gymId, createdAt: { gte: startOfDayIST(range.start), lt: startOfDayIST(addDays(range.end, 1)) } };
+    const [statuses, sources] = await Promise.all([
+      this.#prisma.lead.groupBy({ by: ['status'], where, _count: { _all: true } }),
+      this.#prisma.lead.groupBy({ by: ['source'], where, _count: { _all: true } }),
+    ]);
+
+    const byStatus: Record<string, number> = {};
+    for (const row of statuses) byStatus[row.status] = row._count._all;
+    const bySource: Record<string, number> = {};
+    for (const row of sources) bySource[row.source] = row._count._all;
+
+    return { byStatus, bySource, total: statuses.reduce((sum, row) => sum + row._count._all, 0) };
   }
 
   /**

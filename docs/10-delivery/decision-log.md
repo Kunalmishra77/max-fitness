@@ -1025,3 +1025,21 @@ requests racing on one key cannot have one refund cancel the other's.
 - **Decoration went.** The header's red rule faded to transparent across its width, which encodes nothing; it is solid now and reads as the stripe from the logo. The blurred red glow behind the money panel went. So did `hover:-translate-y` on every card — every card lifting half a pixel is the thing that makes an interface feel generated, and a surface change is what a pointer actually needs.
 
 **Nothing in the palette or the type scale changed.** The blueprint pins both, and the problem was never the colours — it was that everything was wearing the same weight.
+
+## ADR-132
+
+**Date:** 2026-10-18
+**Status:** Accepted
+**Context:** The page-by-page audit on 2026-10-17 found that **21 of 26 CRM screens had no filter of any kind** — no search, no date range, no history. Three of them were red: Calls, Leads and Verify. The merge of 2026-10-17 covered attendance and reports and left these.
+
+**Decision — give each of the three the question it could not answer, and do not invent a fourth screen.**
+
+**Calls was called "today's calls" and meant it.** A task left the list the moment it was closed and was never seen again, so *"who did we ring last week and what did they say"* had no answer, and neither did *"is this list worth anybody's morning"*. A **Done** tab now reads a window, with the outcome counts above the list because they are the finding: "forty calls" says nothing, "forty calls, twenty-six no answer" says the numbers on file are wrong, and "forty calls, eighteen will renew" says the list pays for itself. Keyed on `doneAt`, not `dueDate` — the owner is asking what the desk *did*, and a task raised on Monday and rung on Thursday belongs to Thursday.
+
+**Leads listed and counted nothing.** An enquiry is the cheapest member the gym will ever get and the conversion rate was invisible. Counted on `createdAt`, so the rate belongs to the cohort that arrived in the window rather than to conversions that happened in it. Source is counted separately rather than cross-tabulated: "where do they come from" and "how many join" are asked on different days, and nine sources by six statuses is not a phone screen.
+
+**Verify gets a link, not a history.** Every approval and rejection is already in the audit trail with who and when, filterable by date — a second history here would be the same facts read from the same table through different code, and the two would drift.
+
+**One period control, shared.** `PeriodPicker` is extracted from the reports page and used by all three, so "this week" is visibly and actually the same week everywhere; `readReportPeriod` decides it on the server. Links and a plain GET form rather than state, so a period can be bookmarked and sent and the screen still renders with JavaScript off.
+
+**Also fixed in passing:** the calls screen still opened `wa.me`. ADR-126 gave the reason — it writes from whichever account the staff phone is signed into, so the reply never reaches the gym — but only reached the member profile.

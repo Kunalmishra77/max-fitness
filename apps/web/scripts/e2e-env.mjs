@@ -36,6 +36,17 @@ const env = {
   DIRECT_URL: onTestDatabase(process.env['DIRECT_URL']),
   // Nothing may leave the machine: no WhatsApp, no Razorpay, no OTP.
   DEMO_MODE: 'true',
+  /**
+   * The suite runs against `next dev`, and React's development build needs `eval()`.
+   * The CSP deliberately withholds `'unsafe-eval'` — correct for production, where React
+   * never calls it — so an enforced policy stops the application booting and every
+   * journey fails on a blank page. Report-only still sends the header and still records
+   * what it would have blocked.
+   *
+   * **The enforced policy is therefore not covered here.** It needs a production build
+   * and a browser, which is REL/SEC-013's job, not this suite's.
+   */
+  CSP_REPORT_ONLY: 'true',
   WHATSAPP_PROVIDER: 'simulator',
   WHATSAPP_ALLOWLIST: '',
 };

@@ -962,6 +962,22 @@
         "NEW_LEAD": "New enquiry",
         "VERIFICATION_PENDING": "Waiting to be checked",
         "OTHER": "Call"
+      },
+      "tabToday": "To ring now",
+      "tabDone": "Done",
+      "outcomeSummary": "How the calls ended",
+      "madeInPeriod": "{count, plural, =0 {No calls made} one {# call made} other {# calls made}}",
+      "noneDone": "No calls were closed in this period.",
+      "attempts": "{count, plural, one {# try} other {# tries}}",
+      "showAllOutcomes": "Show all outcomes",
+      "outcomes": {
+        "WILL_RENEW": "Will renew",
+        "CALL_LATER": "Call later",
+        "NO_ANSWER": "No answer",
+        "LEFT_GYM": "Left the gym",
+        "WRONG_NUMBER": "Wrong number",
+        "DONE": "Sorted",
+        "UNRECORDED": "Not recorded"
       }
     },
     "outcome": {
@@ -1185,7 +1201,23 @@
       "notAllowed": "You are not allowed to change enquiries.",
       "addMember": "Add as member",
       "makeMember": "Make them a member",
-      "whatsappPrefill": "Namaste {name}, this is Max Fitness Gym, Indirapuram. Thank you for your enquiry — how can we help?"
+      "whatsappPrefill": "Namaste {name}, this is Max Fitness Gym, Indirapuram. Thank you for your enquiry — how can we help?",
+      "funnelLabel": "What came of the enquiries",
+      "enquiries": "Enquiries",
+      "joined": "Joined",
+      "conversion": "Joined of enquired",
+      "whereFrom": "Where they came from",
+      "sources": {
+        "WEBSITE_HERO": "Website",
+        "WEBSITE_OTHER": "Website (other page)",
+        "WHATSAPP": "WhatsApp",
+        "WALK_IN": "Walked in",
+        "PHONE": "Phone",
+        "INSTAGRAM": "Instagram",
+        "GBP": "Google",
+        "REFERRAL": "A member referred them",
+        "ABANDONED_SIGNUP": "Started signing up and stopped"
+      }
     },
     "reports": {
       "title": "Reports",
@@ -1614,7 +1646,8 @@
         "invalid": "That date is out of range.",
         "notAllowed": "Trainers cannot approve this.",
         "failed": "That did not work. Please try again."
-      }
+      },
+      "pastDecisions": "Who approved what, and when"
     },
     "menu": {
       "home": {

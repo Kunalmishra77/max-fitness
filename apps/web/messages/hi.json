@@ -962,6 +962,22 @@
         "NEW_LEAD": "नई पूछताछ",
         "VERIFICATION_PENDING": "जाँच बाकी",
         "OTHER": "कॉल करें"
+      },
+      "tabToday": "अभी करने हैं",
+      "tabDone": "हो चुके",
+      "outcomeSummary": "कॉल का क्या नतीजा निकला",
+      "madeInPeriod": "{count, plural, =0 {कोई कॉल नहीं हुई} one {# कॉल हुई} other {# कॉल हुईं}}",
+      "noneDone": "इस अवधि में कोई कॉल पूरी नहीं हुई।",
+      "attempts": "{count, plural, one {# बार} other {# बार}}",
+      "showAllOutcomes": "सारे नतीजे दिखाइए",
+      "outcomes": {
+        "WILL_RENEW": "रिन्यू करेंगे",
+        "CALL_LATER": "बाद में कॉल",
+        "NO_ANSWER": "फ़ोन नहीं उठा",
+        "LEFT_GYM": "जिम छोड़ दिया",
+        "WRONG_NUMBER": "ग़लत नंबर",
+        "DONE": "हो गया",
+        "UNRECORDED": "दर्ज नहीं"
       }
     },
     "outcome": {
@@ -1185,7 +1201,23 @@
       "notAllowed": "आपको पूछताछ बदलने की इजाज़त नहीं है।",
       "addMember": "मेंबर बनाएँ",
       "makeMember": "इन्हें मेंबर बनाएँ",
-      "whatsappPrefill": "नमस्ते {name}, मैक्स फिटनेस जिम, इंदिरापुरम से। आपने पूछताछ की थी — बताइए कैसे मदद करें?"
+      "whatsappPrefill": "नमस्ते {name}, मैक्स फिटनेस जिम, इंदिरापुरम से। आपने पूछताछ की थी — बताइए कैसे मदद करें?",
+      "funnelLabel": "पूछताछ का क्या नतीजा निकला",
+      "enquiries": "पूछताछ",
+      "joined": "मेंबर बने",
+      "conversion": "पूछताछ में से बने",
+      "whereFrom": "कहाँ से आए",
+      "sources": {
+        "WEBSITE_HERO": "वेबसाइट",
+        "WEBSITE_OTHER": "वेबसाइट (दूसरा पेज)",
+        "WHATSAPP": "WhatsApp",
+        "WALK_IN": "ख़ुद आए",
+        "PHONE": "फ़ोन",
+        "INSTAGRAM": "Instagram",
+        "GBP": "Google",
+        "REFERRAL": "किसी मेंबर ने भेजा",
+        "ABANDONED_SIGNUP": "फ़ॉर्म शुरू करके छोड़ दिया"
+      }
     },
     "reports": {
       "title": "हिसाब",
@@ -1614,7 +1646,8 @@
         "invalid": "यह तारीख सीमा से बाहर है।",
         "notAllowed": "ट्रेनर इसे मंज़ूर नहीं कर सकते।",
         "failed": "नहीं हो पाया। फिर कोशिश करें।"
-      }
+      },
+      "pastDecisions": "किसने क्या मंज़ूर किया, और कब"
     },
     "menu": {
       "home": {

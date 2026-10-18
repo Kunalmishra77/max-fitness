@@ -2133,3 +2133,21 @@ assertions, `next build` clean.
 **Still open:** PERF-006 (the reports page's unbounded read, left alone deliberately), and
 Phase 7 as a *design* exercise — the accessibility floor is now met and measured, but
 nobody has been asked what they want the screens to look like.
+
+## 2026-10-18 — the three screens the merge left behind, and a UI pass
+
+**Picked up the merged branch** (34 commits, PR #1). It covered most of what I had planned: the sign-up acknowledgement, the QR error wording, attendance history, report periods, the audit trail, plus real security work — a live RCE in `next/og`, bypassable rate limits, a lockout that could be held open, and members' names taken out of a public repo. Lint went from 34 errors to 0.
+
+**Two defects found on top of it.**
+
+- **`crm.audit.actions` used dotted keys** — `payment.void` and twenty more. next-intl reads a dot as nesting and refuses the **whole catalogue**, which loads on every page, so the application would not start. 2,400 tests were green because the messages test compares English with Hindi and both were wrong identically; nothing ever asked next-intl whether it would load either. Fixed, and that test now exists (confirmed by putting a dotted key back and watching it fail).
+- **The e2e suite ran against the live register.** Tolerable in demo mode; not since 2026-10-16, when WhatsApp and Razorpay went live — a test sign-up would message a real person. `test:e2e` now goes through a wrapper that points at `mfp_test` and forces `DEMO_MODE`, and `global-setup` refuses to launch the browsers unless both hold.
+
+**ADR-132 — Calls, Leads, Verify.** A Done tab with outcome counts over a window; an enquiry funnel with the conversion rate and sources; and a link from Verify to the audit trail rather than a second history. `PeriodPicker` extracted from reports and shared by all three.
+
+**ADR-131 — the UI pass**, on branch `design/crm-refresh` for review. Depth was free (`shadow-sm` on thirty files), the shared member row showed initials against the blueprint's first principle, and the fee colour was the avatar's *background* so a member with a photograph showed no fee colour at all.
+
+**Still not done.**
+- **The e2e and axe suites have still never completed.** First run was spoiled by my own edits mid-run; the second timed out waiting 180 s for the dev server while a build competed for the machine. Needs one clean run with nothing else going on.
+- **The CSP withholds `'unsafe-eval'`** — correct for production, and it stops `next dev` booting, so the suite needs `CSP_REPORT_ONLY=true`. The enforced policy is therefore still unverified against a browser (SEC-013).
+- PERF-007, the 6,500 km between Coolify and Supabase, remains the largest open item.

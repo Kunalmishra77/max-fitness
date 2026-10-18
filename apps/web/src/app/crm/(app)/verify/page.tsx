@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { can } from '@mfp/core';
 import { maskMobile } from '@mfp/shared';
@@ -59,6 +60,19 @@ export default async function CrmVerifyPage() {
     <>
       <CrmHeader title={t('title')} back="/crm/more" />
       <p className="px-4 pt-4 text-small text-brand-stone">{t('helper')}</p>
+      {/**
+       * Decided requests live in the audit trail, not here (REP-006).
+       *
+       * Every approval and rejection is already recorded there with who did it and when,
+       * filterable by date — so a second history on this screen would be the same facts
+       * read from the same table through different code, and the two would drift. This
+       * is a link to the one that exists.
+       */}
+      <p className="px-4 pt-2">
+        <Link href="/crm/more/audit?action=verification.approve" className="inline-flex min-h-11 items-center text-body font-semibold text-brand-link">
+          {t('pastDecisions')}
+        </Link>
+      </p>
       <VerifyQueue items={items} approve={approveVerificationAction} reject={rejectVerificationAction} />
       <BottomNav active="more" />
     </>
