@@ -19,6 +19,16 @@ import { fileURLToPath } from 'node:url';
 
 const TEST_DB = 'mfp_test';
 
+/**
+ * `--dev` runs the command outside a production build.
+ *
+ * The suite builds and serves, which needs `NODE_ENV=production`. The seed **refuses**
+ * to run under it, deliberately — that guard is what stops a demo seed landing on a real
+ * database (database-design.md §8) — so seeding asks for `--dev` rather than the guard
+ * being weakened to suit a test runner.
+ */
+const wantsDev = process.argv.includes('--dev');
+
 process.loadEnvFile(fileURLToPath(new URL('../../../.env', import.meta.url)));
 
 /** Same host and credentials, a different database. */
@@ -31,13 +41,54 @@ function onTestDatabase(value) {
 
 const env = {
   ...process.env,
-  NODE_ENV: 'development',
+  /**
+   * A production build, because that is what the suite now runs against.
+   *
+   * This was `development`, from when the suite started `next dev`. A production build
+   * made with `NODE_ENV=development` fails while prerendering: React resolves to its
+   * development copy inside a production renderer and `useContext` comes back null.
+   * Leaving it unset is not enough either — the repository's `.env` says `development`
+   * and Next honours an explicit value — so it is set here, deliberately.
+   */
+  NODE_ENV: wantsDev ? 'development' : 'production',
+  /**
+   * `DEMO_MODE` under `NODE_ENV=production` is refused unless this says otherwise, and
+   * refused is right: it is the guard that stops a real deployment simulating payments.
+   * The suite is a production *build* on a throwaway database, which is the one case the
+   * guard is not about.
+   */
+  ALLOW_DEMO_IN_PRODUCTION: 'true',
   DATABASE_URL: onTestDatabase(process.env['DATABASE_URL']),
   DIRECT_URL: onTestDatabase(process.env['DIRECT_URL']),
   // Nothing may leave the machine: no WhatsApp, no Razorpay, no OTP.
   DEMO_MODE: 'true',
+  /**
+   * The suite runs against `next dev`, and React's development build needs `eval()`.
+   * The CSP deliberately withholds `'unsafe-eval'` — correct for production, where React
+   * never calls it — so an enforced policy stops the application booting and every
+   * journey fails on a blank page. Report-only still sends the header and still records
+   * what it would have blocked.
+   *
+   * **The enforced policy is therefore not covered here.** It needs a production build
+   * and a browser, which is REL/SEC-013's job, not this suite's.
+   */
+  CSP_REPORT_ONLY: 'true',
   WHATSAPP_PROVIDER: 'simulator',
   WHATSAPP_ALLOWLIST: '',
+  /**
+   * No payment gateway, because `DEMO_MODE` simulates payments and there is nothing for
+   * a real one to do.
+   *
+   * It also has to be *consistently* absent. The env schema requires the secret whenever
+   * the id is set, and the container is built on every request — so a half-configured
+   * gateway is not a payment failure, it is **every page throwing**. That is what it did
+   * here: the repository's `.env` kept a Razorpay id after the secret was cleared (the
+   * secret had leaked into a chat and was reset), and the entire end-to-end suite failed
+   * on a login screen that said only "something went wrong".
+   */
+  RAZORPAY_KEY_ID: '',
+  RAZORPAY_KEY_SECRET: '',
+  RAZORPAY_WEBHOOK_SECRET: '',
 };
 
 /**
@@ -54,11 +105,11 @@ for (const name of ['DATABASE_URL', 'DIRECT_URL']) {
 }
 if (env['DEMO_MODE'] !== 'true') throw new Error('DEMO_MODE must be true for the suite');
 
-const argv = process.argv.slice(2);
+const argv = process.argv.slice(2).filter((arg) => arg !== '--dev');
 const command = argv[0] === '--' ? argv.slice(1) : argv;
 if (command.length === 0) throw new Error('Nothing to run. Usage: node e2e-env.mjs -- <command...>');
 
-console.log(`[e2e] database ${TEST_DB}, DEMO_MODE=true, nothing leaves this machine`);
+console.log(`[e2e] database ${TEST_DB}, NODE_ENV=${env['NODE_ENV']}, DEMO_MODE=true, nothing leaves this machine`);
 
 const child = spawn(command[0], command.slice(1), { stdio: 'inherit', shell: true, env });
 child.on('exit', (code) => process.exit(code ?? 1));

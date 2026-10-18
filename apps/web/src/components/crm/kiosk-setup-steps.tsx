@@ -34,7 +34,7 @@ export function KioskSetupSteps({ url }: { url: string }) {
   };
 
   return (
-    <section className="rounded-panel border border-brand-stone/15 bg-white p-4 lg:p-6">
+    <section className="rounded-panel border border-brand-stone/12 bg-white p-4 lg:p-6">
       <h2 className="text-crm-body font-bold text-brand-obsidian">{t('title')}</h2>
 
       <p className="mt-3 text-small text-brand-stone">{t('openThis')}</p>

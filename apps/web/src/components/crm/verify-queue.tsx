@@ -103,7 +103,7 @@ function VerifyCard({ item, approve, reject }: { item: VerifyItem; approve: Appr
   const button = 'min-h-14 flex-1 rounded-panel px-3 text-crm-body font-bold disabled:opacity-50';
 
   return (
-    <article aria-labelledby={`${id}-name`} className="rounded-panel bg-white p-4 shadow-sm">
+    <article aria-labelledby={`${id}-name`} className="rounded-panel bg-white p-4">
       <div className="flex gap-4">
         {item.photoUrl === null ? (
           <span className="flex size-24 shrink-0 items-center justify-center rounded-panel bg-tint-fee-none-bg text-small text-brand-stone">{t('noPhoto')}</span>

@@ -67,7 +67,7 @@ export function OwnPinForm({ action }: { action: (currentPin: string, newPin: st
         event.preventDefault();
         submit();
       }}
-      className="grid gap-4 rounded-panel bg-white p-4 shadow-sm"
+      className="grid gap-4 rounded-panel bg-white p-4"
     >
       <p className="text-small text-brand-stone">{t('helper')}</p>
       {inputs.map(([key, label, value, setValue, autoComplete]) => (

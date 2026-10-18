@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
-import { can, type LeadStatus } from '@mfp/core';
+import { can, MAX_RANGE_DAYS, readReportPeriod, type LeadStatus } from '@mfp/core';
 import { formatISTDate, toISTDate } from '@mfp/shared';
 import { advanceLeadAction } from '@/app/crm/actions';
-import { BottomNav, CrmHeader, CRM_CARD, pillClass } from '@/components/crm/crm-chrome';
+import { BottomNav, CrmHeader, CRM_CARD, FEE_TONE, pillClass } from '@/components/crm/crm-chrome';
+import { PeriodPicker } from '@/components/crm/period-picker';
 import { CrmIcon } from '@/components/crm/crm-icons';
 import { cn } from '@/lib/cn';
 import { LeadActions } from '@/components/crm/lead-actions';
@@ -30,14 +31,31 @@ const TONE: Record<string, string> = {
   LOST: 'bg-tint-fee-expired-bg text-semantic-fee-expired',
 };
 
-export default async function CrmLeadsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
-  const { actor, gym, reader } = await requireCrmContext();
+export default async function CrmLeadsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string; period?: string; from?: string; to?: string }>;
+}) {
+  const { actor, gym, today, reader } = await requireCrmContext();
   const t = await getTranslations('crm');
-  const { tab } = await searchParams;
+  const { tab, period, from, to } = await searchParams;
 
   const all = tab === 'all';
-  const leads = await reader.leads(gym.id, { open: !all });
+  // The same window the reports and the calls use, so "this month" is one month.
+  const chosen = readReportPeriod({ period, from, to }, today);
+  const [leads, funnel] = await Promise.all([reader.leads(gym.id, { open: !all }), reader.leadFunnel(gym.id, chosen.bounds)]);
   const mayWork = can(actor, 'member.edit', getContainer().clock.now());
+
+  /**
+   * The number the gym is actually run on (REP-005).
+   *
+   * An enquiry is the cheapest member it will ever get, and nobody could see what share
+   * of them joined. Rounded to a whole percent: a rate quoted to a decimal place off
+   * twenty enquiries claims a precision twenty enquiries do not have.
+   */
+  const converted = funnel.byStatus['CONVERTED'] ?? 0;
+  const rate = funnel.total === 0 ? null : Math.round((converted / funnel.total) * 100);
+  const sources = Object.entries(funnel.bySource).sort(([, a], [, b]) => b - a);
 
   const tabClass = (active: boolean) =>
     pillClass(active);
@@ -46,7 +64,7 @@ export default async function CrmLeadsPage({ searchParams }: { searchParams: Pro
     <>
       <CrmHeader title={t('leads.title')} subtitle={t('menu.leads.desc')} back="/crm/more" />
 
-      <div className="flex gap-2 px-4 py-3">
+      <div className="flex gap-2 px-4 py-3 lg:px-0">
         <Link href="/crm/leads" className={tabClass(!all)}>
           {t('leads.tabOpen')}
         </Link>
@@ -54,6 +72,49 @@ export default async function CrmLeadsPage({ searchParams }: { searchParams: Pro
           {t('leads.tabAll')}
         </Link>
       </div>
+
+      {/* What became of the enquiries, before the list of them (REP-005). */}
+      <section className={cn(CRM_CARD, 'mx-4 mb-3 p-4 lg:mx-0')} aria-label={t('leads.funnelLabel')}>
+        <PeriodPicker
+          basePath="/crm/leads"
+          period={chosen.period}
+          from={from}
+          to={to}
+          {...(all ? { extra: { tab: 'all' } } : {})}
+          problem={chosen.problem}
+          maxDays={MAX_RANGE_DAYS}
+        />
+
+        <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-3">
+          <div>
+            <dt className="text-small text-brand-stone">{t('leads.enquiries')}</dt>
+            <dd className="font-display text-[1.75rem] leading-none font-bold tabular text-brand-obsidian">{funnel.total}</dd>
+          </div>
+          <div>
+            <dt className="text-small text-brand-stone">{t('leads.joined')}</dt>
+            <dd className={cn('font-display text-[1.75rem] leading-none font-bold tabular', FEE_TONE.PAID.text)}>{converted}</dd>
+          </div>
+          <div>
+            <dt className="text-small text-brand-stone">{t('leads.conversion')}</dt>
+            <dd className="font-display text-[1.75rem] leading-none font-bold tabular text-brand-obsidian">
+              {rate === null ? '—' : `${rate}%`}
+            </dd>
+          </div>
+        </dl>
+
+        {sources.length === 0 ? null : (
+          <>
+            <p className="mt-4 text-small font-semibold text-brand-stone">{t('leads.whereFrom')}</p>
+            <ul className="mt-1.5 flex flex-wrap gap-x-5 gap-y-1">
+              {sources.map(([source, count]) => (
+                <li key={source} className="text-small text-brand-ink">
+                  <span className="tabular font-semibold">{count}</span> {t(`leads.sources.${source}` as never)}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
 
       <p className="px-4 pb-2 text-small text-brand-stone">{t('leads.count', { count: leads.length })}</p>
 

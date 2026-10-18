@@ -7,12 +7,11 @@ import { sendBirthdayWishAction, setCrmLanguageAction } from '@/app/crm/actions'
 import { AttendanceChart } from '@/components/crm/attendance-chart';
 import { BirthdayList } from '@/components/crm/birthday-list';
 import { AutoRefresh } from '@/components/crm/auto-refresh';
-import { BottomNav, CrmHeader, FEE_TONE, MemberRow, rupees } from '@/components/crm/crm-chrome';
+import { BottomNav, CrmHeader, FEE_TONE, MemberRow, StatTile, rupees } from '@/components/crm/crm-chrome';
 import { CrmIcon, type CrmIconName } from '@/components/crm/crm-icons';
 import { LanguageSwitch } from '@/components/crm/language-switch';
 import { getContainer } from '@/lib/container';
 import { requireCrmContext } from '@/lib/crm';
-import { cn } from '@/lib/cn';
 
 /**
  * Home — "आज" (crm-ux-blueprint §3; ADR-062).
@@ -88,15 +87,19 @@ export default async function CrmHomePage() {
       : false,
   ].filter((item): item is { key: string; count: number; label: string; href: string } => item !== false);
 
+  /**
+   * The colour now sits on the number rather than behind the whole tile (ADR-131): four
+   * tinted blocks competed, four figures on white read as one row.
+   */
   const tiles: ReadonlyArray<{ key: 'totalMembers' | 'attendedToday' | 'dueThisWeek' | 'expired'; value: number; href: string; icon: CrmIconName; tone: string; note?: string }> = [
-    { key: 'totalMembers', value: counts.activeMembers, href: '/crm/members?status=ACTIVE', icon: 'members', tone: 'bg-brand-obsidian text-brand-white' },
-    { key: 'attendedToday', value: counts.attendedToday, href: '/crm/attendance', icon: 'attendance', tone: FEE_TONE.PAID.chip },
+    { key: 'totalMembers', value: counts.activeMembers, href: '/crm/members?status=ACTIVE', icon: 'members', tone: 'text-brand-obsidian' },
+    { key: 'attendedToday', value: counts.attendedToday, href: '/crm/attendance', icon: 'attendance', tone: FEE_TONE.PAID.text },
     {
       key: 'dueThisWeek',
       value: counts.dueThisWeek,
       href: '/crm/members?fee=DUE_SOON',
       icon: 'fees',
-      tone: FEE_TONE.DUE_SOON.chip,
+      tone: FEE_TONE.DUE_SOON.text,
       ...(showMoney ? { note: t('home.dueAmount', { amount: rupees(counts.dueThisWeekPaise) }) } : {}),
     },
     { key: 'expired', value: counts.expired, href: '/crm/members?fee=EXPIRED', icon: 'bell', tone: FEE_TONE.EXPIRED.chip },
@@ -141,7 +144,7 @@ export default async function CrmHomePage() {
         {/* Whatever the owner last told the members, every member of staff sees too —
             reception is asked about it first (ADR-079). */}
         {latest === null ? null : (
-          <section aria-labelledby="latest-announcement" className="rounded-panel border-l-4 border-brand-accent bg-white p-4 shadow-sm">
+          <section aria-labelledby="latest-announcement" className="rounded-panel border-l-4 border-brand-accent bg-white p-4">
             <h2 id="latest-announcement" className="text-small font-semibold tracking-[0.18em] text-brand-stone uppercase">
               {ta('latestTitle')}
             </h2>
@@ -160,7 +163,7 @@ export default async function CrmHomePage() {
           * do instead, and each line goes to the place that does it.
           */}
         {registerEmpty ? (
-          <section aria-labelledby="first-run-heading" className="overflow-hidden rounded-panel bg-brand-obsidian text-brand-white shadow-sm">
+          <section aria-labelledby="first-run-heading" className="overflow-hidden rounded-panel bg-brand-obsidian text-brand-white">
             <div className="relative p-5 lg:p-6">
               <span aria-hidden className="absolute -top-16 -right-10 size-48 rounded-full bg-brand-accent/25 blur-3xl" />
               <h2 id="first-run-heading" className="relative font-display text-title font-bold">
@@ -205,7 +208,7 @@ export default async function CrmHomePage() {
               <li key={item.key}>
                 <Link
                   href={item.href}
-                  className="group relative flex min-h-16 items-center gap-3 rounded-panel border border-brand-stone/15 bg-white px-4 py-3 font-semibold text-brand-obsidian shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand-accent hover:shadow-md"
+                  className="group relative flex min-h-16 items-center gap-3 rounded-panel border border-brand-stone/12 bg-white px-4 py-3 font-semibold text-brand-obsidian transition-all hover:-translate-y-0.5 hover:border-brand-accent hover:shadow-md"
                 >
                   <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-accent/10 text-brand-accent transition-colors group-hover:bg-brand-accent group-hover:text-brand-white">
                     <CrmIcon name={item.icon} className="size-5" />
@@ -235,7 +238,7 @@ export default async function CrmHomePage() {
          * are the only things on this screen with a person waiting at the other end.
          */}
         {waitingOn.length === 0 ? null : (
-          <section aria-labelledby="waiting-heading" className="rounded-panel border-l-4 border-semantic-fee-due-soon bg-white p-4 shadow-sm lg:p-5">
+          <section aria-labelledby="waiting-heading" className="rounded-panel border-l-4 border-semantic-fee-due-soon bg-white p-4 lg:p-5">
             <h2 id="waiting-heading" className="text-crm-body font-bold text-brand-obsidian">
               {t('home.waitingTitle')}
             </h2>
@@ -258,22 +261,14 @@ export default async function CrmHomePage() {
         <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
           {tiles.map((tile) => (
             <li key={tile.key}>
-              <Link
+              <StatTile
+                label={t(`home.${tile.key}`)}
+                value={tile.value}
+                note={tile.note ?? t(`home.help.${tile.key}`)}
                 href={tile.href}
-                className={cn(
-                  'flex h-full min-h-28 flex-col justify-between gap-2 rounded-panel p-4 lg:min-h-36 lg:gap-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md lg:p-5',
-                  tile.tone,
-                )}
-              >
-                <span className="flex items-center justify-between">
-                  <span className="text-crm-body font-semibold">{t(`home.${tile.key}`)}</span>
-                  <CrmIcon name={tile.icon} className="size-6 opacity-80" />
-                </span>
-                <span>
-                  <span className="block font-display text-[2.25rem] leading-none font-bold tabular lg:text-[2.75rem]">{tile.value}</span>
-                  <span className="mt-1 block text-small">{tile.note ?? t(`home.help.${tile.key}`)}</span>
-                </span>
-              </Link>
+                icon={tile.icon}
+                tone={tile.tone}
+              />
             </li>
           ))}
         </ul>
@@ -282,7 +277,7 @@ export default async function CrmHomePage() {
             about: who is in on one today, who finished and never joined — that is the
             follow-up list — and how many joined this month after one. */}
         {counts.trialsRunning === 0 && counts.trialsFinishedNotJoined === 0 && counts.trialsConvertedThisMonth === 0 ? null : (
-          <section aria-labelledby="trials-heading" className="rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm lg:p-5">
+          <section aria-labelledby="trials-heading" className="rounded-panel border border-brand-stone/12 bg-white p-4 lg:p-5">
             <h2 id="trials-heading" className="text-crm-body font-bold text-brand-obsidian">
               {t('home.trials')}
             </h2>
@@ -304,8 +299,8 @@ export default async function CrmHomePage() {
         )}
 
         <div className="grid gap-4 lg:gap-6 lg:grid-cols-[1.4fr_1fr]">
-          <section aria-labelledby="calls-heading" className="self-start overflow-hidden rounded-panel border border-brand-stone/15 bg-white shadow-sm">
-            <div className="flex items-start justify-between gap-3 border-b border-brand-stone/15 px-4 py-3">
+          <section aria-labelledby="calls-heading" className="self-start overflow-hidden rounded-panel border border-brand-stone/12 bg-white">
+            <div className="flex items-start justify-between gap-3 border-b border-brand-stone/12 px-4 py-3">
               <div className="flex gap-3">
                 <span className="mt-0.5 flex size-9 items-center justify-center rounded-full bg-brand-accent/10 text-brand-accent">
                   <CrmIcon name="calls" className="size-5" />
@@ -349,7 +344,7 @@ export default async function CrmHomePage() {
           <div className="grid content-start gap-4 lg:gap-6">
             {/* The week's arrivals, above the day's: the shape is what tells the owner
                 whether today is going well (ADR-095). */}
-            <section aria-labelledby="week-heading" className="rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm lg:p-5">
+            <section aria-labelledby="week-heading" className="rounded-panel border border-brand-stone/12 bg-white p-4 lg:p-5">
               <div className="flex gap-3">
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-accent/10 text-brand-accent">
                   <CrmIcon name="attendance" className="size-5" />
@@ -366,7 +361,7 @@ export default async function CrmHomePage() {
               </div>
             </section>
 
-            <section aria-labelledby="birthdays-heading" className="rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm">
+            <section aria-labelledby="birthdays-heading" className="rounded-panel border border-brand-stone/12 bg-white p-4">
               <div className="flex gap-3">
                 <span className="flex size-9 items-center justify-center rounded-full bg-tint-birthday-bg text-semantic-birthday">
                   <CrmIcon name="cake" className="size-5" />
@@ -381,17 +376,21 @@ export default async function CrmHomePage() {
               <BirthdayList items={birthdays} canSend={can(actor, 'member.edit', now)} onSend={sendBirthdayWishAction} />
             </section>
 
+            {/* The one dark surface below the header, and the only one on the page that
+                earns it (ADR-131). The blurred red glow behind its corner went with the
+                rest of the decoration: it said nothing, and a gradient wash is the
+                cheapest thing an interface can wear. The children were `relative` only
+                to sit above that glow. */}
             {showMoney ? (
-              <section aria-labelledby="money-heading" className="relative overflow-hidden rounded-panel bg-brand-obsidian p-5 text-brand-white shadow-sm">
-                <span aria-hidden className="absolute -top-10 -right-10 size-40 rounded-full bg-brand-accent/25 blur-2xl" />
-                <h2 id="money-heading" className="relative text-crm-body font-bold">
+              <section aria-labelledby="money-heading" className="rounded-panel bg-brand-obsidian p-5 text-brand-white">
+                <h2 id="money-heading" className="text-crm-body font-bold">
                   {t('home.thisMonth')}
                 </h2>
-                <p className="relative text-small text-brand-mist">{t('home.moneyHelp')}</p>
-                <p className="relative mt-3 font-display text-[2.75rem] leading-none font-bold tabular">{rupees(counts.collectedThisMonthPaise)}</p>
-                <p className="relative mt-2 text-small text-brand-mist">{t('home.lastMonth', { amount: rupees(counts.collectedLastMonthPaise) })}</p>
+                <p className="text-small text-brand-mist">{t('home.moneyHelp')}</p>
+                <p className="mt-3 font-display text-[2.75rem] leading-none font-bold tabular">{rupees(counts.collectedThisMonthPaise)}</p>
+                <p className="mt-2 text-small text-brand-mist">{t('home.lastMonth', { amount: rupees(counts.collectedLastMonthPaise) })}</p>
                 {can(actor, 'money.view', now) ? (
-                  <Link href="/crm/reports" className="relative mt-4 inline-flex min-h-11 items-center gap-1 text-body font-semibold text-brand-accent-glow">
+                  <Link href="/crm/reports" className="mt-4 inline-flex min-h-11 items-center gap-1 text-body font-semibold text-brand-accent-glow">
                     {t('menu.reports.label')}
                     <CrmIcon name="chevron" className="size-4" />
                   </Link>

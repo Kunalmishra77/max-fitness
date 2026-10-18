@@ -39,7 +39,7 @@ export async function DietPanel({ plans, locale }: { readonly plans: readonly Di
   const older = plans.filter((plan) => plan.id !== current.id);
 
   return (
-    <section className="mt-3 bg-white px-4 py-4 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:px-6 lg:shadow-sm">
+    <section className="mt-3 bg-white px-4 py-4 lg:rounded-panel lg:border lg:border-brand-stone/12 lg:px-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="flex items-center gap-2 text-crm-body font-bold text-brand-obsidian">
           <CrmIcon name="diet" className="size-5 text-brand-stone" />
@@ -97,7 +97,7 @@ export async function DietPanel({ plans, locale }: { readonly plans: readonly Di
       )}
 
       {older.length === 0 ? null : (
-        <ul className="mt-3 border-t border-brand-stone/15 pt-3">
+        <ul className="mt-3 border-t border-brand-stone/12 pt-3">
           {older.map((plan) => (
             <li key={plan.id} className="flex items-baseline justify-between gap-3 py-1 text-small text-brand-stone">
               <span>{t('ready', { version: plan.version })}</span>

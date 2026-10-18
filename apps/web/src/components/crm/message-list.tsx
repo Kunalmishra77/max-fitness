@@ -79,7 +79,7 @@ export function MessageList({ rows }: { rows: readonly MessageRow[] }) {
           <li key={row.id}>
             <article
               aria-label={row.memberName ?? t('title')}
-              className="rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm transition-colors hover:border-brand-stone/30"
+              className="rounded-panel border border-brand-stone/12 bg-white p-4 transition-colors hover:border-brand-stone/30"
             >
               <div className="flex items-start gap-3">
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-obsidian text-brand-white">

@@ -16,7 +16,7 @@ import {
   type ReportPeriod,
 } from '@mfp/core';
 import { addDays, formatISTDate } from '@mfp/shared';
-import { pillClass } from '@/components/crm/crm-chrome';
+import { PeriodPicker } from '@/components/crm/period-picker';
 import { BottomNav, CrmHeader, rupees } from '@/components/crm/crm-chrome';
 import { CrmIcon } from '@/components/crm/crm-icons';
 import { BusyHoursChart, Meter, ShareBars, SplitBar } from '@/components/crm/report-charts';
@@ -50,7 +50,7 @@ const PLAN_MIX_DAYS = 90;
 
 function Card({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm lg:p-6">
+    <section className="rounded-panel border border-brand-stone/12 bg-white p-4 lg:p-6">
       <h2 className="text-crm-body font-bold text-brand-obsidian">{title}</h2>
       {subtitle === undefined ? null : <p className="text-small text-brand-stone">{subtitle}</p>}
       <div className="mt-3">{children}</div>
@@ -173,39 +173,17 @@ export default async function CrmReportsPage({
     <>
       <CrmHeader title={t('reports.title')} subtitle={t('menu.reports.desc')} back="/crm/more" />
 
-      {/* REP-001: the window, chosen. Links rather than state, so a period can be
-          bookmarked and sent, and the whole screen still renders without JavaScript. */}
-      <section aria-label={t('reports.viewing', { month: periodLabel })} className="px-4 pt-3 lg:px-0">
-        <div className="flex flex-wrap gap-2">
-          {(['WEEK', 'MONTH', 'YEAR'] as const).map((key) => (
-            <Link key={key} href={key === 'MONTH' ? '/crm/reports' : `/crm/reports?period=${key}`} className={pillClass(period === key)}>
-              {t(`reports.periods.${key}` as never)}
-            </Link>
-          ))}
-          <span className={pillClass(period === 'CUSTOM')}>{t('reports.periods.CUSTOM')}</span>
-        </div>
-
-        {/* A plain GET form: the browser builds the query string and the result is a URL. */}
-        <form method="get" action="/crm/reports" className="mt-3 flex flex-wrap items-end gap-3">
-          <input type="hidden" name="period" value="CUSTOM" />
-          <label className="flex flex-col gap-1 text-small font-semibold text-brand-stone">
-            {t('reports.periodFrom')}
-            <input type="date" name="from" defaultValue={month.start} max={today} className="min-h-14 rounded-input border-2 border-brand-stone/40 bg-white px-3 text-crm-body text-brand-ink" />
-          </label>
-          <label className="flex flex-col gap-1 text-small font-semibold text-brand-stone">
-            {t('reports.periodTo')}
-            <input type="date" name="to" defaultValue={periodEndToDate(month, today)} max={today} className="min-h-14 rounded-input border-2 border-brand-stone/40 bg-white px-3 text-crm-body text-brand-ink" />
-          </label>
-          <button type="submit" className="min-h-14 rounded-button bg-brand-obsidian px-6 text-crm-body font-bold text-white">
-            {t('reports.periodApply')}
-          </button>
-        </form>
-
-        {chosen.problem === null ? null : (
-          <p role="alert" className="mt-3 rounded-panel bg-tint-fee-none-bg p-3 text-crm-body font-semibold text-brand-obsidian">
-            {chosen.problem === 'TOO_LONG' ? t('reports.periodTooLong', { days: MAX_RANGE_DAYS }) : t('reports.periodFuture')}
-          </p>
-        )}
+      {/* REP-001: the window, chosen. The control is shared with the calls screen
+          (REP-004) so "this week" is visibly the same week on both. */}
+      <div className="px-4 pt-3 lg:px-0">
+        <PeriodPicker
+          basePath="/crm/reports"
+          period={period}
+          from={month.start}
+          to={periodEndToDate(month, today)}
+          problem={chosen.problem}
+          maxDays={MAX_RANGE_DAYS}
+        />
 
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <p className="text-small text-brand-stone">{rangeLabel}</p>
@@ -215,7 +193,7 @@ export default async function CrmReportsPage({
             {t('reports.exportCsv')}
           </a>
         </div>
-      </section>
+      </div>
 
       {/* Which month is being read, and the two arrows that change it (ADR-098). The
           forward arrow is absent in the current month rather than disabled: there is

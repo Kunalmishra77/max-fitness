@@ -95,7 +95,7 @@ export function MemberEditForm({
   const invalid = (field: string) => (error !== null && error.field === field ? 'border-semantic-fee-expired' : '');
 
   return (
-    <div className="bg-white px-4 py-5 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:p-6 lg:shadow-sm">
+    <div className="bg-white px-4 py-5 lg:rounded-panel lg:border lg:border-brand-stone/12 lg:p-6">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <label htmlFor={`${id}-name`} className={label}>

@@ -25,7 +25,7 @@ export default async function CrmAppLoading() {
         <div className="mt-2 h-4 w-1/4 rounded bg-brand-stone/15" />
         <div className="mt-6 grid gap-3">
           {[0, 1, 2, 3, 4].map((row) => (
-            <div key={row} className="flex items-center gap-3 rounded-panel border border-brand-stone/15 bg-white p-4">
+            <div key={row} className="flex items-center gap-3 rounded-panel border border-brand-stone/12 bg-white p-4">
               <div className="size-14 shrink-0 rounded-full bg-brand-stone/20" />
               <div className="min-w-0 flex-1">
                 <div className="h-4 w-1/3 rounded bg-brand-stone/20" />

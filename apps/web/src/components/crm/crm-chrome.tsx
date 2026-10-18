@@ -60,9 +60,11 @@ export async function CrmHeader({
         </div>
         {right}
       </div>
-      {/* The accent line used to be clipped to the panel's corners by `overflow-hidden` on
-          the header. That also clipped the actions menu, so the line rounds itself. */}
-      <span aria-hidden className="block h-0.5 bg-gradient-to-r from-brand-accent via-brand-accent/40 to-transparent lg:rounded-b-panel" />
+      {/* The brand's red rule. It used to fade to transparent across the width, which
+          encodes nothing — a gradient for its own sake. Solid, and it reads as the stripe
+          from the logo rather than as decoration. It rounds itself because clipping it to
+          the panel with `overflow-hidden` also clipped the actions menu. */}
+      <span aria-hidden className="block h-[3px] bg-brand-accent lg:rounded-b-panel" />
     </header>
   );
 }
@@ -108,9 +110,21 @@ export interface MemberRowData {
   readonly feeState: FeeState;
   readonly daysLeft: number | null;
   readonly status: string;
+  /** A short-lived signed link. Initials stand in when there is no photograph. */
+  readonly photoUrl?: string | null;
 }
 
-/** One member, the same everywhere (crm-ux-blueprint §4). */
+/**
+ * One member, the same everywhere (crm-ux-blueprint §4, ADR-131).
+ *
+ * **The fee state is a band down the left edge, not a chip on the right.** U2 says a
+ * colour means one thing; the owner's question down a list is *"who owes me"*, and a
+ * chip at the far end of each row makes that a left-to-right read per member instead of
+ * one glance down a column. `FEE_TONE.band` was defined for this and had never been used
+ * by the row it was written for.
+ *
+ * The words stay beside it, because colour is never the only signal.
+ */
 export async function MemberRow({ member }: { member: MemberRowData }) {
   const t = await getTranslations('crm');
   const left = member.status === 'LEFT';
@@ -128,28 +142,36 @@ export async function MemberRow({ member }: { member: MemberRowData }) {
             ? t('feeState.dueToday')
             : t('feeState.overdue', { count: Math.abs(days) });
 
+  const tone = left ? FEE_TONE.NONE : FEE_TONE[member.feeState];
+
   return (
     <Link
       href={`/crm/members/${member.id}`}
-      className="group flex min-h-16 items-center gap-3 border-b border-brand-stone/15 bg-white px-4 transition-colors hover:bg-brand-paper"
+      className="group relative flex min-h-16 items-center gap-3 border-b border-brand-stone/10 bg-white py-2 ps-5 pe-4 transition-colors hover:bg-brand-paper"
     >
-      <span
-        aria-hidden
-        className={cn(
-          'flex size-11 shrink-0 items-center justify-center rounded-full font-display text-body font-bold text-brand-white',
-          left ? FEE_TONE.NONE.band : FEE_TONE[member.feeState].band,
-        )}
-      >
-        {initials(member.fullName)}
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col justify-center py-3">
+      {/* The one glance down the list: who owes money. */}
+      <span aria-hidden className={cn('absolute inset-y-0 start-0 w-1', tone.band)} />
+
+      {/* U1, faces before names — the owner knows his members by face. The row has
+          always said initials, which is the fallback and was standing in for the rule. */}
+      {member.photoUrl == null ? (
+        <span
+          aria-hidden
+          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand-stone/15 font-display text-body font-bold text-brand-stone"
+        >
+          {initials(member.fullName)}
+        </span>
+      ) : (
+        // A link that lapses in five minutes; nothing for the image optimiser to cache.
+        <img src={member.photoUrl} alt="" width={44} height={44} className="size-11 shrink-0 rounded-full object-cover" />
+      )}
+
+      <span className="flex min-w-0 flex-1 flex-col justify-center">
         <span className="truncate text-crm-body font-semibold text-brand-ink">{member.fullName}</span>
         <span className="truncate text-small text-brand-stone">{member.memberCode ?? '—'}</span>
       </span>
-      <span className={cn('shrink-0 rounded-full px-3 py-1 text-small font-semibold', left ? FEE_TONE.NONE.chip : FEE_TONE[member.feeState].chip)}>
-        {line}
-      </span>
-      <CrmIcon name="chevron" className="size-5 shrink-0 text-brand-stone transition-transform group-hover:translate-x-0.5" />
+      <span className={cn('shrink-0 text-small font-semibold', tone.text)}>{line}</span>
+      <CrmIcon name="chevron" className="size-5 shrink-0 text-brand-stone/60 transition-transform group-hover:translate-x-0.5" />
     </Link>
   );
 }
@@ -179,7 +201,69 @@ export function initials(name: string): string {
  */
 export const CRM_FORM_COLUMN = 'mx-auto w-full max-w-3xl';
 
-export const CRM_CARD = 'bg-white lg:rounded-panel lg:border lg:border-brand-stone/15 lg:shadow-sm';
+/**
+ * A white panel: edge to edge on a phone, a card with a border on a computer (ADR-062,
+ * ADR-131).
+ *
+ * **It has no shadow.** It used to, and so did every tile, every report card and every
+ * list — the register, a settings form, the birthday list and the month's money all
+ * wearing one border radius and one soft grey shadow. Nothing was more important than
+ * anything else, which is what "basic" looks like when you cannot point at a single
+ * thing that is wrong with it.
+ *
+ * Depth now has to be earned: `CRM_CARD_RAISED` is the one thing on a screen that
+ * matters most, and there is at most one of it.
+ */
+export const CRM_CARD = 'bg-white lg:rounded-panel lg:border lg:border-brand-stone/12';
+
+/** The single most important panel on a screen. At most one per screen. */
+export const CRM_CARD_RAISED = 'bg-white rounded-panel border border-brand-stone/12 shadow-[0_2px_16px_-6px_rgb(10_10_11/0.18)]';
+
+/**
+ * A number the owner reads at a glance, and the one word that says what it is (ADR-131).
+ *
+ * **The number is the tile.** U3 asks for numbers over sentences, and the home screen
+ * was setting the label at body size beside a number barely larger — four tinted blocks
+ * of equal weight, each asking for attention. Now the surface is quiet, the number is
+ * large and tabular, and the colour is on the number alone, so four of these read as one
+ * row of figures rather than four posters.
+ *
+ * No hover lift. Every card lifting half a pixel is the thing that makes an interface
+ * feel generated; the surface changes instead, which is what a pointer actually needs
+ * to know.
+ */
+export function StatTile({
+  label,
+  value,
+  note,
+  href,
+  icon,
+  tone = 'text-brand-obsidian',
+}: {
+  label: string;
+  value: string | number;
+  note?: string | undefined;
+  href: string;
+  icon: CrmIconName;
+  /** A text colour from `FEE_TONE`, or the default ink. */
+  tone?: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex h-full min-h-28 flex-col justify-between gap-3 rounded-panel border border-brand-stone/12 bg-white p-4 transition-colors hover:border-brand-stone/30 hover:bg-brand-paper lg:min-h-36 lg:p-5"
+    >
+      <span className="flex items-start justify-between gap-2">
+        <span className="text-small font-semibold text-brand-stone">{label}</span>
+        <CrmIcon name={icon} className="size-5 shrink-0 text-brand-stone/50" />
+      </span>
+      <span>
+        <span className={cn('block font-display text-[2.5rem] leading-none font-bold tabular tracking-tight lg:text-[3rem]', tone)}>{value}</span>
+        {note === undefined ? null : <span className="mt-1.5 block text-small text-brand-stone">{note}</span>}
+      </span>
+    </Link>
+  );
+}
 
 /** A filter or tab pill; the chosen one is obsidian, or its own fee tint. */
 export function pillClass(active: boolean, tone = 'bg-white text-brand-stone hover:text-brand-obsidian'): string {

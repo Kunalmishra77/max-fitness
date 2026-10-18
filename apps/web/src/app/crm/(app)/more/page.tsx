@@ -46,7 +46,7 @@ export default async function CrmMorePage() {
                   <li key={item.key}>
                     <Link
                       href={item.href}
-                      className="group flex min-h-20 items-center gap-4 rounded-panel border border-brand-stone/15 bg-white px-4 py-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand-accent hover:shadow-md"
+                      className="group flex min-h-20 items-center gap-4 rounded-panel border border-brand-stone/12 bg-white px-4 py-3 transition-all hover:-translate-y-0.5 hover:border-brand-accent hover:shadow-md"
                     >
                       <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-brand-obsidian text-brand-white transition-colors group-hover:bg-brand-accent">
                         <CrmIcon name={item.icon} className="size-6" />
@@ -69,7 +69,7 @@ export default async function CrmMorePage() {
           );
         })}
 
-        <section aria-labelledby="more-language" className="flex flex-wrap items-center justify-between gap-3 rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm lg:hidden">
+        <section aria-labelledby="more-language" className="flex flex-wrap items-center justify-between gap-3 rounded-panel border border-brand-stone/12 bg-white p-4 lg:hidden">
           <h2 id="more-language" className="flex items-center gap-2 text-crm-body font-semibold text-brand-obsidian">
             <CrmIcon name="language" className="size-5" />
             {t('shell.language')}

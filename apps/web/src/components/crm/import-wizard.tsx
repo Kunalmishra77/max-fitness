@@ -170,7 +170,7 @@ export function ImportWizard({
           </ul>
 
           {checked.problems.length === 0 ? null : (
-            <div className="rounded-panel border border-brand-stone/15 bg-white p-3">
+            <div className="rounded-panel border border-brand-stone/12 bg-white p-3">
               <h3 className="text-crm-body font-bold text-brand-obsidian">{t('problemsTitle')}</h3>
               <ul className="mt-2 divide-y divide-brand-stone/15">
                 {checked.problems.map((problem) => (
@@ -199,7 +199,7 @@ export function ImportWizard({
           ) : summary.ready === 0 ? (
             <p className="rounded-input bg-tint-fee-none-bg p-3 text-crm-body font-semibold text-brand-obsidian">{t('nothingNew')}</p>
           ) : (
-            <div className="grid gap-3 rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm">
+            <div className="grid gap-3 rounded-panel border border-brand-stone/12 bg-white p-4">
               <label className="flex min-h-14 items-start gap-3 text-crm-body">
                 <input type="checkbox" checked={deskConsent} onChange={(event) => setDeskConsent(event.target.checked)} className="mt-1 size-6 accent-brand-obsidian" />
                 <span>{t('deskConsent')}</span>

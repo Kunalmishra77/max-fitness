@@ -115,7 +115,7 @@ export function AnnouncementComposer({
 
   return (
     <div className="grid gap-4 p-4 pb-24">
-      <section className="rounded-panel bg-white p-4 shadow-sm">
+      <section className="rounded-panel bg-white p-4">
         <p className="text-crm-body font-bold text-brand-obsidian">{t('reachTitle')}</p>
         <p className="mt-1 text-crm-body">{t('reach', { reachable: reach.reachable, total: reach.total })}</p>
         {reach.total > reach.reachable ? <p className="mt-1 text-small text-brand-stone">{t('reachWhy', { count: reach.total - reach.reachable })}</p> : null}
@@ -131,12 +131,12 @@ export function AnnouncementComposer({
       )}
 
       {stage === 'pin' ? (
-        <div className="rounded-panel bg-white shadow-sm">
+        <div className="rounded-panel bg-white">
           <PinGate unlock={unlock} onUnlocked={run} title={t('pinAgain')} compact />
         </div>
       ) : null}
 
-      <section className="rounded-panel bg-white p-4 shadow-sm">
+      <section className="rounded-panel bg-white p-4">
         <label htmlFor={`${id}-hi`} className="block text-crm-body font-bold text-brand-obsidian">
           {t('hindi')}
         </label>

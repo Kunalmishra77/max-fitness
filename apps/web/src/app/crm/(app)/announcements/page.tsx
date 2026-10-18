@@ -51,7 +51,7 @@ export default async function CrmAnnouncementsPage() {
         ) : (
           <ul className="mt-2 grid gap-2">
             {past.map((item) => (
-              <li key={item.id} className="rounded-panel bg-white p-4 shadow-sm">
+              <li key={item.id} className="rounded-panel bg-white p-4">
                 <p className="text-crm-body text-brand-obsidian">{locale === 'hi' && item.textHi !== '' ? item.textHi : item.textEn !== '' ? item.textEn : item.textHi}</p>
                 <p className="mt-1 text-small text-brand-stone">
                   {t('sentAt', { date: formatISTDate(toISTDate(item.sentAt), locale), name: item.byName })} ·{' '}

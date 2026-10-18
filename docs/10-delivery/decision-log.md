@@ -1003,3 +1003,64 @@ alternative was a control that locks out the gym more often than an attacker.
 
 `refund` deliberately removes the **newest** hit rather than an arbitrary one, so two
 requests racing on one key cannot have one refund cancel the other's.
+
+## ADR-131
+
+**Date:** 2026-10-18
+**Status:** Accepted
+**Context:** The owner, after two sessions of features: *"in UI, I have seen very basic UI. I wanted a very modern type of UI for entire panel."*
+
+"Basic" is hard to argue with because nothing is individually wrong. Looking for what was actually causing it:
+
+**Depth was free.** `CRM_CARD` carried `shadow-sm`, and so did every tile, report card, form panel and list — thirty files. The register, a settings form, the birthday list and the month's money all wore one border radius and one soft grey shadow. Nothing was more important than anything else, which is exactly what a generated interface looks like.
+
+**Two of the blueprint's own principles were not kept by the code.** U1 is *faces before names* — "the owner knows his members by face" — and the shared `MemberRow` showed initials. U2 is *colour means one thing*, and the fee colour was the **avatar's background**: a member with a photograph showed no fee colour at all, and one without showed it as a coloured disc that read like a category rather than a warning.
+
+**Decision — change the shared vocabulary, not twenty-six screens.**
+
+- **Depth is earned.** `CRM_CARD` has no shadow; `CRM_CARD_RAISED` is the one panel on a screen that matters most, and there is at most one. The blanket shadow is gone from all thirty files.
+- **The fee colour is a band down the row's leading edge.** The owner's question down a list is *"who owes me"*, and a chip at the far right makes that a left-to-right read per member instead of one glance down a column. `FEE_TONE.band` was defined for this and had never been used by the row it was written for. The words stay beside it: colour is never the only signal.
+- **The avatar is the person.** Photograph where there is one, initials in quiet stone where there is not — on the shared row, the register and the profile.
+- **The number is the tile.** `StatTile` sets the label small and quiet and the figure large, tabular and tight, with the colour on the figure alone. Four of them read as a row of figures rather than four posters.
+- **Decoration went.** The header's red rule faded to transparent across its width, which encodes nothing; it is solid now and reads as the stripe from the logo. The blurred red glow behind the money panel went. So did `hover:-translate-y` on every card — every card lifting half a pixel is the thing that makes an interface feel generated, and a surface change is what a pointer actually needs.
+
+**Nothing in the palette or the type scale changed.** The blueprint pins both, and the problem was never the colours — it was that everything was wearing the same weight.
+
+## ADR-132
+
+**Date:** 2026-10-18
+**Status:** Accepted
+**Context:** The page-by-page audit on 2026-10-17 found that **21 of 26 CRM screens had no filter of any kind** — no search, no date range, no history. Three of them were red: Calls, Leads and Verify. The merge of 2026-10-17 covered attendance and reports and left these.
+
+**Decision — give each of the three the question it could not answer, and do not invent a fourth screen.**
+
+**Calls was called "today's calls" and meant it.** A task left the list the moment it was closed and was never seen again, so *"who did we ring last week and what did they say"* had no answer, and neither did *"is this list worth anybody's morning"*. A **Done** tab now reads a window, with the outcome counts above the list because they are the finding: "forty calls" says nothing, "forty calls, twenty-six no answer" says the numbers on file are wrong, and "forty calls, eighteen will renew" says the list pays for itself. Keyed on `doneAt`, not `dueDate` — the owner is asking what the desk *did*, and a task raised on Monday and rung on Thursday belongs to Thursday.
+
+**Leads listed and counted nothing.** An enquiry is the cheapest member the gym will ever get and the conversion rate was invisible. Counted on `createdAt`, so the rate belongs to the cohort that arrived in the window rather than to conversions that happened in it. Source is counted separately rather than cross-tabulated: "where do they come from" and "how many join" are asked on different days, and nine sources by six statuses is not a phone screen.
+
+**Verify gets a link, not a history.** Every approval and rejection is already in the audit trail with who and when, filterable by date — a second history here would be the same facts read from the same table through different code, and the two would drift.
+
+**One period control, shared.** `PeriodPicker` is extracted from the reports page and used by all three, so "this week" is visibly and actually the same week everywhere; `readReportPeriod` decides it on the server. Links and a plain GET form rather than state, so a period can be bookmarked and sent and the screen still renders with JavaScript off.
+
+**Also fixed in passing:** the calls screen still opened `wa.me`. ADR-126 gave the reason — it writes from whichever account the staff phone is signed into, so the reply never reaches the gym — but only reached the member profile.
+
+## ADR-133
+
+**Date:** 2026-10-18
+**Status:** Accepted
+**Context:** The end-to-end suite, run to completion for the first time against a built server, failed `renew.spec.ts` journey 6. The renew page rendered the member's name, their photograph and the chained start date, and then offered **no plans at all** — an empty paragraph where the cards belong.
+
+`planCards` keeps only `kind === 'MEMBERSHIP'`, because personal training is priced on its own card (ADR-087). `loadRenewalOffer` never selected the `kind` column, so every row arrived with it undefined, the filter removed all of them, and the list was empty.
+
+**Live from 2026-10-02 to 2026-10-18.** Every renewal link the reminder engine sent led to a page the member could not renew from — not online, not at the desk. The CRM's own renew screen selects the column and was fine, so nobody at the gym ever saw it.
+
+**Decision — select the column, and delete the cast that hid it.**
+
+The loader held `rows.map((row) => row as Plan)`. That assertion is what kept the compiler quiet about a row that was missing a field the domain requires. Only the three fields the domain genuinely narrows are asserted now — a plan's code, its duration and its gender, which the database stores wider than the domain accepts — and everything else is checked. The next column somebody adds to `Plan` will be a type error here rather than an empty screen.
+
+**Why no test ever caught it.** A unit test with a fake Prisma cannot: the fake returns whatever the test hands it, so the `select` is never exercised. Only a real database shows the shape, and only the browser shows the empty list. This is the first defect found by running the suite end to end, and it is the argument for running it.
+
+**Two things it also exposed, not fixed here.**
+
+- `onlinePaymentsLive()` (ADR-093) requires `DEMO_MODE=false` **and** a gateway secret, while the three payment journeys expect the demo payment dialog, which only appears when `DEMO_MODE=true`. Those cannot both hold, so those journeys cannot pass in any environment a test can create. The rule is right — it is what stops a stranger becoming a free ACTIVE member on the real domain — so the tests, not the rule, are what need rethinking.
+- `renew.spec.ts` had never run anywhere: it skips without `LINK_TOKEN_SECRET`, and the environment that reported "84 pass" had no `.env`. A skipped test reads as a pass in the total, which is how a sixteen-day outage stayed invisible.

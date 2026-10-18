@@ -300,7 +300,7 @@ export function BotConsole({
       </section>
 
       <section className={cn(CRM_CARD, 'overflow-hidden')} aria-labelledby="bot-log">
-        <h2 id="bot-log" className="border-b border-brand-stone/15 px-4 py-3 text-crm-body font-bold text-brand-obsidian">
+        <h2 id="bot-log" className="border-b border-brand-stone/12 px-4 py-3 text-crm-body font-bold text-brand-obsidian">
           {t('logTitle')}
         </h2>
         {replies.length === 0 ? (
@@ -308,7 +308,7 @@ export function BotConsole({
         ) : (
           <ul>
             {replies.map((reply) => (
-              <li key={reply.id} className="border-b border-brand-stone/15 px-4 py-3 last:border-0">
+              <li key={reply.id} className="border-b border-brand-stone/12 px-4 py-3 last:border-0">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="text-small text-brand-stone">
                     {reply.who} · {reply.at}
