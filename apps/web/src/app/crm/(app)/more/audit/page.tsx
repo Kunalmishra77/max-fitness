@@ -135,8 +135,16 @@ export default async function CrmAuditPage({
    * comes back: a missing key makes it echo the whole dotted path, so an action added by
    * a later feature would read as `crm.audit.actions.something.new` on the owner's screen.
    * Falling back to the bare code is honest and still searchable.
+   *
+   * **The dot becomes an underscore.** An action code is `payment.void`, and next-intl
+   * reads a dot as nesting — so a message keyed `"payment.void"` is not a key it will
+   * accept, and it refuses the whole message file rather than that one entry. The file
+   * loaded on every page of the site, so this took the application down in development
+   * and nobody noticed, because the messages test only compares English against Hindi
+   * and never asked next-intl whether it would load either of them.
    */
-  const actionLabel = (code: string) => (KNOWN_ACTIONS.has(code) ? t(`audit.actions.${code}` as never) : code);
+  const messageKey = (code: string) => code.replace(/\./g, '_');
+  const actionLabel = (code: string) => (KNOWN_ACTIONS.has(code) ? t(`audit.actions.${messageKey(code)}` as never) : code);
 
   /** Keeps the filters on the paging link. */
   const linkWith = (extra: Record<string, string>) => {

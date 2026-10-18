@@ -78,3 +78,37 @@ describe('message catalogues', () => {
     }
   });
 });
+
+/**
+ * next-intl has to be able to *load* the file, which is a different question from whether
+ * the two catalogues agree.
+ *
+ * It reads a dot as nesting, so `"payment.void"` is not a key it will accept — and it
+ * rejects the **whole catalogue**, not the one entry. The audit trail shipped with
+ * twenty-one such keys on 2026-10-17 and took every page of the site down in development,
+ * while 2,400 tests stayed green: the test above compares English against Hindi, and both
+ * were wrong in exactly the same way.
+ *
+ * The rule is next-intl's, so it is checked against the files rather than inferred from a
+ * screen that happens to read one of them.
+ */
+describe('keys next-intl can load', () => {
+  for (const [name, catalogue] of [
+    ['en', en],
+    ['hi', hi],
+  ] as const) {
+    it(`${name} has no key containing a dot`, () => {
+      const offenders: string[] = [];
+      const walk = (node: unknown, prefix: string): void => {
+        if (typeof node !== 'object' || node === null) return;
+        for (const [key, value] of Object.entries(node as Tree)) {
+          if (key.includes('.')) offenders.push(prefix === '' ? key : `${prefix}.${key}`);
+          walk(value, prefix === '' ? key : `${prefix}.${key}`);
+        }
+      };
+      walk(catalogue, '');
+
+      expect(offenders).toEqual([]);
+    });
+  }
+});
