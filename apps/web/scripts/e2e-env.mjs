@@ -31,7 +31,23 @@ function onTestDatabase(value) {
 
 const env = {
   ...process.env,
-  NODE_ENV: 'development',
+  /**
+   * A production build, because that is what the suite now runs against.
+   *
+   * This was `development`, from when the suite started `next dev`. A production build
+   * made with `NODE_ENV=development` fails while prerendering: React resolves to its
+   * development copy inside a production renderer and `useContext` comes back null.
+   * Leaving it unset is not enough either — the repository's `.env` says `development`
+   * and Next honours an explicit value — so it is set here, deliberately.
+   */
+  NODE_ENV: 'production',
+  /**
+   * `DEMO_MODE` under `NODE_ENV=production` is refused unless this says otherwise, and
+   * refused is right: it is the guard that stops a real deployment simulating payments.
+   * The suite is a production *build* on a throwaway database, which is the one case the
+   * guard is not about.
+   */
+  ALLOW_DEMO_IN_PRODUCTION: 'true',
   DATABASE_URL: onTestDatabase(process.env['DATABASE_URL']),
   DIRECT_URL: onTestDatabase(process.env['DIRECT_URL']),
   // Nothing may leave the machine: no WhatsApp, no Razorpay, no OTP.
@@ -49,6 +65,20 @@ const env = {
   CSP_REPORT_ONLY: 'true',
   WHATSAPP_PROVIDER: 'simulator',
   WHATSAPP_ALLOWLIST: '',
+  /**
+   * No payment gateway, because `DEMO_MODE` simulates payments and there is nothing for
+   * a real one to do.
+   *
+   * It also has to be *consistently* absent. The env schema requires the secret whenever
+   * the id is set, and the container is built on every request — so a half-configured
+   * gateway is not a payment failure, it is **every page throwing**. That is what it did
+   * here: the repository's `.env` kept a Razorpay id after the secret was cleared (the
+   * secret had leaked into a chat and was reset), and the entire end-to-end suite failed
+   * on a login screen that said only "something went wrong".
+   */
+  RAZORPAY_KEY_ID: '',
+  RAZORPAY_KEY_SECRET: '',
+  RAZORPAY_WEBHOOK_SECRET: '',
 };
 
 /**
