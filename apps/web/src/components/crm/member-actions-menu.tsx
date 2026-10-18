@@ -101,7 +101,7 @@ export function MemberActionsMenu({
                 type="button"
                 // Removing a member is the one thing here that cannot be undone, so it is
                 // marked as such and sits last, under a divider.
-                className={`${item} border-t border-brand-stone/15 text-semantic-fee-expired`}
+                className={`${item} border-t border-brand-stone/12 text-semantic-fee-expired`}
                 onClick={() => {
                   setOpen(false);
                   setDataOpen(true);

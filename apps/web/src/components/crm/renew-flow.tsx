@@ -61,7 +61,7 @@ export function RenewFlow({
     const code = params.get('code') ?? '';
     const amount = Number(params.get('amount') ?? '0');
     return (
-      <div className="m-4 grid gap-5 rounded-panel border border-brand-stone/15 bg-white p-6 text-center shadow-sm lg:m-0">
+      <div className="m-4 grid gap-5 rounded-panel border border-brand-stone/12 bg-white p-6 text-center lg:m-0">
         <span aria-hidden className="mx-auto flex size-16 items-center justify-center rounded-full bg-tint-fee-paid-bg text-semantic-fee-paid">
           <CrmIcon name="attendance" className="size-9" />
         </span>
@@ -83,7 +83,7 @@ export function RenewFlow({
   const total = (plan?.pricePaise ?? 0) + (ptPlan?.pricePaise ?? 0);
 
   return (
-    <div className="m-4 rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm lg:m-0 lg:p-6">
+    <div className="m-4 rounded-panel border border-brand-stone/12 bg-white p-4 lg:m-0 lg:p-6">
       <p className="text-crm-body font-semibold text-brand-obsidian">{memberName}</p>
 
       <h2 className="mt-4 text-crm-body font-bold">{t('step1')}</h2>

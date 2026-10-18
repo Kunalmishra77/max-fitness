@@ -1003,3 +1003,25 @@ alternative was a control that locks out the gym more often than an attacker.
 
 `refund` deliberately removes the **newest** hit rather than an arbitrary one, so two
 requests racing on one key cannot have one refund cancel the other's.
+
+## ADR-131
+
+**Date:** 2026-10-18
+**Status:** Accepted
+**Context:** The owner, after two sessions of features: *"in UI, I have seen very basic UI. I wanted a very modern type of UI for entire panel."*
+
+"Basic" is hard to argue with because nothing is individually wrong. Looking for what was actually causing it:
+
+**Depth was free.** `CRM_CARD` carried `shadow-sm`, and so did every tile, report card, form panel and list — thirty files. The register, a settings form, the birthday list and the month's money all wore one border radius and one soft grey shadow. Nothing was more important than anything else, which is exactly what a generated interface looks like.
+
+**Two of the blueprint's own principles were not kept by the code.** U1 is *faces before names* — "the owner knows his members by face" — and the shared `MemberRow` showed initials. U2 is *colour means one thing*, and the fee colour was the **avatar's background**: a member with a photograph showed no fee colour at all, and one without showed it as a coloured disc that read like a category rather than a warning.
+
+**Decision — change the shared vocabulary, not twenty-six screens.**
+
+- **Depth is earned.** `CRM_CARD` has no shadow; `CRM_CARD_RAISED` is the one panel on a screen that matters most, and there is at most one. The blanket shadow is gone from all thirty files.
+- **The fee colour is a band down the row's leading edge.** The owner's question down a list is *"who owes me"*, and a chip at the far right makes that a left-to-right read per member instead of one glance down a column. `FEE_TONE.band` was defined for this and had never been used by the row it was written for. The words stay beside it: colour is never the only signal.
+- **The avatar is the person.** Photograph where there is one, initials in quiet stone where there is not — on the shared row, the register and the profile.
+- **The number is the tile.** `StatTile` sets the label small and quiet and the figure large, tabular and tight, with the colour on the figure alone. Four of them read as a row of figures rather than four posters.
+- **Decoration went.** The header's red rule faded to transparent across its width, which encodes nothing; it is solid now and reads as the stripe from the logo. The blurred red glow behind the money panel went. So did `hover:-translate-y` on every card — every card lifting half a pixel is the thing that makes an interface feel generated, and a surface change is what a pointer actually needs.
+
+**Nothing in the palette or the type scale changed.** The blueprint pins both, and the problem was never the colours — it was that everything was wearing the same weight.

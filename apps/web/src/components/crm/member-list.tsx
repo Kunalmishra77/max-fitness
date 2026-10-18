@@ -37,8 +37,8 @@ export async function MemberList({ entries, today }: { entries: readonly MemberL
   const t = await getTranslations('crm');
 
   return (
-    <div className="overflow-hidden rounded-panel border border-brand-stone/15 bg-white shadow-sm">
-      <div aria-hidden className={cn('hidden border-b border-brand-stone/15 bg-brand-paper px-4 py-2 text-small font-semibold text-brand-stone', GRID)}>
+    <div className="overflow-hidden rounded-panel border border-brand-stone/12 bg-white">
+      <div aria-hidden className={cn('hidden border-b border-brand-stone/12 bg-brand-paper px-4 py-2 text-small font-semibold text-brand-stone', GRID)}>
         <span />
         {COLUMNS.map((column) => (
           <span key={column} className="truncate">
@@ -98,14 +98,22 @@ async function MemberListRow({ entry, today }: { entry: MemberListEntry; today: 
           return ago <= 0 ? t('members.seenToday') : t('members.seenDaysAgo', { count: ago });
         })();
 
+  /**
+   * The face, plain (ADR-131).
+   *
+   * The fee colour used to be the avatar's background — so a member with a photograph
+   * showed no fee colour at all, and one without showed it as a coloured disc that read
+   * like a category rather than a warning. The colour is now the band down the row's
+   * edge, the same place `MemberRow` puts it, and the avatar can just be the person.
+   */
   const avatar =
     photoUrl === null ? (
-      <span aria-hidden className={cn('flex size-11 shrink-0 items-center justify-center rounded-full font-display text-body font-bold text-brand-white', tone.band)}>
+      <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand-stone/15 font-display text-body font-bold text-brand-stone">
         {initials(member.fullName)}
       </span>
     ) : (
       // A signed, short-lived URL to a private file: next/image would cache it.
-      <img src={photoUrl} alt="" width={44} height={44} className={cn('size-11 shrink-0 rounded-full object-cover ring-2', left ? 'ring-brand-stone/30' : 'ring-brand-accent/30')} />
+      <img src={photoUrl} alt="" width={44} height={44} className="size-11 shrink-0 rounded-full object-cover" />
     );
 
   const cell = 'truncate text-small text-brand-ink';
@@ -113,8 +121,10 @@ async function MemberListRow({ entry, today }: { entry: MemberListEntry; today: 
   return (
     <Link
       href={`/crm/members/${member.id}`}
-      className={cn('group flex min-h-16 items-start gap-3 border-b border-brand-stone/15 px-4 py-3 transition-colors hover:bg-brand-paper', GRID)}
+      className={cn('group relative flex min-h-16 items-start gap-3 border-b border-brand-stone/10 py-3 ps-5 pe-4 transition-colors hover:bg-brand-paper', GRID)}
     >
+      {/* One glance down the column: who owes money. */}
+      <span aria-hidden className={cn('absolute inset-y-0 start-0 w-1', tone.band)} />
       {avatar}
 
       {/* Phone: name, then everything else as one readable block. */}

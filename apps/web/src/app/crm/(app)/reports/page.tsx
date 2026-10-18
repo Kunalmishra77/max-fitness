@@ -50,7 +50,7 @@ const PLAN_MIX_DAYS = 90;
 
 function Card({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm lg:p-6">
+    <section className="rounded-panel border border-brand-stone/12 bg-white p-4 lg:p-6">
       <h2 className="text-crm-body font-bold text-brand-obsidian">{title}</h2>
       {subtitle === undefined ? null : <p className="text-small text-brand-stone">{subtitle}</p>}
       <div className="mt-3">{children}</div>

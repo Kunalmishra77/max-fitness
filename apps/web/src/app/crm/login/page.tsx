@@ -59,7 +59,7 @@ export default async function CrmLoginPage() {
             <h1 className="mt-2 font-display text-display-m leading-tight font-bold text-brand-obsidian">{t('login.welcome')}</h1>
             <p className="mt-1 text-crm-body text-brand-stone">{t('login.subtitle')}</p>
             <LoginForm action={submit} />
-            <p className="mt-6 border-t border-brand-stone/15 pt-4 text-small text-brand-stone">{t('login.help')}</p>
+            <p className="mt-6 border-t border-brand-stone/12 pt-4 text-small text-brand-stone">{t('login.help')}</p>
           </div>
         </div>
       </section>

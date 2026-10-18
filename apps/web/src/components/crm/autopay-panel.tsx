@@ -103,7 +103,7 @@ export function AutopayPanel({
   const shownLink = link ?? mandate?.shortUrl ?? null;
 
   return (
-    <section className="mt-3 bg-white px-4 py-4 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:px-6 lg:shadow-sm">
+    <section className="mt-3 bg-white px-4 py-4 lg:rounded-panel lg:border lg:border-brand-stone/12 lg:px-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-crm-body font-bold text-brand-obsidian">{t('title')}</h2>
         {mandate === null ? null : (

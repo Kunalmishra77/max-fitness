@@ -99,7 +99,7 @@ export function KioskDevices({
 
   if (held !== null) {
     return (
-      <div className="grid gap-3 rounded-panel border border-brand-stone/15 bg-white p-5">
+      <div className="grid gap-3 rounded-panel border border-brand-stone/12 bg-white p-5">
         <p className="text-crm-body font-semibold text-brand-obsidian">{t('pinTitle')}</p>
         <label className="grid gap-1">
           <span className="text-small text-brand-stone">{t('pinLabel')}</span>
@@ -146,7 +146,7 @@ export function KioskDevices({
       )}
 
       {devices.length === 0 ? (
-        <div className="rounded-panel border border-brand-stone/15 bg-white p-6 text-center">
+        <div className="rounded-panel border border-brand-stone/12 bg-white p-6 text-center">
           <p className="text-crm-body font-semibold text-brand-obsidian">{t('none')}</p>
           <p className="mt-1 text-small text-brand-stone">{t('noneHelp')}</p>
           <button type="button" onClick={() => run(() => pair(null))} disabled={pending} className="mt-4 min-h-14 rounded-button bg-brand-accent px-6 text-crm-body font-semibold text-brand-white disabled:opacity-60">
@@ -163,7 +163,7 @@ export function KioskDevices({
           const label = state === 'working' ? 'text-semantic-fee-paid' : state === 'broken' ? 'text-semantic-fee-expired' : 'text-brand-stone';
 
           return (
-          <article key={device.id} aria-label={device.name} className="rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm">
+          <article key={device.id} aria-label={device.name} className="rounded-panel border border-brand-stone/12 bg-white p-4">
             <div className="flex flex-wrap items-center gap-3">
               <span className={cn('flex size-10 items-center justify-center rounded-full', chip)}>
                 <CrmIcon name="attendance" className="size-5" />

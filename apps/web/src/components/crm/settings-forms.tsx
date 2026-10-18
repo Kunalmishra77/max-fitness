@@ -127,7 +127,7 @@ function Section({
   };
 
   return (
-    <section aria-labelledby={`${id}-title`} className="rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm lg:p-6">
+    <section aria-labelledby={`${id}-title`} className="rounded-panel border border-brand-stone/12 bg-white p-4 lg:p-6">
       <h2 id={`${id}-title`} className="text-crm-body font-bold text-brand-obsidian">
         {title}
       </h2>
@@ -478,7 +478,7 @@ export function HoursForm({ hours, save, unlock }: { hours: readonly HoursInput[
       {rows.map((row) => {
         const dayName = t(`days.${row.day}` as never);
         return (
-          <div key={row.day} className="grid grid-cols-[1fr_auto] items-center gap-2 border-b border-brand-stone/15 pb-2">
+          <div key={row.day} className="grid grid-cols-[1fr_auto] items-center gap-2 border-b border-brand-stone/12 pb-2">
             <span className="text-crm-body font-semibold">{dayName}</span>
             <label className="flex items-center gap-2 text-small">
               <input type="checkbox" checked={row.closed} onChange={(event) => update(row.day, { closed: event.target.checked })} className="size-5 accent-brand-obsidian" />
@@ -533,7 +533,7 @@ export function RemindersForm({
       {rows.map((row) => {
         const name = t(`ruleNames.${row.code}` as never);
         return (
-          <div key={row.code} className="grid gap-2 border-b border-brand-stone/15 pb-3">
+          <div key={row.code} className="grid gap-2 border-b border-brand-stone/12 pb-3">
             <div className="flex min-h-14 items-center justify-between gap-3">
               <span className="text-crm-body font-semibold">{name}</span>
               {/* The whole label is the tap target, 56px tall like every CRM control. */}

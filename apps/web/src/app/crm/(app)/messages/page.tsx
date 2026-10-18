@@ -174,7 +174,7 @@ export default async function CrmMessagesPage({ searchParams }: { searchParams: 
               {/* On a phone the member's details are a strip here; on a desk they are the
                   third column and this is left out. */}
               {profile === null ? null : (
-                <div className="flex items-center gap-3 border-b border-brand-stone/15 px-4 py-3 lg:hidden">
+                <div className="flex items-center gap-3 border-b border-brand-stone/12 px-4 py-3 lg:hidden">
                   <Face url={profilePhoto} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-crm-body font-semibold text-brand-obsidian">{profile.fullName}</p>
@@ -202,7 +202,7 @@ export default async function CrmMessagesPage({ searchParams }: { searchParams: 
                 {profile.memberCode === null ? null : <p className="text-small text-brand-stone">{profile.memberCode}</p>}
               </div>
 
-              <dl className="grid gap-2 border-t border-brand-stone/15 pt-4 text-small">
+              <dl className="grid gap-2 border-t border-brand-stone/12 pt-4 text-small">
                 <Fact label={t('profile.plan')} value={profile.planMonths === null ? t('profile.notGiven') : t('members.months', { count: profile.planMonths })} />
                 <Fact
                   label={t('profile.paidTill')}
@@ -212,7 +212,7 @@ export default async function CrmMessagesPage({ searchParams }: { searchParams: 
                 <Fact label={t('profile.whatsappOptIn')} value={profile.whatsappOptIn ? t('profile.yes') : t('profile.no')} />
               </dl>
 
-              <div className="grid gap-2 border-t border-brand-stone/15 pt-4">
+              <div className="grid gap-2 border-t border-brand-stone/12 pt-4">
                 <a
                   href={`tel:${profile.mobile}`}
                   className="flex min-h-12 items-center justify-center gap-2 rounded-button bg-brand-obsidian text-crm-body font-semibold text-brand-white"

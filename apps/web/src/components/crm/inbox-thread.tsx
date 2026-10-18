@@ -149,7 +149,7 @@ export function InboxThread({
         })}
       </ol>
 
-      <div className="border-t border-brand-stone/15 bg-white p-3">
+      <div className="border-t border-brand-stone/12 bg-white p-3">
         {windowMinutesLeft === null ? (
           /**
            * Shut, and said plainly. WhatsApp allows free text only for 24 hours after the

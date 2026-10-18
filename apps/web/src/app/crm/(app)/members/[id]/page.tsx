@@ -127,12 +127,16 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
         }
       />
 
-      <div className="bg-white px-4 pt-4 pb-5 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:p-6 lg:shadow-sm">
+      <div className="bg-white px-4 pt-4 pb-5 lg:rounded-panel lg:border lg:border-brand-stone/12 lg:p-6">
         <div className="flex items-center gap-4">
+          {/* The avatar is the person, not the fee state (ADR-131). It used to be tinted
+              by the fee colour, which meant a member with a photograph showed no fee
+              colour at all and one without showed it as a coloured disc. The fee state
+              has its own row below, in words and in colour. */}
           {photoUrl === null ? (
             <span
               aria-hidden
-              className={cn('flex size-20 shrink-0 items-center justify-center rounded-full font-display text-display-m font-bold text-brand-white', FEE_TONE[member.feeState].band)}
+              className="flex size-20 shrink-0 items-center justify-center rounded-full bg-brand-stone/15 font-display text-display-m font-bold text-brand-stone"
             >
               {initials(member.fullName)}
             </span>
@@ -145,7 +149,7 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
                 alt={t('profile.photoAlt', { name: member.fullName })}
                 width={96}
                 height={96}
-                className="size-20 shrink-0 rounded-full object-cover ring-2 ring-brand-accent/30"
+                className="size-20 shrink-0 rounded-full object-cover"
               />
             </PhotoViewer>
           )}
@@ -165,7 +169,7 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
 
         {/* Everything the desk might be asked for, in one place, every row present even
             when it is empty — a hidden field reads as "we never asked" (ADR-086). */}
-        <dl className="mt-4 grid gap-x-6 gap-y-2 border-t border-brand-stone/15 pt-4 sm:grid-cols-2">
+        <dl className="mt-4 grid gap-x-6 gap-y-2 border-t border-brand-stone/12 pt-4 sm:grid-cols-2">
           {(
             [
               // The whole number, readable and copyable: the desk has to ring it.
@@ -263,7 +267,7 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
       )}
 
       {!maySeeId || govIdPhotos.length === 0 ? null : (
-        <section className="mt-3 bg-white px-4 py-4 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:px-6 lg:shadow-sm">
+        <section className="mt-3 bg-white px-4 py-4 lg:rounded-panel lg:border lg:border-brand-stone/12 lg:px-6">
           <h2 className="text-crm-body font-bold text-brand-obsidian">{t('profile.idOnFile')}</h2>
           <GovIdStrip type={member.govIdType} photos={govIdPhotos} />
         </section>
@@ -272,7 +276,7 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
       {/* Personal training, when they have it (ADR-087): the current term first, because
           "is their trainer still paid for" is the question the desk gets asked. */}
       {member.ptEnrolments.length === 0 ? null : (
-        <section className="mt-3 bg-white px-4 py-4 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:px-6 lg:shadow-sm">
+        <section className="mt-3 bg-white px-4 py-4 lg:rounded-panel lg:border lg:border-brand-stone/12 lg:px-6">
           <h2 className="text-crm-body font-bold text-brand-obsidian">{t('profile.pt')}</h2>
           <ul className="mt-2 divide-y divide-brand-stone/15">
             {member.ptEnrolments.map((pt) => {
@@ -332,7 +336,7 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
           to be eating?", so the current plan is here in full rather than behind a link. */}
       {dietPlans.length === 0 ? null : <DietPanel plans={dietPlans} locale={locale} />}
 
-      <section className="mt-3 bg-white px-4 py-4 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:px-6 lg:shadow-sm">
+      <section className="mt-3 bg-white px-4 py-4 lg:rounded-panel lg:border lg:border-brand-stone/12 lg:px-6">
         <h2 className="text-crm-body font-bold text-brand-obsidian">{t('profile.attendanceMonth')}</h2>
         <div className="mt-3 grid grid-cols-7 gap-2" aria-hidden>
           {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => (
@@ -362,7 +366,7 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
             database and invisible, while "has this member been coming?" is the question this
             screen exists to answer — and the month a member stopped is the one worth seeing. */}
         {member.attendanceByMonth.length === 0 ? null : (
-          <details className="mt-4 border-t border-brand-stone/15 pt-3">
+          <details className="mt-4 border-t border-brand-stone/12 pt-3">
             <summary className="min-h-14 cursor-pointer list-none text-crm-body font-semibold text-brand-crimson">
               {t('profile.attendanceAll', { count: member.attendanceTotalDays })}
             </summary>
@@ -378,7 +382,7 @@ export default async function CrmMemberPage({ params }: { params: Promise<{ id: 
         )}
       </section>
 
-      <section className="mt-3 bg-white px-4 py-4 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:px-6 lg:shadow-sm">
+      <section className="mt-3 bg-white px-4 py-4 lg:rounded-panel lg:border lg:border-brand-stone/12 lg:px-6">
         <h2 className="text-crm-body font-bold text-brand-obsidian">{t('profile.plansAndMoney')}</h2>
         {member.payments.length === 0 ? (
           <p className="mt-2 text-crm-body text-brand-stone">{t('profile.noPayments')}</p>

@@ -157,7 +157,7 @@ export function DietBoard({
       </section>
 
       <section className={cn(CRM_CARD, 'overflow-hidden')} aria-labelledby="diet-list">
-        <h2 id="diet-list" className="border-b border-brand-stone/15 px-4 py-3 text-crm-body font-bold text-brand-obsidian">
+        <h2 id="diet-list" className="border-b border-brand-stone/12 px-4 py-3 text-crm-body font-bold text-brand-obsidian">
           {t('listTitle')}
         </h2>
         {rows.length === 0 ? (
@@ -167,7 +167,7 @@ export function DietBoard({
             {rows.map((row) => {
               const status = statusOf(row);
               return (
-                <li key={row.memberId} className="flex flex-wrap items-center gap-3 border-b border-brand-stone/15 px-4 py-3 last:border-0">
+                <li key={row.memberId} className="flex flex-wrap items-center gap-3 border-b border-brand-stone/12 px-4 py-3 last:border-0">
                   <Link href={`/crm/members/${row.memberId}`} className="min-w-0 flex-1">
                     <span className="block truncate text-crm-body font-semibold text-brand-obsidian">{row.fullName}</span>
                     <span className="block truncate text-small text-brand-stone">

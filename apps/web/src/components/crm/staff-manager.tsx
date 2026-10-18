@@ -82,7 +82,7 @@ export function ReceptionFeesToggle({ enabled, save, unlock }: { enabled: boolea
   const action = useOwnerAction();
 
   return (
-    <section aria-label={t('receptionFees')} className="rounded-panel bg-white p-4 shadow-sm">
+    <section aria-label={t('receptionFees')} className="rounded-panel bg-white p-4">
       <label className="flex min-h-11 items-start gap-3 text-crm-body">
         <input
           type="checkbox"
@@ -131,7 +131,7 @@ export function StaffList({
 }) {
   const t = useTranslations('crm.staff');
   return (
-    <section aria-labelledby="staff-list-title" className="rounded-panel bg-white p-4 shadow-sm">
+    <section aria-labelledby="staff-list-title" className="rounded-panel bg-white p-4">
       <h2 id="staff-list-title" className="text-crm-body font-bold text-brand-obsidian">
         {t('title')}
       </h2>
@@ -289,7 +289,7 @@ export function AddStaffForm({ add, unlock }: { add: (fields: StaffCreateFields)
   const action = useOwnerAction();
 
   return (
-    <section aria-labelledby={`${id}-title`} className="rounded-panel bg-white p-4 shadow-sm">
+    <section aria-labelledby={`${id}-title`} className="rounded-panel bg-white p-4">
       <h2 id={`${id}-title`} className="text-crm-body font-bold text-brand-obsidian">
         {t('add')}
       </h2>

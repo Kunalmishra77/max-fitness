@@ -35,7 +35,7 @@ export default async function CrmCallsPage() {
       ) : (
         <ul className="divide-y divide-brand-stone/15 lg:divide-y-0">
           {tasks.map((task) => (
-            <li key={task.id} className="bg-white p-4 lg:mb-3 lg:rounded-panel lg:border lg:border-brand-stone/15 lg:shadow-sm">
+            <li key={task.id} className="bg-white p-4 lg:mb-3 lg:rounded-panel lg:border lg:border-brand-stone/12">
               <div className="flex items-baseline justify-between gap-3">
                 {task.member === null ? (
                   <span className="truncate text-crm-body font-semibold">—</span>

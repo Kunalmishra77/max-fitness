@@ -67,7 +67,7 @@ export default async function CrmStaffPage() {
           unlock={unlockSettingsAction}
         />
         <AddStaffForm add={addStaffAction} unlock={unlockSettingsAction} />
-        <Link href="/crm/more/pin" className="flex min-h-14 items-center justify-between rounded-panel bg-white px-4 text-crm-body font-semibold shadow-sm">
+        <Link href="/crm/more/pin" className="flex min-h-14 items-center justify-between rounded-panel bg-white px-4 text-crm-body font-semibold">
           🔑 {t('pin.link')}
           <span aria-hidden className="text-xl text-brand-stone">
             ›

@@ -46,7 +46,7 @@ export function SimulatorTimeline({
 
   return (
     <>
-      <div className="grid gap-2 rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm">
+      <div className="grid gap-2 rounded-panel border border-brand-stone/12 bg-white p-4">
         <p className="font-display text-[2rem] leading-none font-bold text-brand-obsidian tabular">{t('total', { count: totalMessages })}</p>
         <p className="text-small text-brand-stone">{t('caveat')}</p>
         {totalSkipped > 0 ? <p className="text-small font-semibold text-semantic-fee-due-soon">{t('heldBack', { count: totalSkipped })}</p> : null}
@@ -54,7 +54,7 @@ export function SimulatorTimeline({
 
       <ul className="grid gap-2 pb-24 lg:pb-0">
         {days.map((day) => (
-          <li key={day.date} className="rounded-panel border border-brand-stone/15 bg-white p-4 shadow-sm">
+          <li key={day.date} className="rounded-panel border border-brand-stone/12 bg-white p-4">
             <div className="flex items-baseline gap-3">
               <span className="text-crm-body font-bold text-brand-obsidian">{day.label}</span>
               <span className="text-small text-brand-stone">{day.weekday}</span>
@@ -86,7 +86,7 @@ export function SimulatorTimeline({
 
                       {isOpen ? (
                         // A WhatsApp bubble, so the owner reads it the way the member will.
-                        <div className="mt-2 ml-8 max-w-prose rounded-panel rounded-tl-sm bg-[#dcf8c6] p-3 text-small whitespace-pre-line text-brand-ink shadow-sm">
+                        <div className="mt-2 ml-8 max-w-prose rounded-panel rounded-tl-sm bg-[#dcf8c6] p-3 text-small whitespace-pre-line text-brand-ink">
                           {message.preview}
                         </div>
                       ) : null}

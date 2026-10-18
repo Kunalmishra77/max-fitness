@@ -46,7 +46,7 @@ export function InboxList({ rows, selected }: { rows: readonly InboxRow[]; selec
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="border-b border-brand-stone/15 p-3">
+      <div className="border-b border-brand-stone/12 p-3">
         <label className="relative block">
           <span className="sr-only">{t('searchPeople')}</span>
           <CrmIcon name="search" className="pointer-events-none absolute top-1/2 start-3 size-5 -translate-y-1/2 text-brand-stone" />
