@@ -1043,3 +1043,24 @@ requests racing on one key cannot have one refund cancel the other's.
 **One period control, shared.** `PeriodPicker` is extracted from the reports page and used by all three, so "this week" is visibly and actually the same week everywhere; `readReportPeriod` decides it on the server. Links and a plain GET form rather than state, so a period can be bookmarked and sent and the screen still renders with JavaScript off.
 
 **Also fixed in passing:** the calls screen still opened `wa.me`. ADR-126 gave the reason — it writes from whichever account the staff phone is signed into, so the reply never reaches the gym — but only reached the member profile.
+
+## ADR-133
+
+**Date:** 2026-10-18
+**Status:** Accepted
+**Context:** The end-to-end suite, run to completion for the first time against a built server, failed `renew.spec.ts` journey 6. The renew page rendered the member's name, their photograph and the chained start date, and then offered **no plans at all** — an empty paragraph where the cards belong.
+
+`planCards` keeps only `kind === 'MEMBERSHIP'`, because personal training is priced on its own card (ADR-087). `loadRenewalOffer` never selected the `kind` column, so every row arrived with it undefined, the filter removed all of them, and the list was empty.
+
+**Live from 2026-10-02 to 2026-10-18.** Every renewal link the reminder engine sent led to a page the member could not renew from — not online, not at the desk. The CRM's own renew screen selects the column and was fine, so nobody at the gym ever saw it.
+
+**Decision — select the column, and delete the cast that hid it.**
+
+The loader held `rows.map((row) => row as Plan)`. That assertion is what kept the compiler quiet about a row that was missing a field the domain requires. Only the three fields the domain genuinely narrows are asserted now — a plan's code, its duration and its gender, which the database stores wider than the domain accepts — and everything else is checked. The next column somebody adds to `Plan` will be a type error here rather than an empty screen.
+
+**Why no test ever caught it.** A unit test with a fake Prisma cannot: the fake returns whatever the test hands it, so the `select` is never exercised. Only a real database shows the shape, and only the browser shows the empty list. This is the first defect found by running the suite end to end, and it is the argument for running it.
+
+**Two things it also exposed, not fixed here.**
+
+- `onlinePaymentsLive()` (ADR-093) requires `DEMO_MODE=false` **and** a gateway secret, while the three payment journeys expect the demo payment dialog, which only appears when `DEMO_MODE=true`. Those cannot both hold, so those journeys cannot pass in any environment a test can create. The rule is right — it is what stops a stranger becoming a free ACTIVE member on the real domain — so the tests, not the rule, are what need rethinking.
+- `renew.spec.ts` had never run anywhere: it skips without `LINK_TOKEN_SECRET`, and the environment that reported "84 pass" had no `.env`. A skipped test reads as a pass in the total, which is how a sixteen-day outage stayed invisible.
