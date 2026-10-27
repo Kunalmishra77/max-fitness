@@ -1,4 +1,11 @@
-# Meta ads — 60-second video brief
+# Max Fitness Gym — 60-second ads brief *(the client's own ad, not V4You's)*
+
+> **This advertises the gym to people who might join it.** V4You's own product advertising
+> — selling the platform to gym owners — is `v4you-product-ads-brief.md`. Keep the two
+> apart: different advertiser, different audience, different everything.
+>
+> Written on 2026-10-27 on a misreading of the brief. Kept because Ajay will want it
+> eventually, and the facts in it were verified against the running system.
 
 Everything an AI video tool needs about Max Fitness Gym, and everything it must not invent.
 

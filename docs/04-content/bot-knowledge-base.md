@@ -1,4 +1,8 @@
-# WhatsApp assistant — knowledge base
+# Max Fitness Gym's member assistant — knowledge base *(the client's bot)*
+
+> **This is the bot inside a gym's own system, answering that gym's members.** V4You's
+> sales bot, which answers gym owners who reply to the product ads, is
+> `v4you-sales-bot-knowledge-base.md`.
 
 What to paste into **Max Register → WhatsApp assistant → Documents**, one document at a
 time. Everything here was read from the gym's own system on 2026-10-27.
