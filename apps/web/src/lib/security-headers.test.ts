@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { contentSecurityPolicy, cspHeaderKey, securityHeadersFor, staticSecurityHeaders, type SecurityArea } from './security-headers';
+import { PORTFOLIO_FRAME_ANCESTORS, contentSecurityPolicy, cspHeaderKey, securityHeadersFor, staticSecurityHeaders, type SecurityArea } from './security-headers';
 
 /**
  * SEC-001 regression tests.
@@ -22,9 +22,14 @@ function directive(policy: string, name: string): string | null {
 describe('contentSecurityPolicy — every area', () => {
   const areas: SecurityArea[] = ['public', 'crm', 'api'];
 
-  it.each(areas)('%s refuses to be framed and forbids plugins', (area) => {
+  it.each(['crm', 'api'] as SecurityArea[])('%s refuses to be framed', (area) => {
     const policy = contentSecurityPolicy(area, { production: true });
     expect(policy).toContain("frame-ancestors 'none'");
+  });
+
+  it('public may be framed only by itself and the portfolio origins', () => {
+    const policy = contentSecurityPolicy('public', { production: true });
+    expect(directive(policy, 'frame-ancestors')).toBe(`frame-ancestors 'self' ${PORTFOLIO_FRAME_ANCESTORS}`);
   });
 
   it.each(areas)('%s never allows a bare wildcard origin', (area) => {
@@ -124,14 +129,19 @@ describe('contentSecurityPolicy — environment', () => {
 });
 
 describe('staticSecurityHeaders', () => {
-  it('sets nosniff, a referrer policy and a framing refusal everywhere', () => {
+  it('sets nosniff, a referrer policy and permissions everywhere', () => {
     for (const area of ['public', 'crm', 'api'] as SecurityArea[]) {
       const keys = staticSecurityHeaders(area, { production: true }).map((h) => h.key);
       expect(keys, area).toContain('X-Content-Type-Options');
       expect(keys, area).toContain('Referrer-Policy');
-      expect(keys, area).toContain('X-Frame-Options');
       expect(keys, area).toContain('Permissions-Policy');
     }
+  });
+
+  it('refuses framing outright on the CRM and API, leaving the public area to its CSP allow-list', () => {
+    expect(staticSecurityHeaders('crm', { production: true }).find((h) => h.key === 'X-Frame-Options')?.value).toBe('DENY');
+    expect(staticSecurityHeaders('api', { production: true }).find((h) => h.key === 'X-Frame-Options')?.value).toBe('DENY');
+    expect(staticSecurityHeaders('public', { production: true }).find((h) => h.key === 'X-Frame-Options')).toBeUndefined();
   });
 
   it('keeps the camera and gives up the microphone and location', () => {
@@ -178,5 +188,12 @@ describe('securityHeadersFor', () => {
     const enforcedCsp = enforced.find((h) => h.key === 'Content-Security-Policy');
     const watchedCsp = watched.find((h) => h.key === 'Content-Security-Policy-Report-Only');
     expect(enforcedCsp?.value).toBe(watchedCsp?.value);
+  });
+
+  it('refuses all framing of the public area while the CSP is only report-only', () => {
+    const watched = securityHeadersFor('public', { production: true, reportOnly: true });
+    const enforced = securityHeadersFor('public', { production: true, reportOnly: false });
+    expect(watched.find((h) => h.key === 'X-Frame-Options')?.value).toBe('DENY');
+    expect(enforced.find((h) => h.key === 'X-Frame-Options')).toBeUndefined();
   });
 });

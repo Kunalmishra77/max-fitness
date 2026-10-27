@@ -56,6 +56,13 @@ const GA_COLLECT = ['https://www.google-analytics.com', 'https://*.google-analyt
 /** `mapEmbedSrc()` builds a `maps.google.com/maps?...&output=embed` URL (lib/site.ts). */
 const MAPS_FRAME = ['https://maps.google.com', 'https://www.google.com'];
 
+/**
+ * The AI Agentix portfolio shows the public site live inside an iframe. Only the public
+ * area may be framed, and only by these origins; Max Register and the API never are.
+ */
+export const PORTFOLIO_FRAME_ANCESTORS =
+  process.env.PORTFOLIO_FRAME_ANCESTORS ?? 'https://agentix-portfolio.vercel.app https://ai-agentix.com https://*.ai-agentix.com';
+
 export type SecurityArea = 'public' | 'crm' | 'api';
 
 /**
@@ -114,8 +121,8 @@ export function contentSecurityPolicy(area: SecurityArea, options: { production:
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    // Nothing here is meant to be embedded anywhere, the CRM least of all.
-    "frame-ancestors 'none'",
+    // Only the public site may be embedded, and only by the portfolio; the CRM never.
+    isPublic ? `frame-ancestors 'self' ${PORTFOLIO_FRAME_ANCESTORS}` : "frame-ancestors 'none'",
     ...(production(options) ? ['upgrade-insecure-requests'] : []),
   ];
 
@@ -145,8 +152,10 @@ export function staticSecurityHeaders(area: SecurityArea, options: { production:
   const headers: HeaderPair[] = [
     { key: 'X-Content-Type-Options', value: 'nosniff' },
     { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-    // Belt and braces for `frame-ancestors`, which older browsers ignore.
-    { key: 'X-Frame-Options', value: 'DENY' },
+    // Belt and braces for `frame-ancestors`, which older browsers ignore. The public
+    // area omits it: its `frame-ancestors` allows the portfolio, and X-Frame-Options
+    // cannot express an allow-list.
+    ...(area === 'public' ? [] : [{ key: 'X-Frame-Options', value: 'DENY' }]),
     {
       key: 'Permissions-Policy',
       value: ['camera=(self)', 'microphone=()', 'geolocation=()', 'payment=()', 'usb=()', 'magnetometer=()', 'accelerometer=()', 'gyroscope=()'].join(', '),
@@ -181,6 +190,9 @@ export function cspHeaderKey(reportOnly: boolean): string {
 export function securityHeadersFor(area: SecurityArea, options: { production: boolean; reportOnly: boolean }): HeaderPair[] {
   return [
     ...staticSecurityHeaders(area, options),
+    // A report-only CSP enforces no `frame-ancestors`, so the public area would be
+    // frameable by anyone; fall back to refusing all framing while the policy is watched.
+    ...(area === 'public' && options.reportOnly ? [{ key: 'X-Frame-Options', value: 'DENY' }] : []),
     { key: cspHeaderKey(options.reportOnly), value: contentSecurityPolicy(area, options) },
   ];
 }
