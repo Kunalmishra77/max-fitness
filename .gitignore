@@ -57,3 +57,6 @@ apps/web/e2e/fixtures/
 
 # Environment blocks generated for pasting into a host's dashboard. Real credentials.
 /secrets/
+
+# V4You sales deck renders (editable source is in docs/04-content/)
+GymKhata-Proposal-*.pdf

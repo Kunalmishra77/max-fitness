@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GymKhata — Sales Proposal | V4You</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Mukta:wght@400;600;700&display=swap">
+<style>
+  :root{
+    --ink:#0E1117;
+    --paper:#F7F7F4;
+    --accent:#F0552D;
+    --blue:#2563C9;
+    --mutedLight:#5A6270;
+    --mutedDark:#A8B0BC;
+    --line:#DCDCD6;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  @page{size:1920px 1080px;margin:0}
+  html,body{background:#55585e}
+  body{font-family:'Inter',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .dev{font-family:'Mukta','Inter',Arial,sans-serif}
+
+  .slide{
+    position:relative;width:1920px;height:1080px;overflow:hidden;
+    padding:104px 128px 148px;display:flex;flex-direction:column;
+    background:var(--paper);color:var(--ink);
+    page-break-after:always;break-after:page;margin:0 auto 24px;
+  }
+  .slide:last-child{page-break-after:auto;break-after:auto;margin-bottom:0}
+  .dark{background:var(--ink);color:var(--paper)}
+  .dark .muted{color:var(--mutedDark)}
+  .muted{color:var(--mutedLight)}
+
+  h1{font-family:'Space Grotesk',Arial,sans-serif;font-weight:700;letter-spacing:-3px;line-height:1}
+  h2{font-family:'Space Grotesk',Arial,sans-serif;font-size:66px;font-weight:700;letter-spacing:-1.5px;line-height:1.08}
+  h3{font-family:'Space Grotesk',Arial,sans-serif;font-size:30px;font-weight:700;line-height:1.2}
+  p,li,td,th{font-size:26px;line-height:1.5}
+
+  .eyebrow{font-family:'Space Grotesk',Arial,sans-serif;font-size:21px;font-weight:500;
+    letter-spacing:4px;text-transform:uppercase;color:var(--accent);margin-bottom:22px}
+  .lede{font-size:31px;line-height:1.45;max-width:1400px;margin-top:20px}
+  .body-gap{margin-top:52px}
+  .pageno{position:absolute;left:128px;bottom:52px;font-size:19px;letter-spacing:2px;color:var(--mutedLight)}
+  .dark .pageno{color:var(--mutedDark)}
+  .brandmark{position:absolute;right:128px;bottom:52px;font-family:'Space Grotesk',Arial,sans-serif;
+    font-size:19px;letter-spacing:3px;text-transform:uppercase;color:var(--mutedLight)}
+  .dark .brandmark{color:var(--mutedDark)}
+  .topbar{position:absolute;left:0;top:0;width:100%;height:7px;
+    background:linear-gradient(90deg,var(--accent) 0 38%,var(--blue) 38% 100%)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:34px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+  .row{display:flex;gap:28px}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:34px 32px}
+  .dark .card{background:#161B23;border-color:#262D38}
+  .card h3{margin-bottom:12px}
+  .card p{font-size:24px;color:var(--mutedLight)}
+  .dark .card p{color:var(--mutedDark)}
+
+  .stat{font-family:'Space Grotesk',Arial,sans-serif;font-size:72px;font-weight:700;letter-spacing:-2px;line-height:1}
+  .statlabel{font-size:23px;color:var(--mutedLight);margin-top:10px;line-height:1.35}
+  .dark .statlabel{color:var(--mutedDark)}
+
+  ul{list-style:none}
+  ul li{position:relative;padding-left:40px;margin-bottom:15px;font-size:26px}
+  ul li::before{content:"";position:absolute;left:0;top:13px;width:14px;height:14px;
+    border-radius:4px;background:var(--accent)}
+  ul.blue li::before{background:var(--blue)}
+  ul.tight li{margin-bottom:11px;font-size:24px}
+
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;font-size:22px;font-weight:600;letter-spacing:1px;text-transform:uppercase;
+    color:var(--mutedLight);padding:0 16px 16px;border-bottom:2px solid var(--ink)}
+  td{font-size:24px;padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+  .yes{color:#15803D;font-weight:600}
+  .no{color:#B4342A;font-weight:600}
+  .part{color:#9A6B00;font-weight:600}
+
+  .pill{display:inline-block;font-size:21px;font-weight:600;padding:7px 17px;border-radius:999px;
+    background:rgba(240,85,45,.12);color:#C13F1C}
+  .pill.blue{background:rgba(37,99,201,.12);color:var(--blue)}
+  .pill.grey{background:rgba(90,98,112,.13);color:var(--mutedLight)}
+
+  .step{display:flex;gap:24px;align-items:flex-start}
+  .stepno{flex:0 0 58px;height:58px;border-radius:50%;background:var(--accent);color:#fff;
+    font-family:'Space Grotesk',Arial,sans-serif;font-weight:700;font-size:26px;
+    display:flex;align-items:center;justify-content:center}
+  .dark .stepno{background:var(--accent)}
+
+  .chat{background:#fff;border:1px solid var(--line);border-radius:18px;padding:26px 28px;max-width:720px}
+  .bubble{background:#E7F7E2;border-radius:16px 16px 16px 5px;padding:18px 22px;font-size:23px;line-height:1.5}
+  .meta{font-size:19px;color:var(--mutedLight);margin-top:9px}
+
+  .note{border-left:5px solid var(--accent);padding:18px 26px;background:rgba(240,85,45,.07);
+    border-radius:0 12px 12px 0;font-size:23px;line-height:1.5}
+  .dark .note{background:rgba(240,85,45,.12)}
+
+  .compact h2{font-size:58px}
+  .compact .card{padding:24px 26px}
+  .compact ul.tight li{margin-bottom:7px}
+  .compact .eyebrow{margin-bottom:14px}
+
+  @media print{ body{background:#fff} .slide{margin:0} }
+</style>
+</head>
+<body>
+
+<!-- 1 COVER -->
+<section class="slide dark" style="justify-content:space-between;padding:104px 128px">
+  <div class="topbar"></div>
+  <p class="eyebrow" style="margin:0">V4You</p>
+  <div>
+    <h1 style="font-size:148px">GymKhata</h1>
+    <p style="font-size:44px;line-height:1.3;max-width:1340px;margin-top:30px">Your whole gym — members, fees, attendance and reminders — on one screen.</p>
+    <p class="muted" style="font-size:30px;line-height:1.5;max-width:1240px;margin-top:26px">A complete setup for <b style="color:var(--paper)">₹30,000, one time</b>. Website, management platform, face attendance and automatic WhatsApp. Live in 15 days.</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:26px">
+    <div style="width:11px;height:64px;background:var(--accent);border-radius:6px"></div>
+    <p class="muted" style="font-size:27px;line-height:1.45">Sales proposal for gym owners<br><b style="color:var(--paper)">Book a live demonstration — see it running before you decide.</b></p>
+  </div>
+</section>
+
+<!-- 2 PROBLEM -->
+<section class="slide">
+  <p class="eyebrow">The problem</p>
+  <h2>A gym does not lose members. It forgets them.</h2>
+  <p class="lede muted">Nothing here is a software problem. Every one of them is a memory problem — and that is exactly what software is for.</p>
+  <div class="grid4 body-gap" style="margin-top:56px">
+    <div class="card"><h3>Renewals leak</h3><p>A membership ends. Nobody notices for two weeks. That is money already earned, lost to forgetting.</p></div>
+    <div class="card"><h3>The register lies</h3><p>Attendance is filled in later, or not at all. Nobody can say who stopped coming — until they stop paying.</p></div>
+    <div class="card"><h3>Enquiries vanish</h3><p>Someone calls at 7 pm. Nobody writes it down. Nobody calls back. That was a member.</p></div>
+    <div class="card"><h3>The owner guesses</h3><p>How much came in this month? Who owes money today? The answer lives in a notebook, or in his head.</p></div>
+  </div>
+  <div class="note" style="margin-top:56px">The gym owner is not disorganised. He is running a floor, coaching members and taking cash at the desk — all at once. He needs the remembering done for him.</div>
+  <div class="pageno">02</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 3 SOLUTION -->
+<section class="slide dark">
+  <p class="eyebrow">The solution</p>
+  <h2>One platform that runs the gym while you run the floor.</h2>
+  <div class="grid2" style="margin-top:62px;gap:40px">
+    <div>
+      <ul>
+        <li><b>It remembers every renewal.</b> WhatsApp goes out before the fee is due, on the day, and after — automatically.</li>
+        <li><b>It marks attendance by itself.</b> A member walks to the counter; the phone recognises them.</li>
+        <li><b>It catches every enquiry.</b> Website, QR and WhatsApp, all landing in one list.</li>
+        <li><b>It shows the money.</b> This month against last, any period, exportable.</li>
+      </ul>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;justify-content:center;gap:28px">
+      <div><div class="stat" style="color:var(--accent)">₹30,000</div><div class="statlabel">One-time setup. Website, platform, face attendance and WhatsApp automation included.</div></div>
+      <div style="height:1px;background:#262D38"></div>
+      <div><div class="stat">15 days</div><div class="statlabel">From your approval to a working system your staff have been trained on.</div></div>
+    </div>
+  </div>
+  <div class="pageno">03</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 4 HOW IT WORKS -->
+<section class="slide">
+  <p class="eyebrow">How it works</p>
+  <h2>Four things happen without anybody doing them.</h2>
+  <div style="margin-top:58px;display:flex;flex-direction:column;gap:30px">
+    <div class="step"><div class="stepno">1</div><div><h3>A person finds your gym</h3><p class="muted" style="font-size:25px;margin-top:7px">Your website, a Google search, or the QR code at reception. Their details land in your enquiry list with the source recorded.</p></div></div>
+    <div class="step"><div class="stepno">2</div><div><h3>They join — mostly by themselves</h3><p class="muted" style="font-size:25px;margin-top:7px">They fill their own form on their own phone: details, photo and ID. Your staff only approve it. Payment by UPI, card or cash at the desk.</p></div></div>
+    <div class="step"><div class="stepno">3</div><div><h3>They train, and attendance records itself</h3><p class="muted" style="font-size:25px;margin-top:7px">Face recognition at the counter on an ordinary phone. A keypad if the face will not read. You see who came, and who has stopped.</p></div></div>
+    <div class="step"><div class="stepno">4</div><div><h3>Their fee comes due — and the system acts first</h3><p class="muted" style="font-size:25px;margin-top:7px">WhatsApp before, on the day, and after. If they still do not pay, they are on your call list tomorrow morning with the reason.</p></div></div>
+  </div>
+  <div class="pageno">04</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 5 ARCHITECTURE -->
+<section class="slide">
+  <p class="eyebrow">What you get</p>
+  <h2>Four pieces, built to work as one.</h2>
+  <div class="grid4" style="margin-top:62px;gap:26px">
+    <div class="card"><span class="pill">Public</span><h3 style="margin-top:18px">Your website</h3><p>Plans, timings, facilities, enquiry form, WhatsApp button, Google Maps. Online sign-up and payment.</p></div>
+    <div class="card"><span class="pill blue">Owner &amp; staff</span><h3 style="margin-top:18px">The management platform</h3><p>Members, fees, attendance, enquiries, calls, messages, reports. Hindi first, built for a phone.</p></div>
+    <div class="card"><span class="pill grey">Reception</span><h3 style="margin-top:18px">Face attendance</h3><p>A phone or tablet at the counter. Recognises the member, marks them, warns on an expired fee.</p></div>
+    <div class="card"><span class="pill grey">Always running</span><h3 style="margin-top:18px">The automation engine</h3><p>Sends every WhatsApp on time, builds the call list, and keeps the numbers current.</p></div>
+  </div>
+  <div class="note" style="margin-top:60px"><b>One gym, one system.</b> Your members, your data, your WhatsApp number. Nothing is shared with another gym, and the records are separated at the database level.</div>
+  <div class="pageno">05</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 6 WEBSITE -->
+<section class="slide">
+  <p class="eyebrow">Website &amp; online presence</p>
+  <h2>A website that brings members, not one that just exists.</h2>
+  <div class="grid2" style="margin-top:56px;gap:46px">
+    <div>
+      <ul class="tight">
+        <li>Fast, mobile-first site — most of your visitors arrive on a phone</li>
+        <li>Plans and prices, pulled live from your own settings</li>
+        <li>Facilities, timings, trainers and photographs you control yourself</li>
+        <li>Enquiry form that lands directly in your CRM</li>
+        <li>One-tap WhatsApp and call buttons on every screen</li>
+        <li>Google Maps directions</li>
+        <li>Online sign-up with UPI, card or netbanking</li>
+        <li>Built to be found: clean structure, fast pages, local search ready</li>
+      </ul>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;justify-content:center">
+      <h3 style="font-size:34px">Deliberately light.</h3>
+      <p style="font-size:25px;margin-top:16px">A gym website has one job: turn a visitor into an enquiry or a paid sign-up. Everything that does not serve that job makes the page slower and the decision harder.</p>
+      <p style="font-size:25px;margin-top:20px">So there is no page builder to learn and nothing to maintain. You change your prices in the platform and the website updates itself.</p>
+    </div>
+  </div>
+  <div class="pageno">06</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 7 LEADS -->
+<section class="slide dark">
+  <p class="eyebrow">Enquiries &amp; CRM</p>
+  <h2>Every enquiry, and what became of it.</h2>
+  <div class="grid3" style="margin-top:56px">
+    <div class="card"><h3>Captured</h3><p>From the website form, the QR code or a walk-in entered at the desk. The source is recorded, so you learn which one actually works.</p></div>
+    <div class="card"><h3>Tracked</h3><p>New → Contacted → Trial booked → Visited → Converted or Lost. Each with notes and a follow-up date.</p></div>
+    <div class="card"><h3>Measured</h3><p>How many enquiries came in this month, how many joined, and the conversion rate — over any period you choose.</p></div>
+  </div>
+  <div class="note" style="margin-top:58px"><b>The number almost no gym can answer:</b> “Of the people who enquired last month, how many joined?” An enquiry is the cheapest member you will ever get, and most gyms cannot see the rate at which they lose them.</div>
+  <div class="pageno">07</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 8 FACE -->
+<section class="slide">
+  <p class="eyebrow">Attendance</p>
+  <h2>Face attendance — on a phone you already own.</h2>
+  <div class="grid2" style="margin-top:52px;gap:46px">
+    <div>
+      <ul class="tight">
+        <li>Member walks to the counter; the camera recognises them</li>
+        <li>Attendance marked — nothing to press, nothing to carry</li>
+        <li>Keypad fallback when a face will not read</li>
+        <li>Staff see instantly if the member’s fee has expired</li>
+        <li>The same face cannot be enrolled twice under two names</li>
+        <li>Face data encrypted, never shared, deleted when a member leaves</li>
+        <li>A member may refuse face attendance and be marked by hand</li>
+      </ul>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;justify-content:center;background:rgba(240,85,45,.07);border-color:var(--accent)">
+      <h3 style="font-size:34px;color:#C13F1C">No turnstile. No biometric device. No new hardware.</h3>
+      <p style="font-size:25px;margin-top:18px">Most gym software in India offers face attendance by <i>integrating</i> with a separate device — eSSL, ZKTeco, BioMax — which you buy, mount, wire and maintain.</p>
+      <p style="font-size:25px;margin-top:18px"><b>GymKhata runs it on an ordinary Android phone on a stand.</b> If reception has a phone, attendance is solved.</p>
+    </div>
+  </div>
+  <div class="pageno">08</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 9 MEMBERS -->
+<section class="slide">
+  <p class="eyebrow">Member management</p>
+  <h2>The register, but it answers back.</h2>
+  <div class="grid3" style="margin-top:56px">
+    <div class="card"><h3>Every member</h3><p>Name, number, photograph, date of birth, joining date and which half of the day they train in. Searchable by name, number or member code.</p></div>
+    <div class="card"><h3>Their whole history</h3><p>Plan, every payment, every receipt, attendance record, personal training and diet plan — on one profile.</p></div>
+    <div class="card"><h3>Fee state at a glance</h3><p>Paid, due soon, overdue — a colour down the whole list, so one look answers “who owes me money”.</p></div>
+  </div>
+  <div class="grid3" style="margin-top:28px">
+    <div class="card"><h3>Verified identity</h3><p>The ID photograph is read automatically: that it is the card they chose, and that the name and birth date match what they typed.</p></div>
+    <div class="card"><h3>No duplicates</h3><p>The same person cannot be entered twice under two names and two numbers — the system checks the face.</p></div>
+    <div class="card"><h3>Your old register, imported</h3><p>Existing members come in from a sheet. You do not start from an empty list.</p></div>
+  </div>
+  <div class="pageno">09</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 10 MEMBERSHIP -->
+<section class="slide dark">
+  <p class="eyebrow">Memberships &amp; renewals</p>
+  <h2>Plans you set once. Renewals that chase themselves.</h2>
+  <div class="grid2" style="margin-top:54px;gap:40px">
+    <div>
+      <ul class="tight">
+        <li>Monthly, quarterly, half-yearly and annual plans</li>
+        <li>Separate pricing for men and women, if you price that way</li>
+        <li>Personal training sold and tracked as its own plan</li>
+        <li>Paid trials, by the day</li>
+        <li>Joining fee — set it, or set it to zero</li>
+        <li>Discounts at the desk, recorded with a reason</li>
+        <li>Expiry tracked automatically for every member</li>
+        <li>Renew early and the new plan starts when the old one ends — no days lost</li>
+      </ul>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;justify-content:center;gap:22px">
+      <div><div class="stat" style="font-size:58px;color:var(--accent)">7 · 3 · 2 · 1</div><div class="statlabel">Days before expiry a reminder goes out</div></div>
+      <div style="height:1px;background:#262D38"></div>
+      <div><div class="stat" style="font-size:58px">On the day</div><div class="statlabel">And again after, for as many days as you choose</div></div>
+      <div style="height:1px;background:#262D38"></div>
+      <div><div class="stat" style="font-size:58px">Stops instantly</div><div class="statlabel">The moment they pay, or ask you to stop</div></div>
+    </div>
+  </div>
+  <div class="pageno">10</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 11 PAYMENTS -->
+<section class="slide">
+  <p class="eyebrow">Payments &amp; money</p>
+  <h2>Every rupee, recorded where you can find it.</h2>
+  <div class="grid3" style="margin-top:56px">
+    <div class="card"><h3>However they pay</h3><p>UPI, card or netbanking online. Cash or UPI at the desk — recorded by the staff member who took it.</p></div>
+    <div class="card"><h3>Receipts that exist</h3><p>Numbered automatically and sent on WhatsApp. The member keeps proof; you keep the record.</p></div>
+    <div class="card"><h3>Automatic monthly fees</h3><p>Optional UPI mandate: the fee collects itself each month. The member approves once.</p></div>
+  </div>
+  <div class="grid3" style="margin-top:28px">
+    <div class="card"><h3>What is outstanding</h3><p>Who owes money, how much, and since when — as a list you can act on, not a figure you have to work out.</p></div>
+    <div class="card"><h3>What came in</h3><p>This month against last. By day, week, month or year. Cash and online separated.</p></div>
+    <div class="card"><h3>Who did what</h3><p>Every discount, every refund, every edit — with the staff member’s name and the time.</p></div>
+  </div>
+  <div class="pageno">11</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 12 WHATSAPP -->
+<section class="slide">
+  <p class="eyebrow">Automated communication</p>
+  <h2>Eleven messages your gym sends without sending them.</h2>
+  <div class="row" style="margin-top:48px;gap:48px">
+    <div style="flex:1.15">
+      <div class="grid2" style="gap:14px 34px">
+        <ul class="tight" style="margin:0">
+          <li>Welcome, when they join</li>
+          <li>Payment receipt</li>
+          <li>Renewal due — 7, 3, 2, 1 days before</li>
+          <li>Renewal due today</li>
+          <li>Membership expired — follow-up</li>
+        </ul>
+        <ul class="tight blue" style="margin:0">
+          <li>Sign-up received, before approval</li>
+          <li>Membership confirmed</li>
+          <li>Birthday wishes</li>
+          <li>Announcements to all members</li>
+          <li>Unsubscribe and restart, by the member</li>
+        </ul>
+      </div>
+      <div class="note" style="margin-top:34px;font-size:22px"><b>Official WhatsApp Business API</b>, on templates Meta has approved — not a personal number sending bulk messages that gets blocked. Quiet hours respected. A cap per number per day, so a family sharing one phone is not flooded.</div>
+    </div>
+    <div style="flex:1">
+      <div class="chat">
+        <p style="font-size:20px;color:var(--mutedLight);margin-bottom:14px">WhatsApp · your gym’s number</p>
+        <div class="bubble dev">नमस्ते राहुल, आपकी मेंबरशिप 14 नवंबर को खत्म हो रही है।<br><br>रिन्यू करने के लिए रिसेप्शन पर आइए या इस लिंक से ऑनलाइन कर लीजिए।<br><br><span style="color:#5A6270;font-size:20px">[ Your gym’s name ]</span></div>
+        <p class="meta">Sent automatically · 3 days before expiry · Delivered ✓✓</p>
+      </div>
+    </div>
+  </div>
+  <div class="pageno">12</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 13 STAFF -->
+<section class="slide dark">
+  <p class="eyebrow">Staff &amp; reception</p>
+  <h2>Everyone sees their own job, and nothing else.</h2>
+  <div class="grid3" style="margin-top:58px">
+    <div class="card"><span class="pill">Owner</span><h3 style="margin-top:16px">Everything</h3><p>Money, reports, settings, prices, staff accounts — and the record of who changed what.</p></div>
+    <div class="card"><span class="pill blue">Reception</span><h3 style="margin-top:16px">The desk</h3><p>Add members, take fees, mark attendance, approve QR sign-ups, work the call list. No access to the money reports.</p></div>
+    <div class="card"><span class="pill grey">Trainer</span><h3 style="margin-top:16px">The floor</h3><p>See members and mark attendance. Cannot take money, cannot change anything.</p></div>
+  </div>
+  <div class="grid2" style="margin-top:40px;gap:34px">
+    <div class="note" style="border-color:var(--blue)"><b>Protected by PIN.</b> Settings and money open only after the owner re-enters a PIN — so a phone left unlocked at the desk is not the whole business.</div>
+    <div class="note"><b>Switch a staff member off and they are out.</b> Their session ends immediately, and the record of what they did stays.</div>
+  </div>
+  <div class="pageno">13</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 14 DASHBOARD -->
+<section class="slide">
+  <p class="eyebrow">Dashboard &amp; reports</p>
+  <h2>Open it in the morning. It tells you what to do.</h2>
+  <div class="grid4" style="margin-top:50px;gap:20px">
+    <div class="card" style="padding:26px 24px"><div class="stat" style="font-size:52px">248</div><div class="statlabel">Active members</div></div>
+    <div class="card" style="padding:26px 24px"><div class="stat" style="font-size:52px;color:var(--blue)">61</div><div class="statlabel">Came in today</div></div>
+    <div class="card" style="padding:26px 24px"><div class="stat" style="font-size:52px;color:#9A6B00">14</div><div class="statlabel">Fees due this week</div></div>
+    <div class="card" style="padding:26px 24px"><div class="stat" style="font-size:52px;color:#B4342A">9</div><div class="statlabel">Fees overdue</div></div>
+  </div>
+  <p class="muted" style="font-size:21px;margin-top:14px">Illustrative figures.</p>
+  <div class="grid2" style="margin-top:38px;gap:40px">
+    <div>
+      <h3 style="font-size:28px;margin-bottom:18px">Also on the first screen</h3>
+      <ul class="tight"><li>This month’s collection, against last month</li><li>Who to call today, and why</li><li>Birthdays today</li><li>Sign-ups waiting for your approval</li><li>Members who stopped coming</li></ul>
+    </div>
+    <div>
+      <h3 style="font-size:28px;margin-bottom:18px">Fourteen reports, any period</h3>
+      <ul class="tight blue"><li>Money · new members · renewals · renewal rate</li><li>Personal training · trials · diet plans</li><li>Who left, and when</li><li>Busiest hours · plan mix · member mix</li><li>What difference the reminders made</li></ul>
+      <p class="muted" style="font-size:22px;margin-top:14px">Week, month, year or your own dates. Every report downloadable.</p>
+    </div>
+  </div>
+  <div class="pageno">14</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 15 AI -->
+<section class="slide dark">
+  <p class="eyebrow">Where the intelligence actually is</p>
+  <h2>Five places the software does the thinking.</h2>
+  <div class="grid3" style="margin-top:54px;gap:24px">
+    <div class="card"><h3>Face recognition</h3><p>Identifies the member at the counter from their enrolled photograph, and judges whether a new photo is even usable before accepting it.</p></div>
+    <div class="card"><h3>Reads the ID card</h3><p>Opens the photograph of the ID, reads it, and checks the card type, the name and the date of birth against what was typed.</p></div>
+    <div class="card"><h3>Catches duplicates</h3><p>Compares a new face against every enrolled member, so one person cannot become two records.</p></div>
+  </div>
+  <div class="grid2" style="margin-top:24px;gap:24px">
+    <div class="card"><h3>WhatsApp assistant</h3><p>Answers members’ common questions — timings, fees, what to bring — from what <i>you</i> have written down. When it does not know, it hands the conversation to a person instead of guessing.</p></div>
+    <div class="card"><h3>Diet plans</h3><p>Builds a plan from the member’s goal and answers, for your trainer to review and adjust — a first draft in seconds instead of an evening.</p></div>
+  </div>
+  <div class="pageno">15</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 16 ROADMAP -->
+<section class="slide">
+  <p class="eyebrow">Being straight with you</p>
+  <h2>What it does not do today.</h2>
+  <p class="lede muted">Every proposal you read will claim everything. This one tells you where the edges are, so nothing is a surprise in month two.</p>
+  <div class="grid2" style="margin-top:50px;gap:40px">
+    <div>
+      <h3 style="font-size:28px;margin-bottom:18px;color:#B4342A">Not available</h3>
+      <ul class="tight" style="--accent:#B4342A">
+        <li>A separate mobile app for members</li>
+        <li>Class and slot booking</li>
+        <li>Turnstile or gate integration</li>
+        <li>Multiple branches on one screen</li>
+        <li>GST invoicing</li>
+        <li>Inventory or supplement sales</li>
+        <li>Membership freeze and extension</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="font-size:28px;margin-bottom:18px;color:var(--blue)">On the roadmap</h3>
+      <ul class="tight blue">
+        <li>Membership freeze, for members who travel</li>
+        <li>Workout plans alongside diet plans</li>
+        <li>Trainer assignment and trainer performance</li>
+        <li>Referral tracking</li>
+        <li>Equipment maintenance log</li>
+        <li>Multi-branch, as one view</li>
+      </ul>
+      <p class="muted" style="font-size:22px;margin-top:16px">Tell us which of these you actually need. Customers decide the order.</p>
+    </div>
+  </div>
+  <div class="pageno">16</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 17 JOURNEY -->
+<section class="slide">
+  <p class="eyebrow">End to end</p>
+  <h2>One member, from stranger to renewal.</h2>
+  <div style="margin-top:56px;display:flex;flex-direction:column;gap:22px">
+    <div class="step"><div class="stepno" style="background:var(--blue)">1</div><div><h3 style="font-size:27px">Finds you</h3><p class="muted" style="font-size:24px">Google, your website or the QR poster at the door. Enquiry recorded with its source.</p></div></div>
+    <div class="step"><div class="stepno" style="background:var(--blue)">2</div><div><h3 style="font-size:27px">Enquires</h3><p class="muted" style="font-size:24px">Form or WhatsApp. Lands in your list with a follow-up date against it.</p></div></div>
+    <div class="step"><div class="stepno" style="background:var(--blue)">3</div><div><h3 style="font-size:27px">Visits, and joins</h3><p class="muted" style="font-size:24px">Fills their own form from the QR code — details, photo, ID. Staff approve. Pays online or at the desk. Receipt on WhatsApp.</p></div></div>
+    <div class="step"><div class="stepno">4</div><div><h3 style="font-size:27px">Trains</h3><p class="muted" style="font-size:24px">Face attendance every visit. You can see who is regular and who has quietly stopped.</p></div></div>
+    <div class="step"><div class="stepno">5</div><div><h3 style="font-size:27px">Fee comes due</h3><p class="muted" style="font-size:24px">WhatsApp at 7, 3, 2 and 1 days, and on the day. Renew link in the message.</p></div></div>
+    <div class="step"><div class="stepno">6</div><div><h3 style="font-size:27px">Renews — or lands on your call list</h3><p class="muted" style="font-size:24px">If they pay, reminders stop and the new plan starts when the old one ends. If they do not, you get a name, a reason and a number.</p></div></div>
+  </div>
+  <div class="pageno">17</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 18 COMPARISON -->
+<section class="slide">
+  <p class="eyebrow">How it compares</p>
+  <h2>Against what is on the market today.</h2>
+  <table style="margin-top:30px">
+    <tr><th style="width:31%">Capability</th><th style="width:23%">GymKhata</th><th style="width:23%">Typical Indian gym software</th><th style="width:23%">International platforms</th></tr>
+    <tr><td>Gym website included</td><td class="yes">Yes</td><td class="no">No — bought separately</td><td class="part">Booking page only</td></tr>
+    <tr><td>Face attendance</td><td class="yes">On a normal phone</td><td class="part">Via a separate device you buy</td><td class="part">Usually hardware</td></tr>
+    <tr><td>WhatsApp automation</td><td class="yes">Included</td><td class="part">Often a higher tier</td><td class="part">Email / SMS first</td></tr>
+    <tr><td>Enquiry-to-member conversion rate</td><td class="yes">Yes</td><td class="part">Varies</td><td class="yes">Yes</td></tr>
+    <tr><td>Hindi-first interface</td><td class="yes">Yes</td><td class="part">Varies</td><td class="no">English</td></tr>
+    <tr><td>Multi-branch</td><td class="no">Not yet</td><td class="part">Often an add-on</td><td class="yes">Yes</td></tr>
+    <tr><td>Member mobile app</td><td class="no">No</td><td class="part">Some include one</td><td class="yes">Yes</td></tr>
+    <tr><td>Typical published price</td><td class="yes">₹30,000 once</td><td>₹500–₹1,500 / month</td><td>US$79–159 / month</td></tr>
+  </table>
+  <p class="muted" style="font-size:20px;margin-top:22px">Compiled November 2026 from vendors’ own published pricing and feature pages (Okfit, GymForce, MyGymDesk, Torzil, CoachFit, Mindbody) and third-party listings. Vendor claims, not independently tested; tiers and prices change. Verify before quoting any competitor to a customer.</p>
+  <div class="pageno">18</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 19 WHY -->
+<section class="slide dark">
+  <p class="eyebrow">Why V4You</p>
+  <h2>Three reasons, and none of them is a feature list.</h2>
+  <div class="grid3" style="margin-top:58px">
+    <div class="card"><div class="stat" style="font-size:54px;color:var(--accent)">01</div><h3 style="margin-top:20px">You own it outright</h3><p>₹30,000 once. Not a subscription that grows every year and holds your members’ data hostage when you stop paying.</p></div>
+    <div class="card"><div class="stat" style="font-size:54px;color:var(--accent)">02</div><h3 style="margin-top:20px">Attendance without hardware</h3><p>No turnstile, no biometric terminal, no wiring. A phone at the counter is the whole installation.</p></div>
+    <div class="card"><div class="stat" style="font-size:54px;color:var(--accent)">03</div><h3 style="margin-top:20px">It is running, today</h3><p>Not a demo built for this proposal. A real gym uses it every day — members, payments, attendance and WhatsApp, live.</p></div>
+  </div>
+  <div class="note" style="margin-top:56px">And you deal with the people who built it. There is no support ticket queue, because there is no queue — you have our number.</div>
+  <div class="pageno">19</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 20 PRICING -->
+<section class="slide compact">
+  <p class="eyebrow">The package</p>
+  <h2>₹30,000, one time. Here is exactly what that buys.</h2>
+  <div class="grid2" style="margin-top:38px;gap:36px">
+    <div class="card" style="border-color:var(--accent);border-width:2px;padding:28px 30px">
+      <h3 style="font-size:30px;color:#C13F1C">Included in ₹30,000</h3>
+      <ul class="tight" style="margin-top:20px">
+        <li>Your gym website and landing page</li>
+        <li>The complete management platform</li>
+        <li>Owner, reception and trainer access</li>
+        <li>Face attendance setup</li>
+        <li>WhatsApp automation, templates written and submitted</li>
+        <li>Online payment integration</li>
+        <li>Your existing member list imported</li>
+        <li>Your plans, prices and timings configured</li>
+        <li>Staff training</li>
+        <li>30 days of support after go-live</li>
+      </ul>
+    </div>
+    <div class="card" style="padding:28px 30px">
+      <h3 style="font-size:30px">Not included — and we would rather say so now</h3>
+      <p style="font-size:24px;margin-top:18px">Three services bill you directly, at their cost. We set each one up; none of them is marked up by us.</p>
+      <ul class="tight" style="margin-top:20px;--accent:#5A6270">
+        <li><b>Hosting and domain</b> — the server your system runs on</li>
+        <li><b>WhatsApp</b> — Meta charges per conversation</li>
+        <li><b>Payment gateway</b> — a percentage of each online payment</li>
+      </ul>
+      <p style="font-size:23px;margin-top:20px">For a gym of a few hundred members these are modest and scale with your size. We will give you the real figures for <i>your</i> gym before you commit.</p>
+    </div>
+  </div>
+  <div class="note" style="margin-top:24px;font-size:22px"><b>Why one-time and not monthly.</b> Software priced per month costs more than the setup within two or three years, and never stops. We would rather be paid once for the work and keep your business through what we build next.</div>
+  <div class="pageno">20</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 21 TIMELINE -->
+<section class="slide dark compact">
+  <p class="eyebrow">Implementation</p>
+  <h2>Live in 15 days.</h2>
+  <div class="grid3" style="margin-top:44px;gap:22px">
+    <div class="card" style="padding:28px 28px"><span class="pill">Days 1–3</span><h3 style="margin-top:16px">We learn your gym</h3><p>Your plans, prices, timings, staff and branding. Everything we need, collected once.</p></div>
+    <div class="card"><span class="pill">Days 4–6</span><h3 style="margin-top:16px">Website</h3><p>Your site and landing page, built and shown to you for approval.</p></div>
+    <div class="card"><span class="pill">Days 7–9</span><h3 style="margin-top:16px">The platform</h3><p>Configured for your gym. Your existing members imported from your register or sheet.</p></div>
+  </div>
+  <div class="grid3" style="margin-top:22px;gap:22px">
+    <div class="card" style="padding:28px 28px"><span class="pill blue">Days 10–11</span><h3 style="margin-top:16px">Attendance</h3><p>Face attendance set up at your counter and tuned on your own members.</p></div>
+    <div class="card"><span class="pill blue">Days 12–13</span><h3 style="margin-top:16px">WhatsApp &amp; payments</h3><p>Templates submitted to Meta, payment gateway connected, everything tested end to end.</p></div>
+    <div class="card"><span class="pill blue">Days 14–15</span><h3 style="margin-top:16px">Training &amp; go-live</h3><p>Your staff trained at the desk, on the real system. Then it is live.</p></div>
+  </div>
+  <div class="note" style="margin-top:22px;font-size:22px;padding:14px 26px"><b>What can move the date:</b> how quickly you send us your details and approvals, and Meta’s own WhatsApp approval, which usually takes a day or two and is not ours to hurry.</div>
+  <div class="pageno">21</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 22 DEMO -->
+<section class="slide">
+  <p class="eyebrow">See it first</p>
+  <h2>Do not take our word for any of this.</h2>
+  <p class="lede muted">A live demonstration takes about twenty minutes, on a call or at your gym. We show you the working system, not slides.</p>
+  <div class="grid2" style="margin-top:50px;gap:40px">
+    <div>
+      <h3 style="font-size:28px;margin-bottom:18px">What we will show you</h3>
+      <ul class="tight">
+        <li>The owner’s screen, with a full gym’s worth of data on it</li>
+        <li>A member being recognised by face, live</li>
+        <li>A QR sign-up completed end to end on a phone</li>
+        <li>A WhatsApp reminder arriving, and its delivery status</li>
+        <li>Reports switching between week, month and year</li>
+        <li>The reception view, so you can judge whether your staff will use it</li>
+      </ul>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;justify-content:center">
+      <h3 style="font-size:32px">Ask us the hard questions on the call.</h3>
+      <p style="font-size:25px;margin-top:16px">“What happens when the internet goes down?” “What if a member refuses the face camera?” “What does it cost me every month?”</p>
+      <p style="font-size:25px;margin-top:18px">You should get a straight answer to each one before you pay anybody — us included.</p>
+    </div>
+  </div>
+  <div class="pageno">22</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 23 FAQ -->
+<section class="slide">
+  <p class="eyebrow">Questions we are always asked</p>
+  <h2>Straight answers.</h2>
+  <div class="grid2" style="margin-top:44px;gap:34px 48px">
+    <div><h3 style="font-size:26px">What if a member will not use the face camera?</h3><p class="muted" style="font-size:23px;margin-top:8px">They type their number on a keypad, or your staff mark them by hand. Face attendance is never compulsory for a member.</p></div>
+    <div><h3 style="font-size:26px">Who owns the data?</h3><p class="muted" style="font-size:23px;margin-top:8px">You do. It is stored in India, separated from every other gym, and you can export your members whenever you want.</p></div>
+    <div><h3 style="font-size:26px">Do I need to buy any hardware?</h3><p class="muted" style="font-size:23px;margin-top:8px">An Android phone or tablet for the counter, on a stand. If reception already has one, nothing.</p></div>
+    <div><h3 style="font-size:26px">What if I already have members in a register or Excel?</h3><p class="muted" style="font-size:23px;margin-top:8px">We import them during setup. You start with your real list, not an empty one.</p></div>
+    <div><h3 style="font-size:26px">What happens after the 30 days of support?</h3><p class="muted" style="font-size:23px;margin-top:8px">The system keeps running. Support after that is on request — we will quote it honestly rather than lock you into a plan.</p></div>
+    <div><h3 style="font-size:26px">Can my receptionist actually use it?</h3><p class="muted" style="font-size:23px;margin-top:8px">It is in Hindi, built for a phone, with large buttons. Judge it yourself on the demo — that is the point of showing you the reception view.</p></div>
+    <div><h3 style="font-size:26px">What about GST invoices?</h3><p class="muted" style="font-size:23px;margin-top:8px">Not today. Receipts are numbered and sent on WhatsApp. If you need GST invoicing, tell us — it is on the roadmap and customers set the order.</p></div>
+    <div><h3 style="font-size:26px">I have two branches.</h3><p class="muted" style="font-size:23px;margin-top:8px">Each is set up separately today, with its own system. One combined view is on the roadmap. We will be clear about what that means for you before you buy.</p></div>
+  </div>
+  <div class="pageno">23</div><div class="brandmark">GymKhata · V4You</div>
+</section>
+
+<!-- 24 CTA -->
+<section class="slide dark" style="justify-content:space-between;padding:104px 128px">
+  <div class="topbar"></div>
+  <p class="eyebrow" style="margin:0">Next step</p>
+  <div>
+    <h1 style="font-size:116px;letter-spacing:-3px">Book a demo.<br>Decide after.</h1>
+    <p class="muted" style="font-size:31px;line-height:1.5;max-width:1280px;margin-top:34px">Twenty minutes, on a call or at your gym. You will see the real system with a full gym’s data in it — and you will know within five minutes whether your staff would use it.</p>
+  </div>
+  <div class="row" style="gap:28px;align-items:stretch">
+    <div class="card" style="flex:1;display:flex;flex-direction:column;justify-content:center">
+      <h3>WhatsApp</h3><p style="margin-top:8px;font-size:27px;color:var(--paper)">[ _____________ ]</p>
+    </div>
+    <div class="card" style="flex:1;display:flex;flex-direction:column;justify-content:center">
+      <h3>Call</h3><p style="margin-top:8px;font-size:27px;color:var(--paper)">[ _____________ ]</p>
+    </div>
+    <div class="card" style="flex:1;display:flex;flex-direction:column;justify-content:center">
+      <h3>Email</h3><p style="margin-top:8px;font-size:27px;color:var(--paper)">[ _____________ ]</p>
+    </div>
+    <div class="card" style="flex:1.1;display:flex;flex-direction:column;justify-content:center;background:var(--accent);border-color:var(--accent)">
+      <h3 style="color:#fff">GymKhata</h3><p style="margin-top:8px;font-size:25px;color:#fff">₹30,000 one-time · live in 15 days</p>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
